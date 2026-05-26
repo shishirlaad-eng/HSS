@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"D:/Brand Kit-20260522T160021Z-3-001\" -type f 2>/dev/null | sort | head -60)"
+    ]
+  }
+}

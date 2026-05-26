@@ -1,0 +1,5 @@
+/* Import fonts first - @import must precede all other statements */
+@import "./fonts.css";
+
+/* Import global styles and Tailwind */
+@import "./globals.css";

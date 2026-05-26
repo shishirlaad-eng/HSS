@@ -1,0 +1,683 @@
+@import "tailwindcss";
+
+@variant dark (.dark &);
+
+@theme {
+  --color-scheme: light dark;
+
+  /* Shadcn standard tokens */
+  --color-background: #fafafa;
+  --color-foreground: hsl(240, 10%, 3.9%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(240, 10%, 3.9%);
+  --color-popover: hsl(0, 0%, 100%);
+  --color-popover-foreground: hsl(240, 10%, 3.9%);
+  --color-primary: hsl(240, 5.9%, 10%);
+  --color-primary-foreground: hsl(0, 0%, 98%);
+  --color-secondary: hsl(240, 4.8%, 95.9%);
+  --color-secondary-foreground: hsl(240, 5.9%, 10%);
+  --color-muted: hsl(240, 4.8%, 95.9%);
+  --color-muted-foreground: hsl(240, 3.8%, 46.1%);
+  --color-accent: hsl(240, 4.8%, 95.9%);
+  --color-accent-foreground: hsl(240, 5.9%, 10%);
+  --color-destructive: hsl(0, 84.2%, 60.2%);
+  --color-destructive-foreground: hsl(0, 0%, 98%);
+  --color-border: hsl(240, 5.9%, 90%);
+  --color-input: hsl(240, 5.9%, 90%);
+  --color-ring: hsl(240, 5.9%, 10%);
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #111827;
+
+  /* Primary Colors - Light Mode (Monochrome Slate matching Shadcn style) */
+  --color-primary-50: #f8fafc;
+  --color-primary-100: #f1f5f9;
+  --color-primary-200: #e2e8f0;
+  --color-primary-300: #cbd5e1;
+  --color-primary-400: #94a3b8;
+  --color-primary-500: #1e293b;
+  --color-primary-600: #0f172a;
+  --color-primary-700: #020617;
+  --color-primary-800: #000000;
+  --color-primary-900: #000000;
+  --color-primary-950: #000000;
+
+  /* Neutral Colors (Zinc - very clean neutral grays) */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  --color-neutral-950: #09090b;
+
+  /* Success Colors - HSS Sewa Green */
+  --color-success-50: #f1fced;
+  --color-success-100: #ddf7d2;
+  --color-success-200: #b8efa0;
+  --color-success-300: #86e063;
+  --color-success-400: #65c44a;
+  --color-success-500: #4EAE33;
+  --color-success-600: #3d8928;
+  --color-success-700: #2f6b1e;
+  --color-success-800: #225016;
+  --color-success-900: #17360e;
+  --color-success-950: #0a1f06;
+
+  /* Warning Colors - Minimalist Amber */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  /* Error Colors - HSS Dharma Red */
+  --color-error-50: #fff0f0;
+  --color-error-100: #ffd9d9;
+  --color-error-200: #ffaaab;
+  --color-error-300: #ff7075;
+  --color-error-400: #e8313a;
+  --color-error-500: #BC0F1C;
+  --color-error-600: #9a0c17;
+  --color-error-700: #790913;
+  --color-error-800: #58070e;
+  --color-error-900: #3a0409;
+  --color-error-950: #1d0204;
+
+  /* Info Colors - HSS Bal Blue */
+  --color-info-50: #e6f6fd;
+  --color-info-100: #c0e9fa;
+  --color-info-200: #89d5f6;
+  --color-info-300: #45bdf0;
+  --color-info-400: #1dade9;
+  --color-info-500: #009FE3;
+  --color-info-600: #0080b8;
+  --color-info-700: #006390;
+  --color-info-800: #004a6b;
+  --color-info-900: #003148;
+  --color-info-950: #001926;
+}
+
+/* Dark Mode Color Overrides - Muted, Soft Colors */
+.dark {
+  /* Shadcn standard dark tokens */
+  --color-background: hsl(240, 10%, 3.9%);
+  --color-foreground: hsl(0, 0%, 98%);
+  --color-card: hsl(240, 10%, 3.9%);
+  --color-card-foreground: hsl(0, 0%, 98%);
+  --color-popover: hsl(240, 10%, 3.9%);
+  --color-popover-foreground: hsl(0, 0%, 98%);
+  --color-primary: hsl(0, 0%, 98%);
+  --color-primary-foreground: hsl(240, 5.9%, 10%);
+  --color-secondary: hsl(240, 3.7%, 15.9%);
+  --color-secondary-foreground: hsl(0, 0%, 98%);
+  --color-muted: hsl(240, 3.7%, 15.9%);
+  --color-muted-foreground: hsl(240, 5%, 64.9%);
+  --color-accent: hsl(240, 3.7%, 15.9%);
+  --color-accent-foreground: hsl(0, 0%, 98%);
+  --color-destructive: hsl(0, 62.8%, 30.6%);
+  --color-destructive-foreground: hsl(0, 0%, 98%);
+  --color-border: hsl(240, 3.7%, 20%);
+  --color-input: hsl(240, 3.7%, 18%);
+  --color-ring: hsl(240, 4.9%, 83.9%);
+
+  /* Primary Colors - Deep Slate */
+  --color-primary-50: #020617;
+  --color-primary-100: #0f172a;
+  --color-primary-200: #1e293b;
+  --color-primary-300: #334155;
+  --color-primary-400: #475569;
+  --color-primary-500: #334155;
+  --color-primary-600: #475569;
+  --color-primary-700: #cbd5e1;
+  --color-primary-800: #e2e8f0;
+  --color-primary-900: #f1f5f9;
+  --color-primary-950: #f8fafc;
+
+  /* Neutral Colors Dark Mode */
+  --color-neutral-950: #09090b;
+  --color-neutral-900: #18181b;
+  --color-neutral-800: #27272a;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-600: #52525b;
+  --color-neutral-500: #71717a;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-50: #fafafa;
+
+  /* Success Colors - HSS Sewa Green (dark reversed) */
+  --color-success-50: #0a1f06;
+  --color-success-100: #17360e;
+  --color-success-200: #225016;
+  --color-success-300: #2f6b1e;
+  --color-success-400: #3d8928;
+  --color-success-500: #4EAE33;
+  --color-success-600: #65c44a;
+  --color-success-700: #86e063;
+  --color-success-800: #b8efa0;
+  --color-success-900: #ddf7d2;
+  --color-success-950: #f1fced;
+
+  /* Muted Amber for Dark Mode */
+  --color-warning-50: #451a03;
+  --color-warning-100: #78350f;
+  --color-warning-200: #92400e;
+  --color-warning-300: #b45309;
+  --color-warning-400: #d97706;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #fbbf24;
+  --color-warning-700: #fcd34d;
+  --color-warning-800: #fde68a;
+  --color-warning-900: #fef3c7;
+  --color-warning-950: #fffbeb;
+
+  /* Error Colors - HSS Dharma Red (dark reversed) */
+  --color-error-50: #1d0204;
+  --color-error-100: #3a0409;
+  --color-error-200: #58070e;
+  --color-error-300: #790913;
+  --color-error-400: #9a0c17;
+  --color-error-500: #BC0F1C;
+  --color-error-600: #e8313a;
+  --color-error-700: #ff7075;
+  --color-error-800: #ffaaab;
+  --color-error-900: #ffd9d9;
+  --color-error-950: #fff0f0;
+
+  /* Info Colors - HSS Bal Blue (dark reversed) */
+  --color-info-50: #001926;
+  --color-info-100: #003148;
+  --color-info-200: #004a6b;
+  --color-info-300: #006390;
+  --color-info-400: #0080b8;
+  --color-info-500: #009FE3;
+  --color-info-600: #1dade9;
+  --color-info-700: #45bdf0;
+  --color-info-800: #89d5f6;
+  --color-info-900: #c0e9fa;
+  --color-info-950: #e6f6fd;
+}
+
+/* Typography */
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.875rem;
+  /* 14px */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.dark body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Global Hand Cursor for Clickable Elements */
+a, 
+button, 
+[role="button"],
+select,
+input[type="checkbox"],
+input[type="radio"],
+.cursor-pointer,
+.hover\:bg-neutral-50,
+.dark .hover\:bg-neutral-900,
+.group:hover {
+  cursor: pointer;
+}
+
+/* Ensure disabled elements don't show hand cursor */
+button:disabled,
+input:disabled,
+[disabled],
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+
+/* Static text elements should remain default cursor */
+p, span, h1, h2, h3, h4, h5, h6, label:not([for]) {
+  cursor: default;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+h5 {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+h6 {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+p {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+/* Lead text - larger, important paragraphs */
+.text-lead {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #525252;
+}
+
+.dark .text-lead {
+  color: #a3a3a3;
+}
+
+/* Large text */
+.text-large {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+/* Small text */
+.text-small {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+/* Muted text */
+.text-muted {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #a3a3a3;
+}
+
+.dark .text-muted {
+  color: #737373;
+}
+
+/* Blockquote */
+blockquote {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  font-style: italic;
+  padding-left: 16px;
+  border-left: 3px solid #d4d4d4;
+  color: #525252;
+}
+
+.dark blockquote {
+  border-left-color: #404040;
+  color: #a3a3a3;
+}
+
+/* Code */
+code {
+  font-family:
+    "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  font-size: 13px;
+  padding: 2px 6px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  color: #171717;
+}
+
+.dark code {
+  background-color: #262626;
+  color: #fafafa;
+}
+
+/* Table typography */
+table {
+  font-size: 14px;
+}
+
+table th {
+  font-weight: 600;
+}
+
+table td {
+  font-weight: 400;
+}
+
+/* List */
+ul,
+ol {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+li {
+  margin-bottom: 4px;
+}
+
+/* Drawer Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* ======================================
+   THEME-SPECIFIC COLOR OVERRIDES
+   ====================================== */
+
+/* 1. DEFAULT BLACK THEME */
+[data-theme="default-black"] {
+  --color-primary-50: #e5e7eb;
+  --color-primary-100: #e5e7eb;
+  --color-primary-200: #d1d5db;
+  --color-primary-300: #9ca3af;
+  --color-primary-400: #111827;
+  --color-primary-500: #111827;
+  --color-primary-600: #111827;
+  --color-primary-700: #1f2937;
+  --color-primary-800: #1f2937;
+  --color-primary-900: #1f2937;
+  --color-primary-950: #1f2937;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #111827;
+}
+
+[data-theme="default-black"].dark {
+  --color-background: #0a0a0a;
+  --color-card: #0d0d0d;
+  --color-border: #262626;
+  --color-primary-50: #1f2937;
+  --color-primary-100: #1f2937;
+  --color-primary-200: #374151;
+  --color-primary-300: #4b5563;
+  --color-primary-400: #f9fafb;
+  --color-primary-500: #f9fafb;
+  --color-primary-600: #f9fafb;
+  --color-primary-700: #e5e7eb;
+  --color-primary-800: #e5e7eb;
+  --color-primary-900: #d1d5db;
+  --color-primary-950: #d1d5db;
+  --color-btn-text: #111827;
+  --color-theme-accent: #f9fafb;
+}
+
+/* 2. OCEAN BLUE THEME */
+[data-theme="ocean-blue"] {
+  --color-primary-50: #dbeafe;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #60a5fa;
+  --color-primary-400: #2563eb;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1d4ed8;
+  --color-primary-900: #1e40af;
+  --color-primary-950: #1e3a8a;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #2563eb;
+}
+
+[data-theme="ocean-blue"].dark {
+  --color-primary-50: #1e3a8a;
+  --color-primary-100: #1e3a8a;
+  --color-primary-200: #1e40af;
+  --color-primary-300: #3b82f6;
+  --color-primary-400: #2563eb;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1d4ed8;
+  --color-primary-900: #1e40af;
+  --color-primary-950: #dbeafe;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #2563eb;
+}
+
+/* 3. EMERALD GREEN THEME */
+[data-theme="emerald-green"] {
+  --color-primary-50: #eefff6;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #34d399;
+  --color-primary-400: #10b981;
+  --color-primary-500: #10b981;
+  --color-primary-600: #10b981;
+  --color-primary-700: #059669;
+  --color-primary-800: #059669;
+  --color-primary-900: #047857;
+  --color-primary-950: #022c22;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #10b981;
+}
+
+[data-theme="emerald-green"].dark {
+  --color-primary-50: #064e3b;
+  --color-primary-100: #064e3b;
+  --color-primary-200: #047857;
+  --color-primary-300: #34d399;
+  --color-primary-400: #10b981;
+  --color-primary-500: #10b981;
+  --color-primary-600: #10b981;
+  --color-primary-700: #059669;
+  --color-primary-800: #059669;
+  --color-primary-900: #047857;
+  --color-primary-950: #d1fae5;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #10b981;
+}
+
+/* 4. VIOLET PURPLE THEME */
+[data-theme="violet-purple"] {
+  --color-primary-50: #ede9fe;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #8b5cf6;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #8b5cf6;
+  --color-primary-700: #7c3aed;
+  --color-primary-800: #7c3aed;
+  --color-primary-900: #6d28d9;
+  --color-primary-950: #4c1d95;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #8b5cf6;
+}
+
+[data-theme="violet-purple"].dark {
+  --color-primary-50: #4c1d95;
+  --color-primary-100: #4c1d95;
+  --color-primary-200: #5b21b6;
+  --color-primary-300: #a78bfa;
+  --color-primary-400: #8b5cf6;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #8b5cf6;
+  --color-primary-700: #7c3aed;
+  --color-primary-800: #7c3aed;
+  --color-primary-900: #5b21b6;
+  --color-primary-950: #ede9fe;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #8b5cf6;
+}
+
+/* 5. AMBER ORANGE THEME */
+[data-theme="amber-orange"] {
+  --color-primary-50: #fef3c7;
+  --color-primary-100: #fef3c7;
+  --color-primary-200: #fde68a;
+  --color-primary-300: #fcd34d;
+  --color-primary-400: #f59e0b;
+  --color-primary-500: #f59e0b;
+  --color-primary-600: #f59e0b;
+  --color-primary-700: #d97706;
+  --color-primary-800: #d97706;
+  --color-primary-900: #b45309;
+  --color-primary-950: #78350f;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #f59e0b;
+}
+
+[data-theme="amber-orange"].dark {
+  --color-primary-50: #78350f;
+  --color-primary-100: #78350f;
+  --color-primary-200: #92400e;
+  --color-primary-300: #fcd34d;
+  --color-primary-400: #f59e0b;
+  --color-primary-500: #f59e0b;
+  --color-primary-600: #f59e0b;
+  --color-primary-700: #d97706;
+  --color-primary-800: #d97706;
+  --color-primary-900: #92400e;
+  --color-primary-950: #fef3c7;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #f59e0b;
+}
+
+/* ======================================
+   6. HSS BRAND THEME (Hindu Swayamsevak Sangh UK)
+   ====================================== */
+
+/* HSS Brand CSS Custom Properties */
+:root {
+  --hss-blue: #172E4D;
+  --hss-orange: #F9B03D;
+  --hss-body-text: #3C3C3D;
+  --hss-muted: #9C9C9D;
+  --hss-bal-blue: #009FE3;
+  --hss-sewa-green: #4EAE33;
+  --hss-sevika-pink: #F67FD5;
+  --hss-dharma-red: #BC0F1C;
+}
+
+[data-theme="hss-brand"] {
+  --color-primary-50: #eaeff6;
+  --color-primary-100: #c8d5e8;
+  --color-primary-200: #a0b8d8;
+  --color-primary-300: #6b8dbd;
+  --color-primary-400: #3d659f;
+  --color-primary-500: #172E4D;
+  --color-primary-600: #172E4D;
+  --color-primary-700: #122342;
+  --color-primary-800: #0d1a30;
+  --color-primary-900: #08101e;
+  --color-primary-950: #04080f;
+  --color-btn-text: #ffffff;
+  --color-theme-accent: #172E4D;
+}
+
+[data-theme="hss-brand"].dark {
+  --color-primary-50: #0d1a30;
+  --color-primary-100: #0d1a30;
+  --color-primary-200: #172E4D;
+  --color-primary-300: #234873;
+  --color-primary-400: #7aafd4;
+  --color-primary-500: #9fc5e0;
+  --color-primary-600: #9fc5e0;
+  --color-primary-700: #bdd6eb;
+  --color-primary-800: #d5e6f2;
+  --color-primary-900: #eaf2f8;
+  --color-primary-950: #dceaf4;
+  --color-btn-text: #172E4D;
+  --color-theme-accent: #7aafd4;
+}
+
+/* HSS Status Badge Utility Classes */
+.hss-status-active     { color: #4EAE33; background-color: #f1fced; }
+.hss-status-pending    { color: #d97706; background-color: #fffbeb; }
+.hss-status-info       { color: #009FE3; background-color: #e6f6fd; }
+.hss-status-rejected   { color: #BC0F1C; background-color: #fff0f0; }
+.hss-status-inactive   { color: #9C9C9D; background-color: #f5f5f5; }
+.hss-status-sevika     { color: #F67FD5; background-color: #fef0fc; }
+
+.dark .hss-status-active   { background-color: #0a1f06; }
+.dark .hss-status-pending  { background-color: #451a03; }
+.dark .hss-status-info     { background-color: #001926; }
+.dark .hss-status-rejected { background-color: #1d0204; }
+.dark .hss-status-inactive { background-color: #1a1a1a; }
+.dark .hss-status-sevika   { background-color: #2d0026; }
+
+/* Enforce native selected checkbox styling across all browsers with guaranteed white checkmark */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: transparent;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.dark input[type="checkbox"] {
+  border-color: #4b5563;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--color-theme-accent) !important;
+  border-color: var(--color-theme-accent) !important;
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 32%;
+  top: 12%;
+  width: 0.3rem;
+  height: 0.55rem;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
