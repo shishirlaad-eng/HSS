@@ -20,6 +20,8 @@ import LogsManagement from "./components/LogsManagement";
 import LogsPage from "./components/LogsPage";
 import PendingApprovals from "./components/PendingApprovals";
 import PendingGuardianApprovals from "./components/PendingGuardianApprovals";
+import Dashboard from "./components/Dashboard";
+import Announcements from "./components/Announcements";
 import { SiteMap } from "./components/SiteMap";
 import { FeedbackSystem } from "./components/FeedbackSystem";
 import { GlobalFooter } from "./components/GlobalFooter";
@@ -28,8 +30,6 @@ import SuperAdminAuth from "./components/SuperAdminAuth";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
 const PAGE_LABELS: Record<string, string> = {
-  dashboard:                    "Dashboard",
-  announcements:                "Announcements",
   sessions:                     "Sessions (Recurring Shakha Setup)",
   "attendance-log":             "Attendance Log",
   "report-members":             "Members Report",
@@ -202,7 +202,9 @@ export default function App() {
 
         {/* Page Content */}
         {/* ── Existing implemented pages ── */}
-        {currentPage === "members" ? (
+        {currentPage === "dashboard" ? (
+          <Dashboard onNavigate={handleNavigate} />
+        ) : currentPage === "members" ? (
           <MemberManagement
             initialMemberId={memberToView}
             onConsumeInitialMember={() => setMemberToView(null)}
@@ -240,6 +242,8 @@ export default function App() {
           <EmailTemplates />
         ) : currentPage === "system-notifications" ? (
           <SystemNotifications />
+        ) : currentPage === "announcements" ? (
+          <Announcements />
         ) : currentPage === "logs" ? (
           <LogsPage />
 

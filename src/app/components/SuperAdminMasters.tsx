@@ -714,9 +714,14 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
                         <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.townName}</span>
                       </div>
                     )}
-                    {item.childCount !== undefined && (
+                    {item.childCount !== undefined && masterType !== 'centre' && masterType !== 'role-types' && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-400">Children:</span>
+                        <span className="text-neutral-400">
+                          {masterType === 'country' ? 'Regions:'
+                          : masterType === 'region'  ? 'Towns:'
+                          : masterType === 'town'    ? 'Activity Centres:'
+                          : 'Children:'}
+                        </span>
                         <span className="font-semibold text-neutral-800 dark:text-neutral-200">{item.childCount}</span>
                       </div>
                     )}

@@ -42,118 +42,7 @@ export const getNavigationData = (
       active: currentPage === "dashboard",
     },
 
-    // ── 2. Members Management ────────────────────────────────────
-    {
-      id: "members-management-group",
-      label: "Members Management",
-      icon: UserCheck,
-      subItems: [
-        {
-          id: "members",
-          label: "Members",
-          onClick: () => onNavigate("members"),
-          active: currentPage === "members",
-        },
-        {
-          id: "pending-approvals",
-          label: "Pending Approvals",
-          onClick: () => onNavigate("pending-approvals"),
-          active: currentPage === "pending-approvals",
-        },
-        {
-          id: "pending-guardian-approvals",
-          label: "Pending Guardian Approvals",
-          onClick: () => onNavigate("pending-guardian-approvals"),
-          active: currentPage === "pending-guardian-approvals",
-        },
-      ],
-    },
-
-    // ── 3. Events Management ─────────────────────────────────────
-    {
-      id: "events-management-group",
-      label: "Events Management",
-      icon: Calendar,
-      subItems: [
-        {
-          id: "event-management",
-          label: "Events",
-          onClick: () => onNavigate("event-management"),
-          active: currentPage === "event-management",
-        },
-      ],
-    },
-
-    // ── 4. Announcements ─────────────────────────────────────────
-    {
-      id: "announcements",
-      label: "Announcements",
-      icon: Megaphone,
-      onClick: () => onNavigate("announcements"),
-      active: currentPage === "announcements",
-    },
-
-    // ── 5. Attendance ────────────────────────────────────────────
-    {
-      id: "attendance-group",
-      label: "Attendance",
-      icon: ClipboardCheck,
-      subItems: [
-        {
-          id: "sessions",
-          label: "Sessions",
-          onClick: () => onNavigate("sessions"),
-          active: currentPage === "sessions",
-        },
-        {
-          id: "attendance-log",
-          label: "Attendance Log",
-          onClick: () => onNavigate("attendance-log"),
-          active: currentPage === "attendance-log",
-        },
-      ],
-    },
-
-    // ── 6. Reports ───────────────────────────────────────────────
-    {
-      id: "reports-group",
-      label: "Reports",
-      icon: BarChart3,
-      subItems: [
-        {
-          id: "report-members",
-          label: "Members Report",
-          onClick: () => onNavigate("report-members"),
-          active: currentPage === "report-members",
-        },
-        {
-          id: "report-events",
-          label: "Events Report",
-          onClick: () => onNavigate("report-events"),
-          active: currentPage === "report-events",
-        },
-        {
-          id: "report-donations",
-          label: "Donations / Payment Report",
-          onClick: () => onNavigate("report-donations"),
-          active: currentPage === "report-donations",
-        },
-        {
-          id: "report-attendance",
-          label: "Attendance Report",
-          onClick: () => onNavigate("report-attendance"),
-          active: currentPage === "report-attendance",
-        },
-        {
-          id: "report-refunds",
-          label: "Refund Report",
-          onClick: () => onNavigate("report-refunds"),
-          active: currentPage === "report-refunds",
-        },
-      ],
-    },
-
-    // ── 7. Masters ───────────────────────────────────────────────
+    // ── 2. Masters ───────────────────────────────────────────────
     {
       id: "masters-group",
       label: "Masters",
@@ -188,6 +77,117 @@ export const getNavigationData = (
           label: "Role Types (Departments)",
           onClick: () => onNavigate("role-types"),
           active: currentPage === "role-types",
+        },
+      ],
+    },
+
+    // ── 3. Members Management ────────────────────────────────────
+    {
+      id: "members-management-group",
+      label: "Members Management",
+      icon: UserCheck,
+      subItems: [
+        {
+          id: "members",
+          label: "Members",
+          onClick: () => onNavigate("members"),
+          active: currentPage === "members",
+        },
+        {
+          id: "pending-approvals",
+          label: "Pending Approvals",
+          onClick: () => onNavigate("pending-approvals"),
+          active: currentPage === "pending-approvals",
+        },
+        {
+          id: "pending-guardian-approvals",
+          label: "Pending Guardian Approvals",
+          onClick: () => onNavigate("pending-guardian-approvals"),
+          active: currentPage === "pending-guardian-approvals",
+        },
+      ],
+    },
+
+    // ── 4. Events Management ─────────────────────────────────────
+    {
+      id: "events-management-group",
+      label: "Events Management",
+      icon: Calendar,
+      subItems: [
+        {
+          id: "event-management",
+          label: "Events",
+          onClick: () => onNavigate("event-management"),
+          active: currentPage === "event-management",
+        },
+      ],
+    },
+
+    // ── 5. Announcements ─────────────────────────────────────────
+    {
+      id: "announcements",
+      label: "Announcements",
+      icon: Megaphone,
+      onClick: () => onNavigate("announcements"),
+      active: currentPage === "announcements",
+    },
+
+    // ── 6. Attendance ────────────────────────────────────────────
+    {
+      id: "attendance-group",
+      label: "Attendance",
+      icon: ClipboardCheck,
+      subItems: [
+        {
+          id: "sessions",
+          label: "Sessions",
+          onClick: () => onNavigate("sessions"),
+          active: currentPage === "sessions",
+        },
+        {
+          id: "attendance-log",
+          label: "Attendance Log",
+          onClick: () => onNavigate("attendance-log"),
+          active: currentPage === "attendance-log",
+        },
+      ],
+    },
+
+    // ── 7. Reports ───────────────────────────────────────────────
+    {
+      id: "reports-group",
+      label: "Reports",
+      icon: BarChart3,
+      subItems: [
+        {
+          id: "report-members",
+          label: "Members Report",
+          onClick: () => onNavigate("report-members"),
+          active: currentPage === "report-members",
+        },
+        {
+          id: "report-events",
+          label: "Events Report",
+          onClick: () => onNavigate("report-events"),
+          active: currentPage === "report-events",
+        },
+        {
+          id: "report-donations",
+          label: "Donations / Payment Report",
+          onClick: () => onNavigate("report-donations"),
+          active: currentPage === "report-donations",
+        },
+        {
+          id: "report-attendance",
+          label: "Attendance Report",
+          onClick: () => onNavigate("report-attendance"),
+          active: currentPage === "report-attendance",
+        },
+        {
+          id: "report-refunds",
+          label: "Refund Report",
+          onClick: () => onNavigate("report-refunds"),
+          active: currentPage === "report-refunds",
         },
       ],
     },
