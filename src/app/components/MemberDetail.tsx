@@ -26,10 +26,10 @@ import {
   Member,
   getAge,
   getAgeCategory,
-  AGE_CATEGORY_LABELS,
-  MEMBER_TYPE_LABELS,
   MemberStatus,
-  MemberType,
+  AgeGroup,
+  AGE_GROUP_LABELS,
+  getAgeGroup,
   ComplianceStatus,
   ConsentStatus,
 } from '../../mockAPI/membersData';
@@ -44,10 +44,13 @@ const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: st
   rejected:                  { label: 'Rejected',                 dot: 'bg-[#BC0F1C]', text: 'text-[#9a0c17]', bg: 'bg-[#fff0f0]', border: 'border-[#ffaaab]' },
 };
 
-const MEMBER_TYPE_CHIP: Record<MemberType, string> = {
-  adult: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
-  teen:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
-  child: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
+  bal: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+  shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
+  kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
+  tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
+  yuva: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
 function StatusBadge({ status }: { status: MemberStatus }) {
@@ -60,10 +63,11 @@ function StatusBadge({ status }: { status: MemberStatus }) {
   );
 }
 
-function MemberTypeBadge({ type }: { type: MemberType }) {
+function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
+  const group = getAgeGroup(dateOfBirth);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${MEMBER_TYPE_CHIP[type]}`}>
-      {MEMBER_TYPE_LABELS[type]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${AGE_GROUP_CHIP[group]}`}>
+      {AGE_GROUP_LABELS[group]}
     </span>
   );
 }
@@ -137,6 +141,34 @@ function StatMini({ label, value, icon: Icon }: { label: string; value: number; 
   );
 }
 
+function valueOrDash(value?: string | string[] | boolean) {
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return value && value.trim() ? value : '—';
+}
+
+function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+        {title}
+      </h4>
+      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      <div className="text-sm text-neutral-900 dark:text-white font-medium">{children}</div>
+    </div>
+  );
+}
+
 // ── Props ─────────────────────────────────────────────────────
 
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
@@ -163,6 +195,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   const age = getAge(member.dateOfBirth);
   const ageCategory = getAgeCategory(member.dateOfBirth);
   const isMinor = ageCategory === 'child' || ageCategory === 'teen';
+  const ageGroup = getAgeGroup(member.dateOfBirth);
+  const showGuardianApprovalInfo = ageGroup === 'kishor';
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -219,9 +253,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </span>
               </div>
 
-              {/* Row 2 — Member Type badge · Status badge */}
+              {/* Row 2 — Age group badge · Status badge */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <MemberTypeBadge type={member.memberType} />
+                <AgeGroupBadge dateOfBirth={member.dateOfBirth} />
                 <StatusBadge status={member.status} />
               </div>
 
@@ -364,102 +398,71 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               {activeTab === 'profile' && (
                 <div className="space-y-6">
 
-                  {/* Personal info */}
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      Personal Information
-                    </h4>
-                    <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Full Name</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.name}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Member Type</label>
-                        <MemberTypeBadge type={member.memberType} />
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Date of Birth</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">
-                          {formatDate(member.dateOfBirth)}
-                          <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Gender</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium capitalize">{member.gender}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Email Address</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.email}</p>
-                      </div>
-                      {member.phone && (
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Phone</label>
-                          <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.phone}</p>
-                        </div>
-                      )}
-                      {isMinor && (
-                        <>
-                          {member.guardianName && (
-                            <div>
-                              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Guardian Name</label>
-                              <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.guardianName}</p>
-                            </div>
-                          )}
-                          {member.guardianEmail && (
-                            <div>
-                              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Guardian Email</label>
-                              <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.guardianEmail}</p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <InfoSection title="Personal Information">
+                    <InfoItem label="First Name">{valueOrDash(member.firstName)}</InfoItem>
+                    <InfoItem label="Middle Name">{valueOrDash(member.middleName)}</InfoItem>
+                    <InfoItem label="Surname">{valueOrDash(member.surname)}</InfoItem>
+                    <InfoItem label="Full Name">{member.name}</InfoItem>
+                    <InfoItem label="Gender"><span className="capitalize">{member.gender}</span></InfoItem>
+                    <InfoItem label="Date of Birth">
+                      {formatDate(member.dateOfBirth)}
+                      <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
+                    </InfoItem>
+                    <InfoItem label="Age Groups (years old)"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
+                  </InfoSection>
 
-                  {/* Organisational info */}
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      Organisational Details
-                    </h4>
-                    <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Job Title (HSS Role)</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.jobTitle}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Organisational Role</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.orgRole}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Country / Organisation</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.country}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Region</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.region}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Town</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.town}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Activity Centre</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{member.activityCentre}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Member ID</label>
-                        <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">
-                          {member.id}
-                        </code>
-                      </div>
-                      <div>
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Registration Date</label>
-                        <p className="text-sm text-neutral-900 dark:text-white font-medium">{formatDateTime(member.registrationDate)}</p>
-                      </div>
-                    </div>
-                  </div>
+                  <InfoSection title="Contact Information">
+                    <InfoItem label="Primary Contact Number">{valueOrDash(member.phone)}</InfoItem>
+                    <InfoItem label="Secondary Contact Number">{valueOrDash(member.secondaryPhone)}</InfoItem>
+                    <InfoItem label="Primary Email Address">{member.email}</InfoItem>
+                    <InfoItem label="Secondary Email Address">{valueOrDash(member.secondaryEmail)}</InfoItem>
+                    <InfoItem label="Building Name">{valueOrDash(member.buildingName)}</InfoItem>
+                    <InfoItem label="Address Line">{valueOrDash(member.addressLine1)}</InfoItem>
+                    <InfoItem label="Address Line 2">{valueOrDash(member.addressLine2)}</InfoItem>
+                    <InfoItem label="Town / City">{valueOrDash(member.contactTownCity)}</InfoItem>
+                    <InfoItem label="Post Code">{valueOrDash(member.postCode)}</InfoItem>
+                  </InfoSection>
+
+                  <InfoSection title="Emergency Contact">
+                    <InfoItem label="Contact Name">{valueOrDash(member.emergencyContactName)}</InfoItem>
+                    <InfoItem label="Contact Phone Number">{valueOrDash(member.emergencyContactPhone)}</InfoItem>
+                    <InfoItem label="Contact Email">{valueOrDash(member.emergencyContactEmail)}</InfoItem>
+                    <InfoItem label="Contact Relationship">{valueOrDash(member.emergencyContactRelationship)}</InfoItem>
+                  </InfoSection>
+
+                  {showGuardianApprovalInfo && (
+                    <InfoSection title="Parent / Guardian Approval Information">
+                      <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
+                      <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
+                      <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
+                      <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
+                    </InfoSection>
+                  )}
+
+                  <InfoSection title="Other Information">
+                    <InfoItem label="Medical Information Declared?">{valueOrDash(member.medicalInfoDeclared)}</InfoItem>
+                    <InfoItem label="Medical Information Details">{valueOrDash(member.medicalInfoDetails)}</InfoItem>
+                    <InfoItem label="First Aider for Shakha / HSS (UK)?">{valueOrDash(member.isFirstAider)}</InfoItem>
+                    <InfoItem label="Special Dietary Requirements">{valueOrDash(member.dietaryRequirements)}</InfoItem>
+                    <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
+                    <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
+                    <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
+                  </InfoSection>
+
+                  <InfoSection title="Organisational Details">
+                    <InfoItem label="Job Title (HSS Role)">{member.jobTitle}</InfoItem>
+                    <InfoItem label="Organisational Role">{member.orgRole}</InfoItem>
+                    <InfoItem label="Country / Organisation">{member.country}</InfoItem>
+                    <InfoItem label="Vibhag (Region)">{member.region}</InfoItem>
+                    <InfoItem label="Nagar (Town)">{member.town}</InfoItem>
+                    <InfoItem label="Shakha (Branch)">{member.activityCentre}</InfoItem>
+                    <InfoItem label="Member ID">
+                      <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">
+                        {member.id}
+                      </code>
+                    </InfoItem>
+                    <InfoItem label="Registration Date">{formatDateTime(member.registrationDate)}</InfoItem>
+                  </InfoSection>
                 </div>
               )}
 
@@ -574,6 +577,28 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
                   <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
                     Changing the member status will immediately affect their access to HSS events, Shakha sessions, and the member portal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Responsibility Assignment */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
+              <div className="px-6 pb-5 pt-4 space-y-4">
+                <div>
+                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+                    Responsibility Type
+                  </span>
+                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                    {valueOrDash(member.responsibilityType)}
+                  </p>
+                </div>
+                <div>
+                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+                    Level
+                  </span>
+                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                    {valueOrDash(member.responsibilityLevel)}
                   </p>
                 </div>
               </div>

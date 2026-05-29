@@ -390,7 +390,7 @@ export function Sidebar({
                 <button
                   onClick={() => {
                     setShowProfileDrawer(false);
-                    // Handle profile click
+                    onNavigate?.("my-profile");
                   }}
                   className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                 >
@@ -406,26 +406,6 @@ export function Sidebar({
                 >
                   <Key className="w-4 h-4" />
                   <span>Change Password</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowProfileDrawer(false);
-                    // Handle settings click
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Settings</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowProfileDrawer(false);
-                    // Handle help click
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Help & Support</span>
                 </button>
               </div>
 
@@ -580,13 +560,10 @@ export function Sidebar({
                 <div className="text-xs text-neutral-500 dark:text-neutral-400">john.doe@company.com</div>
               </div>
               <button 
-                onClick={() => { setHoveredFlyout(null); setShowProfileDrawer(true); }}
+                onClick={() => { setHoveredFlyout(null); onNavigate?.("my-profile"); }}
                 className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900"
               >
                 My Profile
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900">
-                Settings
               </button>
               <button 
                 onClick={() => { setHoveredFlyout(null); if(onLogout) onLogout(); }}

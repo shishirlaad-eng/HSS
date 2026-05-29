@@ -83,7 +83,7 @@ export const mockAnnouncements: Announcement[] = [
     scope: 'national',
     filterAgeCategories: ['adult'],
     filterGenders: [],
-    filterJobTitles: ['Karyavah', 'Shikshak', 'Mukhya Shikshak', 'Ghatna Pramukh'],
+    filterJobTitles: ['Karyawaha', 'Shikshak', 'Mukhya Shikshak', 'Ghatnayak'],
     push:  { enabled: true,  schedule: 'instant' },
     email: { enabled: true,  schedule: 'instant' },
     createdAt: '2026-05-15T10:30:00Z',

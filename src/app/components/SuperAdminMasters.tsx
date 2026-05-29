@@ -17,6 +17,7 @@ import {
   FormInput, FormSelect, StatusSlider
 } from './hb/common';
 import { toast } from 'sonner';
+import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 
 type ViewMode = 'grid' | 'list' | 'table';
 export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types';
@@ -93,15 +94,12 @@ const initialCentres: MasterItem[] = [
   { id: 'CTR-016', name: 'Dublin Shakha',              townName: 'Dublin',     regionName: 'Ireland South', countryName: 'HSS Ireland', status: 'active', lastUpdated: '2024-02-10' },
 ];
 
-const initialRoleTypes: MasterItem[] = [
-  { id: 'ROL-001', name: 'Sanchalak',           status: 'active',   lastUpdated: '2024-01-10' },
-  { id: 'ROL-002', name: 'Karyavah',            status: 'active',   lastUpdated: '2024-01-10' },
-  { id: 'ROL-003', name: 'Gat Shikshak',        status: 'active',   lastUpdated: '2024-01-10' },
-  { id: 'ROL-004', name: 'Sahayak Gat Shikshak',status: 'active',   lastUpdated: '2024-01-11' },
-  { id: 'ROL-005', name: 'Mukhya Shikshak',     status: 'active',   lastUpdated: '2024-01-12' },
-  { id: 'ROL-006', name: 'Pracharak',           status: 'inactive', lastUpdated: '2024-01-15' },
-  { id: 'ROL-007', name: 'Vyavastha Pramukh',   status: 'active',   lastUpdated: '2024-02-01' },
-];
+const initialRoleTypes: MasterItem[] = ROLE_TYPE_OPTIONS.map((name, index) => ({
+  id: `ROL-${String(index + 1).padStart(3, '0')}`,
+  name,
+  status: 'active' as const,
+  lastUpdated: '2024-02-15',
+}));
 
 // ─── Sub-section Tab Config ───────────────────────────────────────────────────
 
@@ -228,11 +226,13 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
     }
   }, [masterType]);
 
+  const isStandaloneMaster = masterType === 'role-types';
+
   // ─── Column config ─────────────────────────────────────────────────────────
   const masterColumns = useMemo<ColumnConfig[]>(() => {
     const cols: ColumnConfig[] = [{ key: 'name', label: config.nameLabel }];
     if (masterType === 'country')    cols.push({ key: 'code', label: 'Country Code' });
-    if (masterType !== 'country' && masterType !== 'role-types')
+    if (masterType !== 'country' && !isStandaloneMaster)
                                      cols.push({ key: 'countryName', label: 'Country' });
     if (masterType === 'town' || masterType === 'centre')
                                      cols.push({ key: 'regionName', label: 'Region' });
@@ -240,7 +240,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
     cols.push({ key: 'status', label: 'Status' });
     cols.push({ key: 'lastUpdated', label: 'Last Updated' });
     return cols;
-  }, [masterType, config]);
+  }, [masterType, config, isStandaloneMaster]);
 
   // ─── Raw data for current section ─────────────────────────────────────────
   const currentDataArray = useMemo(() => {
@@ -343,7 +343,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
       id: newId,
       name: '',
       code: masterType === 'country' ? '' : undefined,
-      countryName: masterType !== 'country' && masterType !== 'role-types' ? '' : undefined,
+      countryName: masterType !== 'country' && !isStandaloneMaster ? '' : undefined,
       regionName:  (masterType === 'town' || masterType === 'centre') ? '' : undefined,
       townName:    masterType === 'centre' ? '' : undefined,
       status: 'active',
@@ -357,7 +357,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
       toast.error(`${config.nameLabel} is required.`);
       return;
     }
-    if (masterType !== 'country' && masterType !== 'role-types' && !activeItem.countryName) {
+    if (masterType !== 'country' && !isStandaloneMaster && !activeItem.countryName) {
       toast.error('Country is required.');
       return;
     }
@@ -714,7 +714,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
                         <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.townName}</span>
                       </div>
                     )}
-                    {item.childCount !== undefined && masterType !== 'centre' && masterType !== 'role-types' && (
+                    {item.childCount !== undefined && masterType !== 'centre' && !isStandaloneMaster && (
                       <div className="flex justify-between">
                         <span className="text-neutral-400">
                           {masterType === 'country' ? 'Regions:'
@@ -820,7 +820,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
                         Country Code {renderSortIndicator('code')}
                       </th>
                     )}
-                    {masterType !== 'country' && masterType !== 'role-types' && visibleColumns.countryName && (
+                    {masterType !== 'country' && !isStandaloneMaster && visibleColumns.countryName && (
                       <th onClick={() => handleSort('countryName')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800">
                         Country {renderSortIndicator('countryName')}
                       </th>
@@ -871,7 +871,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
                       {masterType === 'country' && visibleColumns.code && (
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.code}</td>
                       )}
-                      {masterType !== 'country' && masterType !== 'role-types' && visibleColumns.countryName && (
+                      {masterType !== 'country' && !isStandaloneMaster && visibleColumns.countryName && (
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.countryName}</td>
                       )}
                       {(masterType === 'town' || masterType === 'centre') && visibleColumns.regionName && (
@@ -942,7 +942,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
             <div className="space-y-4 p-1">
 
               {/* Country — Region / Town / Centre need a Country dropdown */}
-              {masterType !== 'country' && masterType !== 'role-types' && (
+              {masterType !== 'country' && !isStandaloneMaster && (
                 <FormSection>
                   <FormField>
                     <FormLabel required={modalMode !== 'view'}>Country</FormLabel>

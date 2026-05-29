@@ -8,6 +8,84 @@ export type ConsentStatus = 'n/a' | 'pending' | 'granted';
 export type Gender = 'male' | 'female';
 export type AgeCategory = 'child' | 'teen' | 'adult';
 export type MemberType = 'adult' | 'teen' | 'child';
+export type AgeGroup = 'bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha';
+export type DietaryRequirement = 'FODMAP' | 'Gluten-free' | 'No Onions Or Garlic' | 'Vegan';
+export type ResponsibilityType = 'Pramukh' | 'Saha' | 'Toli';
+export type ResponsibilityLevel = 'Kendriya / National' | 'Vibhaag / Region' | 'Nagar / Town' | 'Shakha / Activity center';
+
+export const DIETARY_REQUIREMENTS: DietaryRequirement[] = [
+  'FODMAP',
+  'Gluten-free',
+  'No Onions Or Garlic',
+  'Vegan',
+];
+
+export const RESPONSIBILITY_TYPE_OPTIONS: ResponsibilityType[] = [
+  'Pramukh',
+  'Saha',
+  'Toli',
+];
+
+export const RESPONSIBILITY_LEVEL_OPTIONS: ResponsibilityLevel[] = [
+  'Kendriya / National',
+  'Vibhaag / Region',
+  'Nagar / Town',
+  'Shakha / Activity center',
+];
+
+export const ROLE_TYPE_OPTIONS = [
+  'Ghatnayak',
+  'Sankhya',
+  'Shikshak',
+  'Mukhya Shikshak',
+  'Karyawaha',
+  'Shareerik',
+  'Bauddhik',
+  'Sewa',
+  'Sampark',
+  'Nidhi',
+  'Vyavestha',
+  'Prachaar',
+  'Bal(ika)',
+  'Shishu',
+  'Kishor(i)',
+  'Tarun(i)',
+  'Yuva(ti)',
+  'Jyestha(a)',
+  'Karyalay',
+  'SSV',
+  'Vistaar',
+  'Sanghchalak',
+  'Hindu Sahitya Kendra',
+] as const;
+
+export const SPOKEN_LANGUAGE_OPTIONS = [
+  'Assamese',
+  'Bengali',
+  'English',
+  'Gujarati',
+  'Hindi',
+  'Kannada',
+  'Konkani',
+  'Malayalam',
+  'Marathi',
+  'Nepali',
+  'Odia',
+  'Punjabi',
+  'Sanskrit',
+  'Tamil',
+  'Telugu',
+  'Other',
+] as const;
+
+export const AGE_GROUP_LABELS: Record<AgeGroup, string> = {
+  bal: 'Bal (0-5)',
+  shishu: 'Shishu (6-11)',
+  kishor: 'Kishor (12-16)',
+  tarun: 'Tarun (17-30)',
+  yuva: 'Yuva (30-60)',
+  jyestha: 'Jyestha (60+)',
+};
 
 export interface MemberCompliance {
   dbs: ComplianceStatus;
@@ -19,13 +97,29 @@ export interface Member {
   id: string;
   memberType: MemberType;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  surname?: string;
   email: string;
+  secondaryEmail?: string;
   guardianEmail?: string;
   guardianName?: string;
+  guardianPhone?: string;
+  guardianRelationship?: string;
   phone?: string;
+  secondaryPhone?: string;
+  buildingName?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  contactTownCity?: string;
+  postCode?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactEmail?: string;
+  emergencyContactRelationship?: string;
   dateOfBirth: string;        // ISO date string
   gender: Gender;
-  jobTitle: string;           // Role within HSS (Sevak, Karyavah, Shikshak, etc.)
+  jobTitle: string;           // Role within HSS (Ghatnayak, Shikshak, Karyawaha, etc.)
   orgRole: string;            // Organisational role label
   country: string;
   region: string;
@@ -36,6 +130,15 @@ export interface Member {
   compliance: MemberCompliance;
   dbsRef?: string;
   firstAidRef?: string;
+  medicalInfoDeclared?: boolean;
+  medicalInfoDetails?: string;
+  isFirstAider?: boolean;
+  dietaryRequirements?: DietaryRequirement[];
+  occupation?: string;
+  spokenLanguages?: string[];
+  originatingStateIndia?: string;
+  responsibilityType?: ResponsibilityType;
+  responsibilityLevel?: ResponsibilityLevel;
   eventsAttended: number;
   shakhaSessionsAttended: number;
 }
@@ -52,6 +155,27 @@ export function getAge(dateOfBirth: string): number {
 }
 
 export function getAgeCategory(dateOfBirth: string): AgeCategory {
+  const age = getAge(dateOfBirth);
+  if (age < 13) return 'child';
+  if (age < 18) return 'teen';
+  return 'adult';
+}
+
+export function getAgeGroup(dateOfBirth: string): AgeGroup {
+  const age = getAge(dateOfBirth);
+  if (age <= 5) return 'bal';
+  if (age <= 11) return 'shishu';
+  if (age <= 16) return 'kishor';
+  if (age <= 30) return 'tarun';
+  if (age <= 60) return 'yuva';
+  return 'jyestha';
+}
+
+export function getAgeGroupLabel(dateOfBirth: string): string {
+  return AGE_GROUP_LABELS[getAgeGroup(dateOfBirth)];
+}
+
+export function getMemberTypeFromAge(dateOfBirth: string): MemberType {
   const age = getAge(dateOfBirth);
   if (age < 13) return 'child';
   if (age < 18) return 'teen';
@@ -145,9 +269,57 @@ export const MASTERS_CASCADE = {
   } as Record<string, string[]>,
 };
 
+function splitMemberName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return {
+    firstName: parts[0] ?? '',
+    middleName: parts.length > 2 ? parts.slice(1, -1).join(' ') : '',
+    surname: parts.length > 1 ? parts[parts.length - 1] : '',
+  };
+}
+
+function withRegistrationFields(member: Member): Member {
+  const nameParts = splitMemberName(member.name);
+  const isMinor = member.memberType === 'teen' || member.memberType === 'child';
+  const guardianName = member.guardianName ?? (isMinor ? `Parent of ${member.name}` : undefined);
+  const guardianEmail = member.guardianEmail ?? (isMinor ? `guardian.${member.email}` : undefined);
+  const guardianPhone = member.guardianPhone ?? (isMinor ? member.phone ?? '+44 7700 000000' : undefined);
+
+  return {
+    ...member,
+    firstName: member.firstName ?? nameParts.firstName,
+    middleName: member.middleName ?? nameParts.middleName,
+    surname: member.surname ?? nameParts.surname,
+    secondaryEmail: member.secondaryEmail ?? '',
+    secondaryPhone: member.secondaryPhone ?? '',
+    buildingName: member.buildingName ?? '',
+    addressLine1: member.addressLine1 ?? `${member.activityCentre.replace(' Activity Centre', '')} Community Hall`,
+    addressLine2: member.addressLine2 ?? '',
+    contactTownCity: member.contactTownCity ?? member.town,
+    postCode: member.postCode ?? 'AB1 2CD',
+    emergencyContactName: member.emergencyContactName ?? guardianName ?? 'Emergency Contact',
+    emergencyContactPhone: member.emergencyContactPhone ?? guardianPhone ?? member.phone ?? '+44 7700 000000',
+    emergencyContactEmail: member.emergencyContactEmail ?? guardianEmail ?? member.email,
+    emergencyContactRelationship: member.emergencyContactRelationship ?? (isMinor ? 'Parent / Guardian' : 'Family'),
+    guardianName,
+    guardianEmail,
+    guardianPhone,
+    guardianRelationship: member.guardianRelationship ?? (isMinor ? 'Parent / Guardian' : undefined),
+    medicalInfoDeclared: member.medicalInfoDeclared ?? false,
+    medicalInfoDetails: member.medicalInfoDetails ?? '',
+    isFirstAider: member.isFirstAider ?? member.compliance.firstAid === 'completed',
+    dietaryRequirements: member.dietaryRequirements ?? [],
+    occupation: member.occupation ?? (member.memberType === 'adult' ? 'Professional' : 'Student'),
+    spokenLanguages: member.spokenLanguages ?? ['English'],
+    originatingStateIndia: member.originatingStateIndia ?? '',
+    responsibilityType: member.responsibilityType ?? 'Pramukh',
+    responsibilityLevel: member.responsibilityLevel ?? 'Shakha / Activity center',
+  };
+}
+
 // ── Mock Data — 10 members with full variety ─────────────────
 
-export const mockMembers: Member[] = [
+const rawMockMembers: Member[] = [
   {
     id: 'MBR-001',
     memberType: 'adult',
@@ -156,7 +328,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7711 234567',
     dateOfBirth: '1990-03-15',
     gender: 'male',
-    jobTitle: 'Karyavah',
+    jobTitle: 'Ghatnayak',
     orgRole: 'Volunteer',
     country: 'HSS UK',
     region: 'London & South East',
@@ -178,7 +350,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7722 345678',
     dateOfBirth: '1995-07-22',
     gender: 'female',
-    jobTitle: 'Sevika',
+    jobTitle: 'Sankhya',
     orgRole: 'Member',
     country: 'HSS UK',
     region: 'London & South East',
@@ -199,7 +371,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7733 456789',
     dateOfBirth: '1985-11-08',
     gender: 'male',
-    jobTitle: 'Mukhya Shikshak',
+    jobTitle: 'Shikshak',
     orgRole: 'Shakha Teacher',
     country: 'HSS UK',
     region: 'Midlands',
@@ -223,7 +395,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7744 567890',
     dateOfBirth: '2008-05-14',
     gender: 'female',
-    jobTitle: 'Shiksha Arthi',
+    jobTitle: 'Mukhya Shikshak',
     orgRole: 'Teen Member',
     country: 'HSS UK',
     region: 'Midlands',
@@ -243,7 +415,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7755 678901',
     dateOfBirth: '1978-09-30',
     gender: 'male',
-    jobTitle: 'Ghatna Pramukh',
+    jobTitle: 'Karyawaha',
     orgRole: 'Activity Centre Admin',
     country: 'HSS UK',
     region: 'North West',
@@ -265,7 +437,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7766 789012',
     dateOfBirth: '2000-12-03',
     gender: 'female',
-    jobTitle: 'Sevika',
+    jobTitle: 'Shareerik',
     orgRole: 'Member',
     country: 'HSS UK',
     region: 'Yorkshire & Humber',
@@ -286,7 +458,7 @@ export const mockMembers: Member[] = [
     guardianName: 'Meena Joshi',
     dateOfBirth: '2010-02-19',
     gender: 'male',
-    jobTitle: 'Shiksha Arthi',
+    jobTitle: 'Bauddhik',
     orgRole: 'Teen Member',
     country: 'HSS UK',
     region: 'North West',
@@ -306,7 +478,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7788 901234',
     dateOfBirth: '1988-06-27',
     gender: 'female',
-    jobTitle: 'Shikshak',
+    jobTitle: 'Sewa',
     orgRole: 'Shakha Teacher',
     country: 'HSS UK',
     region: 'London & South East',
@@ -327,7 +499,7 @@ export const mockMembers: Member[] = [
     phone: '+44 7799 012345',
     dateOfBirth: '1993-04-11',
     gender: 'male',
-    jobTitle: 'Sevak',
+    jobTitle: 'Sampark',
     orgRole: 'Member',
     country: 'HSS UK',
     region: 'Midlands',
@@ -348,7 +520,7 @@ export const mockMembers: Member[] = [
     guardianName: 'Suresh Krishnan',
     dateOfBirth: '2014-08-25',
     gender: 'female',
-    jobTitle: 'Shiksha Arthi',
+    jobTitle: 'Nidhi',
     orgRole: 'Child Member',
     country: 'HSS UK',
     region: 'Yorkshire & Humber',
@@ -362,11 +534,13 @@ export const mockMembers: Member[] = [
   },
 ];
 
+export const mockMembers: Member[] = rawMockMembers.map(withRegistrationFields);
+
 // ── Filter Options (used by AdvancedSearchPanel) ──────────────
 
 export const MEMBER_FILTER_OPTIONS: Record<string, string[]> = {
   'Status':            ['Active', 'Pending Approval', 'Pending Parental Consent', 'Inactive', 'Rejected'],
-  'Member Type':       ['Adult', 'Teen', 'Child'],
+  'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
   'Gender':            ['Male', 'Female'],
   'Country':           MASTERS_CASCADE.countries,
   'Region':            Object.keys(MASTERS_CASCADE.towns),

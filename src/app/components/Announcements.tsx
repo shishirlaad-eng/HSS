@@ -59,7 +59,7 @@ import {
   AnnouncementScope,
   AnnouncementContent,
 } from '../../mockAPI/announcementsData';
-import { MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -73,10 +73,7 @@ const COOLDOWN_OPTIONS = [
   { value: 168,  label: '7 days'       },
 ];
 
-const JOB_TITLE_OPTIONS = [
-  'Karyavah', 'Mukhya Shikshak', 'Shikshak', 'Sevak', 'Sevika',
-  'Ghatna Pramukh', 'Shiksha Arthi',
-];
+const JOB_TITLE_OPTIONS = [...ROLE_TYPE_OPTIONS];
 
 // ── Style configs ─────────────────────────────────────────────
 

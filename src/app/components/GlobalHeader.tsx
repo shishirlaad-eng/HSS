@@ -1579,7 +1579,13 @@ export function GlobalHeader({
 
                 {/* Menu Items */}
                 <div className="p-1">
-                  <button className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onNavigate?.("my-profile");
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                  >
                     <User className="w-4 h-4" />
                     <span>My Profile</span>
                   </button>
@@ -1589,14 +1595,6 @@ export function GlobalHeader({
                   >
                     <Key className="w-4 h-4" />
                     <span>Change Password</span>
-                  </button>
-                  <button className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                  </button>
-                  <button className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Help & Support</span>
                   </button>
                 </div>
 

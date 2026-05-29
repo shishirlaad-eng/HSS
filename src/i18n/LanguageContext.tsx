@@ -20,19 +20,14 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: "en",
+  language: "en-GB",
   setLanguage: () => {},
-  t: translations.en,
+  t: translations["en-GB"],
   languages,
 });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("appLanguage") as Language) || "en";
-    }
-    return "en";
-  });
+  const [language, setLanguageState] = useState<Language>("en-GB");
 
   useEffect(() => {
     localStorage.setItem("appLanguage", language);

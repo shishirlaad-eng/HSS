@@ -1,4 +1,4 @@
-export type Language = "en" | "de" | "es";
+export type Language = "en-GB";
 
 export interface TranslationDict {
   settings: {
@@ -14,12 +14,14 @@ export interface TranslationDict {
   };
   nav: {
     dashboard: string;
+    siteMap: string;
     hbTemplates: string;
     uiKit: string;
     samplePage: string;
     userManagement: string;
     users: string;
     eventManagement: string;
+    events: string;
     organisationalMaster: string;
     country: string;
     state: string;
@@ -54,13 +56,11 @@ export interface TranslationDict {
 }
 
 export const languages: { id: Language; name: string; native: string; flag: string }[] = [
-  { id: "en", name: "English", native: "English", flag: "🇺🇸" },
-  { id: "de", name: "German", native: "Deutsch", flag: "🇩🇪" },
-  { id: "es", name: "Spanish", native: "Español", flag: "🇪🇸" },
+  { id: "en-GB", name: "UK English", native: "English (UK)", flag: "🇬🇧" },
 ];
 
 export const translations: Record<Language, TranslationDict> = {
-  en: {
+  "en-GB": {
     settings: {
       appearance: "Appearance",
       colorTheme: "Color Theme",
@@ -112,114 +112,6 @@ export const translations: Record<Language, TranslationDict> = {
       inactive: "Inactive",
       status: "Status",
       noResults: "No results found",
-    },
-  },
-  de: {
-    settings: {
-      appearance: "Erscheinungsbild",
-      colorTheme: "Farbthema",
-      mode: "Modus",
-      light: "Hell",
-      dark: "Dunkel",
-      menuLayout: "Menü-Layout",
-      vertical: "Vertikal",
-      horizontal: "Horizontal",
-      language: "Sprache",
-    },
-    nav: {
-      dashboard: "Dashboard",
-      siteMap: "Sitemap",
-      hbTemplates: "HB-Vorlagen",
-      uiKit: "UI-Kit",
-      samplePage: "Beispielseite",
-      userManagement: "Benutzerverwaltung",
-      users: "Benutzer",
-      eventManagement: "Veranstaltungsverwaltung",
-      events: "Veranstaltungen",
-      organisationalMaster: "Stammdaten",
-      country: "Land",
-      state: "Bundesland",
-      city: "Stadt",
-      configurations: "Konfigurationen",
-      staticPages: "Statische Seiten",
-      emailTemplates: "E-Mail-Vorlagen",
-      systemNotifications: "Systembenachrichtigungen",
-      systemSettings: "Systemeinstellungen",
-      roleManagement: "Rollen",
-      logs: "Protokolle",
-      loginLogs: "Login-Protokolle",
-      auditLogs: "Audit-Protokolle",
-      apiLogs: "API-Protokolle",
-      emailLogs: "E-Mail-Protokolle",
-    },
-    common: {
-      search: "Suchen",
-      refresh: "Aktualisieren",
-      export: "Exportieren",
-      actions: "Aktionen",
-      view: "Ansehen",
-      edit: "Bearbeiten",
-      delete: "Löschen",
-      save: "Speichern",
-      cancel: "Abbrechen",
-      active: "Aktiv",
-      inactive: "Inaktiv",
-      status: "Status",
-      noResults: "Keine Ergebnisse gefunden",
-    },
-  },
-  es: {
-    settings: {
-      appearance: "Apariencia",
-      colorTheme: "Tema de Color",
-      mode: "Modo",
-      light: "Claro",
-      dark: "Oscuro",
-      menuLayout: "Disposición del Menú",
-      vertical: "Vertical",
-      horizontal: "Horizontal",
-      language: "Idioma",
-    },
-    nav: {
-      dashboard: "Tablero",
-      siteMap: "Mapa del Sitio",
-      hbTemplates: "Plantillas HB",
-      uiKit: "Kit de UI",
-      samplePage: "Página de Ejemplo",
-      userManagement: "Gestión de Usuarios",
-      users: "Usuarios",
-      eventManagement: "Gestión de Eventos",
-      events: "Eventos",
-      organisationalMaster: "Módulos Maestros",
-      country: "País",
-      state: "Estado",
-      city: "Ciudad",
-      configurations: "Configuraciones",
-      staticPages: "Páginas Estáticas",
-      emailTemplates: "Plantillas de Correo",
-      systemNotifications: "Notificaciones del Sistema",
-      systemSettings: "Configuración del Sistema",
-      roleManagement: "Roles",
-      logs: "Registros",
-      loginLogs: "Registros de Inicio",
-      auditLogs: "Registros de Auditoría",
-      apiLogs: "Registros de API",
-      emailLogs: "Registros de Correo",
-    },
-    common: {
-      search: "Buscar",
-      refresh: "Actualizar",
-      export: "Exportar",
-      actions: "Acciones",
-      view: "Ver",
-      edit: "Editar",
-      delete: "Eliminar",
-      save: "Guardar",
-      cancel: "Cancelar",
-      active: "Activo",
-      inactive: "Inactivo",
-      status: "Estado",
-      noResults: "No se encontraron resultados",
     },
   },
 };

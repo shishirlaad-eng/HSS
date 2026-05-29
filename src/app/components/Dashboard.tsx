@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
-import { mockMembers, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { mockEvents } from '../../mockAPI/eventsData';
 
 // ── Mock Announcements ────────────────────────────────────────
@@ -143,11 +143,7 @@ const MEMBER_STATUS_CFG = {
   rejected:                   { label: 'Rejected',          dot: 'bg-red-500',     text: 'text-red-700 dark:text-red-400'       },
 };
 
-const MEMBER_TYPE_CFG = {
-  adult: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark:bg-[#1a2e14] dark:text-[#86efac] dark:border-[#166534]',
-  teen:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6] dark:bg-[#0c1e2a] dark:text-[#7dd3fc] dark:border-[#0369a1]',
-  child: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc] dark:bg-[#2d0d2f] dark:text-[#e879f9] dark:border-[#86198f]',
-};
+const AGE_GROUP_CHIP = 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark:bg-[#1a2e14] dark:text-[#86efac] dark:border-[#166534]';
 
 // ── Dashboard Component ───────────────────────────────────────
 
@@ -454,7 +450,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               ) : (
                 pendingList.map((member) => {
                   const sc = MEMBER_STATUS_CFG[member.status];
-                  const tc = MEMBER_TYPE_CFG[member.memberType];
                   return (
                     <div key={member.id} className="px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
                       <div className="flex items-center gap-3">
@@ -470,8 +465,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                             {sc.label}
                           </div>
                         </div>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${tc} capitalize flex-shrink-0`}>
-                          {member.memberType}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP} flex-shrink-0`}>
+                          {getAgeGroupLabel(member.dateOfBirth)}
                         </span>
                       </div>
                       <p className="ml-11 text-xs text-neutral-400 dark:text-neutral-500 mt-1">
@@ -561,7 +556,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {recentRegistrations.map((member) => {
                 const sc = MEMBER_STATUS_CFG[member.status];
-                const tc = MEMBER_TYPE_CFG[member.memberType];
                 return (
                   <div key={member.id} className="px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
                     <div className="flex items-center gap-3">
@@ -577,8 +571,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${tc} capitalize`}>
-                          {member.memberType}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP}`}>
+                          {getAgeGroupLabel(member.dateOfBirth)}
                         </span>
                         <span className={`inline-flex items-center gap-1 text-[10px] ${sc.text}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />

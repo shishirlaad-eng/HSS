@@ -46,16 +46,24 @@ import {
   FormLabel,
   FormInput,
   FormSelect,
+  FormTextarea,
 } from './hb/common';
 import {
   mockMembers,
   Member,
   MemberStatus,
   MemberType,
+  ROLE_TYPE_OPTIONS,
+  DietaryRequirement,
+  DIETARY_REQUIREMENTS,
+  SPOKEN_LANGUAGE_OPTIONS,
   getAge,
   getAgeCategory,
-  AGE_CATEGORY_LABELS,
-  MEMBER_TYPE_LABELS,
+  AgeGroup,
+  AGE_GROUP_LABELS,
+  getAgeGroup,
+  getAgeGroupLabel,
+  getMemberTypeFromAge,
   MEMBER_FILTER_OPTIONS,
   MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
@@ -82,10 +90,13 @@ const COMPLIANCE_BADGE: Record<string, { text: string; dot: string; textCls: str
   pending:   { text: 'Pending',   dot: 'bg-[#F9B03D]', textCls: 'text-[#d97706]' },
 };
 
-const MEMBER_TYPE_CHIP: Record<MemberType, string> = {
-  adult: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
-  teen:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
-  child: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
+  bal: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+  shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
+  kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
+  tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
+  yuva: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
 function StatusBadge({ status }: { status: MemberStatus }) {
@@ -98,10 +109,19 @@ function StatusBadge({ status }: { status: MemberStatus }) {
   );
 }
 
-function MemberTypeBadge({ type }: { type: MemberType }) {
+function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
+  const group = getAgeGroup(dateOfBirth);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${MEMBER_TYPE_CHIP[type]}`}>
-      {MEMBER_TYPE_LABELS[type]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${AGE_GROUP_CHIP[group]}`}>
+      {AGE_GROUP_LABELS[group]}
+    </span>
+  );
+}
+
+function RoleText({ role }: { role: string }) {
+  return (
+    <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+      {role}
     </span>
   );
 }
@@ -233,16 +253,38 @@ function DeleteConfirmModal({
 interface AddMemberForm {
   memberType: MemberType | '';
   firstName: string;
+  middleName: string;
   lastName: string;
   dateOfBirth: string;
   gender: 'male' | 'female' | '';
   email: string;
+  secondaryEmail: string;
   phone: string;
+  secondaryPhone: string;
+  buildingName: string;
+  addressLine1: string;
+  addressLine2: string;
+  contactTownCity: string;
+  postCode: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactEmail: string;
+  emergencyContactRelationship: string;
   country: string;
   region: string;
   town: string;
   activityCentre: string;
+  guardianName: string;
+  guardianPhone: string;
   guardianEmail: string;
+  guardianRelationship: string;
+  medicalInfoDeclared: boolean;
+  medicalInfoDetails: string;
+  isFirstAider: boolean;
+  dietaryRequirements: DietaryRequirement[];
+  occupation: string;
+  spokenLanguages: string[];
+  originatingStateIndia: string;
   dbsStatus: 'pending' | 'completed';
   firstAidStatus: 'pending' | 'completed';
   dbsRef: string;
@@ -251,12 +293,16 @@ interface AddMemberForm {
 
 const EMPTY_FORM: AddMemberForm = {
   memberType: '',
-  firstName: '', lastName: '',
+  firstName: '', middleName: '', lastName: '',
   dateOfBirth: '',
   gender: '',
-  email: '', phone: '',
+  email: '', secondaryEmail: '', phone: '', secondaryPhone: '',
+  buildingName: '', addressLine1: '', addressLine2: '', contactTownCity: '', postCode: '',
+  emergencyContactName: '', emergencyContactPhone: '', emergencyContactEmail: '', emergencyContactRelationship: '',
   country: '', region: '', town: '', activityCentre: '',
-  guardianEmail: '',
+  guardianName: '', guardianPhone: '', guardianEmail: '', guardianRelationship: '',
+  medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
+  dietaryRequirements: [], occupation: '', spokenLanguages: ['English'], originatingStateIndia: '',
   dbsStatus: 'pending', firstAidStatus: 'pending',
   dbsRef: '', firstAidRef: '',
 };
@@ -283,7 +329,7 @@ function AddMemberModal({
   const centreOptions = form.town    ? (MASTERS_CASCADE.centres[form.town]      ?? []) : [];
 
   const set = (key: keyof AddMemberForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const val = e.target.value;
       setForm(prev => {
         const next = { ...prev, [key]: val };
@@ -295,22 +341,62 @@ function AddMemberModal({
       setErrors(prev => ({ ...prev, [key]: undefined }));
     };
 
+  const setBoolean = (key: 'medicalInfoDeclared' | 'isFirstAider') =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm(prev => ({ ...prev, [key]: e.target.checked }));
+    };
+
+  const toggleDietaryRequirement = (value: DietaryRequirement) => {
+    setForm(prev => ({
+      ...prev,
+      dietaryRequirements: prev.dietaryRequirements.includes(value)
+        ? prev.dietaryRequirements.filter(item => item !== value)
+        : [...prev.dietaryRequirements, value],
+    }));
+  };
+
+  const toggleSpokenLanguage = (value: string) => {
+    setForm(prev => ({
+      ...prev,
+      spokenLanguages: prev.spokenLanguages.includes(value)
+        ? prev.spokenLanguages.filter(item => item !== value)
+        : [...prev.spokenLanguages, value],
+    }));
+  };
+
   const validate = (): boolean => {
     const e: Partial<Record<keyof AddMemberForm, string>> = {};
-    if (!form.memberType)     e.memberType = 'This field is required.';
     if (!form.firstName.trim()) e.firstName = 'This field is required.';
     if (!form.lastName.trim())  e.lastName  = 'This field is required.';
     if (!form.dateOfBirth)    e.dateOfBirth = 'This field is required.';
     if (!form.gender)         e.gender = 'This field is required.';
     if (!form.email.trim())   e.email = 'This field is required.';
     else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Enter a valid email address.';
+    if (form.secondaryEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.secondaryEmail)) e.secondaryEmail = 'Enter a valid email address.';
     if (!form.phone.trim())   e.phone = 'This field is required.';
+    if (!form.addressLine1.trim()) e.addressLine1 = 'This field is required.';
+    if (!form.contactTownCity.trim()) e.contactTownCity = 'This field is required.';
+    if (!form.postCode.trim()) e.postCode = 'This field is required.';
+    if (!form.emergencyContactName.trim()) e.emergencyContactName = 'This field is required.';
+    if (!form.emergencyContactPhone.trim()) e.emergencyContactPhone = 'This field is required.';
+    if (!form.emergencyContactEmail.trim()) e.emergencyContactEmail = 'This field is required.';
+    else if (!/^\S+@\S+\.\S+$/.test(form.emergencyContactEmail)) e.emergencyContactEmail = 'Enter a valid email address.';
+    if (!form.emergencyContactRelationship.trim()) e.emergencyContactRelationship = 'This field is required.';
     if (!form.country)        e.country = 'This field is required.';
     if (!form.region)         e.region  = 'This field is required.';
     if (!form.town)           e.town    = 'This field is required.';
     if (!form.activityCentre) e.activityCentre = 'This field is required.';
-    if (form.memberType === 'teen' && !form.guardianEmail.trim())
-      e.guardianEmail = 'Guardian email is required for Teen members.';
+    const derivedMemberType = form.dateOfBirth ? getMemberTypeFromAge(form.dateOfBirth) : '';
+    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianName.trim())
+      e.guardianName = 'Parent / guardian name is required.';
+    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianPhone.trim())
+      e.guardianPhone = 'Parent / guardian phone is required.';
+    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianEmail.trim())
+      e.guardianEmail = 'Parent / guardian email is required.';
+    else if (form.guardianEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.guardianEmail))
+      e.guardianEmail = 'Enter a valid email address.';
+    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianRelationship.trim())
+      e.guardianRelationship = 'Parent / guardian relationship is required.';
     if (existingMembers.some(m => m.email.toLowerCase() === form.email.toLowerCase()))
       e.email = 'A member with this email already exists.';
     setErrors(e);
@@ -322,30 +408,55 @@ function AddMemberModal({
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 800));
     const nextId = `MBR-${String(existingMembers.length + 1).padStart(3, '0')}`;
+    const derivedMemberType = getMemberTypeFromAge(form.dateOfBirth);
     const newMember: Member = {
       id: nextId,
-      memberType: form.memberType as MemberType,
-      name: `${form.firstName.trim()} ${form.lastName.trim()}`,
+      memberType: derivedMemberType,
+      firstName: form.firstName.trim(),
+      middleName: form.middleName.trim() || undefined,
+      surname: form.lastName.trim(),
+      name: [form.firstName, form.middleName, form.lastName].map(p => p.trim()).filter(Boolean).join(' '),
       email: form.email.trim(),
+      secondaryEmail: form.secondaryEmail.trim() || undefined,
       phone: form.phone.trim() || undefined,
+      secondaryPhone: form.secondaryPhone.trim() || undefined,
       guardianEmail: form.guardianEmail.trim() || undefined,
+      guardianName: form.guardianName.trim() || undefined,
+      guardianPhone: form.guardianPhone.trim() || undefined,
+      guardianRelationship: form.guardianRelationship.trim() || undefined,
+      buildingName: form.buildingName.trim() || undefined,
+      addressLine1: form.addressLine1.trim(),
+      addressLine2: form.addressLine2.trim() || undefined,
+      contactTownCity: form.contactTownCity.trim(),
+      postCode: form.postCode.trim(),
+      emergencyContactName: form.emergencyContactName.trim(),
+      emergencyContactPhone: form.emergencyContactPhone.trim(),
+      emergencyContactEmail: form.emergencyContactEmail.trim(),
+      emergencyContactRelationship: form.emergencyContactRelationship.trim(),
       dateOfBirth: form.dateOfBirth,
       gender: form.gender as 'male' | 'female',
-      jobTitle: 'Sevak',
-      orgRole: form.memberType === 'adult' ? 'Member' : form.memberType === 'teen' ? 'Teen Member' : 'Child Member',
+      jobTitle: ROLE_TYPE_OPTIONS[0],
+      orgRole: derivedMemberType === 'adult' ? 'Member' : derivedMemberType === 'teen' ? 'Teen Member' : 'Child Member',
       country: form.country,
       region: form.region,
       town: form.town,
       activityCentre: form.activityCentre,
-      status: form.memberType === 'teen' ? 'pending-parental-consent' : 'pending',
+      status: derivedMemberType === 'teen' || derivedMemberType === 'child' ? 'pending-parental-consent' : 'pending',
       registrationDate: new Date().toISOString(),
       compliance: {
         dbs: form.dbsStatus,
         firstAid: form.firstAidStatus,
-        parentalConsent: form.memberType === 'teen' ? 'pending' : form.memberType === 'child' ? 'pending' : 'n/a',
+        parentalConsent: derivedMemberType === 'teen' || derivedMemberType === 'child' ? 'pending' : 'n/a',
       },
       dbsRef: form.dbsRef.trim() || undefined,
       firstAidRef: form.firstAidRef.trim() || undefined,
+      medicalInfoDeclared: form.medicalInfoDeclared,
+      medicalInfoDetails: form.medicalInfoDetails.trim() || undefined,
+      isFirstAider: form.isFirstAider,
+      dietaryRequirements: form.dietaryRequirements,
+      occupation: form.occupation.trim() || undefined,
+      spokenLanguages: form.spokenLanguages,
+      originatingStateIndia: form.originatingStateIndia.trim() || undefined,
       eventsAttended: 0,
       shakhaSessionsAttended: 0,
     };
@@ -366,17 +477,11 @@ function AddMemberModal({
     <FormModal isOpen={isOpen} onClose={handleClose} title="Add Member" maxWidth="max-w-2xl">
       <div className="space-y-6 p-6 max-h-[72vh] overflow-y-auto">
 
-        {/* Member Type */}
+        {/* Age Group */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField className="md:col-span-2">
-            <FormLabel required>Member Type</FormLabel>
-            <FormSelect value={form.memberType} onChange={set('memberType')}>
-              <option value="">Select member type</option>
-              <option value="adult">Adult (18+)</option>
-              <option value="teen">Teen (13–17)</option>
-              <option value="child">Child (&lt;13)</option>
-            </FormSelect>
-            {errors.memberType && <p className="text-xs text-[#BC0F1C] mt-1">{errors.memberType}</p>}
+            <FormLabel>Age Groups (years old)</FormLabel>
+            <FormInput value={form.dateOfBirth ? getAgeGroupLabel(form.dateOfBirth) : 'Select date of birth first'} readOnly />
           </FormField>
         </div>
 
@@ -388,6 +493,10 @@ function AddMemberModal({
               <FormLabel required>First Name</FormLabel>
               <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" />
               {errors.firstName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.firstName}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel>Middle Name</FormLabel>
+              <FormInput value={form.middleName} onChange={set('middleName')} placeholder="Middle name" />
             </FormField>
             <FormField>
               <FormLabel required>Last Name</FormLabel>
@@ -419,31 +528,156 @@ function AddMemberModal({
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Contact Details</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
-              <FormLabel required>Email Address</FormLabel>
+              <FormLabel required>Primary Email Address</FormLabel>
               <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" />
               {errors.email && <p className="text-xs text-[#BC0F1C] mt-1">{errors.email}</p>}
             </FormField>
             <FormField>
-              <FormLabel required>Phone Number</FormLabel>
+              <FormLabel>Secondary Email Address</FormLabel>
+              <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" />
+              {errors.secondaryEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.secondaryEmail}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel required>Primary Contact Number</FormLabel>
               <FormInput type="tel" value={form.phone} onChange={set('phone')} placeholder="+44 7700 000000" />
               {errors.phone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.phone}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel>Secondary Contact Number</FormLabel>
+              <FormInput type="tel" value={form.secondaryPhone} onChange={set('secondaryPhone')} placeholder="+44 7700 000001" />
+            </FormField>
+            <FormField>
+              <FormLabel>Building Name</FormLabel>
+              <FormInput value={form.buildingName} onChange={set('buildingName')} placeholder="Building name" />
+            </FormField>
+            <FormField>
+              <FormLabel required>Address Line</FormLabel>
+              <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line" />
+              {errors.addressLine1 && <p className="text-xs text-[#BC0F1C] mt-1">{errors.addressLine1}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel>Address Line 2</FormLabel>
+              <FormInput value={form.addressLine2} onChange={set('addressLine2')} placeholder="Address line 2" />
+            </FormField>
+            <FormField>
+              <FormLabel required>Town / City</FormLabel>
+              <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" />
+              {errors.contactTownCity && <p className="text-xs text-[#BC0F1C] mt-1">{errors.contactTownCity}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel required>Post Code</FormLabel>
+              <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" />
+              {errors.postCode && <p className="text-xs text-[#BC0F1C] mt-1">{errors.postCode}</p>}
             </FormField>
           </div>
         </div>
 
-        {/* Guardian Information (Teen only) */}
-        {form.memberType === 'teen' && (
+        {/* Emergency Contact */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Emergency Contact</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField>
+              <FormLabel required>Contact Name</FormLabel>
+              <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" />
+              {errors.emergencyContactName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactName}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel required>Contact Phone Number</FormLabel>
+              <FormInput type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder="+44 7700 000000" />
+              {errors.emergencyContactPhone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactPhone}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel required>Contact Email</FormLabel>
+              <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" />
+              {errors.emergencyContactEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactEmail}</p>}
+            </FormField>
+            <FormField>
+              <FormLabel required>Contact Relationship</FormLabel>
+              <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="Relationship" />
+              {errors.emergencyContactRelationship && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactRelationship}</p>}
+            </FormField>
+          </div>
+        </div>
+
+        {/* Guardian Information (Child / Teen only) */}
+        {form.dateOfBirth && getAge(form.dateOfBirth) < 18 && (
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Guardian Information</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Parent / Guardian Approval Information</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField className="md:col-span-2">
-                <FormLabel required>Guardian Email</FormLabel>
+              <FormField>
+                <FormLabel required>Parent / Guardian Name</FormLabel>
+                <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" />
+                {errors.guardianName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianName}</p>}
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Phone Number</FormLabel>
+                <FormInput type="tel" value={form.guardianPhone} onChange={set('guardianPhone')} placeholder="+44 7700 000000" />
+                {errors.guardianPhone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianPhone}</p>}
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Email</FormLabel>
                 <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" />
                 {errors.guardianEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianEmail}</p>}
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Relationship</FormLabel>
+                <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" />
+                {errors.guardianRelationship && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianRelationship}</p>}
               </FormField>
             </div>
           </div>
         )}
+
+        {/* Other Information */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Other Information</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                <input type="checkbox" checked={form.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
+                Medical information declared
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
+                First aider for Shakha / HSS (UK)
+              </label>
+              <FormField className="md:col-span-2">
+                <FormLabel>Medical Information Details</FormLabel>
+                <FormTextarea rows={3} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} placeholder="Allergies or medical details" />
+              </FormField>
+              <FormField>
+                <FormLabel>Occupation</FormLabel>
+                <FormInput value={form.occupation} onChange={set('occupation')} placeholder="Occupation" />
+              </FormField>
+              <FormField>
+                <FormLabel>Originating State in India</FormLabel>
+                <FormInput value={form.originatingStateIndia} onChange={set('originatingStateIndia')} placeholder="State" />
+              </FormField>
+            </div>
+            <div>
+              <FormLabel>Special Dietary Requirements</FormLabel>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {DIETARY_REQUIREMENTS.map(item => (
+                  <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input type="checkbox" checked={form.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
+                    {item}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <FormLabel>Spoken Language(s)</FormLabel>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {SPOKEN_LANGUAGE_OPTIONS.map(item => (
+                  <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input type="checkbox" checked={form.spokenLanguages.includes(item)} onChange={() => toggleSpokenLanguage(item)} className="w-4 h-4 accent-primary-600" />
+                    {item}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Masters Mapping */}
         <div>
@@ -458,7 +692,7 @@ function AddMemberModal({
               {errors.country && <p className="text-xs text-[#BC0F1C] mt-1">{errors.country}</p>}
             </FormField>
             <FormField>
-              <FormLabel required>Region</FormLabel>
+              <FormLabel required>Vibhag (Region)</FormLabel>
               <FormSelect value={form.region} onChange={set('region')} disabled={!form.country}>
                 <option value="">{form.country ? 'Select region' : 'Select country first'}</option>
                 {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
@@ -466,7 +700,7 @@ function AddMemberModal({
               {errors.region && <p className="text-xs text-[#BC0F1C] mt-1">{errors.region}</p>}
             </FormField>
             <FormField>
-              <FormLabel required>Town</FormLabel>
+              <FormLabel required>Nagar (Town)</FormLabel>
               <FormSelect value={form.town} onChange={set('town')} disabled={!form.region}>
                 <option value="">{form.region ? 'Select town' : 'Select region first'}</option>
                 {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
@@ -474,9 +708,9 @@ function AddMemberModal({
               {errors.town && <p className="text-xs text-[#BC0F1C] mt-1">{errors.town}</p>}
             </FormField>
             <FormField>
-              <FormLabel required>Activity Centre</FormLabel>
+              <FormLabel required>Shakha (Branch)</FormLabel>
               <FormSelect value={form.activityCentre} onChange={set('activityCentre')} disabled={!form.town}>
-                <option value="">{form.town ? 'Select centre' : 'Select town first'}</option>
+                <option value="">{form.town ? 'Select shakha' : 'Select town first'}</option>
                 {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </FormSelect>
               {errors.activityCentre && <p className="text-xs text-[#BC0F1C] mt-1">{errors.activityCentre}</p>}
@@ -783,7 +1017,7 @@ export default function MemberManagement({
   const memberColumns: ColumnConfig[] = [
     { key: 'id',               label: 'Member ID' },
     { key: 'name',             label: 'Name' },
-    { key: 'memberType',       label: 'Member Type' },
+    { key: 'memberType',       label: 'Age Groups (years old)' },
     { key: 'status',           label: 'Status' },
     { key: 'mastersScope',     label: 'Masters Scope' },
     { key: 'dbsStatus',        label: 'DBS Status' },
@@ -822,7 +1056,11 @@ export default function MemberManagement({
         m.email.toLowerCase().includes(q) ||
         m.id.toLowerCase().includes(q) ||
         (m.phone?.toLowerCase().includes(q) ?? false) ||
-        (m.guardianEmail?.toLowerCase().includes(q) ?? false);
+        (m.secondaryEmail?.toLowerCase().includes(q) ?? false) ||
+        (m.guardianName?.toLowerCase().includes(q) ?? false) ||
+        (m.guardianEmail?.toLowerCase().includes(q) ?? false) ||
+        (m.emergencyContactName?.toLowerCase().includes(q) ?? false) ||
+        (m.emergencyContactPhone?.toLowerCase().includes(q) ?? false);
 
       const matchesFilters = filters.every((f) => {
         if (!f.values.length) return true;
@@ -836,8 +1074,8 @@ export default function MemberManagement({
               if (v === 'Rejected')                  return m.status === 'rejected';
               return false;
             });
-          case 'Member Type':
-            return f.values.some(v => v.toLowerCase() === m.memberType);
+          case 'Age Groups (years old)':
+            return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
           case 'Gender':
             return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':
@@ -952,13 +1190,21 @@ export default function MemberManagement({
       : sortedMembers;
     if (!rows.length) { toast.error('No data to export.'); return; }
 
-    const headers = ['Member ID', 'Name', 'Member Type', 'Email', 'Status', 'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status', 'Registration Date'];
+    const headers = [
+      'Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Primary Contact Number', 'Secondary Email',
+      'Emergency Contact', 'Emergency Phone', 'Guardian Name', 'Guardian Email', 'Status',
+      'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status',
+      'First Aider', 'Dietary Requirements', 'Registration Date',
+    ];
     const csv = [
       headers.join(','),
       ...rows.map(m => [
-        m.id, `"${m.name}"`, m.memberType, m.email, m.status,
+        m.id, `"${m.name}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email, `"${m.phone ?? ''}"`, m.secondaryEmail ?? '',
+        `"${m.emergencyContactName ?? ''}"`, `"${m.emergencyContactPhone ?? ''}"`,
+        `"${m.guardianName ?? ''}"`, m.guardianEmail ?? '', m.status,
         `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
         m.compliance.dbs, m.compliance.firstAid,
+        m.isFirstAider ? 'Yes' : 'No', `"${m.dietaryRequirements?.join('; ') ?? ''}"`,
         new Date(m.registrationDate).toLocaleDateString('en-GB'),
       ].join(','))
     ].join('\n');
@@ -1145,8 +1391,10 @@ export default function MemberManagement({
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-neutral-900 dark:text-white font-semibold truncate">{m.name}</span>
+                        <span className="hidden sm:inline text-neutral-300 dark:text-neutral-700">|</span>
+                        <RoleText role={m.jobTitle} />
                         <StatusBadge status={m.status} />
-                        <MemberTypeBadge type={m.memberType} />
+                        <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                         <span className="text-xs text-neutral-400 font-mono">{m.id}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1208,6 +1456,7 @@ export default function MemberManagement({
 
                 <div className="flex-1">
                   <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5">{m.name}</h4>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-1">{m.jobTitle}</p>
                   <p className="text-xs text-neutral-400 dark:text-neutral-600 font-mono mb-3">{m.id}</p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1224,7 +1473,7 @@ export default function MemberManagement({
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    <MemberTypeBadge type={m.memberType} />
+                    <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                     <span className="flex items-center gap-1 text-neutral-500">
@@ -1300,13 +1549,14 @@ export default function MemberManagement({
                               <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
                                 {m.name}
                               </span>
+                              <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate block">{m.jobTitle}</span>
                               <span className="text-xs text-neutral-400 truncate block">{m.email}</span>
                             </div>
                           </div>
                         </td>
                       )}
                       {visibleColumns.memberType && (
-                        <td className="px-4 py-3.5"><MemberTypeBadge type={m.memberType} /></td>
+                        <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       )}
                       {visibleColumns.status && (
                         <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>

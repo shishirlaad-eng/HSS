@@ -34,8 +34,10 @@ import {
   mockMembers,
   Member,
   MemberStatus,
-  MemberType,
-  MEMBER_TYPE_LABELS,
+  AgeGroup,
+  AGE_GROUP_LABELS,
+  getAgeGroup,
+  getAgeGroupLabel,
   MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
@@ -47,10 +49,13 @@ type ApprovalAction = 'approve' | 'reject';
 
 // ── Status / type helpers ─────────────────────────────────────
 
-const MEMBER_TYPE_CHIP: Record<MemberType, string> = {
-  adult: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
-  teen:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
-  child: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
+  bal: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
+  shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
+  kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
+  tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
+  yuva: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
 const COMPLIANCE_CFG = {
@@ -58,10 +63,11 @@ const COMPLIANCE_CFG = {
   pending:   { dot: 'bg-[#F9B03D]', text: 'text-[#d97706]', label: 'Pending'   },
 };
 
-function MemberTypeBadge({ type }: { type: MemberType }) {
+function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
+  const group = getAgeGroup(dateOfBirth);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${MEMBER_TYPE_CHIP[type]}`}>
-      {MEMBER_TYPE_LABELS[type]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${AGE_GROUP_CHIP[group]}`}>
+      {AGE_GROUP_LABELS[group]}
     </span>
   );
 }
@@ -250,7 +256,7 @@ function RejectReasonModal({
 // ── Filter options ────────────────────────────────────────────
 
 const FILTER_OPTIONS: Record<string, string[]> = {
-  'Member Type':      ['Adult', 'Teen', 'Child'],
+  'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
   'Gender':           ['Male', 'Female'],
   'Country':          MASTERS_CASCADE.countries,
   'Region':           Object.keys(MASTERS_CASCADE.towns),
@@ -306,7 +312,7 @@ export default function PendingApprovals() {
       const matchesFilters = filters.every(f => {
         if (!f.values.length) return true;
         switch (f.field) {
-          case 'Member Type':      return f.values.some(v => v.toLowerCase() === m.memberType);
+          case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
           case 'Gender':           return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':          return f.values.includes(m.country);
           case 'Region':           return f.values.includes(m.region);
@@ -397,11 +403,11 @@ export default function PendingApprovals() {
 
   const handleExportCSV = () => {
     if (!sortedMembers.length) { toast.error('No data to export.'); return; }
-    const headers = ['Member ID', 'Name', 'Member Type', 'Email', 'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
+    const headers = ['Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
     const csv = [
       headers.join(','),
       ...sortedMembers.map(m => [
-        m.id, `"${m.name}"`, m.memberType, m.email,
+        m.id, `"${m.name}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email,
         `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
         m.compliance.dbs, m.compliance.firstAid,
         new Date(m.registrationDate).toLocaleDateString('en-GB'),
@@ -571,7 +577,7 @@ export default function PendingApprovals() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="text-neutral-900 dark:text-white font-semibold truncate">{m.name}</span>
-                          <MemberTypeBadge type={m.memberType} />
+                          <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                           <WaitingBadge days={days} />
                           <span className="text-xs text-neutral-400 font-mono">{m.id}</span>
                         </div>
@@ -658,7 +664,7 @@ export default function PendingApprovals() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      <MemberTypeBadge type={m.memberType} />
+                      <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                       <WaitingBadge days={days} />
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
@@ -709,7 +715,7 @@ export default function PendingApprovals() {
                     {[
                       { key: 'id',               label: 'Member ID' },
                       { key: 'name',             label: 'Name' },
-                      { key: 'memberType',       label: 'Member Type' },
+                      { key: 'memberType',       label: 'Age Groups (years old)' },
                       { key: 'mastersScope',     label: 'Masters Scope' },
                       { key: 'dbsStatus',        label: 'DBS Status' },
                       { key: 'firstAidStatus',   label: 'First Aid' },
@@ -754,7 +760,7 @@ export default function PendingApprovals() {
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <MemberTypeBadge type={m.memberType} />
+                          <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="text-xs text-neutral-600 dark:text-neutral-400 max-w-[200px]">

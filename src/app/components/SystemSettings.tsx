@@ -63,7 +63,7 @@ export default function SystemSettings() {
     dateFormat: 'DD/MM/YYYY',
     timeZone: 'UTC+0 (Greenwich Mean Time)',
     currency: 'USD ($)',
-    language: 'English (US)',
+    language: 'UK English',
     
     // Security
     maxLoginAttempts: 5,
@@ -362,10 +362,7 @@ export default function SystemSettings() {
                         value={settings.language}
                         onChange={(e) => setSettings({...settings, language: e.target.value})}
                       >
-                        <option value="English (US)">English (US)</option>
-                        <option value="English (UK)">English (UK)</option>
-                        <option value="Spanish">Spanish</option>
-                        <option value="French">French</option>
+                        <option value="UK English">UK English</option>
                       </FormSelect>
                     </FormField>
                   </FormGrid>

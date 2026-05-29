@@ -22,6 +22,9 @@ import PendingApprovals from "./components/PendingApprovals";
 import PendingGuardianApprovals from "./components/PendingGuardianApprovals";
 import Dashboard from "./components/Dashboard";
 import Announcements from "./components/Announcements";
+import Sessions from "./components/Sessions";
+import AttendanceLog from "./components/AttendanceLog";
+import MyProfile from "./components/MyProfile";
 import { SiteMap } from "./components/SiteMap";
 import { FeedbackSystem } from "./components/FeedbackSystem";
 import { GlobalFooter } from "./components/GlobalFooter";
@@ -30,8 +33,6 @@ import SuperAdminAuth from "./components/SuperAdminAuth";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
 const PAGE_LABELS: Record<string, string> = {
-  sessions:                     "Sessions (Recurring Shakha Setup)",
-  "attendance-log":             "Attendance Log",
   "report-members":             "Members Report",
   "report-events":              "Events Report",
   "report-donations":           "Donations / Payment Report",
@@ -73,9 +74,9 @@ export default function App() {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("colorTheme");
       const validThemes = ["hss-brand", "default-black", "ocean-blue", "emerald-green", "violet-purple", "amber-orange"];
-      return validThemes.includes(saved || "") ? saved! : "hss-brand";
+      return validThemes.includes(saved || "") ? saved! : "amber-orange";
     }
-    return "hss-brand";
+    return "amber-orange";
   });
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] =
@@ -244,6 +245,12 @@ export default function App() {
           <SystemNotifications />
         ) : currentPage === "announcements" ? (
           <Announcements />
+        ) : currentPage === "sessions" ? (
+          <Sessions />
+        ) : currentPage === "attendance-log" ? (
+          <AttendanceLog />
+        ) : currentPage === "my-profile" ? (
+          <MyProfile />
         ) : currentPage === "logs" ? (
           <LogsPage />
 
