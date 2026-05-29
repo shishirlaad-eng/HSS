@@ -90,7 +90,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -264,9 +264,10 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
 
   // Pagination Logic
   const paginatedData = useMemo(() => {
+    if (itemsPerPage === 0) return processedData;
     const start = (currentPage - 1) * itemsPerPage;
     return processedData.slice(start, start + itemsPerPage);
-  }, [processedData, currentPage]);
+  }, [processedData, currentPage, itemsPerPage]);
 
   // Auto-close column visibility panel when leaving table view
   useEffect(() => {
@@ -340,7 +341,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
     }
   };
 
-  const totalPages = Math.ceil(processedData.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(processedData.length / itemsPerPage);
 
   // Status Badge Helper
   const renderStatusBadge = (status: string) => {
@@ -947,12 +948,13 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
         {/* ========== PAGINATION (FROZEN/SEPARATE FOOTER CONTAINER) ========== */}
         <div className="mt-6">
           {processedData.length > 0 && (
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               totalItems={processedData.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

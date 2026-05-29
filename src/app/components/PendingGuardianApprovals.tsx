@@ -264,7 +264,7 @@ export default function PendingGuardianApprovals() {
   const [filters, setFilters]                       = useState<FilterCondition[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const [showSummary, setShowSummary] = useState(true);
 
@@ -327,11 +327,12 @@ export default function PendingGuardianApprovals() {
   }, [filteredMembers, sortField, sortDirection]);
 
   const paginatedMembers = useMemo(() => {
+    if (itemsPerPage === 0) return sortedMembers;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedMembers.slice(start, start + itemsPerPage);
-  }, [sortedMembers, currentPage]);
+  }, [sortedMembers, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(filteredMembers.length / itemsPerPage);
 
   // ── Summary counts ──────────────────────────────────────────
 
@@ -864,6 +865,7 @@ export default function PendingGuardianApprovals() {
               onPageChange={setCurrentPage}
               totalItems={filteredMembers.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

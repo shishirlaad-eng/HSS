@@ -17,8 +17,6 @@ export function SiteMap({ onNavigate, currentPage }: SiteMapProps) {
     "hb-templates": t.nav.hbTemplates,
     "ui-kit": t.nav.uiKit,
     "sample-design": t.nav.samplePage,
-    "user-management-group": t.nav.userManagement,
-    "user-management": t.nav.users,
     "event-management-group": t.nav.eventManagement,
     "event-management": t.nav.events,
     "organisational-master": t.nav.organisationalMaster,

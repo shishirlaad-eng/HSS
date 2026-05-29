@@ -132,7 +132,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -355,9 +355,10 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   }, [filteredData, sortField, sortDirection]);
 
   const paginatedData = useMemo(() => {
+    if (itemsPerPage === 0) return sortedData;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage]);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   // Auto-close column visibility panel when leaving table view
   useEffect(() => {
@@ -507,7 +508,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
     }
   };
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
   const getStatusBadge = (status: string | number) => {
     const statusStr = String(status).toLowerCase();
@@ -939,6 +940,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
               onPageChange={setCurrentPage}
               totalItems={filteredData.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

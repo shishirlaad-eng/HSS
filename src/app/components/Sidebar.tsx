@@ -158,9 +158,7 @@ export function Sidebar({
     "centre":                         "Activity Centres",
     "role-types":                     "Role Types (Departments)",
 
-    // 8. User Management
-    "user-management-group":          t.nav.userManagement,
-    "user-management":                t.nav.users,
+    // 8. Settings
     "role-management":                "Roles & Permissions",
 
     // 9. Settings

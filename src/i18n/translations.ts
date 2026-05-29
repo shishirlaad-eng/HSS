@@ -18,8 +18,6 @@ export interface TranslationDict {
     hbTemplates: string;
     uiKit: string;
     samplePage: string;
-    userManagement: string;
-    users: string;
     eventManagement: string;
     events: string;
     organisationalMaster: string;
@@ -78,8 +76,6 @@ export const translations: Record<Language, TranslationDict> = {
       hbTemplates: "HB Templates",
       uiKit: "UI Kit",
       samplePage: "Sample Page",
-      userManagement: "User Management",
-      users: "Users",
       eventManagement: "Event Management",
       events: "Events",
       organisationalMaster: "Master Managment",

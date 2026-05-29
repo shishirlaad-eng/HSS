@@ -49,7 +49,7 @@ import {
   FormSelect,
 } from './hb/common';
 import { mockEvents, Event } from '../../mockAPI/eventsData';
-import { MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
 import { toast } from 'sonner';
@@ -167,8 +167,46 @@ interface CreateEventModalProps {
   onSave: (data: Partial<Event>) => void;
 }
 
+// ─── Audience helpers ─────────────────────────────────────────────────────────
+function CheckChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+  return (
+    <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
+      checked
+        ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+    }`}>
+      <input type="checkbox" className="sr-only" checked={checked} onChange={onChange} />
+      {checked && <CheckCircle2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />}
+      {label}
+    </label>
+  );
+}
+
+function toggleArr<T>(arr: T[], item: T): T[] {
+  return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+}
+
+const AGE_GROUP_OPTIONS: { value: AgeGroup; label: string }[] = [
+  { value: 'bal',     label: 'Bal(ika) (0-5)'   },
+  { value: 'shishu',  label: 'Shishu (6-11)'    },
+  { value: 'kishor',  label: 'Kishor(i) (12-16)' },
+  { value: 'tarun',   label: 'Tarun(i) (17-30)'  },
+  { value: 'yuva',    label: 'Yuva(ti) (30-60)'  },
+  { value: 'jyestha', label: 'Jyestha(a) (60+)'  },
+];
+
+const AUDIENCE_AGE_LABELS: Record<AgeGroup, string> = {
+  bal:     'Bal(ika) (0-5)',
+  shishu:  'Shishu (6-11)',
+  kishor:  'Kishor(i) (12-16)',
+  tarun:   'Tarun(i) (17-30)',
+  yuva:    'Yuva(ti) (30-60)',
+  jyestha: 'Jyestha(a) (60+)',
+};
+
 const EMPTY_CREATE = {
   name: '',
+  description: '',
   country: '',
   region: '',
   town: '',
@@ -181,6 +219,9 @@ const EMPTY_CREATE = {
   price: '',
   capacity: '',
   coHosts: '',
+  filterAgeCategories: [] as AgeGroup[],
+  filterGenders:       [] as ('male' | 'female')[],
+  filterJobTitles:     [] as string[],
 };
 
 type CreateForm = typeof EMPTY_CREATE;
@@ -205,7 +246,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
   const availableTowns   = form.region  ? (MASTERS_CASCADE.towns[form.region]   ?? []) : [];
   const availableCentres = form.town    ? (MASTERS_CASCADE.centres[form.town]   ?? []) : [];
 
-  const set = (field: keyof CreateForm, value: string) => {
+  const set = (field: keyof CreateForm, value: string | string[]) => {
     setForm(prev => {
       const next: CreateForm = { ...prev, [field]: value };
       if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
@@ -248,6 +289,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
       const now = new Date().toISOString();
       onSave({
         name: form.name.trim(),
+        description: form.description.trim() || undefined,
         country: form.country,
         region: form.region,
         town: form.town,
@@ -258,6 +300,9 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
         price: form.paymentType === 'paid' ? parseFloat(form.price) : undefined,
         capacity: form.capacity ? parseInt(form.capacity) : undefined,
         coHosts: form.coHosts ? form.coHosts.split(',').map(s => s.trim()).filter(Boolean) : [],
+        filterAgeCategories: form.filterAgeCategories.length > 0 ? form.filterAgeCategories : undefined,
+        filterGenders:       form.filterGenders.length > 0       ? form.filterGenders       : undefined,
+        filterJobTitles:     form.filterJobTitles.length > 0     ? form.filterJobTitles     : undefined,
         status: 'draft',
         createdDate: now,
         lastUpdated: now,
@@ -288,6 +333,16 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
                 placeholder="Enter event title"
               />
               {errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
+            </FormField>
+            <FormField className="md:col-span-2">
+              <FormLabel>Event Description</FormLabel>
+              <textarea
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                placeholder="Describe the event — purpose, agenda, what to expect…"
+                rows={3}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              />
             </FormField>
             <FormField>
               <FormLabel>Co-Hosts (comma separated)</FormLabel>
@@ -453,6 +508,66 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
             )}
           </FormGrid>
         </div>
+
+        {/* Target Audience */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <UsersIcon className="w-3.5 h-3.5" /> Target Audience
+          </p>
+          <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-4">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Optional — leave all unchecked to target all members.
+            </p>
+
+            {/* Age Category */}
+            <div>
+              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age Category</p>
+              <div className="flex flex-wrap gap-2">
+                {AGE_GROUP_OPTIONS.map(({ value, label }) => (
+                  <CheckChip
+                    key={value}
+                    label={label}
+                    checked={form.filterAgeCategories.includes(value)}
+                    onChange={() => set('filterAgeCategories', toggleArr(form.filterAgeCategories, value) as any)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Gender</p>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { value: 'male',   label: 'Male'   },
+                  { value: 'female', label: 'Female' },
+                ] as { value: 'male' | 'female'; label: string }[]).map(({ value, label }) => (
+                  <CheckChip
+                    key={value}
+                    label={label}
+                    checked={form.filterGenders.includes(value)}
+                    onChange={() => set('filterGenders', toggleArr(form.filterGenders, value) as any)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Role Type / Job Title */}
+            <div>
+              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Role Type / Job Title</p>
+              <div className="flex flex-wrap gap-2">
+                {ROLE_TYPE_OPTIONS.map(role => (
+                  <CheckChip
+                    key={role}
+                    label={role}
+                    checked={form.filterJobTitles.includes(role)}
+                    onChange={() => set('filterJobTitles', toggleArr(form.filterJobTitles, role) as any)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800">
@@ -494,7 +609,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters]         = useState<FilterCondition[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage                  = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pageState, setPageState]         = useState<PageState>('list');
@@ -598,11 +713,12 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
     });
   }, [filteredEvents, sortField, sortDirection]);
 
-  const totalPages    = Math.ceil(filteredEvents.length / itemsPerPage);
+  const totalPages    = itemsPerPage === 0 ? 1 : Math.ceil(filteredEvents.length / itemsPerPage);
   const paginatedEvents = useMemo(() => {
+    if (itemsPerPage === 0) return sortedEvents;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedEvents.slice(start, start + itemsPerPage);
-  }, [sortedEvents, currentPage]);
+  }, [sortedEvents, currentPage, itemsPerPage]);
 
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
 
@@ -1229,6 +1345,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
               onPageChange={setCurrentPage}
               totalItems={filteredEvents.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

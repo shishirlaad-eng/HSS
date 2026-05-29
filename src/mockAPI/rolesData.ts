@@ -101,17 +101,6 @@ export const availableModules: ModulePermission[] = [
     ],
   },
   {
-    id: "users",
-    name: "User Management",
-    actions: [
-      { id: "view",   name: "View / List",             code: "users_view" },
-      { id: "add",    name: "Add User",                code: "users_add" },
-      { id: "edit",   name: "Edit User",               code: "users_edit" },
-      { id: "delete", name: "Delete User",             code: "users_delete" },
-      { id: "status", name: "Active / Inactive",       code: "users_status" },
-    ],
-  },
-  {
     id: "rbac",
     name: "Roles & Permissions (RBAC)",
     actions: [
@@ -160,7 +149,6 @@ export const mockRoles: Role[] = [
       attendance:    ["view", "add", "edit", "delete"],
       reports:       ["view", "export"],
       masters:       ["view", "add", "edit", "delete", "status"],
-      users:         ["view", "add", "edit", "delete", "status"],
       rbac:          ["view", "edit", "add", "delete"],
       settings:      ["view", "edit"],
       "audit-logs":  ["view"],
@@ -184,7 +172,6 @@ export const mockRoles: Role[] = [
       attendance:    ["view"],
       reports:       ["view", "export"],
       masters:       ["view"],
-      users:         ["view"],
       rbac:          ["view", "edit"],
     },
   },
@@ -206,7 +193,6 @@ export const mockRoles: Role[] = [
       attendance:    ["view"],
       reports:       ["view", "export"],
       masters:       ["view"],
-      users:         ["view"],
       rbac:          ["view", "edit"],
     },
   },

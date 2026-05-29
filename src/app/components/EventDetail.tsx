@@ -36,6 +36,16 @@ import {
 } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
 
+// ─── Age group display labels (matches HSS naming convention) ─────────────────
+const AUDIENCE_AGE_LABELS: Record<string, string> = {
+  bal:     'Bal(ika) (0-5)',
+  shishu:  'Shishu (6-11)',
+  kishor:  'Kishor(i) (12-16)',
+  tarun:   'Tarun(i) (17-30)',
+  yuva:    'Yuva(ti) (30-60)',
+  jyestha: 'Jyestha(a) (60+)',
+};
+
 // ─── Cutoff helpers ────────────────────────────────────────────────────────────
 const isPastStart = (event: Event) => new Date() >= new Date(event.startDate);
 const canModify   = (event: Event) => !isPastStart(event);
@@ -378,6 +388,19 @@ export default function EventDetail({
                     <StatCard label="Maybe"     value={event.metrics.maybe}    icon={HelpCircle}   valueClassName="text-primary-600 dark:text-primary-400"  className="bg-neutral-50 dark:bg-neutral-900/50" />
                     <StatCard label="Not Going" value={event.metrics.notGoing} icon={XCircle}      className="bg-neutral-50 dark:bg-neutral-900/50" />
                   </div>
+
+                  {/* Description */}
+                  {event.description && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Event Description
+                      </h4>
+                      <p className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                        {event.description}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                     <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Summary</h4>
                     <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -400,6 +423,59 @@ export default function EventDetail({
                       ))}
                     </div>
                   </div>
+
+                  {/* Target Audience */}
+                  {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Target Audience
+                      </h4>
+                      <div className="px-6 py-4 space-y-4">
+                        {event.filterAgeCategories && event.filterAgeCategories.length > 0 && (
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Age Category</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.filterAgeCategories.map(c => (
+                                <span key={c} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">
+                                  {AUDIENCE_AGE_LABELS[c] ?? c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.filterGenders && event.filterGenders.length > 0 && (
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Gender</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.filterGenders.map(g => (
+                                <span key={g} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium capitalize">
+                                  {g}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.filterJobTitles && event.filterJobTitles.length > 0 && (
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Role Type / Job Title</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.filterJobTitles.map(r => (
+                                <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg px-6 py-4">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <span className="font-medium text-neutral-700 dark:text-neutral-300">Target Audience:</span> All members (no filters applied)
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

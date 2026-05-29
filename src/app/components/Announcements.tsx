@@ -38,6 +38,7 @@ import {
   ChevronDown,
   Info,
   Loader2,
+  Pencil,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton, Pagination } from './hb/listing';
 import {
@@ -63,15 +64,6 @@ import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 
 // ── Constants ─────────────────────────────────────────────────
 
-const COOLDOWN_OPTIONS = [
-  { value: 0,    label: 'No cooldown'  },
-  { value: 1,    label: '1 hour'       },
-  { value: 4,    label: '4 hours'      },
-  { value: 12,   label: '12 hours'     },
-  { value: 24,   label: '24 hours'     },
-  { value: 48,   label: '48 hours'     },
-  { value: 168,  label: '7 days'       },
-];
 
 const JOB_TITLE_OPTIONS = [...ROLE_TYPE_OPTIONS];
 
@@ -103,6 +95,24 @@ const SCOPE_CFG: Record<AnnouncementScope, { icon: typeof Globe2; label: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────
+
+const COOLDOWN_MS = 5 * 60 * 1000; // 5-minute cooldown window
+
+/** Announcement may only be deleted when Draft, Scheduled, OR within the 5-min cooldown after being sent. */
+function canDeleteAnnouncement(ann: Announcement): boolean {
+  if (ann.status === 'draft')     return true;
+  if (ann.status === 'scheduled') return true;
+  if (ann.status === 'sent' && ann.sentAt) {
+    const elapsed = Date.now() - new Date(ann.sentAt).getTime();
+    return elapsed <= COOLDOWN_MS;
+  }
+  return false;
+}
+
+/** Only Draft and Scheduled announcements can be edited. */
+function canEditAnnouncement(ann: Announcement): boolean {
+  return ann.status === 'draft' || ann.status === 'scheduled';
+}
 
 const btnBase    = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors';
 const btnPrimary = `${btnBase} bg-primary-600 hover:bg-primary-700 text-white`;
@@ -218,7 +228,7 @@ const blankForm = (): CreateForm => ({
   body: '',
   contentType: 'text',
   mediaUrl: '',
-  cooldownHours: 0,
+  cooldownHours: 5 / 60,   // fixed at 5 minutes
   priority: 'medium',
   scope: 'national',
   targetRegion: '',
@@ -330,6 +340,7 @@ export default function Announcements() {
   const [pageState, setPageState]         = useState<PageState>('list');
   const [selected, setSelected]           = useState<Announcement | null>(null);
   const [showCreate, setShowCreate]       = useState(false);
+  const [editingId, setEditingId]         = useState<string | null>(null);
   const [bodyWordCount, setBodyWordCount] = useState(0);
   const [showDelete, setShowDelete]       = useState(false);
   const [toDelete, setToDelete]           = useState<Announcement | null>(null);
@@ -338,7 +349,7 @@ export default function Announcements() {
   const [filterStatus, setFilterStatus]   = useState<AnnouncementStatus | 'all'>('all');
   const [filterScope, setFilterScope]     = useState<AnnouncementScope | 'all'>('all');
   const [page, setPage]                   = useState(1);
-  const PER_PAGE = 10;
+  const [PER_PAGE, setPER_PAGE]           = useState(10);
 
   // Create form
   const [form, setForm] = useState<CreateForm>(blankForm());
@@ -366,8 +377,8 @@ export default function Announcements() {
     });
   }, [announcements, searchQuery, filterStatus, filterScope]);
 
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = PER_PAGE === 0 ? 1 : Math.ceil(filtered.length / PER_PAGE);
+  const paginated  = PER_PAGE === 0 ? filtered : filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const bodyIsOver = bodyWordCount > 150;
 
@@ -402,43 +413,88 @@ export default function Announcements() {
       (form.emailEnabled && form.emailSchedule === 'scheduled')
     );
 
-    const newAnn: Announcement = {
-      id:   `ANN-${String(announcements.length + 1).padStart(3, '0')}-NEW`,
-      title:       form.title.trim(),
-      body:        form.body.trim(),
-      contentType: form.contentType,
-      mediaUrl:    form.mediaUrl.trim() || undefined,
-      cooldownHours: form.cooldownHours,
-      priority:    form.priority,
-      status:      asDraft ? 'draft' : isScheduled ? 'scheduled' : 'sent',
-      scope:       form.scope,
-      targetRegion:  form.targetRegion  || undefined,
-      targetTown:    form.targetTown    || undefined,
-      targetCentre:  form.targetCentre  || undefined,
-      filterAgeCategories: form.filterAgeCategories,
-      filterGenders:       form.filterGenders,
-      filterJobTitles:     form.filterJobTitles,
-      push: {
-        enabled:     form.pushEnabled,
-        schedule:    form.pushSchedule,
-        scheduledAt: form.pushEnabled && form.pushSchedule === 'scheduled' ? form.pushScheduledAt : undefined,
-      },
-      email: {
-        enabled:     form.emailEnabled,
-        schedule:    form.emailSchedule,
-        scheduledAt: form.emailEnabled && form.emailSchedule === 'scheduled' ? form.emailScheduledAt : undefined,
-      },
-      createdAt:      new Date().toISOString(),
-      sentAt:         asDraft || isScheduled ? undefined : new Date().toISOString(),
-      postedBy:       'Admin',
-      estimatedReach: 100, // placeholder
-    };
+    const newStatus: AnnouncementStatus = asDraft ? 'draft' : isScheduled ? 'scheduled' : 'sent';
 
-    setAnnouncements(prev => [newAnn, ...prev]);
-    setShowCreate(false);
-    setForm(blankForm());
-    setFormErrors({});
-    toast.success(asDraft ? 'Announcement saved as draft.' : isScheduled ? 'Announcement scheduled.' : 'Announcement sent successfully.');
+    if (editingId) {
+      // ── Edit mode: update existing announcement ──────────────
+      setAnnouncements(prev => prev.map(a => {
+        if (a.id !== editingId) return a;
+        const updated: Announcement = {
+          ...a,
+          title:       form.title.trim(),
+          body:        form.body.trim(),
+          contentType: form.contentType,
+          mediaUrl:    form.mediaUrl.trim() || undefined,
+          cooldownHours: form.cooldownHours,
+          priority:    form.priority,
+          status:      newStatus,
+          scope:       form.scope,
+          targetRegion:  form.targetRegion  || undefined,
+          targetTown:    form.targetTown    || undefined,
+          targetCentre:  form.targetCentre  || undefined,
+          filterAgeCategories: form.filterAgeCategories,
+          filterGenders:       form.filterGenders,
+          filterJobTitles:     form.filterJobTitles,
+          push: {
+            enabled:     form.pushEnabled,
+            schedule:    form.pushSchedule,
+            scheduledAt: form.pushEnabled && form.pushSchedule === 'scheduled' ? form.pushScheduledAt : undefined,
+          },
+          email: {
+            enabled:     form.emailEnabled,
+            schedule:    form.emailSchedule,
+            scheduledAt: form.emailEnabled && form.emailSchedule === 'scheduled' ? form.emailScheduledAt : undefined,
+          },
+          sentAt: newStatus === 'sent' ? (a.sentAt ?? new Date().toISOString()) : undefined,
+        };
+        // Keep selected in sync if editing the currently-viewed announcement
+        if (selected?.id === editingId) setSelected(updated);
+        return updated;
+      }));
+      setShowCreate(false);
+      setEditingId(null);
+      setForm(blankForm());
+      setFormErrors({});
+      toast.success(asDraft ? 'Draft updated.' : isScheduled ? 'Scheduled announcement updated.' : 'Announcement sent successfully.');
+    } else {
+      // ── Create mode: add new announcement ───────────────────
+      const newAnn: Announcement = {
+        id:   `ANN-${String(announcements.length + 1).padStart(3, '0')}-NEW`,
+        title:       form.title.trim(),
+        body:        form.body.trim(),
+        contentType: form.contentType,
+        mediaUrl:    form.mediaUrl.trim() || undefined,
+        cooldownHours: form.cooldownHours,
+        priority:    form.priority,
+        status:      newStatus,
+        scope:       form.scope,
+        targetRegion:  form.targetRegion  || undefined,
+        targetTown:    form.targetTown    || undefined,
+        targetCentre:  form.targetCentre  || undefined,
+        filterAgeCategories: form.filterAgeCategories,
+        filterGenders:       form.filterGenders,
+        filterJobTitles:     form.filterJobTitles,
+        push: {
+          enabled:     form.pushEnabled,
+          schedule:    form.pushSchedule,
+          scheduledAt: form.pushEnabled && form.pushSchedule === 'scheduled' ? form.pushScheduledAt : undefined,
+        },
+        email: {
+          enabled:     form.emailEnabled,
+          schedule:    form.emailSchedule,
+          scheduledAt: form.emailEnabled && form.emailSchedule === 'scheduled' ? form.emailScheduledAt : undefined,
+        },
+        createdAt:      new Date().toISOString(),
+        sentAt:         asDraft || isScheduled ? undefined : new Date().toISOString(),
+        postedBy:       'Admin',
+        estimatedReach: 100,
+      };
+      setAnnouncements(prev => [newAnn, ...prev]);
+      setShowCreate(false);
+      setForm(blankForm());
+      setFormErrors({});
+      toast.success(asDraft ? 'Announcement saved as draft.' : isScheduled ? 'Announcement scheduled.' : 'Announcement sent successfully.');
+    }
   };
 
   const handleDelete = () => {
@@ -464,7 +520,34 @@ export default function Announcements() {
   const openDetail = (ann: Announcement) => { setSelected(ann); setPageState('detail'); };
   const goBack     = () => { setSelected(null); setPageState('list'); };
 
-  const closeCreate = () => { setShowCreate(false); setForm(blankForm()); setFormErrors({}); setBodyWordCount(0); };
+  const closeCreate = () => { setShowCreate(false); setEditingId(null); setForm(blankForm()); setFormErrors({}); setBodyWordCount(0); };
+
+  const openEdit = (ann: Announcement) => {
+    setForm({
+      title:               ann.title,
+      body:                ann.body,
+      contentType:         ann.contentType,
+      mediaUrl:            ann.mediaUrl ?? '',
+      cooldownHours:       ann.cooldownHours,
+      priority:            ann.priority,
+      scope:               ann.scope,
+      targetRegion:        ann.targetRegion  ?? '',
+      targetTown:          ann.targetTown    ?? '',
+      targetCentre:        ann.targetCentre  ?? '',
+      filterAgeCategories: (ann.filterAgeCategories as any) ?? [],
+      filterGenders:       ann.filterGenders  ?? [],
+      filterJobTitles:     ann.filterJobTitles ?? [],
+      pushEnabled:         ann.push.enabled,
+      pushSchedule:        ann.push.schedule,
+      pushScheduledAt:     ann.push.scheduledAt ?? '',
+      emailEnabled:        ann.email.enabled,
+      emailSchedule:       ann.email.schedule,
+      emailScheduledAt:    ann.email.scheduledAt ?? '',
+    });
+    setBodyWordCount(ann.body.trim().split(/\s+/).filter(Boolean).length);
+    setEditingId(ann.id);
+    setShowCreate(true);
+  };
 
   // ── Render: Detail View ─────────────────────────────────────
   if (pageState === 'detail' && selected) {
@@ -484,9 +567,25 @@ export default function Announcements() {
             { label: selected.title.length > 50 ? selected.title.slice(0, 50) + '…' : selected.title, current: true },
           ]}
         >
-          <button className={btnDanger} onClick={() => { setToDelete(selected); setShowDelete(true); }}>
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
+          <div className="flex items-center gap-2">
+            {canEditAnnouncement(selected) && (
+              <button className={btnGhost} onClick={() => openEdit(selected)}>
+                <Pencil className="w-4 h-4" /> Edit
+              </button>
+            )}
+            {canDeleteAnnouncement(selected) ? (
+              <button className={btnDanger} onClick={() => { setToDelete(selected); setShowDelete(true); }}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            ) : (
+              <span
+                title="Cannot delete — the 5-minute cooldown window has passed"
+                className={`${btnBase} border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`}
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </span>
+            )}
+          </div>
         </PageHeader>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -590,14 +689,10 @@ export default function Announcements() {
                   {cc.label}
                 </span>
               </div>
-              {selected.cooldownHours > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">Cooldown</span>
-                  <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                    {COOLDOWN_OPTIONS.find(c => c.value === selected.cooldownHours)?.label ?? `${selected.cooldownHours}h`}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">Cooldown</span>
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">5 min</span>
+              </div>
               <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">Estimated Reach</span>
@@ -884,13 +979,26 @@ export default function Announcements() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => { setToDelete(ann); setShowDelete(true); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                            title="Delete announcement"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canDeleteAnnouncement(ann) ? (
+                            <button
+                              onClick={() => { setToDelete(ann); setShowDelete(true); }}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              title="Delete announcement"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-300 dark:text-neutral-700 cursor-not-allowed"
+                              title={
+                                ann.status === 'scheduled'
+                                  ? 'Scheduled announcements cannot be deleted'
+                                  : 'Cannot delete — the 5-minute cooldown window has passed'
+                              }
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -903,13 +1011,15 @@ export default function Announcements() {
       )}
 
       {/* ── Pagination ───────────────────────────────────── */}
-      {totalPages > 1 && (
+      {filtered.length > 0 && (
         <div className="mt-6">
           <Pagination
             currentPage={page}
             totalPages={totalPages}
             totalItems={filtered.length}
+            itemsPerPage={PER_PAGE}
             onPageChange={setPage}
+            onItemsPerPageChange={(n) => { setPER_PAGE(n); setPage(1); }}
           />
         </div>
       )}
@@ -929,8 +1039,8 @@ export default function Announcements() {
       {showCreate && (
         <FormModal
           isOpen
-          title="New Announcement"
-          description="Compose a message, select your audience, and configure notifications"
+          title={editingId ? 'Edit Announcement' : 'New Announcement'}
+          description={editingId ? 'Update the announcement details below' : 'Compose a message, select your audience, and configure notifications'}
           onClose={closeCreate}
           maxWidth="max-w-3xl"
         >
@@ -1009,17 +1119,13 @@ export default function Announcements() {
                   </FormField>
                 )}
 
-                {/* Cooldown */}
+                {/* Cooldown — fixed at 5 minutes */}
                 <FormField>
                   <FormLabel>Cooldown Delay</FormLabel>
-                  <FormSelect
-                    value={String(form.cooldownHours)}
-                    onChange={e => setField('cooldownHours', Number(e.target.value))}
-                  >
-                    {COOLDOWN_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </FormSelect>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
+                    <span className="text-sm text-neutral-900 dark:text-white font-medium">5 minutes</span>
+                    <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">Fixed</span>
+                  </div>
                   <p className="text-xs text-neutral-400 mt-1">How long before the same member sees this announcement again.</p>
                 </FormField>
               </div>

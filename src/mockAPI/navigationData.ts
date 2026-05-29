@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   BarChart3,
   Database,
-  Users,
   Settings,
   History,
 } from "lucide-react";
@@ -192,28 +191,7 @@ export const getNavigationData = (
       ],
     },
 
-    // ── 8. User Management ───────────────────────────────────────
-    {
-      id: "user-management-group",
-      label: "User Management",
-      icon: Users,
-      subItems: [
-        {
-          id: "user-management",
-          label: "Users",
-          onClick: () => onNavigate("user-management"),
-          active: currentPage === "user-management",
-        },
-        {
-          id: "role-management",
-          label: "Roles & Permissions",
-          onClick: () => onNavigate("role-management"),
-          active: currentPage === "role-management",
-        },
-      ],
-    },
-
-    // ── 9. Settings ──────────────────────────────────────────────
+    // ── 8. Settings ──────────────────────────────────────────────
     {
       id: "settings-group",
       label: "Settings",
@@ -242,6 +220,12 @@ export const getNavigationData = (
           label: "System Notifications",
           onClick: () => onNavigate("system-notifications"),
           active: currentPage === "system-notifications",
+        },
+        {
+          id: "role-management",
+          label: "Roles & Permissions",
+          onClick: () => onNavigate("role-management"),
+          active: currentPage === "role-management",
         },
       ],
     },

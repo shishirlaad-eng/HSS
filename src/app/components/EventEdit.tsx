@@ -29,9 +29,10 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const blocked = isPastStart(event);
 
   const [formData, setFormData] = useState({
-    name:           event.name,
-    host:           event.host,
-    coHosts:        event.coHosts.join(', '),
+    name:                event.name,
+    description:         event.description ?? '',
+    host:                event.host,
+    coHosts:             event.coHosts.join(', '),
     country:        event.country,
     region:         event.region,
     town:           event.town,
@@ -102,6 +103,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
       const updated: Event = {
         ...event,
         name:           formData.name.trim(),
+        description:    formData.description.trim() || undefined,
         host:           formData.host.trim(),
         coHosts:        formData.coHosts ? formData.coHosts.split(',').map(s => s.trim()).filter(Boolean) : [],
         country:        formData.country,
@@ -183,6 +185,17 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                     disabled={blocked}
                   />
                   {touched && errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
+                </FormField>
+                <FormField span={2 as any}>
+                  <FormLabel>Event Description</FormLabel>
+                  <textarea
+                    value={formData.description}
+                    onChange={e => set('description', e.target.value)}
+                    placeholder="Describe the event — purpose, agenda, what to expect…"
+                    rows={3}
+                    disabled={blocked}
+                    className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
                 </FormField>
                 <FormField>
                   <FormLabel required>Primary Host</FormLabel>

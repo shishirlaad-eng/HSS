@@ -41,28 +41,28 @@ export default function SystemSettings() {
   
   const [settings, setSettings] = useState({
     // Branding
-    companyName: 'FadeOut Social',
-    copyrightText: '© 2024 FadeOut Social. All rights reserved.',
-    
+    companyName: 'Hindu Swayamsevak Sangh UK',
+    copyrightText: '© 2026 Hindu Swayamsevak Sangh UK. All rights reserved.',
+
     // SMTP
     smtpHost: 'smtp.gmail.com',
     smtpPort: '587',
-    smtpUsername: 'admin@fadeout.com',
+    smtpUsername: 'admin@hssuk.org',
     smtpPassword: '••••••••••••',
     smtpEncryption: 'TLS',
-    senderName: 'FadeOut Admin',
-    senderEmail: 'noreply@fadeout.com',
-    
+    senderName: 'HSS Admin',
+    senderEmail: 'noreply@hssuk.org',
+
     // Organization
-    address: '123 Enterprise Way,\nSuite 500,\nTech City, TC 12345',
-    adminEmail: 'support@fadeout.com',
-    contactNumber: '+1 (555) 000-1234',
-    websiteUrl: 'https://fadeout.social',
-    
+    address: 'Hindu Swayamsevak Sangh UK,\nBritannia House, 960 High Road,\nLondon, N12 9RY',
+    adminEmail: 'admin@hssuk.org',
+    contactNumber: '+44 (0) 20 8446 0756',
+    websiteUrl: 'https://www.hssuk.org',
+
     // Regional
     dateFormat: 'DD/MM/YYYY',
     timeZone: 'UTC+0 (Greenwich Mean Time)',
-    currency: 'USD ($)',
+    currency: 'GBP (£)',
     language: 'UK English',
     
     // Security
@@ -154,7 +154,7 @@ export default function SystemSettings() {
                       <FormInput 
                         value={settings.companyName}
                         onChange={(e) => setSettings({...settings, companyName: e.target.value})}
-                        placeholder="e.g. FadeOut Social"
+                        placeholder="e.g. Hindu Swayamsevak Sangh UK"
                       />
                     </FormField>
                     <FormField>
@@ -351,9 +351,10 @@ export default function SystemSettings() {
                         value={settings.currency}
                         onChange={(e) => setSettings({...settings, currency: e.target.value})}
                       >
+                        <option value="GBP (£)">GBP (£)</option>
                         <option value="USD ($)">USD ($)</option>
                         <option value="EUR (€)">EUR (€)</option>
-                        <option value="GBP (£)">GBP (£)</option>
+                        <option value="INR (₹)">INR (₹)</option>
                       </FormSelect>
                     </FormField>
                     <FormField>

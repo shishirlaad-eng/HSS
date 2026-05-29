@@ -23,6 +23,12 @@ export interface Event {
 
   // Configuration
   capacity?: number;
+  description?: string;
+
+  // Target audience filters
+  filterAgeCategories?: ('bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha')[];
+  filterGenders?: ('male' | 'female')[];
+  filterJobTitles?: string[];
 
   // Participant metrics (kept as-is — FINAL)
   metrics: {
@@ -193,6 +199,7 @@ export const mockEvents: Event[] = [
     lastUpdated: '2026-05-18T14:30:00Z',
     paymentType: 'free',
     capacity: 200,
+    description: 'A full-day summit bringing together young leaders from across HSS UK to develop leadership skills, share experiences, and build networks. Sessions include workshops on communication, community service, and Sangh values.',
     metrics: {
       going: 156,
       maybe: 42,
@@ -219,6 +226,7 @@ export const mockEvents: Event[] = [
     paymentType: 'paid',
     price: 25,
     capacity: 50,
+    description: 'An intensive hands-on workshop series covering modern web development, AI tools, and digital skills for HSS members. Suitable for beginners and intermediate participants. Refreshments included.',
     metrics: {
       going: 0,
       maybe: 0,
@@ -244,6 +252,7 @@ export const mockEvents: Event[] = [
     lastUpdated: '2026-05-15T09:45:00Z',
     paymentType: 'free',
     capacity: 150,
+    description: 'Celebrate the richness of Indian culture through classical music, dance performances, and traditional cuisine. Open to all HSS families and friends. A wonderful opportunity to connect with our heritage.',
     metrics: {
       going: 88,
       maybe: 25,
@@ -268,6 +277,7 @@ export const mockEvents: Event[] = [
     createdDate: '2026-01-05T08:00:00Z',
     lastUpdated: '2026-03-02T10:00:00Z',
     paymentType: 'free',
+    description: 'A fun-filled day of friendly sporting competitions including cricket, kabaddi, and athletics for all age groups. Team spirit, fitness, and camaraderie are at the heart of this annual favourite.',
     metrics: {
       going: 210,
       maybe: 30,
@@ -294,6 +304,7 @@ export const mockEvents: Event[] = [
     paymentType: 'paid',
     price: 75,
     capacity: 100,
+    description: 'An elegant black-tie fundraising gala to support HSS community welfare and youth programmes. Includes a three-course dinner, live entertainment, and a charity auction. Smart dress required.',
     metrics: {
       going: 92,
       maybe: 18,
@@ -318,6 +329,7 @@ export const mockEvents: Event[] = [
     createdDate: '2026-02-01T09:00:00Z',
     lastUpdated: '2026-04-05T14:00:00Z',
     paymentType: 'free',
+    description: 'A 5km charity run through Leeds city centre to raise funds for local community projects supported by HSS Yorkshire. All fitness levels welcome. Medals and refreshments for all finishers.',
     cancelledDate: '2026-04-05T14:00:00Z',
     cancellationReason: 'Venue unavailable due to unforeseen circumstances.',
     metrics: {
@@ -345,6 +357,7 @@ export const mockEvents: Event[] = [
     lastUpdated: '2026-05-22T10:00:00Z',
     paymentType: 'free',
     capacity: 80,
+    description: 'A community Iftar gathering to foster interfaith friendships and celebrate shared values. All are welcome to break bread together in a spirit of unity, respect, and community.',
     metrics: {
       going: 0,
       maybe: 0,
@@ -371,6 +384,7 @@ export const mockEvents: Event[] = [
     paymentType: 'paid',
     price: 15,
     capacity: 300,
+    description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
     metrics: {
       going: 12,
       maybe: 5,
@@ -395,6 +409,7 @@ export const mockEvents: Event[] = [
     createdDate: '2026-04-01T08:00:00Z',
     lastUpdated: '2026-05-21T11:30:00Z',
     paymentType: 'free',
+    description: 'The annual general meeting for all HSS UK members and office bearers. Agenda includes review of the year\'s activities, financial report, election of new officers, and planning for the coming year. Attendance by all active members is strongly encouraged.',
     metrics: {
       going: 320,
       maybe: 55,
@@ -421,6 +436,7 @@ export const mockEvents: Event[] = [
     paymentType: 'paid',
     price: 30,
     capacity: 500,
+    description: 'A vibrant celebration of India\'s cultural heritage featuring folk performances, art exhibitions, traditional crafts, regional cuisine stalls, and talks on history and heritage. A must-attend for the whole family.',
     metrics: {
       going: 445,
       maybe: 60,

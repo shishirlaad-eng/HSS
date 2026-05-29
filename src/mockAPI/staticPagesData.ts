@@ -26,9 +26,9 @@ export const mockStaticPages: StaticPage[] = [
   },
   {
     id: 'SP-003',
-    name: 'About FadeOut',
-    slug: 'about-fadeout',
-    content: 'FadeOut is a social platform designed to help people connect through events that naturally fade out. We believe in spontaneous connections and meaningful interactions that live in the moment.\n\nOur mission is to reduce digital clutter and encourage real-world engagement by creating spaces that exist only as long as they are needed.\n\nJoin us in redefining social interaction for the modern age.',
+    name: 'About HSS',
+    slug: 'about-hss',
+    content: 'Hindu Swayamsevak Sangh (HSS) UK is a voluntary organisation dedicated to the service of the Hindu community and society at large. We bring together individuals and families through cultural, educational, and community activities rooted in the values of Dharma.\n\nOur mission is to foster unity, character development, and a sense of belonging among Hindus in the United Kingdom, while promoting the timeless values of Indian culture and heritage.\n\nThrough our network of Shakhas across the UK, HSS provides a welcoming space for people of all ages to learn, grow, and serve.',
     lastUpdated: '2024-01-10T09:00:00Z',
     updatedBy: 'Admin Sarah',
   },

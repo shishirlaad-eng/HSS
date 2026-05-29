@@ -142,7 +142,7 @@ export default function EmailTemplates() {
   const [templates, setTemplates] = useState<EmailTemplateItem[]>(initialTemplates);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<string>('name');
@@ -227,11 +227,12 @@ export default function EmailTemplates() {
   }, [templates, searchQuery, sortField, sortDirection]);
 
   const paginatedTemplates = useMemo(() => {
+    if (itemsPerPage === 0) return processedTemplates;
     const start = (currentPage - 1) * itemsPerPage;
     return processedTemplates.slice(start, start + itemsPerPage);
-  }, [processedTemplates, currentPage]);
+  }, [processedTemplates, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(processedTemplates.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(processedTemplates.length / itemsPerPage);
 
   const renderStatusBadge = (status: string) => {
     const isActive = status === 'active';
@@ -982,12 +983,13 @@ export default function EmailTemplates() {
         {/* ========== SEPARATE PAGINATION FOOTER ========== */}
         <div className="mt-6">
           {processedTemplates.length > 0 && (
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               totalItems={processedTemplates.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

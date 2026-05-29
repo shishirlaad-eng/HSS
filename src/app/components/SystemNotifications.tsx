@@ -91,7 +91,7 @@ export default function SystemNotifications() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<string>('createdDate');
@@ -166,11 +166,12 @@ export default function SystemNotifications() {
   }, [notifications, searchQuery, sortField, sortDirection]);
 
   const paginatedData = useMemo(() => {
+    if (itemsPerPage === 0) return processedData;
     const start = (currentPage - 1) * itemsPerPage;
     return processedData.slice(start, start + itemsPerPage);
-  }, [processedData, currentPage]);
+  }, [processedData, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(processedData.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(processedData.length / itemsPerPage);
 
   const renderStatusBadge = (status: string) => {
     const isActive = status === 'active';
@@ -605,12 +606,13 @@ export default function SystemNotifications() {
         {/* ========== SEPARATE PAGINATION FOOTER ========== */}
         <div className="mt-6">
           {processedData.length > 0 && (
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               totalItems={processedData.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

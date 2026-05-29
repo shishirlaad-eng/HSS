@@ -7,7 +7,6 @@ import { Sidebar } from "./components/Sidebar";
 import { GlobalHeader } from "./components/GlobalHeader";
 import UIKit from "./components/UIKit";
 import SampleDesign from "./components/SampleDesign";
-import UserManagement from "./components/UserManagement";
 import MemberManagement from "./components/MemberManagement";
 import EventManagement from "./components/EventManagement";
 import StaticPages from "./components/StaticPages";
@@ -214,8 +213,6 @@ export default function App() {
           <PendingApprovals />
         ) : currentPage === "pending-guardian-approvals" ? (
           <PendingGuardianApprovals />
-        ) : currentPage === "user-management" ? (
-          <UserManagement />
         ) : currentPage === "role-management" ? (
           <RoleManagement />
         ) : currentPage === "event-management" ? (

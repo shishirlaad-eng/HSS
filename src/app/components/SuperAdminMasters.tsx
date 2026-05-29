@@ -123,7 +123,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
   // ── View & pagination ──────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // ── Data ───────────────────────────────────────────────────────────────────
   const [countries,  setCountries]  = useState<MasterItem[]>(initialCountries);
@@ -291,11 +291,12 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
     return result;
   }, [currentDataArray, searchQuery, filterStatus, filterCountry, filterRegion, filterTown, sortField, sortDirection]);
 
-  const totalPages   = Math.ceil(processedData.length / itemsPerPage);
+  const totalPages   = itemsPerPage === 0 ? 1 : Math.ceil(processedData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
+    if (itemsPerPage === 0) return processedData;
     const start = (currentPage - 1) * itemsPerPage;
     return processedData.slice(start, start + itemsPerPage);
-  }, [processedData, currentPage]);
+  }, [processedData, currentPage, itemsPerPage]);
 
   // ─── Derived dropdown options ──────────────────────────────────────────────
   const countryOptions   = useMemo(() => countries.map(c => c.name), [countries]);
@@ -921,6 +922,7 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
               onPageChange={setCurrentPage}
               totalItems={processedData.length}
               itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
             />
           )}
         </div>

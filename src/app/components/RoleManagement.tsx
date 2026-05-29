@@ -62,7 +62,7 @@ export default function RoleManagement() {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Sorting state
   const [sortField, setSortField] = useState<string>('name');
@@ -235,9 +235,10 @@ export default function RoleManagement() {
   }, [filteredRoles, sortField, sortDirection]);
 
   const paginatedRoles = useMemo(() => {
+    if (itemsPerPage === 0) return sortedRoles;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedRoles.slice(start, start + itemsPerPage);
-  }, [sortedRoles, currentPage]);
+  }, [sortedRoles, currentPage, itemsPerPage]);
 
   // Auto-close column visibility panel when leaving table view
   useEffect(() => {
@@ -305,7 +306,7 @@ export default function RoleManagement() {
     }
   };
 
-  const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(filteredRoles.length / itemsPerPage);
 
   // Helper: Status Badge
   const getStatusBadge = (status: string) => {
@@ -338,8 +339,8 @@ export default function RoleManagement() {
       <PageHeader
         title="Role Management"
         breadcrumbs={[
-          { label: 'User Management', href: '#' },
-          { label: 'Role Management', current: true },
+          { label: 'Settings', href: '#' },
+          { label: 'Roles & Permissions', current: true },
         ]}
       >
         <div className="relative" ref={columnAnchorRef}>
@@ -574,6 +575,7 @@ export default function RoleManagement() {
         onPageChange={setCurrentPage}
         totalItems={filteredRoles.length}
         itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
       />
     </div>
   );

@@ -86,8 +86,6 @@ export function GlobalHeader({
     "hb-templates": t.nav.hbTemplates,
     "ui-kit": t.nav.uiKit,
     "sample-design": t.nav.samplePage,
-    "user-management-group": t.nav.userManagement,
-    "user-management": t.nav.users,
     "event-management-group": t.nav.eventManagement,
     "event-management": t.nav.events,
     "organisational-master": t.nav.organisationalMaster,
@@ -109,7 +107,6 @@ export function GlobalHeader({
   const getNavLabel = (id: string, fallback: string) => {
     let label = navLabelMap[id] ?? fallback;
     if (menuOrientation === "horizontal") {
-      if (id === "user-management-group") label = "User Mgmt";
       if (id === "event-management-group") label = "Event Mgmt";
       if (id === "organisational-master") label = "Master Mgmt";
     }
@@ -153,6 +150,8 @@ export function GlobalHeader({
   const [isScrolled, setIsScrolled] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] =
     useState(false);
+  const [horizVisibleCount, setHorizVisibleCount] = useState(999);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -169,6 +168,8 @@ export function GlobalHeader({
   const settingsRef = useRef<HTMLDivElement>(null);
   const supportRef = useRef<HTMLDivElement>(null);
   const horizNavRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const itemWidthsRef = useRef<number[]>([]);
 
   // FAQ data keyed by page/module
   const pageFaqData: Record<string, { id: string; q: string; a: string }[]> = {
@@ -705,6 +706,12 @@ export function GlobalHeader({
       ) {
         setOpenHorizSubmenu(null);
       }
+      if (
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowMoreMenu(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -714,6 +721,55 @@ export function GlobalHeader({
         handleClickOutside,
       );
   }, []);
+
+  // ── Horizontal nav overflow: measure item widths and calculate how many fit ──
+  useEffect(() => {
+    if (menuOrientation !== 'horizontal') {
+      setHorizVisibleCount(999);
+      itemWidthsRef.current = [];
+      return;
+    }
+    const wrapper = horizNavRef.current;
+    if (!wrapper) return;
+
+    // Cache natural widths once (on first render when all items are visible)
+    const cacheWidths = () => {
+      if (itemWidthsRef.current.length > 0) return;
+      const items = wrapper.querySelectorAll<HTMLElement>('[data-nav-item]');
+      const widths = Array.from(items).map(el => el.getBoundingClientRect().width);
+      if (widths.length > 0 && widths.every(w => w > 0)) {
+        itemWidthsRef.current = widths;
+      }
+    };
+
+    const recalc = () => {
+      cacheWidths();
+      const widths = itemWidthsRef.current;
+      if (!widths.length) return;
+      const available = wrapper.getBoundingClientRect().width;
+      const MORE_W = 92; // px reserved for "More ▾" button
+      let used = 0;
+      let count = 0;
+      for (let i = 0; i < widths.length; i++) {
+        const remaining = widths.length - i - 1;
+        const extra = remaining > 0 ? MORE_W : 0; // reserve space for "More" if items remain
+        if (used + widths[i] + extra > available) break;
+        used += widths[i];
+        count++;
+      }
+      setHorizVisibleCount(count >= widths.length ? 999 : count);
+    };
+
+    const ro = new ResizeObserver(recalc);
+    ro.observe(wrapper);
+    requestAnimationFrame(() => { cacheWidths(); recalc(); });
+    return () => ro.disconnect();
+  }, [menuOrientation]);
+
+  // Reset width cache when nav structure changes
+  useEffect(() => {
+    itemWidthsRef.current = [];
+  }, [navItems.length]);
 
   return (
     <header
@@ -742,10 +798,8 @@ export function GlobalHeader({
               ref={horizNavRef}
               className="flex items-center gap-0.5 min-w-0 flex-1"
             >
-              {getNavigationData(
-                currentPage,
-                onNavigate || (() => {}),
-              ).map((item) => {
+              {navItems.map((item, index) => {
+                const isOverflow = index >= horizVisibleCount;
                 const Icon = item.icon;
                 const isActive =
                   item.active ||
@@ -756,20 +810,16 @@ export function GlobalHeader({
                 return (
                   <div
                     key={item.id}
-                    className="relative flex-shrink-0"
-                    onMouseEnter={() =>
-                      setOpenHorizSubmenu(item.id)
-                    }
-                    onMouseLeave={() =>
-                      setOpenHorizSubmenu(null)
-                    }
+                    data-nav-item
+                    className={`relative flex-shrink-0 ${isOverflow ? 'invisible overflow-hidden !w-0 !p-0 pointer-events-none' : ''}`}
+                    onMouseEnter={() => !isOverflow && setOpenHorizSubmenu(item.id)}
+                    onMouseLeave={() => !isOverflow && setOpenHorizSubmenu(null)}
                   >
                     <button
                       onClick={() => {
+                        if (isOverflow) return;
                         if (hasSubItems) {
-                          setOpenHorizSubmenu(
-                            isOpen ? null : item.id,
-                          );
+                          setOpenHorizSubmenu(isOpen ? null : item.id);
                         } else {
                           item.onClick?.();
                           setOpenHorizSubmenu(null);
@@ -781,44 +831,103 @@ export function GlobalHeader({
                           : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
                       }`}
                     >
-                      {Icon && (
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                      )}
+                      {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
                       <span>{getNavLabel(item.id, item.label)}</span>
                       {hasSubItems && (
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
-                        />
+                        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                       )}
                     </button>
-                    {hasSubItems && isOpen && (
+                    {hasSubItems && isOpen && !isOverflow && (
                       <div className="absolute left-0 top-[100%] pt-1 min-w-[180px] z-50">
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
-                        {item.subItems!.map((subItem) => (
-                          <button
-                            key={subItem.id}
-                            onClick={() => {
-                              subItem.onClick?.();
-                              setOpenHorizSubmenu(null);
-                            }}
-                            className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                              subItem.active
-                                ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
-                            }`}
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
-                            <span>{getNavLabel(subItem.id, subItem.label)}</span>
-                          </button>
-                        ))}
+                          {item.subItems!.map((subItem) => (
+                            <button
+                              key={subItem.id}
+                              onClick={() => { subItem.onClick?.(); setOpenHorizSubmenu(null); }}
+                              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                subItem.active
+                                  ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                              }`}
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
+                              <span>{getNavLabel(subItem.id, subItem.label)}</span>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
                   </div>
                 );
               })}
+
+              {/* ── "More ▾" overflow button ───────────────────── */}
+              {horizVisibleCount < 999 && (
+                <div ref={moreMenuRef} className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowMoreMenu(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                      navItems.slice(horizVisibleCount).some(i => i.active || i.subItems?.some(s => s.active))
+                        ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <span>More</span>
+                    <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${showMoreMenu ? "rotate-180" : ""}`} />
+                  </button>
+                  {showMoreMenu && (
+                    <div className="absolute left-0 top-[calc(100%+4px)] min-w-[210px] z-50">
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
+                        {navItems.slice(horizVisibleCount).map((item) => {
+                          const Icon = item.icon;
+                          const isActive = item.active || item.subItems?.some(s => s.active);
+                          const hasSubItems = item.subItems && item.subItems.length > 0;
+                          if (hasSubItems) {
+                            return (
+                              <div key={item.id}>
+                                <div className="px-3 py-2 flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-100 dark:border-neutral-800">
+                                  {Icon && <Icon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />}
+                                  <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                    {getNavLabel(item.id, item.label)}
+                                  </span>
+                                </div>
+                                {item.subItems!.map((subItem) => (
+                                  <button
+                                    key={subItem.id}
+                                    onClick={() => { subItem.onClick?.(); setShowMoreMenu(false); }}
+                                    className={`w-full pl-8 pr-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                      subItem.active
+                                        ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                                    }`}
+                                  >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
+                                    <span>{getNavLabel(subItem.id, subItem.label)}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => { item.onClick?.(); setShowMoreMenu(false); }}
+                              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                isActive
+                                  ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                              }`}
+                            >
+                              {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                              <span>{getNavLabel(item.id, item.label)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (

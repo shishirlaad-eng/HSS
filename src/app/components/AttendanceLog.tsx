@@ -200,8 +200,8 @@ export default function AttendanceLog() {
     return rows;
   }, [searchQuery, filters, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated  = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated  = pageSize === 0 ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const presentCount = filtered.filter(r => r.attendanceStatus === 'present').length;
   const absentCount  = filtered.filter(r => r.attendanceStatus === 'absent').length;
@@ -412,22 +412,14 @@ export default function AttendanceLog() {
 
           {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
-              <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                <span>Rows per page:</span>
-                <select
-                  value={pageSize}
-                  onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-                  className="h-7 px-2 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs focus:outline-none"
-                >
-                  {[10, 15, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-                <span>
-                  {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}
-                </span>
-              </div>
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={p => { setPage(p); }} />
-            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              itemsPerPage={pageSize}
+              onPageChange={setPage}
+              onItemsPerPageChange={(n) => { setPageSize(n); setPage(1); }}
+            />
           )}
         </div>
 
