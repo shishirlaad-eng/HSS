@@ -19,6 +19,7 @@ import {
   CalendarClock,
   AlertCircle,
   UserCheck,
+  Heart,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
@@ -199,7 +200,15 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           { label: 'Home', href: '#' },
           { label: 'Dashboard', current: true },
         ]}
-      />
+      >
+        <button
+          onClick={() => onNavigate?.('donate')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
+        >
+          <Heart className="w-4 h-4" />
+          Donate
+        </button>
+      </PageHeader>
 
       {/* ── Row 1: Org structure KPIs ────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

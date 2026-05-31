@@ -53,6 +53,7 @@ import {
   FormSection,
 } from './hb/common';
 import { toast } from 'sonner';
+import { useModulePermissions } from '../contexts/RoleScopeContext';
 import {
   mockAnnouncements as initialAnnouncements,
   Announcement,
@@ -336,6 +337,8 @@ function CheckChip({
 type PageState = 'list' | 'detail';
 
 export default function Announcements() {
+  const ap = useModulePermissions('announcements');
+
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [pageState, setPageState]         = useState<PageState>('list');
   const [selected, setSelected]           = useState<Announcement | null>(null);
@@ -568,12 +571,12 @@ export default function Announcements() {
           ]}
         >
           <div className="flex items-center gap-2">
-            {canEditAnnouncement(selected) && (
+            {ap.canEdit && canEditAnnouncement(selected) && (
               <button className={btnGhost} onClick={() => openEdit(selected)}>
                 <Pencil className="w-4 h-4" /> Edit
               </button>
             )}
-            {canDeleteAnnouncement(selected) ? (
+            {ap.canDelete && (canDeleteAnnouncement(selected) ? (
               <button className={btnDanger} onClick={() => { setToDelete(selected); setShowDelete(true); }}>
                 <Trash2 className="w-4 h-4" /> Delete
               </button>
@@ -584,7 +587,7 @@ export default function Announcements() {
               >
                 <Trash2 className="w-4 h-4" /> Delete
               </span>
-            )}
+            ))}
           </div>
         </PageHeader>
 
@@ -812,9 +815,11 @@ export default function Announcements() {
           { label: 'Announcements', current: true },
         ]}
       >
-        <PrimaryButton icon={Plus} onClick={() => setShowCreate(true)}>
-          New Announcement
-        </PrimaryButton>
+        {ap.canAdd && (
+          <PrimaryButton icon={Plus} onClick={() => setShowCreate(true)}>
+            New Announcement
+          </PrimaryButton>
+        )}
       </PageHeader>
 
       {/* ── KPI Row ──────────────────────────────────────── */}
@@ -979,7 +984,7 @@ export default function Announcements() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {canDeleteAnnouncement(ann) ? (
+                          {ap.canDelete && (canDeleteAnnouncement(ann) ? (
                             <button
                               onClick={() => { setToDelete(ann); setShowDelete(true); }}
                               className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
@@ -998,7 +1003,7 @@ export default function Announcements() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </span>
-                          )}
+                          ))}
                         </div>
                       </div>
                     </div>

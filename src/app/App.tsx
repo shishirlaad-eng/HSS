@@ -24,11 +24,18 @@ import Announcements from "./components/Announcements";
 import Sessions from "./components/Sessions";
 import AttendanceLog from "./components/AttendanceLog";
 import MyProfile from "./components/MyProfile";
+import MembersReport from "./components/MembersReport";
+import EventsReport from "./components/EventsReport";
+import DonationsPaymentsReport from "./components/DonationsPaymentsReport";
+import AttendanceReport from "./components/AttendanceReport";
+import RefundReport from "./components/RefundReport";
 import { SiteMap } from "./components/SiteMap";
 import { FeedbackSystem } from "./components/FeedbackSystem";
 import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
+import StripeDonation from "./components/StripeDonation";
+import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
 const PAGE_LABELS: Record<string, string> = {
@@ -95,6 +102,7 @@ export default function App() {
   });
 
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [memberToView, setMemberToView] = useState<string | null>(null);
 
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(() => {
@@ -156,12 +164,18 @@ export default function App() {
     setCurrentPage(pageId);
   };
 
+  const handleRoleChange = (role: string) => {
+    setSelectedRole(role);
+    setCurrentPage("dashboard");
+  };
+
   if (!isAuthenticated) {
     return <SuperAdminAuth onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
 
   return (
     <LanguageProvider>
+    <RoleScopeProvider selectedRole={selectedRole}>
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
       {/* Sidebar */}
       <Sidebar
@@ -174,6 +188,7 @@ export default function App() {
         onNavigate={handleNavigate}
         logoUrl={logoUrl}
         menuOrientation={menuOrientation}
+        selectedRole={selectedRole}
       />
 
       {/* Main Content */}
@@ -198,11 +213,15 @@ export default function App() {
           onMenuOrientationChange={setMenuOrientation}
           currentPage={currentPage}
           onNavigate={handleNavigate}
+          selectedRole={selectedRole}
+          onRoleChange={handleRoleChange}
         />
 
         {/* Page Content */}
         {/* ── Existing implemented pages ── */}
-        {currentPage === "dashboard" ? (
+        {currentPage === "donate" ? (
+          <StripeDonation onBack={() => handleNavigate("dashboard")} />
+        ) : currentPage === "dashboard" ? (
           <Dashboard onNavigate={handleNavigate} />
         ) : currentPage === "members" ? (
           <MemberManagement
@@ -223,15 +242,15 @@ export default function App() {
             }}
           />
         ) : currentPage === "country" ? (
-          <SuperAdminMasters masterType="country"    onNavigate={handleNavigate} />
+          <SuperAdminMasters masterType="country"    onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "region" ? (
-          <SuperAdminMasters masterType="region"     onNavigate={handleNavigate} />
+          <SuperAdminMasters masterType="region"     onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "town" ? (
-          <SuperAdminMasters masterType="town"       onNavigate={handleNavigate} />
+          <SuperAdminMasters masterType="town"       onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "centre" ? (
-          <SuperAdminMasters masterType="centre"     onNavigate={handleNavigate} />
+          <SuperAdminMasters masterType="centre"     onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "role-types" ? (
-          <SuperAdminMasters masterType="role-types" onNavigate={handleNavigate} />
+          <SuperAdminMasters masterType="role-types" onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "system-settings" ? (
           <SystemSettings logoUrl={logoUrl} onLogoChange={handleLogoChange} />
         ) : currentPage === "static-pages" ? (
@@ -246,6 +265,16 @@ export default function App() {
           <Sessions />
         ) : currentPage === "attendance-log" ? (
           <AttendanceLog />
+        ) : currentPage === "report-members" ? (
+          <MembersReport />
+        ) : currentPage === "report-events" ? (
+          <EventsReport />
+        ) : currentPage === "report-donations" ? (
+          <DonationsPaymentsReport />
+        ) : currentPage === "report-attendance" ? (
+          <AttendanceReport />
+        ) : currentPage === "report-refunds" ? (
+          <RefundReport />
         ) : currentPage === "my-profile" ? (
           <MyProfile />
         ) : currentPage === "logs" ? (
@@ -283,6 +312,7 @@ export default function App() {
         theme={isDark ? "dark" : "light"}
       />
     </div>
+    </RoleScopeProvider>
     </LanguageProvider>
   );
 }

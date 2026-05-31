@@ -18,6 +18,8 @@ import {
 } from './hb/common';
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { mockRoles } from '../../mockAPI/rolesData';
+import { getRoleScope } from '../../mockAPI/roleScope';
 
 type ViewMode = 'grid' | 'list' | 'table';
 export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types';
@@ -116,9 +118,22 @@ const MASTER_TABS: { id: MasterType; label: string }[] = [
 interface SuperAdminMastersProps {
   masterType: MasterType;
   onNavigate?: (page: string) => void;
+  selectedRole?: string;
 }
 
-export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdminMastersProps) {
+export default function SuperAdminMasters({ masterType, onNavigate, selectedRole = 'Super Admin' }: SuperAdminMastersProps) {
+
+  // ── Masters permission flags (derived from selected role) ──────────────────
+  const mastersPerms = useMemo(() => {
+    const role = mockRoles.find(r => r.name === selectedRole);
+    const actions: string[] = role?.permissions?.masters ?? [];
+    return {
+      canAdd:    actions.includes('add'),
+      canEdit:   actions.includes('edit'),
+      canDelete: actions.includes('delete'),
+      canStatus: actions.includes('status'),
+    };
+  }, [selectedRole]);
 
   // ── View & pagination ──────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -242,16 +257,57 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
     return cols;
   }, [masterType, config, isStandaloneMaster]);
 
-  // ─── Raw data for current section ─────────────────────────────────────────
+  // ─── Raw data for current section (scoped to role's level) ───────────────
   const currentDataArray = useMemo(() => {
+    const scope = getRoleScope(selectedRole);
+    let data: MasterItem[];
     switch (masterType) {
-      case 'country':    return countries;
-      case 'region':     return regions;
-      case 'town':       return towns;
-      case 'centre':     return centres;
-      case 'role-types': return roleTypes;
+      case 'country':    data = countries;   break;
+      case 'region':     data = regions;     break;
+      case 'town':       data = towns;       break;
+      case 'centre':     data = centres;     break;
+      case 'role-types': return roleTypes;   // no geo-scope on role types
     }
-  }, [masterType, countries, regions, towns, centres, roleTypes]);
+    // Apply scope filtering on master items
+    if (scope.level === 'all') return data;
+    if (scope.level === 'national' && scope.country) {
+      // Regions: only those belonging to scope.country
+      if (masterType === 'region')  return data.filter(i => i.countryName === scope.country);
+      // Towns: only those whose regionName is in scope country's regions
+      if (masterType === 'town') {
+        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
+        const countryRegions: string[] = MC.regions[scope.country] ?? [];
+        return data.filter(i => countryRegions.includes(i.regionName ?? ''));
+      }
+      // Centres: only those whose town is in scope country
+      if (masterType === 'centre') {
+        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
+        const countryRegions: string[] = MC.regions[scope.country] ?? [];
+        const countryTowns: string[] = countryRegions.flatMap((r: string) => MC.towns[r] ?? []);
+        return data.filter(i => countryTowns.includes(i.townName ?? ''));
+      }
+    }
+    if (scope.level === 'regional' && scope.region) {
+      if (masterType === 'region')  return data.filter(i => i.name === scope.region);
+      if (masterType === 'town')    return data.filter(i => i.regionName === scope.region);
+      if (masterType === 'centre')  {
+        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
+        const regionTowns: string[] = MC.towns[scope.region] ?? [];
+        return data.filter(i => regionTowns.includes(i.townName ?? ''));
+      }
+    }
+    if (scope.level === 'town' && scope.town) {
+      if (masterType === 'region')  return data.filter(i => i.name === scope.region);
+      if (masterType === 'town')    return data.filter(i => i.name === scope.town);
+      if (masterType === 'centre')  return data.filter(i => i.townName === scope.town);
+    }
+    if (scope.level === 'centre' && scope.centre) {
+      if (masterType === 'region')  return data.filter(i => i.name === scope.region);
+      if (masterType === 'town')    return data.filter(i => i.name === scope.town);
+      if (masterType === 'centre')  return data.filter(i => i.name === scope.centre);
+    }
+    return data;
+  }, [masterType, countries, regions, towns, centres, roleTypes, selectedRole]);
 
   const setCurrentDataArray = (updater: (prev: MasterItem[]) => MasterItem[]) => {
     switch (masterType) {
@@ -488,18 +544,27 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
   ], [currentDataArray]);
 
   // ─── Row action menu items ─────────────────────────────────────────────────
-  const getRowMenuItems = (item: MasterItem) => [
-    { icon: Eye,    label: 'View Details', onClick: () => { setActiveItem(item); setModalMode('view'); } },
-    { icon: Edit,   label: 'Edit Record',  onClick: () => { setActiveItem(item); setModalMode('edit'); } },
-    { divider: true },
-    {
-      icon: item.status === 'active' ? ToggleLeft : ToggleRight,
-      label: item.status === 'active' ? 'Deactivate' : 'Activate',
-      onClick: () => setStatusTarget(item),
-    },
-    { divider: true },
-    { icon: Trash2, label: 'Delete Record', onClick: () => setDeleteTarget(item) },
-  ];
+  const getRowMenuItems = (item: MasterItem) => {
+    const items: any[] = [
+      { icon: Eye, label: 'View Details', onClick: () => { setActiveItem(item); setModalMode('view'); } },
+    ];
+    if (mastersPerms.canEdit) {
+      items.push({ icon: Edit, label: 'Edit Record', onClick: () => { setActiveItem(item); setModalMode('edit'); } });
+    }
+    if (mastersPerms.canStatus) {
+      items.push({ divider: true });
+      items.push({
+        icon: item.status === 'active' ? ToggleLeft : ToggleRight,
+        label: item.status === 'active' ? 'Deactivate' : 'Activate',
+        onClick: () => setStatusTarget(item),
+      });
+    }
+    if (mastersPerms.canDelete) {
+      items.push({ divider: true });
+      items.push({ icon: Trash2, label: 'Delete Record', onClick: () => setDeleteTarget(item) });
+    }
+    return items;
+  };
 
   // ─── Filter select shared style ────────────────────────────────────────────
   const filterSelectClass = `h-10 px-3 text-xs border border-neutral-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-primary-400 dark:focus:border-primary-600`;
@@ -567,9 +632,11 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
               </select>
             )}
 
-            <PrimaryButton icon={Plus} onClick={handleCreateNew}>
-              {config.addLabel}
-            </PrimaryButton>
+            {mastersPerms.canAdd && (
+              <PrimaryButton icon={Plus} onClick={handleCreateNew}>
+                {config.addLabel}
+              </PrimaryButton>
+            )}
 
             <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
             <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
@@ -889,14 +956,20 @@ export default function SuperAdminMasters({ masterType, onNavigate }: SuperAdmin
                       )}
                       <td className="px-6 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          <IconButton icon={Edit}   borderless onClick={() => { setActiveItem(item); setModalMode('edit'); }} title="Edit" />
-                          <IconButton
-                            icon={item.status === 'active' ? ToggleRight : ToggleLeft}
-                            borderless
-                            onClick={() => setStatusTarget(item)}
-                            title={item.status === 'active' ? 'Deactivate' : 'Activate'}
-                          />
-                          <IconButton icon={Trash2} borderless onClick={() => setDeleteTarget(item)} title="Delete" />
+                          {mastersPerms.canEdit && (
+                            <IconButton icon={Edit} borderless onClick={() => { setActiveItem(item); setModalMode('edit'); }} title="Edit" />
+                          )}
+                          {mastersPerms.canStatus && (
+                            <IconButton
+                              icon={item.status === 'active' ? ToggleRight : ToggleLeft}
+                              borderless
+                              onClick={() => setStatusTarget(item)}
+                              title={item.status === 'active' ? 'Deactivate' : 'Activate'}
+                            />
+                          )}
+                          {mastersPerms.canDelete && (
+                            <IconButton icon={Trash2} borderless onClick={() => setDeleteTarget(item)} title="Delete" />
+                          )}
                         </div>
                       </td>
                     </tr>

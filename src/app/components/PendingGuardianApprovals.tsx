@@ -39,6 +39,7 @@ import {
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
+import { useModulePermissions } from '../contexts/RoleScopeContext';
 
 type ViewMode   = 'grid' | 'list' | 'table';
 type PageState  = 'list' | 'detail';
@@ -253,6 +254,8 @@ const FILTER_OPTIONS: Record<string, string[]> = {
 // ── Main component ────────────────────────────────────────────
 
 export default function PendingGuardianApprovals() {
+  const mp = useModulePermissions('members');
+
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
   const [viewMode, setViewMode]   = useState<ViewMode>('grid');
@@ -420,9 +423,11 @@ export default function PendingGuardianApprovals() {
   // ── Row action menus ────────────────────────────────────────
 
   const getRowMenuItems = (m: Member) => [
-    { icon: Eye,         label: 'View',               onClick: () => { setSelectedMember(m); setPageState('detail'); } },
-    { icon: CheckCircle, label: 'Approve (Guardian)',  onClick: () => openModal(m, 'approve') },
-    { icon: Ban,         label: 'Reject',              onClick: () => openModal(m, 'reject')  },
+    { icon: Eye, label: 'View', onClick: () => { setSelectedMember(m); setPageState('detail'); } },
+    ...(mp.canApproveGuardian ? [
+      { icon: CheckCircle, label: 'Approve (Guardian)', onClick: () => openModal(m, 'approve') },
+      { icon: Ban,         label: 'Reject',             onClick: () => openModal(m, 'reject')  },
+    ] : []),
   ];
 
   // ── Detail sub-page ─────────────────────────────────────────
@@ -603,20 +608,24 @@ export default function PendingGuardianApprovals() {
                     </div>
                     {/* Row actions */}
                     <div className="flex items-center gap-2 ml-4 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => openModal(m, 'approve')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Approve (Guardian)
-                      </button>
-                      <button
-                        onClick={() => openModal(m, 'reject')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        Reject
-                      </button>
+                      {mp.canApproveGuardian && (
+                        <button
+                          onClick={() => openModal(m, 'approve')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Approve (Guardian)
+                        </button>
+                      )}
+                      {mp.canApproveGuardian && (
+                        <button
+                          onClick={() => openModal(m, 'reject')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      )}
                       <IconButton icon={MoreVertical} borderless title="More" menuItems={getRowMenuItems(m)} />
                     </div>
                   </div>

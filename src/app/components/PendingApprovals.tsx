@@ -42,6 +42,7 @@ import {
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
+import { useModulePermissions } from '../contexts/RoleScopeContext';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail';
@@ -269,6 +270,8 @@ const FILTER_OPTIONS: Record<string, string[]> = {
 // ── Main component ────────────────────────────────────────────
 
 export default function PendingApprovals() {
+  const mp = useModulePermissions('members');
+
   // Source: all members; only pending-approval ones shown
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
@@ -427,9 +430,11 @@ export default function PendingApprovals() {
   // ── Row action menus ────────────────────────────────────────
 
   const getRowMenuItems = (m: Member) => [
-    { icon: Eye,          label: 'View',    onClick: () => { setSelectedMember(m); setPageState('detail'); } },
-    { icon: CheckCircle,  label: 'Approve', onClick: () => openModal(m, 'approve') },
-    { icon: Ban,          label: 'Reject',  onClick: () => openModal(m, 'reject')  },
+    { icon: Eye, label: 'View', onClick: () => { setSelectedMember(m); setPageState('detail'); } },
+    ...(mp.canApprove ? [
+      { icon: CheckCircle, label: 'Approve', onClick: () => openModal(m, 'approve') },
+      { icon: Ban,         label: 'Reject',  onClick: () => openModal(m, 'reject')  },
+    ] : []),
   ];
 
   // ── Detail sub-page ─────────────────────────────────────────
@@ -453,8 +458,8 @@ export default function PendingApprovals() {
           onStatusChange={() => {}}
           onDelete={() => {}}
           mode="approval"
-          onApprove={() => openModal(liveMember, 'approve')}
-          onReject={() => openModal(liveMember, 'reject')}
+          onApprove={mp.canApprove ? () => openModal(liveMember, 'approve') : undefined}
+          onReject={mp.canApprove  ? () => openModal(liveMember, 'reject')  : undefined}
         />
         <ApproveConfirmModal
           isOpen={modal.isOpen && modal.action === 'approve'}
@@ -602,20 +607,24 @@ export default function PendingApprovals() {
                     </div>
                     {/* Row actions */}
                     <div className="flex items-center gap-2 ml-4 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => openModal(m, 'approve')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => openModal(m, 'reject')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        Reject
-                      </button>
+                      {mp.canApprove && (
+                        <button
+                          onClick={() => openModal(m, 'approve')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Approve
+                        </button>
+                      )}
+                      {mp.canApprove && (
+                        <button
+                          onClick={() => openModal(m, 'reject')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      )}
                       <IconButton icon={MoreVertical} borderless title="More" menuItems={getRowMenuItems(m)} />
                     </div>
                   </div>

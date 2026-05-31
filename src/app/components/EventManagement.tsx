@@ -53,6 +53,8 @@ import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/memb
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
 import { toast } from 'sonner';
+import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
+import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
@@ -592,17 +594,19 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
 }
 
 // ─── FILTER OPTIONS ───────────────────────────────────────────────────────────
-const FILTER_OPTIONS = {
+const EVENT_FILTER_BASE = {
   'Status': ['Draft', 'Published', 'Active', 'Cancelled', 'Completed'],
   'Payment Type': ['Paid', 'Free'],
-  'Country': MASTERS_CASCADE.countries,
-  'Region': Object.keys(MASTERS_CASCADE.towns),
-  'Town': Object.values(MASTERS_CASCADE.towns).flat(),
-  'Activity Centre': Object.values(MASTERS_CASCADE.centres).flat(),
 };
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function EventManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
+  // ── Role scope & permissions ─────────────────────────────────
+  const { scope } = useRoleScope();
+  const ep = useModulePermissions('events');
+  const scopedFilterOptions = getScopedFilterOptions(scope);
+  const scopedEvents = useMemo(() => filterByScope(mockEvents, scope), [scope]);
+
   const [viewMode, setViewMode]       = useState<ViewMode>('grid');
   const [events, setEvents]           = useState<Event[]>(mockEvents);
   const [searchQuery, setSearchQuery] = useState('');
@@ -669,7 +673,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
 
   // Filtering
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    return scopedEvents.filter(event => {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         event.name.toLowerCase().includes(q) ||
@@ -841,11 +845,11 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
     const past = isPastStart(event);
     const isCancelledOrCompleted = event.status === 'cancelled' || event.status === 'completed';
     return {
-      canModify:   !past,
+      canModify:   ep.canEdit && !past,
       modifyTip:   past ? 'Event cannot be edited after it starts.' : 'Modify Event',
-      canActivate: !isCancelledOrCompleted,
-      canCancel:   !isCancelledOrCompleted,
-      canDelete:   canDelete(event),
+      canActivate: ep.canEdit && !isCancelledOrCompleted,
+      canCancel:   ep.canCancel && !isCancelledOrCompleted,
+      canDelete:   ep.canDelete && canDelete(event),
       deleteTip:   !canDelete(event)
         ? (event.status === 'completed' ? 'Completed events cannot be deleted.' : 'Event cannot be deleted after it starts.')
         : 'Delete Event',
@@ -957,7 +961,13 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
-              filterOptions={FILTER_OPTIONS}
+              filterOptions={{
+                ...EVENT_FILTER_BASE,
+                ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
+                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+              }}
             />
             <ColumnVisibilityPanel
               isOpen={showColumnPanel}
@@ -969,20 +979,23 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
             />
           </div>
 
-          <PrimaryButton icon={Plus} onClick={() => setShowCreateModal(true)}>
-            Create Event
-          </PrimaryButton>
-
+          {ep.canAdd && (
+            <PrimaryButton icon={Plus} onClick={() => setShowCreateModal(true)}>
+              Create Event
+            </PrimaryButton>
+          )}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton icon={RefreshCw} onClick={() => toast.info('Refreshed.')} title="Refresh" />
-          <IconButton
-            icon={MoreVertical}
-            title="More options"
-            menuItems={[
-              { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
-              { icon: FileText,        label: 'Export as PDF',   onClick: () => handleExport('pdf')   },
-            ]}
-          />
+          {ep.canExport && (
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
+                { icon: FileText,        label: 'Export as PDF',   onClick: () => handleExport('pdf')   },
+              ]}
+            />
+          )}
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
 
@@ -992,9 +1005,9 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
             title="Event Summary"
             widgets={[
               { label: 'Total Events',     value: events.length,                                       icon: 'Activity'   },
-              { label: 'Active',           value: events.filter(e => e.status === 'active').length,    icon: 'CheckCircle'},
-              { label: 'Draft/Published',  value: events.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock' },
-              { label: 'Completed',        value: events.filter(e => e.status === 'completed').length, icon: 'XCircle'   },
+              { label: 'Active',           value: scopedEvents.filter(e => e.status === 'active').length,    icon: 'CheckCircle'},
+              { label: 'Draft/Published',  value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock' },
+              { label: 'Completed',        value: scopedEvents.filter(e => e.status === 'completed').length, icon: 'XCircle'   },
             ]}
           />
         )}

@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  X,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -30,6 +31,8 @@ import type { FilterCondition } from './hb/listing';
 import { mockSessions, SHAKHA_TYPES, getSessionShakhaType } from '../../mockAPI/attendanceData';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
+import { useRoleScope } from '../contexts/RoleScopeContext';
+import { getScopedFilterOptions } from '../../mockAPI/roleScope';
 
 // ── Constants ─────────────────────────────────────────────────
 const ALL_REGIONS  = MASTERS_CASCADE.regions['HSS UK'] ?? [];
@@ -43,6 +46,7 @@ const FILTER_OPTIONS: Record<string, string[]> = {
   'Activity Centre': ALL_CENTRES.sort(),
   'Shakha Type':     [...SHAKHA_TYPES],
   'Gender':          ['Male', 'Female'],
+  'Age Category':    ['Shishu', 'Bal', 'Kishor', 'Tarun', 'Yuva', 'Jyestha'],
   'Role Type':       [],  // populated dynamically below
   'Status':          ['Present', 'Absent'],
 };
@@ -146,11 +150,77 @@ function SortTh({ label, sortKey, current, dir, onSort }: {
   );
 }
 
+// ── Date Range Bar ────────────────────────────────────────────
+function DateRangeBar({
+  dateFrom, dateTo,
+  onFromChange, onToChange, onClear,
+}: {
+  dateFrom: string; dateTo: string;
+  onFromChange: (v: string) => void;
+  onToChange:   (v: string) => void;
+  onClear: () => void;
+}) {
+  const hasRange = dateFrom || dateTo;
+  return (
+    <div className="flex items-center gap-3 px-1 pb-3">
+      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 whitespace-nowrap">Date Range</span>
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+          <input
+            type="date"
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={e => onFromChange(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+        <span className="text-xs text-neutral-400">—</span>
+        <div className="relative">
+          <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={e => onToChange(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+        {hasRange && (
+          <button
+            onClick={onClear}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs text-neutral-500 hover:text-error-600 dark:hover:text-error-400 hover:bg-error-50 dark:hover:bg-error-950 rounded-lg transition-colors"
+            title="Clear date range"
+          >
+            <X className="w-3.5 h-3.5" /> Clear
+          </button>
+        )}
+      </div>
+      {hasRange && (
+        <span className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+          {dateFrom && dateTo
+            ? `${formatDate(dateFrom)} – ${formatDate(dateTo)}`
+            : dateFrom
+              ? `From ${formatDate(dateFrom)}`
+              : `Until ${formatDate(dateTo)}`
+          }
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────
 export default function AttendanceLog() {
+  // ── Role scope ──────────────────────────────────────────────
+  const { scope } = useRoleScope();
+  const scopedFilterOptions = getScopedFilterOptions(scope);
+
   const [searchQuery,        setSearchQuery]        = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters,            setFilters]            = useState<FilterCondition[]>([]);
+  const [dateFrom,           setDateFrom]           = useState('');
+  const [dateTo,             setDateTo]             = useState('');
   const [showSummary,        setShowSummary]        = useState(true);
   const [sortKey,            setSortKey]            = useState<SortKey>('date');
   const [sortDir,            setSortDir]            = useState<SortDir>('desc');
@@ -160,10 +230,26 @@ export default function AttendanceLog() {
   const activeFilterCount = filters.filter(f => f.values.length > 0).length;
 
   // ── Filter + sort ─────────────────────────────────────────
+  // Scope-filtered log entries (base dataset)
+  const scopedLogEntries = useMemo(() => {
+    // Member (18+) / Teen: only their own records
+    if (scope.selfOnly && scope.selfMemberId) {
+      return ALL_LOG_ENTRIES.filter(r => r.memberId === scope.selfMemberId);
+    }
+    if (scope.level === 'all') return ALL_LOG_ENTRIES;
+    return ALL_LOG_ENTRIES.filter(r => {
+      if (scope.level === 'national')  return r.region         === scope.region || scopedFilterOptions.regionOptions.includes(r.region);
+      if (scope.level === 'regional')  return r.region         === scope.region;
+      if (scope.level === 'town')      return r.town           === scope.town;
+      if (scope.level === 'centre')    return r.activityCentre === scope.centre;
+      return true;
+    });
+  }, [scope, scopedFilterOptions.regionOptions]);
+
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
 
-    let rows = ALL_LOG_ENTRIES.filter(r => {
+    let rows = scopedLogEntries.filter(r => {
       // Search
       if (q && !(
         r.memberName.toLowerCase().includes(q) ||
@@ -173,6 +259,10 @@ export default function AttendanceLog() {
         r.region.toLowerCase().includes(q)
       )) return false;
 
+      // Date range
+      if (dateFrom && r.date < dateFrom) return false;
+      if (dateTo   && r.date > dateTo)   return false;
+
       // Advanced filters
       for (const f of filters) {
         if (!f.values.length) continue;
@@ -181,8 +271,9 @@ export default function AttendanceLog() {
           case 'Town':            if (!f.values.includes(r.town))                             return false; break;
           case 'Activity Centre': if (!f.values.includes(r.activityCentre))                  return false; break;
           case 'Shakha Type':     if (!f.values.includes(r.shakhaType))                       return false; break;
-          case 'Gender':          if (!f.values.map(v=>v.toLowerCase()).includes(r.gender))   return false; break;
-          case 'Role Type':       if (!f.values.includes(r.jobTitle))                         return false; break;
+          case 'Gender':          if (!f.values.map(v=>v.toLowerCase()).includes(r.gender))          return false; break;
+          case 'Age Category':    if (!f.values.map(v=>v.toLowerCase()).includes(r.ageCategory)) return false; break;
+          case 'Role Type':       if (!f.values.includes(r.jobTitle))                             return false; break;
           case 'Status':          if (!f.values.map(v=>v.toLowerCase()).includes(r.attendanceStatus)) return false; break;
         }
       }
@@ -198,7 +289,7 @@ export default function AttendanceLog() {
     });
 
     return rows;
-  }, [searchQuery, filters, sortKey, sortDir]);
+  }, [searchQuery, filters, dateFrom, dateTo, sortKey, sortDir, scopedLogEntries]);
 
   const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = pageSize === 0 ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -234,7 +325,7 @@ export default function AttendanceLog() {
         {/* ── PAGE HEADER ── */}
         <PageHeader
           title="Attendance Log"
-          subtitle="Complete record of member attendance across all Shakha sessions."
+          subtitle={scope.selfOnly ? "Your personal attendance record." : "Complete record of member attendance across all Shakha sessions."}
           breadcrumbs={[
             { label: 'Attendance' },
             { label: 'Attendance Log', current: true },
@@ -245,22 +336,31 @@ export default function AttendanceLog() {
             <SearchBar
               value={searchQuery}
               onChange={v => { setSearchQuery(v); setPage(1); }}
-              onAdvancedSearch={() => setShowAdvancedSearch(true)}
+              onAdvancedSearch={scope.selfOnly ? undefined : () => setShowAdvancedSearch(true)}
               activeFilterCount={activeFilterCount}
-              placeholder="Search member, role, centre, session…"
+              placeholder={scope.selfOnly ? "Search sessions…" : "Search member, role, centre, session…"}
             />
             <AdvancedSearchPanel
               isOpen={showAdvancedSearch}
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={f => { setFilters(f); setPage(1); }}
-              filterOptions={FILTER_OPTIONS}
+              filterOptions={{
+                ...(scope.showRegionFilter  ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter    ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter  ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+                'Shakha Type':  FILTER_OPTIONS['Shakha Type'],
+                'Gender':       FILTER_OPTIONS['Gender'],
+                'Age Category': FILTER_OPTIONS['Age Category'],
+                'Role Type':    FILTER_OPTIONS['Role Type'],
+                'Status':       FILTER_OPTIONS['Status'],
+              }}
               title="Filter Attendance Log"
             />
           </div>
 
           <IconButton icon={BarChart3}   onClick={() => setShowSummary(s => !s)} title="Toggle Summary" />
-          <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setPage(1); }} title="Reset" />
+          <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setPage(1); }} title="Reset" />
           <IconButton
             icon={MoreVertical}
             title="More options"
@@ -269,6 +369,15 @@ export default function AttendanceLog() {
             ]}
           />
         </PageHeader>
+
+        {/* ── DATE RANGE FILTER ── */}
+        <DateRangeBar
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onFromChange={v => { setDateFrom(v); setPage(1); }}
+          onToChange={v => { setDateTo(v); setPage(1); }}
+          onClear={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+        />
 
         {/* ── SUMMARY WIDGETS ── */}
         {showSummary && (

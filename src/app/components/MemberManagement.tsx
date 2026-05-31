@@ -70,6 +70,8 @@ import {
 import MemberDetail from './MemberDetail';
 import MemberEdit from './MemberEdit';
 import { toast } from 'sonner';
+import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
+import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
@@ -983,7 +985,17 @@ export default function MemberManagement({
   initialMemberId?: string | null;
   onConsumeInitialMember?: () => void;
 } = {}) {
-  const [members, setMembers] = useState<Member[]>(mockMembers);
+  // ── Role scope & permissions ─────────────────────────────────
+  const { scope } = useRoleScope();
+  const mp = useModulePermissions('members');
+  const scopedFilterOptions = getScopedFilterOptions(scope);
+
+  // Base member list scoped to role's level
+  const [members, setMembers] = useState<Member[]>(() => filterByScope(mockMembers, scope));
+
+  // Re-scope when role switches (scope comes from context which updates on role change)
+  const scopedMembers = useMemo(() => filterByScope(mockMembers, scope), [scope]);
+
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -1050,7 +1062,7 @@ export default function MemberManagement({
 
   const filteredMembers = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return members.filter((m) => {
+    return scopedMembers.filter((m) => {
       const matchesSearch = !q ||
         m.name.toLowerCase().includes(q) ||
         m.email.toLowerCase().includes(q) ||
@@ -1223,19 +1235,22 @@ export default function MemberManagement({
 
   // ── Row action items ────────────────────────────────────────
 
-  const getRowMenuItems = (m: Member) => [
-    { icon: Eye,   label: 'View',   onClick: () => handleViewDetails(m) },
-    { icon: Edit,  label: 'Edit',   onClick: () => handleEdit(m) },
-    ...(m.status === 'active'
-      ? [{ icon: ToggleLeft,  label: 'Deactivate', onClick: () => openStatusModal(m, 'deactivate') }]
-      : [{ icon: ToggleRight, label: 'Reactivate', onClick: () => openStatusModal(m, 'reactivate') }]
-    ),
-    ...(m.status === 'pending' || m.status === 'pending-parental-consent'
-      ? [{ icon: Ban, label: 'Reject', onClick: () => openStatusModal(m, 'reject') }]
-      : []
-    ),
-    { icon: Trash2, label: 'Delete', onClick: () => openDeleteModal(m) },
-  ];
+  const getRowMenuItems = (m: Member) => {
+    const items: any[] = [
+      { icon: Eye, label: 'View', onClick: () => handleViewDetails(m) },
+    ];
+    if (mp.canEdit)   items.push({ icon: Edit, label: 'Edit', onClick: () => handleEdit(m) });
+    if (mp.canEdit) {
+      items.push(m.status === 'active'
+        ? { icon: ToggleLeft,  label: 'Deactivate', onClick: () => openStatusModal(m, 'deactivate') }
+        : { icon: ToggleRight, label: 'Reactivate',  onClick: () => openStatusModal(m, 'reactivate') });
+    }
+    if (mp.canApprove && (m.status === 'pending' || m.status === 'pending-parental-consent')) {
+      items.push({ icon: Ban, label: 'Reject', onClick: () => openStatusModal(m, 'reject') });
+    }
+    if (mp.canDelete) items.push({ icon: Trash2, label: 'Delete', onClick: () => openDeleteModal(m) });
+    return items;
+  };
 
   // ── Sub-page rendering ──────────────────────────────────────
 
@@ -1326,7 +1341,18 @@ export default function MemberManagement({
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
-              filterOptions={MEMBER_FILTER_OPTIONS}
+              filterOptions={{
+                'Status':            MEMBER_FILTER_OPTIONS['Status'],
+                'Age Groups (years old)': MEMBER_FILTER_OPTIONS['Age Groups (years old)'],
+                'Gender':            MEMBER_FILTER_OPTIONS['Gender'],
+                'Role Type':         MEMBER_FILTER_OPTIONS['Role Type'],
+                ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
+                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+                'DBS Status':        MEMBER_FILTER_OPTIONS['DBS Status'],
+                'First Aid Status':  MEMBER_FILTER_OPTIONS['First Aid Status'],
+              }}
               title="Filter Members"
             />
             <ColumnVisibilityPanel
@@ -1339,20 +1365,23 @@ export default function MemberManagement({
             />
           </div>
 
-          <PrimaryButton icon={Plus} onClick={() => setShowAddModal(true)}>
-            Add Member
-          </PrimaryButton>
-
-          <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />
+          {mp.canAdd && (
+            <PrimaryButton icon={Plus} onClick={() => setShowAddModal(true)}>
+              Add Member
+            </PrimaryButton>
+          )}
+          {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
-          <IconButton
-            icon={MoreVertical}
-            title="More options"
-            menuItems={[
-              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
-            ]}
-          />
+          {mp.canExport && (
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
+              ]}
+            />
+          )}
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
 
@@ -1458,8 +1487,10 @@ export default function MemberManagement({
                 </div>
 
                 <div className="flex-1">
-                  <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5">{m.name}</h4>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-1">{m.jobTitle}</p>
+                  <div className="flex items-baseline gap-2 mb-0.5 min-w-0">
+                    <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate">{m.name}</h4>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate flex-shrink-0">{m.jobTitle}</span>
+                  </div>
                   <p className="text-xs text-neutral-400 dark:text-neutral-600 font-mono mb-3">{m.id}</p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1586,21 +1617,23 @@ export default function MemberManagement({
                       <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <IconButton icon={Eye}   borderless onClick={() => handleViewDetails(m)} title="View" />
-                          <IconButton icon={Edit}  borderless onClick={() => handleEdit(m)} title="Edit" />
-                          <IconButton
-                            icon={m.status === 'active' ? ToggleLeft : ToggleRight}
-                            borderless
-                            onClick={() => openStatusModal(m, m.status === 'active' ? 'deactivate' : 'reactivate')}
-                            title={m.status === 'active' ? 'Deactivate' : 'Reactivate'}
-                            className={m.status === 'active' ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}
-                          />
-                          <IconButton
+                          {mp.canEdit && <IconButton icon={Edit} borderless onClick={() => handleEdit(m)} title="Edit" />}
+                          {mp.canEdit && (
+                            <IconButton
+                              icon={m.status === 'active' ? ToggleLeft : ToggleRight}
+                              borderless
+                              onClick={() => openStatusModal(m, m.status === 'active' ? 'deactivate' : 'reactivate')}
+                              title={m.status === 'active' ? 'Deactivate' : 'Reactivate'}
+                              className={m.status === 'active' ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}
+                            />
+                          )}
+                          {mp.canDelete && <IconButton
                             icon={Trash2}
                             borderless
                             onClick={() => openDeleteModal(m)}
                             title="Delete"
                             className="text-neutral-400 hover:text-[#BC0F1C] dark:hover:text-[#f87171]"
-                          />
+                          />}
                         </div>
                       </td>
                     </tr>

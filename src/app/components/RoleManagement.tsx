@@ -51,10 +51,13 @@ import {
 } from './hb/common';
 import { mockRoles, availableModules, Role, ModulePermission } from '../../mockAPI/rolesData';
 import { toast } from 'sonner';
+import { useModulePermissions } from '../contexts/RoleScopeContext';
 
 type ViewMode = 'grid' | 'table';
 
 export default function RoleManagement() {
+  const rp = useModulePermissions('rbac');
+
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -216,10 +219,10 @@ export default function RoleManagement() {
   // Memoized Data
   const filteredRoles = useMemo(() => {
     return mockRoles.filter(role => {
-      const matchesSearch = 
+      if (role.code === 'super_admin') return false; // Super Admin always has full access — not editable here
+      const matchesSearch =
         role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         role.code.toLowerCase().includes(searchQuery.toLowerCase());
-      
       return matchesSearch;
     });
   }, [searchQuery]);
@@ -361,9 +364,11 @@ export default function RoleManagement() {
           />
         </div>
 
-        <PrimaryButton icon={Plus} onClick={handleCreate}>
-          Add Role
-        </PrimaryButton>
+        {rp.canAdd && (
+          <PrimaryButton icon={Plus} onClick={handleCreate}>
+            Add Role
+          </PrimaryButton>
+        )}
 
         <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
         <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
@@ -388,9 +393,9 @@ export default function RoleManagement() {
         <SummaryWidgets
           title="Role Summary"
           widgets={[
-            { label: 'Total Roles', value: mockRoles.length, icon: 'Briefcase' },
-            { label: 'Active Roles', value: mockRoles.filter(r => r.status === 'active').length, icon: 'CheckCircle' },
-            { label: 'Inactive Roles', value: mockRoles.filter(r => r.status === 'inactive').length, icon: 'XCircle' },
+            { label: 'Total Roles', value: mockRoles.filter(r => r.code !== 'super_admin').length, icon: 'Briefcase' },
+            { label: 'Active Roles', value: mockRoles.filter(r => r.code !== 'super_admin' && r.status === 'active').length, icon: 'CheckCircle' },
+            { label: 'Inactive Roles', value: mockRoles.filter(r => r.code !== 'super_admin' && r.status === 'inactive').length, icon: 'XCircle' },
           ]}
         />
       )}
@@ -424,10 +429,10 @@ export default function RoleManagement() {
                     borderless={true}
                     menuItems={[
                       { icon: Eye, label: 'View Role', onClick: () => handleEdit(role) },
-                      { icon: Edit2, label: 'Edit Role', onClick: () => handleEdit(role) },
-                      { icon: Copy, label: 'Clone Role', onClick: () => handleClone(role) },
-                      { icon: RefreshCw, label: 'Change Status', onClick: () => {} },
-                      { icon: Trash2, label: 'Delete Role', onClick: () => handleDelete(role), variant: 'danger' as any },
+                      ...(rp.canEdit   ? [{ icon: Edit2,     label: 'Edit Role',     onClick: () => handleEdit(role) }]   : []),
+                      ...(rp.canAdd    ? [{ icon: Copy,      label: 'Clone Role',    onClick: () => handleClone(role) }]  : []),
+                      ...(rp.canDelete ? [{ icon: RefreshCw, label: 'Change Status', onClick: () => {} }]                : []),
+                      ...(rp.canDelete ? [{ icon: Trash2,    label: 'Delete Role',   onClick: () => handleDelete(role), variant: 'danger' as any }] : []),
                     ]}
                   />
                 </div>

@@ -30,6 +30,7 @@ export interface Role {
 // MODULE LIST — aligned with left navigation structure
 // ─────────────────────────────────────────────────────────────
 export const availableModules: ModulePermission[] = [
+  // 1. Dashboard
   {
     id: "dashboard",
     name: "Dashboard",
@@ -37,18 +38,33 @@ export const availableModules: ModulePermission[] = [
       { id: "view", name: "View Dashboard", code: "dashboard_view" },
     ],
   },
+  // 2. Masters
+  {
+    id: "masters",
+    name: "Masters",
+    actions: [
+      { id: "view",   name: "View / List",             code: "masters_view" },
+      { id: "add",    name: "Add",                     code: "masters_add" },
+      { id: "edit",   name: "Edit",                    code: "masters_edit" },
+      { id: "delete", name: "Delete",                  code: "masters_delete" },
+      { id: "status", name: "Active / Inactive",       code: "masters_status" },
+    ],
+  },
+  // 3. Members Management
   {
     id: "members",
     name: "Members Management",
     actions: [
-      { id: "view",    name: "View / List",           code: "members_view" },
-      { id: "add",     name: "Add Member",             code: "members_add" },
-      { id: "edit",    name: "Edit Member",            code: "members_edit" },
-      { id: "delete",  name: "Delete Member",          code: "members_delete" },
-      { id: "approve", name: "Approve / Reject",       code: "members_approve" },
-      { id: "export",  name: "Export CSV",             code: "members_export" },
+      { id: "view",             name: "View / List",                         code: "members_view" },
+      { id: "add",              name: "Add Member",                          code: "members_add" },
+      { id: "edit",             name: "Edit Member",                         code: "members_edit" },
+      { id: "delete",           name: "Delete Member",                       code: "members_delete" },
+      { id: "approve",          name: "Approve / Reject Registrations",      code: "members_approve" },
+      { id: "approve_guardian", name: "Approve / Reject Guardian Approval",  code: "members_approve_guardian" },
+      { id: "export",           name: "Export CSV",                          code: "members_export" },
     ],
   },
+  // 4. Events Management
   {
     id: "events",
     name: "Events Management",
@@ -61,6 +77,7 @@ export const availableModules: ModulePermission[] = [
       { id: "export",  name: "Export CSV",             code: "events_export" },
     ],
   },
+  // 5. Announcements
   {
     id: "announcements",
     name: "Announcements",
@@ -71,45 +88,47 @@ export const availableModules: ModulePermission[] = [
       { id: "delete", name: "Delete Announcement",     code: "announcements_delete" },
     ],
   },
+  // 6. Attendance
   {
     id: "attendance",
     name: "Attendance",
     actions: [
-      { id: "view",   name: "View / List",             code: "attendance_view" },
-      { id: "add",    name: "Mark Attendance",         code: "attendance_add" },
-      { id: "edit",   name: "Edit / Unmark",           code: "attendance_edit" },
-      { id: "delete", name: "Delete Session",          code: "attendance_delete" },
+      { id: "view",     name: "View / List",           code: "attendance_view" },
+      { id: "view_log", name: "View Attendance Log",   code: "attendance_view_log" },
+      { id: "add",      name: "Mark Attendance",       code: "attendance_add" },
+      { id: "edit",     name: "Edit / Unmark",         code: "attendance_edit" },
+      { id: "delete",   name: "Delete Session",        code: "attendance_delete" },
     ],
   },
+  // 7. Reports
   {
     id: "reports",
     name: "Reports",
     actions: [
-      { id: "view",   name: "View Reports",            code: "reports_view" },
-      { id: "export", name: "Export CSV",              code: "reports_export" },
+      { id: "members_view",      name: "View Members Report",                code: "reports_members_view" },
+      { id: "members_export",    name: "Export Members Report",              code: "reports_members_export" },
+      { id: "events_view",       name: "View Events Report",                 code: "reports_events_view" },
+      { id: "events_export",     name: "Export Events Report",               code: "reports_events_export" },
+      { id: "attendance_view",   name: "View Attendance Report",             code: "reports_attendance_view" },
+      { id: "attendance_export", name: "Export Attendance Report",           code: "reports_attendance_export" },
+      { id: "donations_view",    name: "View Donations & Payments Report",   code: "reports_donations_view" },
+      { id: "donations_export",  name: "Export Donations & Payments Report", code: "reports_donations_export" },
+      { id: "refunds_view",      name: "View Refunds Report",                code: "reports_refunds_view" },
+      { id: "refunds_export",    name: "Export Refunds Report",              code: "reports_refunds_export" },
     ],
   },
-  {
-    id: "masters",
-    name: "Masters",
-    actions: [
-      { id: "view",   name: "View / List",             code: "masters_view" },
-      { id: "add",    name: "Add",                     code: "masters_add" },
-      { id: "edit",   name: "Edit",                    code: "masters_edit" },
-      { id: "delete", name: "Delete",                  code: "masters_delete" },
-      { id: "status", name: "Active / Inactive",       code: "masters_status" },
-    ],
-  },
+  // 8. Roles & Permissions (under Settings in nav)
   {
     id: "rbac",
     name: "Roles & Permissions (RBAC)",
     actions: [
       { id: "view",   name: "View Roles",              code: "rbac_view" },
       { id: "edit",   name: "Edit Permissions",        code: "rbac_edit" },
-      { id: "add",    name: "Create Role",             code: "rbac_add" },
-      { id: "delete", name: "Delete Role",             code: "rbac_delete" },
+      { id: "add",    name: "Create / Edit Role",      code: "rbac_add" },
+      { id: "delete", name: "Active / De-active Role", code: "rbac_delete" },
     ],
   },
+  // 9. Settings
   {
     id: "settings",
     name: "Settings",
@@ -118,6 +137,7 @@ export const availableModules: ModulePermission[] = [
       { id: "edit",   name: "Edit Settings",           code: "settings_edit" },
     ],
   },
+  // 10. Audit Logging
   {
     id: "audit-logs",
     name: "Audit Logging",
@@ -132,119 +152,125 @@ export const availableModules: ModulePermission[] = [
 // ─────────────────────────────────────────────────────────────
 export const mockRoles: Role[] = [
 
-  // 1. Super Admin ─ full access
+  // 1. Super Admin ─ full access to everything (only role with Settings, RBAC, Audit Logging)
   {
     id: "1",
     name: "Super Admin",
     code: "super_admin",
-    description: "Full system access. Only persona with Settings, Masters CRUD, and Audit Logging.",
+    description: "Full system access. Only role with Settings, RBAC, Masters CRUD, and Audit Logging.",
     status: "active",
     userCount: 2,
     lastUpdated: "2025-01-10T10:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      members:       ["view", "add", "edit", "delete", "approve", "export"],
+      masters:       ["view", "add", "edit", "delete", "status"],
+      members:       ["view", "add", "edit", "delete", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
-      attendance:    ["view", "add", "edit", "delete"],
-      reports:       ["view", "export"],
-      masters:       ["view", "add", "edit", "delete", "status"],
+      attendance:    ["view", "view_log", "add", "edit", "delete"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
       rbac:          ["view", "edit", "add", "delete"],
       settings:      ["view", "edit"],
       "audit-logs":  ["view"],
     },
   },
 
-  // 2. National Head ─ broad access, view-only on Masters, no Settings/Audit
+  // 2. National Head ─ sees national + all levels below (regions, towns, centres)
+  //    No Settings, No RBAC, No Audit Logging
+  //    Attendance: log view only (not session setup or mark/unmark)
   {
     id: "2",
     name: "National Head",
     code: "national_head",
-    description: "National-level admin. Can manage members and events. View-only access to Masters.",
+    description: "National-level admin. Views all regions, towns and centres data. No CRUD on members.",
     status: "active",
     userCount: 1,
     lastUpdated: "2025-01-12T09:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      members:       ["view", "add", "edit", "approve", "export"],
+      masters:       ["view"],
+      members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
-      attendance:    ["view"],
-      reports:       ["view", "export"],
-      masters:       ["view"],
-      rbac:          ["view", "edit"],
+      attendance:    ["view", "view_log"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
     },
   },
 
-  // 3. Regional Head ─ regional scope, view-only on Masters
+  // 3. Regional Head ─ sees own region + towns + centres below
+  //    No Settings, No RBAC, No Audit Logging
+  //    Attendance: full (session setup + mark/unmark + log)
   {
     id: "3",
     name: "Regional Head",
     code: "regional_head",
-    description: "Regional-level admin. Manages members and events within their region.",
+    description: "Regional-level admin. Views own region data and all towns/centres within it. No CRUD on members.",
     status: "active",
     userCount: 5,
     lastUpdated: "2025-01-14T11:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      members:       ["view", "add", "edit", "approve", "export"],
+      masters:       ["view"],
+      members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
-      attendance:    ["view"],
-      reports:       ["view", "export"],
-      masters:       ["view"],
-      rbac:          ["view", "edit"],
+      attendance:    ["view", "view_log", "add", "edit", "delete"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
     },
   },
 
-  // 4. Town Head ─ town scope, view-only on Masters
+  // 4. Town Head ─ sees own town + centres below
+  //    No Settings, No RBAC, No Audit Logging
+  //    Attendance: full
   {
     id: "4",
     name: "Town Head",
     code: "town_head",
-    description: "Town-level admin. Manages members and events within their town.",
+    description: "Town-level admin. Views own town data and all activity centres within it. No CRUD on members.",
     status: "active",
     userCount: 12,
     lastUpdated: "2025-01-15T14:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      members:       ["view", "add", "edit", "approve", "export"],
+      masters:       ["view"],
+      members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
-      attendance:    ["view"],
-      reports:       ["view", "export"],
-      masters:       ["view"],
-      rbac:          ["view", "edit"],
+      attendance:    ["view", "view_log", "add", "edit", "delete"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
     },
   },
 
-  // 5. Activity Centre Admin ─ centre scope, attendance CRUD, events CRU
+  // 5. Activity Centre Admin ─ sees own centre data only
+  //    No Settings, No RBAC, No Audit Logging
+  //    Masters: Role Types view only
+  //    Attendance: full
   {
     id: "5",
     name: "Activity Centre Admin",
     code: "activity_centre_admin",
-    description: "Manages their activity centre: members, attendance, and events (before event date).",
+    description: "Manages their own activity centre. Views Role Types only in Masters. No CRUD on members.",
     status: "active",
     userCount: 28,
     lastUpdated: "2025-01-16T10:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      members:       ["view", "add", "edit", "approve", "export"],
+      masters:       ["view"],
+      members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
-      attendance:    ["view", "add", "edit", "delete"],
-      reports:       ["view", "export"],
-      masters:       ["view"],
-      rbac:          ["view", "edit", "add", "delete"],
+      attendance:    ["view", "view_log", "add", "edit", "delete"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
     },
   },
 
-  // 6. Event Admin ─ event CRUD only (before event date), view members
+  // 6. Event Admin ─ full event CRUD, view members listing only
+  //    No Masters, No Attendance, No Reports, No Settings, No RBAC
   {
     id: "6",
     name: "Event Admin",
     code: "event_admin",
-    description: "Creates and manages events (CRUD before event date). View-only for members.",
+    description: "Creates and manages events (full CRUD). View-only access to member listings.",
     status: "active",
     userCount: 8,
     lastUpdated: "2025-01-17T10:00:00Z",
@@ -253,17 +279,16 @@ export const mockRoles: Role[] = [
       members:       ["view"],
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view"],
-      attendance:    [],
-      reports:       [],
     },
   },
 
-  // 7. Reporting User ─ view + export reports and member/event listings
+  // 7. Reporting User ─ view + export all reports, view member/event listings
+  //    No Masters, No Attendance, No Settings, No RBAC
   {
     id: "7",
     name: "Reporting User",
     code: "reporting_user",
-    description: "Read-only access to member listings and event data. Can export reports.",
+    description: "Read-only access to member and event listings. Can view and export all reports.",
     status: "active",
     userCount: 4,
     lastUpdated: "2025-01-18T10:00:00Z",
@@ -272,62 +297,97 @@ export const mockRoles: Role[] = [
       members:       ["view", "export"],
       events:        ["view", "export"],
       announcements: ["view"],
-      attendance:    [],
-      reports:       ["view", "export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
     },
   },
 
-  // 8. Ops User ─ attendance CRUD, view events/members
+  // 8. Ops User ─ attendance full CRUD, view events only
+  //    No Members Management, No Masters, No Reports, No Settings, No RBAC
   {
     id: "8",
     name: "Ops User",
     code: "ops_user",
-    description: "Operational staff. Manages attendance (Shakha sessions). View access to members and events.",
+    description: "Operational staff. Full attendance management (sessions + mark/unmark + log). View-only events.",
     status: "active",
     userCount: 15,
     lastUpdated: "2025-01-19T10:00:00Z",
     permissions: {
-      dashboard:     [],
-      members:       ["view"],
-      events:        ["view", "edit"],
+      dashboard:     ["view"],
+      events:        ["view"],
       announcements: ["view"],
-      attendance:    ["view", "add", "edit", "delete"],
+      attendance:    ["view", "view_log", "add", "edit", "delete"],
     },
   },
 
-  // 9. Member (18+) ─ public-facing portal: view events/announcements, own profile
+  // 9. Member (18+) ─ view events + announcements, mark/unmark own attendance
+  //    No Members Management, No Masters, No Reports, No Settings, No RBAC
   {
     id: "9",
     name: "Member (18+)",
     code: "member_adult",
-    description: "Adult member portal access. Can view events and announcements, manage own profile.",
+    description: "Adult member portal. Can view events and announcements, and mark/unmark own attendance.",
     status: "active",
     userCount: 320,
     lastUpdated: "2025-01-20T10:00:00Z",
     permissions: {
-      dashboard:     [],
-      members:       [],
-      events:        ["view", "edit"],  // edit = register/update own participation
+      dashboard:     ["view"],
+      events:        ["view"],
       announcements: ["view"],
-      attendance:    [],
+      attendance:    ["add", "edit"],
     },
   },
 
-  // 10. Teen (13–17) ─ same as Member (18+) but age-gated
+  // 10. Teen (13–17) ─ same as Member (18+) but guardian consent required
   {
     id: "10",
     name: "Teen (13–17)",
     code: "member_teen",
-    description: "Teen member portal access (13–17). Same scope as adult member; guardian consent required.",
+    description: "Teen member portal (13–17). Same access as adult member. Guardian consent required for attendance.",
     status: "active",
     userCount: 85,
     lastUpdated: "2025-01-20T10:00:00Z",
     permissions: {
-      dashboard:     [],
-      members:       [],
-      events:        ["view", "edit"],
+      dashboard:     ["view"],
+      events:        ["view"],
       announcements: ["view"],
-      attendance:    [],
+      attendance:    ["add", "edit"],
     },
   },
 ];
+
+// Flat list of role names for use in dropdowns
+export const ADMIN_ROLE_OPTIONS: string[] = mockRoles
+  .filter(r => r.status === 'active')
+  .map(r => r.name);
+
+// Maps role permission keys → sidebar nav group IDs
+const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
+  dashboard:     ['dashboard'],
+  members:       ['members-management-group'],
+  events:        ['events-management-group'],
+  announcements: ['announcements'],
+  attendance:    ['attendance-group'],
+  reports:       ['reports-group'],
+  masters:       ['masters-group'],
+  rbac:          ['role-management'],
+  settings:      ['settings-group'],
+  'audit-logs':  ['audit-logging'],
+};
+
+/**
+ * Returns the set of top-level nav group IDs visible for a given role name.
+ * A module is visible if the role has at least one permission action for it.
+ */
+export function getPermittedNavIds(roleName: string): Set<string> {
+  const role = mockRoles.find(r => r.name === roleName);
+  if (!role) return new Set(Object.values(PERMISSION_TO_NAV_IDS).flat()); // fallback: show all
+
+  const permitted = new Set<string>();
+  for (const [key, actions] of Object.entries(role.permissions)) {
+    if (actions.length > 0) {
+      const navIds = PERMISSION_TO_NAV_IDS[key] ?? [];
+      navIds.forEach(id => permitted.add(id));
+    }
+  }
+  return permitted;
+}

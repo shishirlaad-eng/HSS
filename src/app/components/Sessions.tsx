@@ -18,6 +18,8 @@ import CreateSession from './CreateSession';
 import SessionDetail from './SessionDetail';
 import { mockSessions, ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
 import { MASTERS_CASCADE, mockMembers, getAgeGroup } from '../../mockAPI/membersData';
+import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
+import { filterByScope } from '../../mockAPI/roleScope';
 
 // ── Helpers ──────────────────────────────────────────────────
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -91,13 +93,18 @@ export default function Sessions() {
     return d;
   });
 
+  // ── Role scope & permissions ─────────────────────────────────
+  const { scope } = useRoleScope();
+  const atp = useModulePermissions('attendance');
+
   const [filterRegion, setFilterRegion]   = useState('');
   const [filterTown,   setFilterTown]     = useState('');
   const [filterCentre, setFilterCentre]   = useState('');
   const [selectedSession, setSelectedSession] = useState<ShakhaSession | null>(null);
   const [createDate,      setCreateDate]      = useState<string | null>(null);
 
-  // Local sessions list — starts from mock data, new sessions are appended
+  // Sessions scoped to role level
+  const scopedSessions = useMemo(() => filterByScope(mockSessions, scope), [scope]);
   const [sessions, setSessions] = useState<ShakhaSession[]>(mockSessions);
 
   const handleCreateSession = (newSessions: ShakhaSession[]) => {
@@ -128,24 +135,34 @@ export default function Sessions() {
     setSelectedSession(prev => (prev ? updateSession(prev) : prev));
   };
 
-  // Cascade options
-  const regionOptions  = MASTERS_CASCADE.regions['HSS UK'] ?? [];
-  const townOptions    = filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [];
-  const centreOptions  = filterTown   ? (MASTERS_CASCADE.centres[filterTown]  ?? []) : [];
+  // Cascade options — scoped to role level
+  const regionOptions  = scope.level === 'all' || scope.level === 'national'
+    ? (MASTERS_CASCADE.regions[scope.country ?? 'HSS UK'] ?? [])
+    : scope.region ? [scope.region] : [];
+  const townOptions    = scope.showTownFilter
+    ? (filterRegion
+        ? (MASTERS_CASCADE.towns[filterRegion] ?? [])
+        : scope.region ? (MASTERS_CASCADE.towns[scope.region] ?? []) : [])
+    : [];
+  const centreOptions  = scope.showCentreFilter
+    ? (filterTown
+        ? (MASTERS_CASCADE.centres[filterTown] ?? [])
+        : scope.town ? (MASTERS_CASCADE.centres[scope.town] ?? []) : [])
+    : [];
 
   // Reset dependent filters on parent change
   const handleRegionChange = (v: string) => { setFilterRegion(v); setFilterTown(''); setFilterCentre(''); };
   const handleTownChange   = (v: string) => { setFilterTown(v);   setFilterCentre(''); };
 
-  // Filtered sessions
+  // Filtered sessions — base is already scoped, then apply user-selected filters
   const filteredSessions = useMemo(() => {
-    return sessions.filter(s => {
+    return scopedSessions.filter(s => {
       if (filterRegion && s.region !== filterRegion) return false;
       if (filterTown   && s.town   !== filterTown)   return false;
       if (filterCentre && s.activityCentre !== filterCentre) return false;
       return true;
     });
-  }, [sessions, filterRegion, filterTown, filterCentre]);
+  }, [scopedSessions, filterRegion, filterTown, filterCentre]);
 
   // Sessions indexed by ISO date
   const sessionsByDate = useMemo(() => {
@@ -241,12 +258,14 @@ export default function Sessions() {
           { label: 'Sessions', current: true },
         ]}
       >
-        <PrimaryButton
-          icon={Plus}
-          onClick={() => setCreateDate(isoDate(today.getFullYear(), today.getMonth(), today.getDate()))}
-        >
-          Create Session
-        </PrimaryButton>
+        {atp.canView && atp.canAdd && (
+          <PrimaryButton
+            icon={Plus}
+            onClick={() => setCreateDate(isoDate(today.getFullYear(), today.getMonth(), today.getDate()))}
+          >
+            Create Session
+          </PrimaryButton>
+        )}
       </PageHeader>
 
       {/* ── Toolbar row 1: nav + view toggle ── */}
@@ -312,44 +331,50 @@ export default function Sessions() {
       {/* ── Toolbar row 2: always-visible filters ── */}
       <div className="flex flex-wrap items-end gap-3 mb-4 p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
         <Filter className="w-4 h-4 text-neutral-400 self-center mt-4 flex-shrink-0" />
-        {/* Region */}
-        <div className="flex flex-col gap-1 min-w-[180px] flex-1">
-          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Region</label>
-          <select
-            value={filterRegion}
-            onChange={e => handleRegionChange(e.target.value)}
-            className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">All Regions</option>
-            {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
-        {/* Town */}
-        <div className="flex flex-col gap-1 min-w-[160px] flex-1">
-          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Town</label>
-          <select
-            value={filterTown}
-            onChange={e => handleTownChange(e.target.value)}
-            disabled={!filterRegion}
-            className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All Towns</option>
-            {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        {/* Activity Centre */}
-        <div className="flex flex-col gap-1 min-w-[200px] flex-1">
-          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Activity Centre</label>
-          <select
-            value={filterCentre}
-            onChange={e => setFilterCentre(e.target.value)}
-            disabled={!filterTown}
-            className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All Centres</option>
-            {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+        {/* Region — hidden if role is already scoped to a specific region */}
+        {scope.showRegionFilter && (
+          <div className="flex flex-col gap-1 min-w-[180px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Region</label>
+            <select
+              value={filterRegion}
+              onChange={e => handleRegionChange(e.target.value)}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Regions</option>
+              {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        )}
+        {/* Town — hidden if role is already scoped to a specific town */}
+        {scope.showTownFilter && (
+          <div className="flex flex-col gap-1 min-w-[160px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Town</label>
+            <select
+              value={filterTown}
+              onChange={e => handleTownChange(e.target.value)}
+              disabled={scope.showRegionFilter && !filterRegion}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Towns</option>
+              {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+        {/* Activity Centre — hidden if role is already scoped to a specific centre */}
+        {scope.showCentreFilter && (
+          <div className="flex flex-col gap-1 min-w-[200px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Activity Centre</label>
+            <select
+              value={filterCentre}
+              onChange={e => setFilterCentre(e.target.value)}
+              disabled={scope.showTownFilter && !filterTown}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Centres</option>
+              {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
         {/* Clear */}
         {activeFilters > 0 ? (
           <button
