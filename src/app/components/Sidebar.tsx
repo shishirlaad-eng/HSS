@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
+import { getPermittedNavIds } from "../../mockAPI/rolesData";
 import {
   FormModal,
   FormLabel,
@@ -29,6 +30,7 @@ interface SidebarProps {
   onNavigate?: (pageId: string) => void;
   logoUrl?: string;
   menuOrientation?: "vertical" | "horizontal";
+  selectedRole?: string;
 }
 
 export function Sidebar({
@@ -39,6 +41,7 @@ export function Sidebar({
   onNavigate,
   logoUrl,
   menuOrientation = "vertical",
+  selectedRole = "Super Admin",
 }: SidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([
     "employee-management",
@@ -112,11 +115,12 @@ export function Sidebar({
     );
   };
 
-  // Get navigation data from mockAPI
+  // Get navigation data and filter by role permissions
+  const permittedNavIds = getPermittedNavIds(selectedRole);
   const menuItems = getNavigationData(
     currentPage,
     onNavigate || (() => { }),
-  );
+  ).filter(item => permittedNavIds.has(item.id));
 
   // Translate nav labels using the language context
   const { t } = useLanguage();

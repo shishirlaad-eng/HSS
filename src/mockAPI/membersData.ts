@@ -137,6 +137,7 @@ export interface Member {
   occupation?: string;
   spokenLanguages?: string[];
   originatingStateIndia?: string;
+  adminRole?: string;
   responsibilityType?: ResponsibilityType;
   responsibilityLevel?: ResponsibilityLevel;
   eventsAttended: number;

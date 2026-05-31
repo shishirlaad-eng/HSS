@@ -186,8 +186,8 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             { key: 'ipAddress', label: 'IP Address' },
           ] as ColumnConfig[],
           filterOptions: {
-            'Module': ['User Management', 'Event Management', 'Settings'],
-            'Action Type': ['Create', 'Update', 'Delete'],
+            'Module': ['Members', 'Events', 'Sessions', 'Attendance', 'Announcements', 'Email Templates', 'Role Management', 'Static Pages', 'Settings'],
+            'Action Type': ['Create', 'Update', 'Delete', 'Status Change', 'Import', 'Export', 'Permission Update'],
             'Date Range': ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month'],
           }
         };
@@ -257,6 +257,14 @@ export default function LogsManagement({ type }: LogsManagementProps) {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelectedIds(next);
+  };
+
+  const toggleExpandLog = (id: string) => {
+    setExpandedLogIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
   const handleSort = (field: string) => {
@@ -1050,26 +1058,6 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                         <FormLabel>Change Description</FormLabel>
                         <FormTextArea value={selectedLog.description} readOnly rows={2} />
                       </FormField>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField>
-                          <FormLabel>Before Change</FormLabel>
-                          <FormTextArea 
-                            value={JSON.stringify(selectedLog.details.before, null, 2)} 
-                            readOnly 
-                            rows={6}
-                            className="font-mono text-[13px]" 
-                          />
-                        </FormField>
-                        <FormField>
-                          <FormLabel>After Change</FormLabel>
-                          <FormTextArea 
-                            value={JSON.stringify(selectedLog.details.after, null, 2)} 
-                            readOnly 
-                            rows={6}
-                            className="font-mono text-[13px]" 
-                          />
-                        </FormField>
-                      </div>
                     </div>
                   )}
                 </FormSection>

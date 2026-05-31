@@ -16,20 +16,4 @@ export const mockStaticPages: StaticPage[] = [
     lastUpdated: '2024-03-15T14:30:00Z',
     updatedBy: 'Admin Sarah',
   },
-  {
-    id: 'SP-002',
-    name: 'Privacy Policy',
-    slug: 'privacy-policy',
-    content: 'At FadeOut, we are committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information about you when you use our mobile application.\n\n1. Information We Collect\nWe collect information you provide directly to us, such as when you create an account or participate in an event.\n\n2. How We Use Information\nWe use the information we collect to provide, maintain, and improve our services, and to communicate with you.\n\n3. Data Sharing\nWe do not share your personal information with third parties except as described in this policy.',
-    lastUpdated: '2024-02-28T10:15:00Z',
-    updatedBy: 'Admin Michael',
-  },
-  {
-    id: 'SP-003',
-    name: 'About HSS',
-    slug: 'about-hss',
-    content: 'Hindu Swayamsevak Sangh (HSS) UK is a voluntary organisation dedicated to the service of the Hindu community and society at large. We bring together individuals and families through cultural, educational, and community activities rooted in the values of Dharma.\n\nOur mission is to foster unity, character development, and a sense of belonging among Hindus in the United Kingdom, while promoting the timeless values of Indian culture and heritage.\n\nThrough our network of Shakhas across the UK, HSS provides a welcoming space for people of all ages to learn, grow, and serve.',
-    lastUpdated: '2024-01-10T09:00:00Z',
-    updatedBy: 'Admin Sarah',
-  },
 ];

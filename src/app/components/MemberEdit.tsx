@@ -29,6 +29,7 @@ import {
   getMemberTypeFromAge,
 } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
+import { ADMIN_ROLE_OPTIONS } from '../../mockAPI/rolesData';
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
@@ -173,6 +174,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     firstAidStatus: member.compliance.firstAid,
     dbsRef: member.dbsRef ?? '',
     firstAidRef: member.firstAidRef ?? '',
+    adminRole: member.adminRole ?? 'Member (18+)',
     responsibilityType: member.responsibilityType ?? RESPONSIBILITY_TYPE_OPTIONS[0],
     responsibilityLevel: member.responsibilityLevel ?? RESPONSIBILITY_LEVEL_OPTIONS[3],
   });
@@ -304,6 +306,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         occupation: formData.occupation.trim() || undefined,
         spokenLanguages: formData.spokenLanguages,
         originatingStateIndia: formData.originatingStateIndia.trim() || undefined,
+        adminRole: formData.adminRole || undefined,
         responsibilityType: formData.responsibilityType as Member['responsibilityType'],
         responsibilityLevel: formData.responsibilityLevel as Member['responsibilityLevel'],
       };
@@ -482,6 +485,13 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         <div className="space-y-6">
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
             <div className="space-y-4">
+              <FormField>
+                <FormLabel>Role</FormLabel>
+                <FormSelect value={formData.adminRole} onChange={set('adminRole')}>
+                  <option value="">— Select Role —</option>
+                  {ADMIN_ROLE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
+                </FormSelect>
+              </FormField>
               <FormField>
                 <FormLabel>Responsibility Type</FormLabel>
                 <FormSelect value={formData.responsibilityType} onChange={set('responsibilityType')}>

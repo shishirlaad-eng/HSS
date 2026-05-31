@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
+import { ADMIN_ROLE_OPTIONS } from "../../mockAPI/rolesData";
 import {
   FormModal,
   FormLabel,
@@ -62,6 +63,8 @@ interface GlobalHeaderProps {
   ) => void;
   currentPage?: string;
   onNavigate?: (pageId: string) => void;
+  selectedRole?: string;
+  onRoleChange?: (role: string) => void;
 }
 
 export function GlobalHeader({
@@ -75,6 +78,8 @@ export function GlobalHeader({
   onMenuOrientationChange,
   currentPage = "dashboard",
   onNavigate,
+  selectedRole = "Super Admin",
+  onRoleChange,
 }: GlobalHeaderProps) {
   const { language: currentLanguage, setLanguage, t, languages } =
     useLanguage();
@@ -1383,6 +1388,23 @@ export function GlobalHeader({
               )}
             </div>
           )}
+
+          {/* Role Switcher Dropdown */}
+          <div className="relative flex items-center">
+            <div className="relative">
+              <select
+                value={selectedRole}
+                onChange={e => onRoleChange?.(e.target.value)}
+                className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
+                title="Switch role view"
+              >
+                {ADMIN_ROLE_OPTIONS.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 dark:text-neutral-500" />
+            </div>
+          </div>
 
           {/* Notifications Dropdown */}
           <div className="relative" ref={notificationsRef}>

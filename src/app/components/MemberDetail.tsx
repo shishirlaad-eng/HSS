@@ -832,6 +832,14 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               <div className="px-6 pb-5 pt-4 space-y-4">
                 <div>
                   <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+                    Role
+                  </span>
+                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                    {valueOrDash(member.adminRole)}
+                  </p>
+                </div>
+                <div>
+                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
                     Responsibility Type
                   </span>
                   <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
