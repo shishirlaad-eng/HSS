@@ -44,7 +44,7 @@ const PAGE_LABELS: Record<string, string> = {
   "report-donations":           "Donations / Payment Report",
   "report-attendance":          "Attendance Report",
   "report-refunds":             "Refund Report",
-  "role-types":                 "Role Types (Departments)",
+  "role-types":                 "Responsibility",
 };
 
 function PlaceholderPage({ page }: { page: string }) {

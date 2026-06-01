@@ -160,7 +160,7 @@ export function Sidebar({
     "region":                         "Regions",
     "town":                           "Towns",
     "centre":                         "Activity Centres",
-    "role-types":                     "Role Types (Departments)",
+    "role-types":                     "Responsibility",
 
     // 8. Settings
     "role-management":                "Roles & Permissions",

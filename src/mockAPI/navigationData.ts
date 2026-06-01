@@ -73,7 +73,7 @@ export const getNavigationData = (
         },
         {
           id: "role-types",
-          label: "Role Types (Departments)",
+          label: "Responsibility",
           onClick: () => onNavigate("role-types"),
           active: currentPage === "role-types",
         },
