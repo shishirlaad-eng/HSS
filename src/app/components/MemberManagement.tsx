@@ -26,6 +26,7 @@ import {
   ShieldAlert,
   X,
   FileUp,
+  CalendarDays,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -37,6 +38,7 @@ import {
   PrimaryButton,
   ColumnVisibilityPanel,
   SummaryWidgets,
+  DateRangeFilter,
   type ColumnConfig,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
@@ -1013,6 +1015,13 @@ export default function MemberManagement({
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
 
+  // Registration date range filter
+  const [regDateStart,  setRegDateStart]  = useState('');
+  const [regDateEnd,    setRegDateEnd]    = useState('');
+  const [regDateLabel,  setRegDateLabel]  = useState('');
+  const [showRegDateFilter, setShowRegDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
+
   const [sortField, setSortField] = useState<string>('registrationDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -1056,7 +1065,7 @@ export default function MemberManagement({
   }, []); // Run only on mount — intentionally ignores prop changes after mount
 
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, regDateStart, regDateEnd]);
 
   // ── Filter & search ─────────────────────────────────────────
 
@@ -1098,7 +1107,7 @@ export default function MemberManagement({
             return f.values.includes(m.town);
           case 'Activity Centre':
             return f.values.includes(m.activityCentre);
-          case 'Role Type':
+          case 'Responsibility':
             return f.values.includes(m.jobTitle);
           case 'DBS Status':
             return f.values.some(v => v.toLowerCase() === m.compliance.dbs);
@@ -1109,9 +1118,17 @@ export default function MemberManagement({
         }
       });
 
-      return matchesSearch && matchesFilters;
+      const matchesRegDate = (() => {
+        if (!regDateStart && !regDateEnd) return true;
+        const regDate = new Date(m.registrationDate).toISOString().split('T')[0];
+        if (regDateStart && regDate < regDateStart) return false;
+        if (regDateEnd   && regDate > regDateEnd)   return false;
+        return true;
+      })();
+
+      return matchesSearch && matchesFilters && matchesRegDate;
     });
-  }, [members, searchQuery, filters]);
+  }, [scopedMembers, searchQuery, filters, regDateStart, regDateEnd]);
 
   const sortedMembers = useMemo(() => {
     return [...filteredMembers].sort((a, b) => {
@@ -1345,7 +1362,7 @@ export default function MemberManagement({
                 'Status':            MEMBER_FILTER_OPTIONS['Status'],
                 'Age Groups (years old)': MEMBER_FILTER_OPTIONS['Age Groups (years old)'],
                 'Gender':            MEMBER_FILTER_OPTIONS['Gender'],
-                'Role Type':         MEMBER_FILTER_OPTIONS['Role Type'],
+                'Responsibility':    MEMBER_FILTER_OPTIONS['Responsibility'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
                 ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
@@ -1362,6 +1379,43 @@ export default function MemberManagement({
               visibleColumns={visibleColumns}
               onToggleColumn={(key) => setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }))}
               anchorRef={columnAnchorRef}
+            />
+          </div>
+
+          {/* Registration date range filter */}
+          <div className="relative" ref={dateFilterRef}>
+            <button
+              onClick={() => setShowRegDateFilter(p => !p)}
+              title="Filter by Registration Date"
+              className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                regDateStart
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              {regDateStart ? (regDateLabel || `${regDateStart} – ${regDateEnd}`) : 'Reg. Date'}
+              {regDateStart && (
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); setRegDateStart(''); setRegDateEnd(''); setRegDateLabel(''); }}
+                  className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
+            </button>
+            <DateRangeFilter
+              isOpen={showRegDateFilter}
+              onClose={() => setShowRegDateFilter(false)}
+              startDate={regDateStart}
+              endDate={regDateEnd}
+              onApply={(start, end, label) => {
+                setRegDateStart(start);
+                setRegDateEnd(end);
+                setRegDateLabel(label || '');
+              }}
+              title="Registration Date Range"
             />
           </div>
 

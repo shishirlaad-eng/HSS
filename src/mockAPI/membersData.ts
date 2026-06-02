@@ -747,7 +747,7 @@ export const MEMBER_FILTER_OPTIONS: Record<string, string[]> = {
   'Status':            ['Active', 'Pending Approval', 'Pending Parental Consent', 'Inactive', 'Rejected'],
   'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
   'Gender':            ['Male', 'Female'],
-  'Role Type':         [...ROLE_TYPE_OPTIONS],
+  'Responsibility':    [...ROLE_TYPE_OPTIONS],
   'Country':           MASTERS_CASCADE.countries,
   'Region':            Object.keys(MASTERS_CASCADE.towns),
   'Town':              Object.values(MASTERS_CASCADE.towns).flat(),
