@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Shield, Zap, Mail } from 'lucide-react';
+import { User, Shield, Mail } from 'lucide-react';
 import LogsManagement, { LogModuleType } from './LogsManagement';
 
 interface Tab {
@@ -11,7 +11,6 @@ interface Tab {
 const TABS: Tab[] = [
   { id: 'login', label: 'Login Logs',  icon: User   },
   { id: 'audit', label: 'Audit Logs',  icon: Shield },
-  { id: 'api',   label: 'API Logs',    icon: Zap    },
   { id: 'email', label: 'Email Logs',  icon: Mail   },
 ];
 
