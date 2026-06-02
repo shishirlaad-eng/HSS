@@ -410,30 +410,6 @@ export default function DonationsPaymentsReport() {
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
-
-          <ChartCard title="Donation Channels" subtitle="Received donations by channel">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={donationByChannel} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {donationByChannel.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-2">
-                {donationByChannel.map((d, i) => (
-                  <div key={d.key} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{d.name}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-neutral-900 dark:text-white">{money(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ChartCard>
         </div>
 
         <div className="mt-6">
