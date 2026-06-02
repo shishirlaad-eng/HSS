@@ -241,11 +241,11 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         idPrefix: 'CTR',
       };
       case 'role-types': return {
-        title: 'Role Types',
-        subtitle: 'Manage the Role Types reference list used by governance and role assignment.',
+        title: 'Responsibility',
+        subtitle: 'Manage the Responsibility reference list used by governance and role assignment.',
         icon: Tags,
-        addLabel: 'Add Role Type',
-        nameLabel: 'Role Type Name',
+        addLabel: 'Add Responsibility',
+        nameLabel: 'Responsibility Name',
         idPrefix: 'ROL',
       };
     }
