@@ -26,10 +26,20 @@ export interface MenuItem {
   subItems?: SubMenuItem[];
 }
 
+// Masters sub-items hidden per role (mirrors SuperAdminMasters tab logic)
+const HIDDEN_MASTERS_BY_ROLE: Partial<Record<string, string[]>> = {
+  'Regional Head':         ['country', 'region'],
+  'Town Head':             ['country', 'region', 'town'],
+  'Activity Centre Admin': ['country', 'region', 'town', 'centre'],
+};
+
 export const getNavigationData = (
   currentPage: string = "dashboard",
   onNavigate: (pageId: string) => void = () => {},
+  selectedRole: string = "Super Admin",
 ): MenuItem[] => {
+  const hiddenMasters = new Set<string>(HIDDEN_MASTERS_BY_ROLE[selectedRole] ?? []);
+
   return [
 
     // ── 1. Dashboard ─────────────────────────────────────────────
@@ -77,7 +87,7 @@ export const getNavigationData = (
           onClick: () => onNavigate("role-types"),
           active: currentPage === "role-types",
         },
-      ],
+      ].filter(item => !hiddenMasters.has(item.id)),
     },
 
     // ── 3. Members Management ────────────────────────────────────

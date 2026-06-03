@@ -120,6 +120,7 @@ export function Sidebar({
   const menuItems = getNavigationData(
     currentPage,
     onNavigate || (() => { }),
+    selectedRole,
   ).filter(item => permittedNavIds.has(item.id));
 
   // Translate nav labels using the language context
