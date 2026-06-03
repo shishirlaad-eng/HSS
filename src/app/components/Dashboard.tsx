@@ -158,7 +158,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const { selectedRole } = useRoleScope();
 
   // Hide org-structure cards that are redundant for the current role's scope
-  const hideRegions  = selectedRole === 'Regional Head';
+  const hideRegions  = selectedRole === 'Regional Head' || selectedRole === 'Town Head';
   const hideTowns    = selectedRole === 'Town Head';
   const hideCentres  = selectedRole === 'Activity Centre Admin';
 
