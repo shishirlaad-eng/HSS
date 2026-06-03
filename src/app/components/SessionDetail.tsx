@@ -16,6 +16,8 @@ import {
   Search,
   X,
   SlidersHorizontal,
+  Ban,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton } from './hb/listing';
 import { ShakhaSession, AttendanceRecord, getSessionShakhaType } from '../../mockAPI/attendanceData';
@@ -172,15 +174,19 @@ export default function SessionDetail({
   allSessions,
   onBack,
   onMarkAttendance,
+  onCancelSession,
 }: {
   session: ShakhaSession;
   allSessions: ShakhaSession[];
   onBack: () => void;
   onMarkAttendance: (sessionId: string, memberId: string, status: AttendanceRecord['status']) => void;
+  onCancelSession?: (sessionId: string) => void;
 }) {
   const [searchQuery,       setSearchQuery]       = useState('');
   const [filterAgeCategory, setFilterAgeCategory] = useState('');
   const [filterJobTitle,    setFilterJobTitle]    = useState('');
+  const [showCancelModal,   setShowCancelModal]   = useState(false);
+  const [isCancelling,      setIsCancelling]      = useState(false);
 
   const rate       = attendanceRate(session);
   const shakhaType = getSessionShakhaType(session);
@@ -188,6 +194,20 @@ export default function SessionDetail({
   const dateObj   = new Date(session.date + 'T12:00:00');
   const dateLabel = `${DAY_NAMES_FULL[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
   const statusLabel = session.status.charAt(0).toUpperCase() + session.status.slice(1);
+
+  // Future session = date is strictly after today (midnight)
+  const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+  const isFutureSession = dateObj > todayMidnight;
+  const canCancel = isFutureSession && session.status !== 'cancelled' && !!onCancelSession;
+
+  const handleConfirmCancel = async () => {
+    if (!onCancelSession) return;
+    setIsCancelling(true);
+    await new Promise(r => setTimeout(r, 500));
+    onCancelSession(session.id);
+    setIsCancelling(false);
+    setShowCancelModal(false);
+  };
 
   // ── Computed: home centre map (memberId → activityCentre) ──
   const homeCentreMap = useMemo(() => {
@@ -266,6 +286,15 @@ export default function SessionDetail({
           <SecondaryButton icon={ArrowLeft} onClick={onBack}>
             Back to Sessions
           </SecondaryButton>
+          {canCancel && (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-950/20 hover:bg-error-100 dark:hover:bg-error-950/40 transition-colors"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              Cancel Session
+            </button>
+          )}
         </PageHeader>
 
         {/* ── Body ─────────────────────────────────────────── */}
@@ -594,6 +623,49 @@ export default function SessionDetail({
           </div>
         </div>
       </div>
+
+      {/* ── Cancel Session Confirmation Modal ──────── */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-error-600 dark:text-error-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+                  Cancel Session
+                </h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Are you sure you want to cancel{' '}
+                  <span className="font-medium text-neutral-900 dark:text-white">{session.title}</span>?
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">{dateLabel}</p>
+                <p className="text-xs text-error-600 dark:text-error-400 font-medium mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
+              >
+                Keep Session
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className="px-4 py-2 text-sm rounded-lg font-medium bg-error-600 hover:bg-error-700 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                {isCancelling ? 'Cancelling…' : 'Confirm Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

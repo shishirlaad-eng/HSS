@@ -117,6 +117,14 @@ export default function Sessions() {
     setSelectedSession(newSessions[0] ?? null);
   };
 
+  const handleCancelSession = (sessionId: string) => {
+    setSessions(prev =>
+      prev.map(s => s.id === sessionId ? { ...s, status: 'cancelled' as const } : s)
+    );
+    // Keep the detail page open so the user can see the updated status
+    setSelectedSession(prev => prev?.id === sessionId ? { ...prev, status: 'cancelled' as const } : prev);
+  };
+
   const handleMarkAttendance = (sessionId: string, memberId: string, status: AttendanceRecord['status']) => {
     const updateSession = (session: ShakhaSession): ShakhaSession => {
       if (session.id !== sessionId) return session;
@@ -237,6 +245,7 @@ export default function Sessions() {
         allSessions={sessions}
         onBack={() => setSelectedSession(null)}
         onMarkAttendance={handleMarkAttendance}
+        onCancelSession={handleCancelSession}
       />
     );
   }
