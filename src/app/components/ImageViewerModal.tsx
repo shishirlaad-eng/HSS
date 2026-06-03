@@ -98,7 +98,7 @@ export default function ImageViewerModal({ isOpen, onClose, imageUrl, employeeNa
         </div>
 
         {/* Image Container */}
-        <div className="bg-neutral-100 dark:bg-neutral-950 rounded-b-lg p-6 max-h-[calc(100vh-200px)] overflow-auto">
+        <div className="bg-neutral-100 dark:bg-neutral-950 rounded-b-lg p-6 max-h-[calc(100vh-200px)] overflow-auto slim-scroll">
           <div className="flex items-center justify-center min-h-[400px]">
             <img
               src={imageUrl}

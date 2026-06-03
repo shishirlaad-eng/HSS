@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HSS Membership Management System — Application Flow</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      line-height: 1.6;
+    }
+
+    /* ── Cover Page ─────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+    .cover .logo-badge {
+      width: 90px; height: 90px;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px;
+      margin-bottom: 36px;
+      box-shadow: 0 20px 60px rgba(233,69,96,0.4);
+    }
+    .cover h1 {
+      font-size: 42px; font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .cover h1 span { color: #f5a623; }
+    .cover .subtitle {
+      font-size: 18px;
+      color: rgba(255,255,255,0.65);
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+    .cover .meta-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; max-width: 700px; width: 100%;
+    }
+    .cover .meta-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 22px 20px;
+    }
+    .cover .meta-card .num {
+      font-size: 32px; font-weight: 800; color: #f5a623;
+    }
+    .cover .meta-card .lbl {
+      font-size: 12px; color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;
+    }
+    .cover .doc-info {
+      margin-top: 60px;
+      font-size: 13px; color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Section pages ──────────────────────────── */
+    .section-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 48px;
+      page-break-before: always;
+    }
+
+    .section-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #e94560;
+    }
+    .section-num {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 18px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 26px; font-weight: 800; color: #1a1a2e;
+    }
+    .section-header p {
+      font-size: 13px; color: #6b7280; margin-top: 2px;
+    }
+
+    /* ── Diagram card ────────────────────────────── */
+    .diagram-card {
+      background: white;
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      margin-bottom: 28px;
+      overflow-x: auto;
+    }
+    .diagram-card h3 {
+      font-size: 15px; font-weight: 700;
+      color: #374151; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .diagram-card h3::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 18px;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      border-radius: 2px;
+    }
+
+    /* ── Table ───────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    thead tr { background: #1a1a2e; color: white; }
+    thead th {
+      padding: 12px 14px; text-align: left;
+      font-weight: 600; letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody tr:hover { background: #fff3e0; }
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+    .check { color: #22c55e; font-weight: 700; text-align: center; }
+    .dash  { color: #d1d5db; text-align: center; }
+    .tag {
+      display: inline-block;
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tag-green  { background:#dcfce7; color:#15803d; }
+    .tag-orange { background:#fff7ed; color:#c2410c; }
+    .tag-blue   { background:#eff6ff; color:#1d4ed8; }
+    .tag-purple { background:#f5f3ff; color:#7c3aed; }
+    .tag-gray   { background:#f3f4f6; color:#4b5563; }
+
+    /* ── Two-col grid ────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+    /* ── Info card ───────────────────────────────── */
+    .info-card {
+      background: white; border-radius: 14px;
+      padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .info-card h4 {
+      font-size: 14px; font-weight: 700; color: #1a1a2e;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap-8px;
+    }
+    .info-card ul {
+      list-style: none; padding: 0;
+    }
+    .info-card ul li {
+      font-size: 12.5px; color: #374151;
+      padding: 5px 0;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .info-card ul li::before {
+      content: '▸'; color: #e94560; flex-shrink: 0; margin-top: 1px;
+    }
+    .info-card ul li:last-child { border: none; }
+
+    /* ── Role badge ──────────────────────────────── */
+    .role-scope-badge {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600;
+    }
+    .scope-all    { background: #fce7f3; color: #9d174d; }
+    .scope-nat    { background: #dbeafe; color: #1e40af; }
+    .scope-reg    { background: #d1fae5; color: #065f46; }
+    .scope-town   { background: #fef3c7; color: #92400e; }
+    .scope-centre { background: #ede9fe; color: #5b21b6; }
+    .scope-self   { background: #f3f4f6; color: #374151; }
+
+    /* ── Legend ──────────────────────────────────── */
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #6b7280;
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+
+    /* ── Page footer ─────────────────────────────── */
+    .page-footer {
+      text-align: center; margin-top: 40px;
+      font-size: 11px; color: #9ca3af;
+      padding-top: 16px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    /* ── Print ───────────────────────────────────── */
+    @media print {
+      body { background: white; }
+      .cover { page-break-after: always; }
+      .section-page { page-break-before: always; }
+      .diagram-card, .info-card { box-shadow: none; border: 1px solid #e5e7eb; }
+    }
+
+    /* ── Mermaid override ───────────────────────── */
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     COVER PAGE
+═══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="logo-badge">🏛</div>
+  <h1>HSS <span>Membership</span><br/>Management System</h1>
+  <p class="subtitle">
+    Complete frontend application flow — modules, user journeys,
+    role-based access, and data scope hierarchy
+  </p>
+  <div class="meta-grid">
+    <div class="meta-card">
+      <div class="num">26</div>
+      <div class="lbl">Pages / Routes</div>
+    </div>
+    <div class="meta-card">
+      <div class="num">10</div>
+      <div class="lbl">User Roles</div>
+    </div>
+    <div class="meta-card">
+      <div class="num">9</div>
+      <div class="lbl">Core Modules</div>
+    </div>
+  </div>
+  <div class="doc-info">
+    HSS UK · Frontend Application Flow Document · 2026
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — SYSTEM OVERVIEW
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>System Overview — Module Map</h2>
+      <p>Top-level modules and their pages within the HSS Membership Management System</p>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Full Application Sitemap</h3>
+    <pre class="mermaid">
+graph LR
+  classDef module fill:#1a1a2e,stroke:#e94560,color:#fff,font-weight:bold,rx:8
+  classDef page   fill:#fff,stroke:#e5e7eb,color:#374151,rx:6
+  classDef admin  fill:#fce7f3,stroke:#e94560,color:#9d174d,rx:6
+  classDef root   fill:#e94560,stroke:#c0392b,color:#fff,font-weight:bold,rx:10
+
+  SYSTEM["🏛 HSS Membership<br/>Management System"]:::root
+
+  SYSTEM --> DASH["📊 Dashboard"]:::page
+  SYSTEM --> M["🗃 Masters"]:::module
+  SYSTEM --> MM["👥 Members Management"]:::module
+  SYSTEM --> EM["📅 Events Management"]:::module
+  SYSTEM --> AN["📢 Announcements"]:::page
+  SYSTEM --> AT["✅ Attendance"]:::module
+  SYSTEM --> R["📈 Reports"]:::module
+  SYSTEM --> S["⚙️ Settings"]:::admin
+  SYSTEM --> AL["📋 Audit Logging"]:::admin
+
+  M --> M1["Countries"]:::page
+  M --> M2["Regions"]:::page
+  M --> M3["Towns"]:::page
+  M --> M4["Activity Centres"]:::page
+  M --> M5["Responsibility"]:::page
+
+  MM --> MM1["Members"]:::page
+  MM --> MM2["Pending Approvals"]:::page
+  MM --> MM3["Pending Guardian<br/>Approvals"]:::page
+
+  EM --> EM1["Events"]:::page
+
+  AT --> AT1["Sessions"]:::page
+  AT --> AT2["Attendance Log"]:::page
+
+  R --> R1["Members Report"]:::page
+  R --> R2["Events Report"]:::page
+  R --> R3["Donations Report"]:::page
+  R --> R4["Attendance Report"]:::page
+  R --> R5["Refund Report"]:::page
+
+  S --> S1["System Settings"]:::admin
+  S --> S2["Static Pages"]:::admin
+  S --> S3["Email Templates"]:::admin
+  S --> S4["System Notifications"]:::admin
+  S --> S5["Roles & Permissions"]:::admin
+    </pre>
+  </div>
+
+  <div class="page-footer">Section 1 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — AUTHENTICATION & ROLE FLOW
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Authentication &amp; Role Selection Flow</h2>
+      <p>How a user logs in, selects a role, and is scoped to the correct data</p>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Login → Role → Scoped Access</h3>
+    <pre class="mermaid">
+flowchart TD
+  classDef start    fill:#e94560,stroke:#c0392b,color:#fff,font-weight:bold
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+  classDef page     fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef scope    fill:#d1fae5,stroke:#10b981,color:#065f46
+  classDef end_node fill:#1a1a2e,stroke:#e94560,color:#fff,font-weight:bold
+
+  A([App Launch]):::start --> B{Already<br/>Authenticated?}:::decision
+  B -->|No| C[Login Screen]:::page
+  C --> D{Valid<br/>Credentials?}:::decision
+  D -->|No| E[Show Error]:::page --> C
+  D -->|Yes| F[Dashboard]:::end_node
+
+  B -->|Yes| F
+
+  F --> G[Role Selector<br/>in Header]:::page
+  G --> H{Role Chosen}:::decision
+
+  H -->|Super Admin| SA["🔴 All Data<br/>Global Scope"]:::scope
+  H -->|National Head| NA["🔵 Scoped to<br/>Country"]:::scope
+  H -->|Regional Head| RA["🟢 Scoped to<br/>Region"]:::scope
+  H -->|Town Head| TA["🟡 Scoped to<br/>Town"]:::scope
+  H -->|Centre Admin / Ops / Event| CA["🟣 Scoped to<br/>Activity Centre"]:::scope
+  H -->|Member / Teen| MA["⚪ Own Data<br/>Only"]:::scope
+
+  SA --> I[Full Navigation<br/>+ All Records]:::end_node
+  NA --> J[Filtered Navigation<br/>+ Country Records]:::end_node
+  RA --> K[Filtered Navigation<br/>+ Region Records]:::end_node
+  TA --> L[Filtered Navigation<br/>+ Town Records]:::end_node
+  CA --> M[Filtered Navigation<br/>+ Centre Records]:::end_node
+  MA --> N[Limited Navigation<br/>+ Own Records]:::end_node
+    </pre>
+  </div>
+
+  <div class="page-footer">Section 2 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — MEMBER MANAGEMENT FLOW
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Member Management Flow</h2>
+      <p>Full lifecycle from registration through approval, active membership, and deactivation</p>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Member Registration &amp; Lifecycle</h3>
+    <pre class="mermaid">
+flowchart TD
+  classDef action   fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+
+  LIST["📋 Members List<br/>(Grid / List / Table view)"]:::action
+
+  LIST --> ADD["+ Add Member<br/>Modal"]:::action
+  LIST --> BULK["⬆ Bulk Upload<br/>CSV Modal"]:::action
+  LIST --> VIEW["👁 View Member<br/>Detail Page"]:::action
+  LIST --> EDIT["✏ Edit Member<br/>Edit Page"]:::action
+
+  ADD --> FORM{Age on<br/>Registration?}:::decision
+  FORM -->|18+ Adult| PA["⏳ Pending Approval"]:::status
+  FORM -->|Under 18| PGC["⏳ Pending<br/>Parental Consent"]:::status
+
+  PGC -->|Guardian Approves| PA
+  PGC -->|Guardian Rejects| REJ["❌ Rejected"]:::terminal
+
+  PA -->|Admin Approves| ACT["✅ Active"]:::terminal
+  PA -->|Admin Rejects| REJ
+
+  ACT -->|Admin Deactivates| INACT["⛔ Inactive"]:::status
+  INACT -->|Admin Reactivates| ACT
+
+  BULK --> VAL{CSV<br/>Valid?}:::decision
+  VAL -->|Row errors| ERR["⚠ Validation<br/>Report"]:::action
+  ERR --> FIX["Fix & Re-upload"] --> VAL
+  VAL -->|All valid| CONFIRM["Confirm Import"] --> PA
+
+  VIEW --> VD_DETAIL["Personal Info<br/>Contact Details<br/>Compliance<br/>Activity History"]:::action
+  EDIT --> VD_EDIT["Edit All Fields<br/>Save → Back to Detail"]:::action
+    </pre>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Members Filter &amp; Search Bar</h3>
+    <pre class="mermaid">
+flowchart LR
+  classDef filter fill:#f5f3ff,stroke:#8b5cf6,color:#5b21b6
+  classDef action fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+
+  SEARCH["🔍 Search<br/>(Name / Email / Phone / ID)"]:::filter
+  ADV["⚙ Advanced Filters"]:::filter
+  DATE["📅 Reg. Date<br/>Range"]:::filter
+
+  ADV --> F1["Status"]:::filter
+  ADV --> F2["Age Group"]:::filter
+  ADV --> F3["Gender"]:::filter
+  ADV --> F4["Responsibility"]:::filter
+  ADV --> F5["Country / Region<br/>Town / Centre"]:::filter
+  ADV --> F6["DBS / First Aid<br/>Status"]:::filter
+
+  DATE --> P1["Quick: Today,<br/>Last 7 / 30 Days"]:::filter
+  DATE --> P2["Custom Start<br/>& End Date"]:::filter
+
+  SEARCH & ADV & DATE --> RESULTS["Filtered Member List"]:::action
+  RESULTS --> EXPORT["⬇ Export CSV"]:::action
+    </pre>
+  </div>
+
+  <div class="page-footer">Section 3 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — EVENTS & ATTENDANCE FLOW
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Events &amp; Attendance Flow</h2>
+      <p>Event lifecycle from creation to completion, and session-based attendance tracking</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="diagram-card">
+      <h3>Event Lifecycle</h3>
+      <pre class="mermaid">
+flowchart TD
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef action   fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+
+  EL["📅 Events List"]:::action
+  EL --> CE["Create Event<br/>Modal"]:::action
+  EL --> VE["View Event<br/>Detail + Attendance"]:::action
+  EL --> EE["Edit Event<br/>(before start date)"]:::action
+
+  CE --> DR["📝 Draft"]:::status
+  DR --> |Publish| PB["📣 Published"]:::status
+  PB --> |Event Starts| AC["🟢 Active"]:::status
+  AC --> |End| CO["✅ Completed"]:::terminal
+  PB --> |Cancel| CN["❌ Cancelled"]:::terminal
+  AC --> |Cancel| CN
+
+  VE --> ATM["Mark Attendance<br/>Modal"]:::action
+  ATM --> LOG["Attendance Log"]:::terminal
+      </pre>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Attendance (Sessions)</h3>
+      <pre class="mermaid">
+flowchart TD
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef action   fill:#d1fae5,stroke:#10b981,color:#065f46
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+
+  SL["📋 Sessions List<br/>(Calendar View)"]:::action
+  SL --> CS["Create Session<br/>Modal"]:::action
+  SL --> VS["View Session<br/>Detail"]:::action
+  SL --> MA["Mark Attendance<br/>for Session"]:::action
+
+  CS --> SC["📅 Scheduled"]:::status
+  SC --> |Session Starts| IP["🟡 In-Progress"]:::status
+  IP --> |End| CP["✅ Completed"]:::terminal
+  SC --> |Cancel| CX["❌ Cancelled"]:::terminal
+
+  MA --> AT["Member List →<br/>Present / Absent<br/>/ Excused"]:::action
+  AT --> LOG["Attendance Log<br/>(filterable)"]:::terminal
+
+  LOG --> EX["⬇ Export CSV"]:::action
+      </pre>
+    </div>
+  </div>
+
+  <div class="page-footer">Section 4 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — MASTERS HIERARCHY
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Masters — Geographic Hierarchy &amp; Data Structure</h2>
+      <p>The cascading reference data that scopes all member, event, and attendance records</p>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Geographic Cascade (Masters Hierarchy)</h3>
+    <pre class="mermaid">
+graph LR
+  classDef lvl1 fill:#e94560,stroke:#c0392b,color:#fff,font-weight:bold,rx:10
+  classDef lvl2 fill:#f59e0b,stroke:#d97706,color:#fff,font-weight:bold,rx:10
+  classDef lvl3 fill:#10b981,stroke:#059669,color:#fff,font-weight:bold,rx:10
+  classDef lvl4 fill:#3b82f6,stroke:#2563eb,color:#fff,font-weight:bold,rx:10
+  classDef lvl5 fill:#8b5cf6,stroke:#7c3aed,color:#fff,font-weight:bold,rx:10
+  classDef ex   fill:#f9fafb,stroke:#e5e7eb,color:#374151,font-size:11px,rx:6
+
+  C["🌍 Country"]:::lvl1 --> R["🗺 Region"]:::lvl2
+  R --> T["🏙 Town"]:::lvl3
+  T --> AC["🏢 Activity Centre"]:::lvl4
+  AC --> MEMB["👥 Members<br/>📅 Sessions<br/>📋 Attendance"]:::lvl5
+
+  C --> CE1["HSS UK"]:::ex
+  C --> CE2["HSS Ireland"]:::ex
+  C --> CE3["HSS Germany"]:::ex
+
+  R --> RE1["South West"]:::ex
+  R --> RE2["Midlands"]:::ex
+  R --> RE3["North West"]:::ex
+
+  T --> TE1["Bristol"]:::ex
+  T --> TE2["Birmingham"]:::ex
+  T --> TE3["Manchester"]:::ex
+
+  AC --> AE1["Bristol Central Shakha<br/>Contact · Phone · Email<br/>Address · Postcode"]:::ex
+  AC --> AE2["Birmingham Aston Shakha"]:::ex
+
+  RESP["📌 Responsibility<br/>(Role Reference List)"]:::lvl5
+  RESP --> RS1["Shakha Pramukh"]:::ex
+  RESP --> RS2["Vibhag Pramukh"]:::ex
+  RESP --> RS3["Karyawaha"]:::ex
+    </pre>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Masters CRUD Actions</h3>
+    <pre class="mermaid">
+flowchart LR
+  classDef tab    fill:#1a1a2e,stroke:#e94560,color:#fff,font-weight:bold
+  classDef action fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef perm   fill:#d1fae5,stroke:#10b981,color:#065f46
+
+  TAB["Masters Page<br/>(Tab-based navigation)"]:::tab
+
+  TAB --> T1["Country tab"]:::tab
+  TAB --> T2["Region tab"]:::tab
+  TAB --> T3["Town tab"]:::tab
+  TAB --> T4["Activity Centre tab"]:::tab
+  TAB --> T5["Responsibility tab"]:::tab
+
+  T1 & T2 & T3 & T4 & T5 --> VIEWS["Grid / List / Table<br/>view modes"]:::action
+  VIEWS --> ADD["+ Add record"]:::action
+  VIEWS --> VIEW_D["View details modal"]:::action
+  VIEWS --> EDIT_D["Edit record modal"]:::action
+  VIEWS --> STATUS["Toggle Active / Inactive"]:::perm
+  VIEWS --> DEL["Delete record"]:::perm
+  VIEWS --> EXPORT["Export Excel / PDF"]:::action
+
+  T4 --> EXTRA["Extra fields:<br/>Contact Name · Phone · Email<br/>Address Line 1 & 2<br/>City · Post Code"]:::action
+    </pre>
+  </div>
+
+  <div class="page-footer">Section 5 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — ROLE-BASED ACCESS
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Role-Based Access Control (RBAC)</h2>
+      <p>10 user roles with distinct permissions and geographic data scopes</p>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Role Hierarchy &amp; Scope</h3>
+    <pre class="mermaid">
+graph TB
+  classDef sa     fill:#e94560,stroke:#c0392b,color:#fff,font-weight:bold
+  classDef nat    fill:#3b82f6,stroke:#2563eb,color:#fff,font-weight:bold
+  classDef reg    fill:#10b981,stroke:#059669,color:#fff,font-weight:bold
+  classDef town   fill:#f59e0b,stroke:#d97706,color:#fff,font-weight:bold
+  classDef ctr    fill:#8b5cf6,stroke:#7c3aed,color:#fff,font-weight:bold
+  classDef spec   fill:#6b7280,stroke:#4b5563,color:#fff,font-weight:bold
+  classDef mem    fill:#e5e7eb,stroke:#d1d5db,color:#374151,font-weight:bold
+
+  SA["👑 Super Admin<br/>ALL modules · ALL data<br/>Masters · Settings · RBAC · Audit"]:::sa
+
+  SA --> NH["🏴󠁧󠁢󠁥󠁮󠁧󠁿 National Head<br/>Country scope<br/>Members · Events · Reports"]:::nat
+  NH --> RH["🗺 Regional Head<br/>Region scope<br/>Members · Events · Attendance · Reports"]:::reg
+  RH --> TH["🏙 Town Head<br/>Town scope<br/>Members · Events · Attendance · Reports"]:::town
+  TH --> CA["🏢 Centre Admin<br/>Centre scope<br/>Members · Events · Attendance"]:::ctr
+
+  SA --> EA["📅 Event Admin<br/>Centre scope<br/>Events only"]:::spec
+  SA --> RU["📈 Reporting User<br/>National scope<br/>Read-only Reports"]:::spec
+  SA --> OU["🔧 Ops User<br/>Centre scope<br/>Attendance only"]:::spec
+  CA --> MA["👤 Member (18+)<br/>Own data only<br/>Events · Attendance (self)"]:::mem
+  CA --> MT["👦 Teen (13–17)<br/>Own data + guardian flow<br/>Events · Attendance (self)"]:::mem
+    </pre>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Module Access Matrix</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Super Admin</th>
+            <th>Nat. Head</th>
+            <th>Reg. Head</th>
+            <th>Town Head</th>
+            <th>Ctr Admin</th>
+            <th>Event Admin</th>
+            <th>Report</th>
+            <th>Ops User</th>
+            <th>Member 18+</th>
+            <th>Teen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Dashboard</strong></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td>
+          </tr>
+          <tr>
+            <td><strong>Masters</strong> <span class="tag tag-gray">View</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Masters</strong> <span class="tag tag-orange">Add/Edit/Delete</span></td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Members</strong> <span class="tag tag-gray">View</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Members</strong> <span class="tag tag-orange">Add/Edit/Delete</span></td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Members</strong> <span class="tag tag-blue">Approve Registration</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Pending Guardian Approvals</strong></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Events</strong> <span class="tag tag-gray">View</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td>
+          </tr>
+          <tr>
+            <td><strong>Events</strong> <span class="tag tag-orange">Create/Edit/Cancel</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Announcements</strong> <span class="tag tag-gray">View</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="check">✓</td>
+          </tr>
+          <tr>
+            <td><strong>Announcements</strong> <span class="tag tag-orange">Create/Edit/Delete</span></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Sessions &amp; Attendance</strong></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td>
+            <td>Own only</td><td>Own only</td>
+          </tr>
+          <tr>
+            <td><strong>Reports</strong></td>
+            <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+            <td class="check">✓</td><td class="dash">—</td><td class="check">✓</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Settings (All)</strong></td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Roles &amp; Permissions</strong></td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+          <tr>
+            <td><strong>Audit Logging</strong></td>
+            <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+            <td class="dash">—</td><td class="dash">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">Section 6 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — REPORTS & SETTINGS
+═══════════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>Reports, Settings &amp; System Administration</h2>
+      <p>Reporting capabilities, system configuration, and admin-only tools</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="diagram-card">
+      <h3>Reports Module</h3>
+      <pre class="mermaid">
+graph TD
+  classDef mod  fill:#1a1a2e,stroke:#e94560,color:#fff,font-weight:bold
+  classDef rep  fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef act  fill:#d1fae5,stroke:#10b981,color:#065f46
+
+  R["📈 Reports"]:::mod
+
+  R --> R1["Members Report<br/>Growth · Age · Status<br/>Distribution"]:::rep
+  R --> R2["Events Report<br/>Events by Status<br/>Attendance · Revenue"]:::rep
+  R --> R3["Donations Report<br/>Payments · Methods<br/>Recurring vs One-time"]:::rep
+  R --> R4["Attendance Report<br/>Attendance Rate<br/>Shakha · Day trends"]:::rep
+  R --> R5["Refund Report<br/>Refund Status<br/>Reason breakdown"]:::rep
+
+  R1 & R2 & R3 & R4 & R5 --> FILT["Filters:<br/>Country · Region<br/>Town · Centre<br/>Date Range"]:::act
+  FILT --> EXP["⬇ Export<br/>Excel / CSV"]:::act
+      </pre>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Settings Module (Super Admin only)</h3>
+      <pre class="mermaid">
+graph TD
+  classDef mod  fill:#1a1a2e,stroke:#e94560,color:#fff,font-weight:bold
+  classDef set  fill:#fce7f3,stroke:#e94560,color:#9d174d
+
+  S["⚙ Settings"]:::mod
+
+  S --> S1["System Settings<br/>Logo · Theme<br/>Dark/Light Mode<br/>Menu Orientation"]:::set
+  S --> S2["Static Pages<br/>About · FAQ<br/>Terms · Privacy"]:::set
+  S --> S3["Email Templates<br/>Welcome · Approval<br/>Rejection · Events"]:::set
+  S --> S4["System Notifications<br/>Email · Push · SMS<br/>Trigger rules"]:::set
+  S --> S5["Roles & Permissions<br/>Create / Edit roles<br/>Module-level permissions<br/>Action-level granularity"]:::set
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <h3>Announcements Flow</h3>
+    <pre class="mermaid">
+flowchart LR
+  classDef action   fill:#fff7ed,stroke:#f59e0b,color:#92400e
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+
+  AL["📢 Announcements<br/>List"]:::action --> CA["Create<br/>Announcement"]:::action
+  CA --> TYP["Content Type:<br/>Text / Image / Video"]:::action
+  TYP --> AUD["Target Audience:<br/>National · Regional<br/>Town · Centre<br/>+ Age Group filter"]:::action
+  AUD --> NOTIF["Notification Method:<br/>Push (Instant / Scheduled)<br/>Email (Instant / Scheduled)"]:::action
+  NOTIF --> DR["📝 Draft"]:::status
+  DR --> |Preview| PV["Preview"]:::action
+  PV --> |Publish| PB["📣 Published"]:::terminal
+  DR --> |Schedule| SC["⏰ Scheduled<br/>Publish"]:::terminal
+    </pre>
+  </div>
+
+  <div class="page-footer">Section 7 of 7 · HSS Membership Management System</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     BACK COVER
+═══════════════════════════════════════════ -->
+<div class="cover" style="min-height:50vh; padding: 60px 40px;">
+  <h2 style="font-size:28px; margin-bottom: 16px;">Summary</h2>
+  <p class="subtitle" style="font-size:15px;">
+    The HSS Membership Management System is a fully role-scoped, multi-geography
+    platform covering the complete lifecycle of members, events, attendance,
+    and communications for HSS UK and affiliated organisations worldwide.
+  </p>
+  <div class="meta-grid" style="margin-top: 40px;">
+    <div class="meta-card"><div class="num">5</div><div class="lbl">Masters Entities</div></div>
+    <div class="meta-card"><div class="num">5</div><div class="lbl">Report Types</div></div>
+    <div class="meta-card"><div class="num">5</div><div class="lbl">Compliance Workflows</div></div>
+    <div class="meta-card"><div class="num">3</div><div class="lbl">View Modes per Module</div></div>
+    <div class="meta-card"><div class="num">4</div><div class="lbl">Geographic Levels</div></div>
+    <div class="meta-card"><div class="num">6</div><div class="lbl">UI Themes</div></div>
+  </div>
+  <div class="doc-info" style="margin-top: 48px;">
+    Prepared by Hidden Brains · HSS UK · 2026
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor:       '#1a1a2e',
+      primaryTextColor:   '#ffffff',
+      primaryBorderColor: '#e94560',
+      lineColor:          '#6b7280',
+      secondaryColor:     '#f9fafb',
+      tertiaryColor:      '#eff6ff',
+      fontSize:           '13px',
+      fontFamily:         "'Segoe UI', system-ui, sans-serif"
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    securityLevel: 'loose'
+  });
+</script>
+</body>
+</html>

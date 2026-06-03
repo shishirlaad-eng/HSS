@@ -919,7 +919,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         ══════════════════════════════════════════════════════════════════ */}
         {viewMode === 'table' && (
           <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-340px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-340px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">

@@ -719,7 +719,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                                         copy payload
                                       </button>
                                     </div>
-                                    <pre className="text-xs text-neutral-750 dark:text-neutral-300 font-mono overflow-x-auto whitespace-pre bg-neutral-100 dark:bg-neutral-950 p-3 rounded border border-neutral-200/50 dark:border-neutral-900 max-h-60">
+                                    <pre className="text-xs text-neutral-750 dark:text-neutral-300 font-mono overflow-x-auto slim-scroll whitespace-pre bg-neutral-100 dark:bg-neutral-950 p-3 rounded border border-neutral-200/50 dark:border-neutral-900 max-h-60">
                                       {JSON.stringify(log, null, 2)}
                                     </pre>
                                   </div>
@@ -768,7 +768,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
         {/* TABLE VIEW */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">

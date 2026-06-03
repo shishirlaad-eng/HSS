@@ -82,7 +82,7 @@ export function FormModal({
         </div>
 
         {/* Form Body — scrollable when content overflows */}
-        <div className="p-5 overflow-y-auto flex-1 min-h-0">
+        <div className="p-5 overflow-y-auto slim-scroll flex-1 min-h-0">
           {children}
         </div>
       </div>

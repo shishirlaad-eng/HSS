@@ -214,7 +214,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                     <h4 style={{ fontSize: '14px', fontWeight: '500' }} className="text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                       Created Events
                     </h4>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto slim-scroll">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
@@ -255,7 +255,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                     <h4 style={{ fontSize: '14px', fontWeight: '500' }} className="text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                       Joined Events
                     </h4>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto slim-scroll">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">

@@ -401,7 +401,7 @@ export default function AttendanceLog() {
 
         {/* ── TABLE ── */}
         <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto slim-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">

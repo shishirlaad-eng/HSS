@@ -638,7 +638,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                       Attendance History
                     </h4>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto slim-scroll">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">

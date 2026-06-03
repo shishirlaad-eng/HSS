@@ -718,7 +718,7 @@ export default function PendingApprovals() {
         {/* ── TABLE VIEW ───────────────────────────────────────── */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">

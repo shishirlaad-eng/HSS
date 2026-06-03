@@ -70,7 +70,7 @@ export function ColumnVisibilityPanel({
         </button>
       </div>
 
-      <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+      <div className="p-2 max-h-[400px] overflow-y-auto slim-scroll">
         <div className="space-y-1">
           {columns.map((column) => (
             <label

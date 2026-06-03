@@ -91,7 +91,7 @@ function RichEditor({ initialValue, onChange, editorRef }: RichEditorProps) {
         localRef.current = html;
         onChange(html);
       }}
-      className="w-full p-4 min-h-[300px] max-h-[500px] overflow-y-auto bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 leading-relaxed prose dark:prose-invert max-w-none shadow-inner"
+      className="w-full p-4 min-h-[300px] max-h-[500px] overflow-y-auto slim-scroll bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 leading-relaxed prose dark:prose-invert max-w-none shadow-inner"
       style={{ outline: 'none' }}
       placeholder="Write your email contents here..."
     />
@@ -587,7 +587,7 @@ export default function EmailTemplates() {
                     </div>
 
                     {/* Email Envelope Spacer Layout */}
-                    <div className="p-5 text-neutral-800 dark:text-neutral-200 text-xs leading-relaxed max-h-[360px] overflow-y-auto space-y-3.5 [&>h2]:text-base [&>h2]:font-bold [&>h2]:text-primary-600 [&>h2]:dark:text-primary-400 [&>ul]:list-disc [&>ul]:ml-4 [&>ul]:space-y-1 [&>p>a]:text-primary-600 [&>p>a]:underline">
+                    <div className="p-5 text-neutral-800 dark:text-neutral-200 text-xs leading-relaxed max-h-[360px] overflow-y-auto slim-scroll space-y-3.5 [&>h2]:text-base [&>h2]:font-bold [&>h2]:text-primary-600 [&>h2]:dark:text-primary-400 [&>ul]:list-disc [&>ul]:ml-4 [&>ul]:space-y-1 [&>p>a]:text-primary-600 [&>p>a]:underline">
                       <div dangerouslySetInnerHTML={{ __html: previewData.outputHtml }} />
                     </div>
 
@@ -815,7 +815,7 @@ export default function EmailTemplates() {
         {/* ========== DATA TABLE VIEW (STICKY HEADER SCROLLING LAYOUT) ========== */}
         {viewMode === 'table' && (
           <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">

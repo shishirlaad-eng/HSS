@@ -472,7 +472,7 @@ export default function RoleManagement() {
       {/* Table View */}
       {viewMode === 'table' && (
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto slim-scroll">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
@@ -668,7 +668,7 @@ export default function RoleManagement() {
 
               <div className="flex flex-1 overflow-hidden">
                 {/* Module List (Left Sidebar) */}
-                <div className="w-1/3 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto bg-neutral-50/30 dark:bg-neutral-900/30">
+                <div className="w-1/3 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto slim-scroll bg-neutral-50/30 dark:bg-neutral-900/30">
                   {availableModules.map((module) => {
                     const selectedCount = (rolePermissions[module.id] || []).length;
                     const totalCount = module.actions.length;
@@ -702,7 +702,7 @@ export default function RoleManagement() {
                 </div>
 
                 {/* Permissions Grid (Right Content) */}
-                <div className="w-2/3 p-6 overflow-y-auto">
+                <div className="w-2/3 p-6 overflow-y-auto slim-scroll">
                   {activeModule && (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">

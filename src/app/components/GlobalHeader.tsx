@@ -979,7 +979,7 @@ export function GlobalHeader({
                 {/* Search with results */}
                 {searchQuery.trim() &&
                   searchResults.length > 0 && (
-                    <div className="max-h-[500px] overflow-y-auto">
+                    <div className="max-h-[500px] overflow-y-auto slim-scroll">
                       {/* Grouped Results */}
                       {Object.entries(groupedResults).map(
                         ([category, items]) => (
@@ -1250,7 +1250,7 @@ export function GlobalHeader({
 
                   {/* Results */}
                   {searchQuery.trim() && searchResults.length > 0 && (
-                    <div className="max-h-[500px] overflow-y-auto">
+                    <div className="max-h-[500px] overflow-y-auto slim-scroll">
                       {Object.entries(groupedResults).map(([category, items]) => (
                         <div key={category} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                           <div className="px-3 py-2 bg-neutral-50 dark:bg-neutral-900/50">
@@ -1436,7 +1436,7 @@ export function GlobalHeader({
                     </span>
                   )}
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto slim-scroll">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
@@ -1496,7 +1496,7 @@ export function GlobalHeader({
                 </div>
 
                 {/* FAQ Accordion */}
-                <div className="max-h-[420px] overflow-y-auto">
+                <div className="max-h-[420px] overflow-y-auto slim-scroll">
                   {currentFaqs.length === 0 ? (
                     <div className="p-6 text-center">
                       <HelpCircle className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mx-auto mb-2" />

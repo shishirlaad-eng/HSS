@@ -320,7 +320,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} title="Create Event" maxWidth="max-w-3xl">
-      <div className="overflow-y-auto space-y-6 max-h-[62vh]">
+      <div className="overflow-y-auto slim-scroll space-y-6 max-h-[62vh]">
         {/* Event Basics */}
         <div>
           <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -1185,7 +1185,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
         {/* TABLE VIEW */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">

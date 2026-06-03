@@ -223,8 +223,8 @@ export function Sidebar({
 
       {/* Scrollable Menu */}
       <div
-        className={`overflow-y-auto overflow-x-hidden h-[calc(100vh-96px)] py-2 transition-all ${isHoveringMenu
-          ? "scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent"
+        className={`overflow-y-auto overflow-x-hidden h-[calc(100vh-96px)] py-2 transition-all slim-scroll ${isHoveringMenu
+          ? ""
           : "[&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar-thumb]:bg-transparent"
           }`}
         onMouseEnter={() => setIsHoveringMenu(true)}

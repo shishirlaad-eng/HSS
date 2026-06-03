@@ -254,7 +254,7 @@ export function FeedbackSystem() {
               </div>
 
               {/* Right Column - Form */}
-              <div className="w-full md:w-2/5 flex flex-col overflow-y-auto bg-white dark:bg-neutral-900 p-6">
+              <div className="w-full md:w-2/5 flex flex-col overflow-y-auto slim-scroll bg-white dark:bg-neutral-900 p-6">
                 <div className="space-y-6 flex-1">
                   <div>
                     <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Your Email</label>
@@ -334,7 +334,7 @@ export function FeedbackSystem() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-6 overflow-y-auto slim-scroll max-h-[60vh]">
               <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>

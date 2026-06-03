@@ -479,7 +479,7 @@ function AddMemberModal({
 
   return (
     <FormModal isOpen={isOpen} onClose={handleClose} title="Add Member" maxWidth="max-w-2xl">
-      <div className="space-y-6 p-6 max-h-[72vh] overflow-y-auto">
+      <div className="space-y-6 p-6 max-h-[72vh] overflow-y-auto slim-scroll">
 
         {/* Age Group */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -851,7 +851,7 @@ function BulkUploadModal({
 
   return (
     <FormModal isOpen={isOpen} onClose={handleClose} title="Bulk Upload Members" maxWidth="max-w-2xl">
-      <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+      <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto slim-scroll">
 
         {/* Required Columns */}
         <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
@@ -1586,7 +1586,7 @@ export default function MemberManagement({
         {/* ── TABLE VIEW ───────────────────────────────────────── */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]">
+            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">

@@ -80,7 +80,7 @@ export function SiteMap({ onNavigate, currentPage }: SiteMapProps) {
                 </h2>
               </div>
 
-              <div className="p-2 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800">
+              <div className="p-2 flex-1 overflow-y-auto slim-scroll">
                 {hasChildren ? (
                   <ul className="space-y-1">
                     {module.subItems!.map((child) => (

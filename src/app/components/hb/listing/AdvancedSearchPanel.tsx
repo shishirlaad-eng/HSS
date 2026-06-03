@@ -482,7 +482,7 @@ export function AdvancedSearchPanel({
                   {openDropdowns[filter.id] === 'field' && (
                     <div 
                       ref={el => dropdownRefs.current[`${filter.id}-field`] = el} 
-                      className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg z-[9999] max-h-48 overflow-y-auto"
+                      className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg z-[9999] max-h-48 overflow-y-auto slim-scroll"
                     >
                       {Object.keys(filterOptions).map((field) => (
                         <button
@@ -522,7 +522,7 @@ export function AdvancedSearchPanel({
                   {/* What Dropdown Menu with Checkboxes */}
                   {openDropdowns[filter.id] === 'values' && filter.field && (
                     <div 
-                      className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg z-[60] max-h-48 overflow-y-auto" 
+                      className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg z-[60] max-h-48 overflow-y-auto slim-scroll"
                       ref={el => dropdownRefs.current[`${filter.id}-values`] = el}
                     >
                       {filterOptions[filter.field]?.map((value) => (
