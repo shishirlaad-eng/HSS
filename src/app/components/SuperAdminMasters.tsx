@@ -121,6 +121,13 @@ const MASTER_TABS: { id: MasterType; label: string }[] = [
   { id: 'role-types', label: 'Responsibility' },
 ];
 
+// Tabs hidden per role (role cannot manage higher-level geography than their scope)
+const HIDDEN_TABS_BY_ROLE: Partial<Record<string, MasterType[]>> = {
+  'Regional Head':         ['country', 'region'],
+  'Town Head':             ['country', 'region', 'town'],
+  'Activity Centre Admin': ['country', 'region', 'town', 'centre'],
+};
+
 // ─── Component Props ──────────────────────────────────────────────────────────
 
 interface SuperAdminMastersProps {
@@ -204,6 +211,22 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   useEffect(() => {
     if (viewMode !== 'table') setShowColumnPanel(false);
   }, [viewMode]);
+
+  // ── Tab visibility per role ────────────────────────────────────────────────
+  const hiddenTabIds = useMemo(
+    () => new Set<MasterType>(HIDDEN_TABS_BY_ROLE[selectedRole] ?? []),
+    [selectedRole],
+  );
+  const visibleTabs = useMemo(
+    () => MASTER_TABS.filter(t => !hiddenTabIds.has(t.id)),
+    [hiddenTabIds],
+  );
+  // If the active tab is hidden for this role, redirect to the first visible one
+  useEffect(() => {
+    if (hiddenTabIds.has(masterType) && visibleTabs.length > 0) {
+      onNavigate?.(visibleTabs[0].id);
+    }
+  }, [masterType, hiddenTabIds, visibleTabs, onNavigate]);
 
   // ─── Config per section ────────────────────────────────────────────────────
   const config = useMemo(() => {
@@ -692,7 +715,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
 
         {/* ── SUB-SECTION TABS ────────────────────────────────────────────── */}
         <div className="flex gap-0 mt-4 border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-          {MASTER_TABS.map(tab => (
+          {visibleTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => onNavigate?.(tab.id)}

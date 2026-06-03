@@ -39,7 +39,8 @@ import {
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
-import { useModulePermissions } from '../contexts/RoleScopeContext';
+import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
+import { getScopedFilterOptions } from '../../mockAPI/roleScope';
 
 type ViewMode   = 'grid' | 'list' | 'table';
 type PageState  = 'list' | 'detail';
@@ -239,22 +240,12 @@ function RejectReasonModal({
   );
 }
 
-// ── Filter options ────────────────────────────────────────────
-
-const FILTER_OPTIONS: Record<string, string[]> = {
-  'Gender':           ['Male', 'Female'],
-  'Country':          MASTERS_CASCADE.countries,
-  'Region':           Object.keys(MASTERS_CASCADE.towns),
-  'Town':             Object.values(MASTERS_CASCADE.towns).flat(),
-  'Activity Centre':  Object.values(MASTERS_CASCADE.centres).flat(),
-  'DBS Status':       ['Pending', 'Completed'],
-  'First Aid Status': ['Pending', 'Completed'],
-};
-
 // ── Main component ────────────────────────────────────────────
 
 export default function PendingGuardianApprovals() {
   const mp = useModulePermissions('members');
+  const { scope } = useRoleScope();
+  const scopedFilterOptions = getScopedFilterOptions(scope);
 
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
@@ -523,7 +514,15 @@ export default function PendingGuardianApprovals() {
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
-              filterOptions={FILTER_OPTIONS}
+              filterOptions={{
+                'Gender':           ['Male', 'Female'],
+                ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries }              : {}),
+                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions }       : {}),
+                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }         : {}),
+                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions }       : {}),
+                'DBS Status':       ['Pending', 'Completed'],
+                'First Aid Status': ['Pending', 'Completed'],
+              }}
               title="Filter Guardian Approvals"
             />
           </div>
