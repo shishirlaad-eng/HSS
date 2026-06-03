@@ -25,6 +25,7 @@ import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
 import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { mockEvents } from '../../mockAPI/eventsData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 // ── Mock Announcements ────────────────────────────────────────
 
@@ -154,6 +155,13 @@ interface DashboardProps {
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
 
+  const { selectedRole } = useRoleScope();
+
+  // Hide org-structure cards that are redundant for the current role's scope
+  const hideRegions  = selectedRole === 'Regional Head';
+  const hideTowns    = selectedRole === 'Town Head';
+  const hideCentres  = selectedRole === 'Activity Centre Admin';
+
   // ── Derived KPI values ──────────────────────────────────────
 
   const totalMembers   = mockMembers.length;
@@ -218,24 +226,30 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           icon={Users}
           trend={{ value: `${activeMembers} active · ${pendingApprovals} pending`, positive: true }}
         />
-        <StatCard
-          label="Regions"
-          value={regionsCount}
-          icon={Globe2}
-          trend={{ value: `Across ${MASTERS_CASCADE.countries.length} countries`, positive: true }}
-        />
-        <StatCard
-          label="Towns"
-          value={townsCount}
-          icon={MapPin}
-          trend={{ value: `Across ${regionsCount} regions`, positive: true }}
-        />
-        <StatCard
-          label="Activity Centres"
-          value={centresCount}
-          icon={Building2}
-          trend={{ value: `Across ${townsCount} towns`, positive: true }}
-        />
+        {!hideRegions && (
+          <StatCard
+            label="Regions"
+            value={regionsCount}
+            icon={Globe2}
+            trend={{ value: `Across ${MASTERS_CASCADE.countries.length} countries`, positive: true }}
+          />
+        )}
+        {!hideTowns && (
+          <StatCard
+            label="Towns"
+            value={townsCount}
+            icon={MapPin}
+            trend={{ value: `Across ${regionsCount} regions`, positive: true }}
+          />
+        )}
+        {!hideCentres && (
+          <StatCard
+            label="Activity Centres"
+            value={centresCount}
+            icon={Building2}
+            trend={{ value: `Across ${townsCount} towns`, positive: true }}
+          />
+        )}
       </div>
 
       {/* ── Row 2: Activity KPIs ─────────────────────────── */}
