@@ -84,7 +84,15 @@ function SessionChip({ session, onClick }: { session: ShakhaSession; onClick: ()
 // ── Main Sessions Component ───────────────────────────────────
 export default function Sessions() {
   const today = new Date();
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+
+  // ── Role scope & permissions ─────────────────────────────────
+  const { scope, selectedRole } = useRoleScope();
+  const atp = useModulePermissions('attendance');
+
+  // Super Admin defaults to week view; all other roles default to month view
+  const [viewMode, setViewMode] = useState<'month' | 'week'>(
+    () => selectedRole === 'Super Admin' ? 'week' : 'month'
+  );
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-based
   const [weekStart, setWeekStart] = useState<Date>(() => {
@@ -92,10 +100,6 @@ export default function Sessions() {
     d.setDate(d.getDate() - d.getDay()); // start of this week (Sun)
     return d;
   });
-
-  // ── Role scope & permissions ─────────────────────────────────
-  const { scope } = useRoleScope();
-  const atp = useModulePermissions('attendance');
 
   const [filterRegion, setFilterRegion]   = useState('');
   const [filterTown,   setFilterTown]     = useState('');
