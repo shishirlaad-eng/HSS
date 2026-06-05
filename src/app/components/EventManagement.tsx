@@ -866,9 +866,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
           event={live}
           onBack={backToList}
           onModify={() => openEdit(live)}
-          onStatusChange={() => openModal('status', live)}
           onCancel={() => openModal('cancel', live)}
-          onOverride={() => openModal('override', live)}
           onDelete={() => openModal('delete', live)}
           onViewMember={onNavigateToMember}
         />

@@ -9,9 +9,7 @@ import {
   CheckCircle2,
   HelpCircle,
   XCircle,
-  ShieldAlert,
   Edit,
-  Ban,
   Play,
   Trash2,
   MapPin,
@@ -24,6 +22,7 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -34,6 +33,7 @@ import {
   mockParticipants,
   mockMediaPosts,
 } from '../../mockAPI/eventsData';
+import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 
 // ─── Age group display labels (matches HSS naming convention) ─────────────────
@@ -129,9 +129,7 @@ interface EventDetailProps {
   event: Event;
   onBack: () => void;
   onModify: () => void;
-  onStatusChange: () => void;
   onCancel: () => void;
-  onOverride: () => void;
   onDelete: () => void;
   onViewMember?: (memberId: string) => void;
 }
@@ -141,9 +139,7 @@ export default function EventDetail({
   event,
   onBack,
   onModify,
-  onStatusChange,
   onCancel,
-  onOverride,
   onDelete,
   onViewMember,
 }: EventDetailProps) {
@@ -173,6 +169,82 @@ export default function EventDetail({
     rsvpFilter === 'going'    ? goingList :
     rsvpFilter === 'maybe'    ? maybeList :
                                 notGoingList;
+
+  // ── Export participants as CSV ─────────────────────────────────────────────
+  const handleExportParticipants = () => {
+    if (!filteredParticipants.length) { toast.error('No participants to export.'); return; }
+
+    const headers = [
+      'Member ID', 'Name', 'Age Groups (years old)', 'Gender', 'Date of Birth',
+      'Email', 'Secondary Email', 'Primary Contact Number', 'Secondary Contact Number',
+      'Building Name', 'Address Line 1', 'Address Line 2', 'Town / City', 'Post Code',
+      'Country', 'Region', 'Town', 'Activity Centre',
+      'Emergency Contact Name', 'Emergency Contact Phone', 'Emergency Contact Email', 'Emergency Relationship',
+      'Guardian Name', 'Guardian Email', 'Guardian Phone',
+      'Medical Info Declared', 'First Aider', 'Dietary Requirements',
+      'Occupation', 'Originating State (India)', 'DBS Status', 'First Aid Status',
+      'Member Status', 'Registration Date',
+      'RSVP', 'Participant Type',
+    ];
+
+    const rsvpLabel = (r: EventParticipant['rsvp']) =>
+      r === 'going' ? 'Going' : r === 'maybe' ? 'Maybe' : 'Not Going';
+
+    const escape = (v: string | undefined | null) =>
+      `"${(v ?? '').toString().replace(/"/g, '""')}"`;
+
+    const rows = filteredParticipants.map(p => {
+      const m = mockMembers.find(mem => mem.id === p.memberId);
+      return [
+        p.memberId,
+        escape(p.name),
+        escape(m ? getAgeGroupLabel(m.dateOfBirth) : ''),
+        escape(m?.gender ?? ''),
+        escape(m ? new Date(m.dateOfBirth).toLocaleDateString('en-GB') : ''),
+        escape(p.email),
+        escape(m?.secondaryEmail ?? ''),
+        escape(p.phone),
+        escape(m?.secondaryPhone ?? ''),
+        escape(m?.buildingName ?? ''),
+        escape(m?.addressLine1 ?? ''),
+        escape(m?.addressLine2 ?? ''),
+        escape(m?.contactTownCity ?? ''),
+        escape(m?.postCode ?? ''),
+        escape(m?.country ?? ''),
+        escape(m?.region ?? ''),
+        escape(m?.town ?? ''),
+        escape(m?.activityCentre ?? ''),
+        escape(m?.emergencyContactName ?? ''),
+        escape(m?.emergencyContactPhone ?? ''),
+        escape(m?.emergencyContactEmail ?? ''),
+        escape(m?.emergencyContactRelationship ?? ''),
+        escape(m?.guardianName ?? ''),
+        escape(m?.guardianEmail ?? ''),
+        escape(m?.guardianPhone ?? ''),
+        escape(m?.medicalInfoDeclared ?? ''),
+        m?.isFirstAider ? 'Yes' : 'No',
+        escape(Array.isArray(m?.dietaryRequirements) ? m.dietaryRequirements.join('; ') : (m?.dietaryRequirements ?? '')),
+        escape(m?.occupation ?? ''),
+        escape(m?.originatingStateIndia ?? ''),
+        escape(m?.compliance?.dbs ?? ''),
+        escape(m?.compliance?.firstAid ?? ''),
+        escape(m?.status ?? ''),
+        m ? new Date(m.registrationDate).toLocaleDateString('en-GB') : '',
+        rsvpLabel(p.rsvp),
+        p.memberType.charAt(0).toUpperCase() + p.memberType.slice(1),
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `participants_${event.id}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`${filteredParticipants.length} participant${filteredParticipants.length !== 1 ? 's' : ''} exported successfully.`);
+  };
 
   // ── Media list (local, starts from mock) ───────────────────────────────────
   const [mediaPosts, setMediaPosts]         = useState<EventMedia[]>(mockMediaPosts[event.id] ?? []);
@@ -326,14 +398,8 @@ export default function EventDetail({
                 <button className={btnDisabled} title="This event can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
               )}
               {!isCancelledOrCompleted && (
-                <button className={btnGhost} onClick={onStatusChange}>
-                  {event.status === 'active' ? <><Ban className="w-3.5 h-3.5" /> Deactivate</> : <><Play className="w-3.5 h-3.5" /> Activate</>}
-                </button>
-              )}
-              {!isCancelledOrCompleted && (
                 <button className={btnWarn} onClick={onCancel}><XCircle className="w-3.5 h-3.5" /> Cancel Event</button>
               )}
-              <button className={btnGhost} onClick={onOverride}><ShieldAlert className="w-3.5 h-3.5" /> Override Approval</button>
               {deleteOk ? (
                 <button className={btnDanger} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Delete</button>
               ) : (
@@ -482,28 +548,37 @@ export default function EventDetail({
               {/* ── PARTICIPANTS ── */}
               {activeTab === 'participants' && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {([
-                      { id: 'all',      label: 'All',       count: allParticipants.length },
-                      { id: 'going',    label: 'Going',     count: goingList.length       },
-                      { id: 'maybe',    label: 'Maybe',     count: maybeList.length       },
-                      { id: 'notGoing', label: 'Not Going', count: notGoingList.length    },
-                    ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
-                      <button
-                        key={f.id}
-                        onClick={() => setRsvpFilter(f.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          rsvpFilter === f.id
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                        }`}
-                      >
-                        {f.label}
-                        <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold ${
-                          rsvpFilter === f.id ? 'bg-white/20 text-white' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                        }`}>{f.count}</span>
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {([
+                        { id: 'all',      label: 'All',       count: allParticipants.length },
+                        { id: 'going',    label: 'Going',     count: goingList.length       },
+                        { id: 'maybe',    label: 'Maybe',     count: maybeList.length       },
+                        { id: 'notGoing', label: 'Not Going', count: notGoingList.length    },
+                      ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setRsvpFilter(f.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            rsvpFilter === f.id
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                          }`}
+                        >
+                          {f.label}
+                          <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold ${
+                            rsvpFilter === f.id ? 'bg-white/20 text-white' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                          }`}>{f.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={handleExportParticipants}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      Export Participants
+                    </button>
                   </div>
                   {filteredParticipants.length > 0 ? (
                     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">

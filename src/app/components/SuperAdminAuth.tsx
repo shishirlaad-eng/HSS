@@ -6,13 +6,14 @@ import {
   FormField
 } from "./hb/common";
 import { PrimaryButton } from "./hb/listing";
-import { Mail, Lock, KeyRound } from "lucide-react";
+import { Mail, Lock, KeyRound, UserPlus } from "lucide-react";
 import hssLogoColour from "../../assets/brand/hss/logos/hss-logo-colour.png";
 import { toast } from "sonner";
 import { LanguageProvider } from "../../i18n/LanguageContext";
 import { Toaster } from "sonner";
+import MemberRegistration from "./MemberRegistration";
 
-type Screen = "login" | "otp" | "forgot" | "reset";
+type Screen = "login" | "otp" | "forgot" | "reset" | "register";
 
 interface SuperAdminAuthProps {
   onLoginSuccess: () => void;
@@ -143,7 +144,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
   return (
     <LanguageProvider>
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4 transition-colors">
-        <div className="w-full max-w-md">
+        <div className={`w-full ${currentScreen === "register" ? "max-w-5xl" : "max-w-md"}`}>
           {/* HSS Brand Header */}
           <div className="text-center mb-6">
             <img
@@ -156,6 +157,14 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             </p>
           </div>
 
+          {currentScreen === "register" ? (
+            <MemberRegistration
+              onBackToLogin={() => {
+                setCurrentScreen("login");
+                setErrorMsg("");
+              }}
+            />
+          ) : (
           <FormCard className="shadow-lg !p-8">
             {errorMsg && (
               <div className="mb-6 p-3 bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 text-sm rounded-lg border border-error-200 dark:border-error-800 text-center">
@@ -226,6 +235,20 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                   >
                     {isLoading ? "Loading..." : "Login"}
                   </PrimaryButton>
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentScreen("register");
+                      setErrorMsg("");
+                    }}
+                    disabled={isLoading}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Register as Member
+                  </button>
                 </div>
                 <div className="text-center text-xs text-neutral-400 mt-4">
                   Enter any valid email and password to continue.
@@ -428,6 +451,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             )}
 
           </FormCard>
+          )}
         </div>
         <Toaster
           position="top-right"

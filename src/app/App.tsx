@@ -276,7 +276,7 @@ export default function App() {
         ) : currentPage === "report-refunds" ? (
           <RefundReport />
         ) : currentPage === "my-profile" ? (
-          <MyProfile />
+          <MyProfile selectedRole={selectedRole} />
         ) : currentPage === "logs" ? (
           <LogsPage />
 

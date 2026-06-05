@@ -1,13 +1,52 @@
-import { useEffect, useState } from "react";
-import { Mail, Phone, RotateCcw, Save } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Edit, Save, X, Mail, Phone, MapPin, Clock, RotateCcw, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "./hb/listing/PageHeader";
+import { SecondaryButton, PrimaryButton } from "./hb/listing";
+import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
+import { getAge, getAgeGroupLabel } from "../../mockAPI/membersData";
 
 const PROFILE_STORAGE_KEY = "myProfile";
+const MEMBER_PROFILE_STORAGE_KEY = "myMemberProfile";
 
 interface ProfileForm {
   email: string;
   mobile: string;
+}
+
+interface MemberProfileForm {
+  firstName: string;
+  middleName: string;
+  surname: string;
+  fullName: string;
+  gender: string;
+  dateOfBirth: string;
+  occupation: string;
+  email: string;
+  secondaryEmail: string;
+  phone: string;
+  secondaryPhone: string;
+  buildingName: string;
+  addressLine1: string;
+  addressLine2: string;
+  contactTownCity: string;
+  postCode: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactEmail: string;
+  emergencyContactRelationship: string;
+  guardianName: string;
+  guardianPhone: string;
+  guardianEmail: string;
+  guardianRelationship: string;
+  medicalInfoDeclared: string;
+  medicalInfoDetails: string;
+  isFirstAider: string;
+  dietaryRequirements: string;
+  originatingStateIndia: string;
+  country: string;
+  region: string;
+  town: string;
+  activityCentre: string;
 }
 
 const DEFAULT_PROFILE: ProfileForm = {
@@ -15,32 +54,489 @@ const DEFAULT_PROFILE: ProfileForm = {
   mobile: "+44 7700 900123",
 };
 
-export default function MyProfile() {
+const ADULT_MEMBER_PROFILE: MemberProfileForm = {
+  firstName: "John",
+  middleName: "",
+  surname: "Doe",
+  fullName: "John Doe",
+  gender: "Male",
+  dateOfBirth: "1988-04-14",
+  occupation: "Sales Manager",
+  email: "john.doe@company.com",
+  secondaryEmail: "john.doe.personal@example.com",
+  phone: "+44 7700 900123",
+  secondaryPhone: "+44 7700 900124",
+  buildingName: "Seva House",
+  addressLine1: "18 Kings Road",
+  addressLine2: "North Harrow",
+  contactTownCity: "Harrow",
+  postCode: "HA1 2AB",
+  emergencyContactName: "Meera Doe",
+  emergencyContactPhone: "+44 7700 900125",
+  emergencyContactEmail: "meera.doe@example.com",
+  emergencyContactRelationship: "Spouse",
+  guardianName: "",
+  guardianPhone: "",
+  guardianEmail: "",
+  guardianRelationship: "",
+  medicalInfoDeclared: "No",
+  medicalInfoDetails: "",
+  isFirstAider: "Yes",
+  dietaryRequirements: "Vegan",
+  originatingStateIndia: "Gujarat",
+  country: "HSS UK",
+  region: "London & South East",
+  town: "Harrow",
+  activityCentre: "Harrow Activity Centre",
+};
+
+function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
+  if (selectedRole.toLowerCase().includes("teen")) {
+    return {
+      ...ADULT_MEMBER_PROFILE,
+      firstName: "Rohan",
+      middleName: "",
+      surname: "Joshi",
+      fullName: "Rohan Joshi",
+      gender: "Male",
+      dateOfBirth: "2010-02-19",
+      occupation: "Student",
+      email: "rohan.joshi@example.com",
+      secondaryEmail: "",
+      phone: "",
+      secondaryPhone: "",
+      emergencyContactName: "Meena Joshi",
+      emergencyContactPhone: "+44 7700 900126",
+      emergencyContactEmail: "meena.joshi@example.com",
+      emergencyContactRelationship: "Mother",
+      guardianName: "Meena Joshi",
+      guardianPhone: "+44 7700 900126",
+      guardianEmail: "meena.joshi@example.com",
+      guardianRelationship: "Mother",
+      medicalInfoDeclared: "No",
+      medicalInfoDetails: "",
+      isFirstAider: "No",
+      dietaryRequirements: "",
+      originatingStateIndia: "Gujarat",
+      country: "HSS UK",
+      region: "North West",
+      town: "Manchester",
+      activityCentre: "Manchester Central Activity Centre",
+    };
+  }
+  return ADULT_MEMBER_PROFILE;
+}
+
+function valueOrDash(value?: string) {
+  return value && value.trim() ? value : "—";
+}
+
+// ── HB template detail-page building blocks ───────────────────
+
+function InfoSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+        {title}
+      </h4>
+      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      <div className="text-sm text-neutral-900 dark:text-white font-medium">{children}</div>
+    </div>
+  );
+}
+
+function EditableInfoItem({
+  label,
+  value,
+  isEditing,
+  onChange,
+  type = "text",
+  options,
+  textarea = false,
+}: {
+  label: string;
+  value: string;
+  isEditing: boolean;
+  onChange: (value: string) => void;
+  type?: string;
+  options?: string[];
+  textarea?: boolean;
+}) {
+  if (!isEditing) {
+    return <InfoItem label={label}>{valueOrDash(value)}</InfoItem>;
+  }
+  return (
+    <div>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      {options ? (
+        <FormSelect value={value} onChange={e => onChange(e.target.value)}>
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </FormSelect>
+      ) : textarea ? (
+        <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+      ) : (
+        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
+      )}
+    </div>
+  );
+}
+
+// ── Delete Account confirmation modal ────────────────────────
+
+function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#fff0f0] flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 text-[#BC0F1C]" />
+            </div>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Delete Account</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-5 space-y-3">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            Are you sure you want to delete your account? This action is <span className="font-semibold text-neutral-900 dark:text-white">permanent and cannot be undone</span>.
+          </p>
+          <div className="p-3 bg-[#fff0f0] dark:bg-[#fff0f0]/5 border border-[#ffaaab] dark:border-[#ffaaab]/30 rounded-lg">
+            <ul className="text-xs text-[#9a0c17] dark:text-[#f87171] space-y-1 list-disc list-inside">
+              <li>Your membership record will be permanently removed</li>
+              <li>You will lose access to all HSS events and sessions</li>
+              <li>This cannot be recovered by you or an administrator</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-200 dark:border-neutral-800">
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <button
+            onClick={onConfirm}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete My Account
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Member profile view ───────────────────────────────────────
+
+function MemberProfileView({ selectedRole }: { selectedRole: string }) {
+  const loadProfile = () => {
+    if (typeof window === "undefined") return getDefaultMemberProfile(selectedRole);
+    const saved = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
+    if (!saved) return getDefaultMemberProfile(selectedRole);
+    try {
+      return { ...getDefaultMemberProfile(selectedRole), ...JSON.parse(saved) };
+    } catch {
+      return getDefaultMemberProfile(selectedRole);
+    }
+  };
+
+  const [profile, setProfile] = useState<MemberProfileForm>(loadProfile);
+  const [savedProfile, setSavedProfile] = useState<MemberProfileForm>(profile);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    const next = loadProfile();
+    setProfile(next);
+    setSavedProfile(next);
+    setIsEditing(false);
+  }, [selectedRole]);
+
+  const fullName = [profile.firstName, profile.middleName, profile.surname]
+    .map(p => p.trim())
+    .filter(Boolean)
+    .join(" ");
+
+  const initials = fullName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase() || "JD";
+  const isTeenRole = selectedRole.toLowerCase().includes("teen");
+  const showGuardian = isTeenRole || Boolean(profile.guardianName || profile.guardianEmail || profile.guardianPhone);
+
+  const setField = (field: keyof MemberProfileForm, value: string) => {
+    setProfile(cur => {
+      const next = { ...cur, [field]: value };
+      if (field === "firstName" || field === "middleName" || field === "surname") {
+        next.fullName = [next.firstName, next.middleName, next.surname]
+          .map(p => p.trim()).filter(Boolean).join(" ");
+      }
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    const next = { ...profile, fullName };
+    localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`, JSON.stringify(next));
+    setProfile(next);
+    setSavedProfile(next);
+    setIsEditing(false);
+    toast.success("Profile updated successfully.");
+  };
+
+  const handleCancel = () => {
+    setProfile(savedProfile);
+    setIsEditing(false);
+  };
+
+  const handleDeleteAccount = () => {
+    localStorage.removeItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
+    setShowDeleteModal(false);
+    toast.success("Your account deletion request has been submitted. An administrator will process it shortly.");
+  };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  return (
+    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
+      <div className="max-w-[100%] mx-auto">
+
+        {/* ── Profile header ───────────────────────────────────── */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+
+            {/* Left: avatar + info */}
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                {/* Row 1 — Name */}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
+                  <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">{selectedRole}</span>
+                </div>
+                {/* Row 2 — Badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
+                    {getAgeGroupLabel(profile.dateOfBirth)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                    <span className="text-[#d97706]">Pending Approval</span>
+                  </span>
+                </div>
+                {/* Row 3 — Contact */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                  {profile.email && (
+                    <a href={`mailto:${profile.email}`} className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                      <Mail className="w-3.5 h-3.5" />{profile.email}
+                    </a>
+                  )}
+                  {profile.phone && (
+                    <>
+                      <span className="text-neutral-300 dark:text-neutral-700">|</span>
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" />{profile.phone}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {/* Row 4 — Org details */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-500">
+                  <span>{profile.country}</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{profile.region}</span>
+                  <span>·</span>
+                  <span>{profile.town}</span>
+                  <span>·</span>
+                  <span>{profile.activityCentre}</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />DOB: {formatDate(profile.dateOfBirth)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: action buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+              {isEditing ? (
+                <>
+                  <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
+                  <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Account
+                  </button>
+                  <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Two-column layout ────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-6">
+
+          {/* LEFT — main content (70%) */}
+          <div className="flex-1 lg:w-[70%] space-y-5">
+
+            <InfoSection title="Personal Information">
+              <EditableInfoItem label="First Name"              value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
+              <EditableInfoItem label="Middle Name"             value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
+              <EditableInfoItem label="Surname"                 value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
+              <InfoItem label="Full Name">{valueOrDash(fullName)}</InfoItem>
+              <EditableInfoItem label="Gender"                  value={profile.gender}      isEditing={isEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
+              {isEditing ? (
+                <EditableInfoItem label="Date of Birth"         value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
+              ) : (
+                <InfoItem label="Date of Birth">
+                  {formatDate(profile.dateOfBirth)}
+                  <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
+                </InfoItem>
+              )}
+              <InfoItem label="Age Groups (years old)">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
+              <EditableInfoItem label="Occupation"              value={profile.occupation}  isEditing={isEditing} onChange={v => setField("occupation", v)} />
+            </InfoSection>
+
+            <InfoSection title="Contact Information">
+              <EditableInfoItem label="Primary Email Address"     value={profile.email}            isEditing={isEditing} onChange={v => setField("email", v)}            type="email" />
+              <EditableInfoItem label="Secondary Email Address"   value={profile.secondaryEmail}   isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}   type="email" />
+              <EditableInfoItem label="Primary Contact Number"    value={profile.phone}            isEditing={isEditing} onChange={v => setField("phone", v)}            type="tel" />
+              <EditableInfoItem label="Secondary Contact Number"  value={profile.secondaryPhone}   isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}   type="tel" />
+              <EditableInfoItem label="Building Name"             value={profile.buildingName}     isEditing={isEditing} onChange={v => setField("buildingName", v)} />
+              <EditableInfoItem label="Address Line 1"            value={profile.addressLine1}     isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
+              <EditableInfoItem label="Address Line 2"            value={profile.addressLine2}     isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
+              <EditableInfoItem label="Town / City"               value={profile.contactTownCity}  isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
+              <EditableInfoItem label="Post Code"                 value={profile.postCode}         isEditing={isEditing} onChange={v => setField("postCode", v)} />
+            </InfoSection>
+
+            <InfoSection title="Emergency Contact">
+              <EditableInfoItem label="Name"          value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
+              <EditableInfoItem label="Phone"         value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+              <EditableInfoItem label="Email"         value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+              <EditableInfoItem label="Relationship"  value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+            </InfoSection>
+
+            {showGuardian && (
+              <InfoSection title="Parent / Guardian Approval Information">
+                <EditableInfoItem label="Parent / Guardian Name"  value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
+                <EditableInfoItem label="Phone"                   value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                <EditableInfoItem label="Email"                   value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+                <EditableInfoItem label="Relationship"            value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+              </InfoSection>
+            )}
+
+            <InfoSection title="Other Information">
+              <EditableInfoItem label="Medical Information Declared"        value={profile.medicalInfoDeclared}  isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}  options={["No", "Yes"]} />
+              <EditableInfoItem label="Medical Details"                     value={profile.medicalInfoDetails}   isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}   textarea />
+              <EditableInfoItem label="First Aider for Shakha / HSS UK"    value={profile.isFirstAider}         isEditing={isEditing} onChange={v => setField("isFirstAider", v)}         options={["No", "Yes"]} />
+              <EditableInfoItem label="Dietary Requirements"                value={profile.dietaryRequirements}  isEditing={isEditing} onChange={v => setField("dietaryRequirements", v)} />
+              <EditableInfoItem label="Originating State in India"          value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
+            </InfoSection>
+          </div>
+
+          {/* RIGHT — sidebar (30%) */}
+          <div className="lg:w-[30%] space-y-5">
+
+            {/* Membership Status */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
+              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                Membership Status
+              </h4>
+              <div className="px-6 pb-5 pt-4">
+                <div className="mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                    <span className="text-[#d97706]">Pending Approval</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                  <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
+                    Your membership is pending approval. You will be notified once your application has been reviewed.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Organisation Details */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
+              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                Organisation Details
+              </h4>
+              <div className="px-6 pb-5 pt-4 space-y-4">
+                {[
+                  { label: "Country / Organisation", value: profile.country },
+                  { label: "Vibhag / Region",        value: profile.region },
+                  { label: "Nagar / Town",            value: profile.town },
+                  { label: "Shakha / Activity Centre",value: profile.activityCentre },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">{label}</span>
+                    <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                      {valueOrDash(value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+      />
+    </div>
+  );
+}
+
+// ── Super Admin profile view ──────────────────────────────────
+
+function SuperAdminProfileView() {
   const [profile, setProfile] = useState<ProfileForm>(() => {
     if (typeof window === "undefined") return DEFAULT_PROFILE;
-
     const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
     if (!saved) return DEFAULT_PROFILE;
-
-    try {
-      return { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
-    } catch {
-      return DEFAULT_PROFILE;
-    }
+    try { return { ...DEFAULT_PROFILE, ...JSON.parse(saved) }; }
+    catch { return DEFAULT_PROFILE; }
   });
   const [initialProfile, setInitialProfile] = useState(profile);
 
-  useEffect(() => {
-    setInitialProfile(profile);
-  }, []);
+  useEffect(() => { setInitialProfile(profile); }, []);
 
-  const hasChanges =
-    profile.email !== initialProfile.email ||
-    profile.mobile !== initialProfile.mobile;
+  const hasChanges = profile.email !== initialProfile.email || profile.mobile !== initialProfile.mobile;
 
-  const setField = <K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) => {
-    setProfile(current => ({ ...current, [field]: value }));
-  };
+  const setField = <K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) =>
+    setProfile(cur => ({ ...cur, [field]: value }));
 
   const handleSave = () => {
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
@@ -48,91 +544,81 @@ export default function MyProfile() {
     toast.success("Profile updated successfully.");
   };
 
-  const handleReset = () => {
-    setProfile(initialProfile);
-  };
+  const handleReset = () => setProfile(initialProfile);
 
   return (
-    <div className="p-6">
-      <PageHeader
-        title="My Profile"
-        subtitle="Manage your contact details for the membership management system."
-        breadcrumbs={[
-          { label: "Profile" },
-          { label: "My Profile", current: true },
-        ]}
-      />
+    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
+      <div className="max-w-[100%] mx-auto">
 
-      <div className="mt-6 max-w-3xl">
-        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary-600 dark:bg-primary-500 flex items-center justify-center text-white font-semibold">
-              JD
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">John Doe</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Sales Manager</p>
-            </div>
-          </div>
-
-          <div className="px-6 py-6 space-y-5">
-            <div>
-              <label htmlFor="profile-email" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Email ID
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input
-                  id="profile-email"
-                  type="email"
-                  value={profile.email}
-                  onChange={event => setField("email", event.target.value)}
-                  className="w-full h-10 pl-10 pr-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter email ID"
-                />
+        {/* ── Profile header ───────────────────────────────────── */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
+                JD
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">John Doe</h1>
+                  <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">Super Admin</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5" />{profile.email}
+                  </span>
+                  <span className="text-neutral-300 dark:text-neutral-700">|</span>
+                  <span className="flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5" />{profile.mobile}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="profile-mobile" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Mobile Number
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <SecondaryButton icon={RotateCcw} onClick={handleReset} disabled={!hasChanges}>Reset</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={handleSave} disabled={!hasChanges}>Save Changes</PrimaryButton>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Contact details card ─────────────────────────────── */}
+        <div className="max-w-2xl">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+            <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+              Contact Details
+            </h4>
+            <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="profile-email" className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Email ID</label>
+                <FormInput
+                  id="profile-email"
+                  type="email"
+                  value={profile.email}
+                  onChange={e => setField("email", e.target.value)}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label htmlFor="profile-mobile" className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Mobile Number</label>
+                <FormInput
                   id="profile-mobile"
                   type="tel"
                   value={profile.mobile}
-                  onChange={event => setField("mobile", event.target.value)}
-                  className="w-full h-10 pl-10 pr-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  onChange={e => setField("mobile", e.target.value)}
                   placeholder="Enter mobile number"
                 />
               </div>
             </div>
           </div>
-
-          <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={!hasChanges}
-              className="h-9 px-4 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!hasChanges}
-              className="h-9 px-4 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium text-white transition-colors flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Save
-            </button>
-          </div>
         </div>
       </div>
     </div>
   );
+}
+
+export default function MyProfile({ selectedRole = "Super Admin" }: { selectedRole?: string }) {
+  return selectedRole === "Super Admin"
+    ? <SuperAdminProfileView />
+    : <MemberProfileView selectedRole={selectedRole} />;
 }

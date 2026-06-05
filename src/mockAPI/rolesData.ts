@@ -242,8 +242,7 @@ export const mockRoles: Role[] = [
   },
 
   // 5. Activity Centre Admin ─ sees own centre data only
-  //    No Settings, No RBAC, No Audit Logging
-  //    Masters: Role Types view only
+  //    No Masters, No Settings, No RBAC, No Audit Logging
   //    Attendance: full
   {
     id: "5",
@@ -255,7 +254,6 @@ export const mockRoles: Role[] = [
     lastUpdated: "2025-01-16T10:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      masters:       ["view"],
       members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
