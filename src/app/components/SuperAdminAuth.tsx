@@ -13,6 +13,20 @@ import { LanguageProvider } from "../../i18n/LanguageContext";
 import { Toaster } from "sonner";
 import MemberRegistration from "./MemberRegistration";
 
+// ── Trusted-device cookie helpers (30-day remember) ───────────────────────────
+const DEVICE_COOKIE_KEY = "hss_trusted_device";
+
+function setTrustedDeviceCookie(email: string) {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 30);
+  document.cookie = `${DEVICE_COOKIE_KEY}=${encodeURIComponent(email)}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`;
+}
+
+function getTrustedDeviceEmail(): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${DEVICE_COOKIE_KEY}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 type Screen = "login" | "otp" | "forgot" | "reset" | "register";
 
 interface SuperAdminAuthProps {
@@ -59,6 +73,17 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
       return;
     }
     
+    // If this device is already trusted for this email, skip OTP
+    if (getTrustedDeviceEmail() === email) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        toast.success("Trusted device recognised. Logged in without OTP.");
+        onLoginSuccess();
+      }, 800);
+      return;
+    }
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -82,6 +107,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
       setIsLoading(false);
       // Accept any 6 digit OTP
       if (currentScreen === "otp") {
+        setTrustedDeviceCookie(email);
         onLoginSuccess();
       }
     }, 1000);
@@ -259,7 +285,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             {currentScreen === "otp" && (
               <form onSubmit={handleVerifyOTP} className="space-y-6">
                 <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">OTP Verification</h1>
+                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">One-Time Passcode Verification</h1>
                   <p className="text-neutral-500 dark:text-neutral-400 text-sm">Enter the 6-digit OTP sent to your registered channel.</p>
                 </div>
 
@@ -280,10 +306,20 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                   </div>
                 </FormField>
 
+                {/* Trusted device notice */}
+                <div className="flex items-start gap-2.5 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 px-3.5 py-3">
+                  <svg className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                  </svg>
+                  <p className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
+                    Verifying this OTP will remember this device for <strong>30 days</strong>. You will not be asked for an OTP again on this device during that period.
+                  </p>
+                </div>
+
                 <div className="pt-2">
-                  <PrimaryButton 
-                    type="submit" 
-                    className="w-full justify-center py-2.5 font-medium" 
+                  <PrimaryButton
+                    type="submit"
+                    className="w-full justify-center py-2.5 font-medium"
                     disabled={isLoading}
                   >
                     {isLoading ? "Verifying..." : "Verify OTP"}
