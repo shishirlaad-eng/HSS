@@ -692,11 +692,11 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
             return f.values.some(v => v.toLowerCase() === event.paymentType);
           case 'Country':
             return f.values.includes(event.country);
-          case 'Region':
+          case 'Vibhaag':
             return f.values.includes(event.region);
-          case 'Town':
+          case 'Nagar':
             return f.values.includes(event.town);
-          case 'Activity Centre':
+          case 'Shakha':
             return f.values.includes(event.activityCentre);
           default:
             return true;
@@ -938,11 +938,11 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
 
         {/* PAGE HEADER */}
         <PageHeader
-          title="Event Management"
+          title="Karyakrams"
           subtitle="View and govern events across all Masters scopes."
           breadcrumbs={[
-            { label: 'Event Management', href: '#' },
-            { label: 'Events', current: true },
+            { label: 'Karyakrams', href: '#' },
+            { label: 'Karyakrams', current: true },
           ]}
         >
           <div className="relative" ref={columnAnchorRef}>
@@ -962,9 +962,9 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
               filterOptions={{
                 ...EVENT_FILTER_BASE,
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
-                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
-                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
-                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
               }}
             />
             <ColumnVisibilityPanel

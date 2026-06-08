@@ -138,7 +138,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         <PageHeader
           title="Modify Event"
           breadcrumbs={[
-            { label: 'Event Management', onClick: () => { onBack(); onBack(); } },
+            { label: 'Karyakrams', onClick: () => { onBack(); onBack(); } },
             { label: event.name, onClick: onBack },
             { label: 'Modify', current: true },
           ]}

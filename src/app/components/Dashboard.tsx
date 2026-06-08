@@ -20,6 +20,10 @@ import {
   AlertCircle,
   UserCheck,
   Heart,
+  CheckCheck,
+  XCircle,
+  Percent,
+  Award,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
@@ -147,6 +151,375 @@ const MEMBER_STATUS_CFG = {
 
 const AGE_GROUP_CHIP = 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark:bg-[#1a2e14] dark:text-[#86efac] dark:border-[#166534]';
 
+// ── Mock Donations (member view) ──────────────────────────────
+
+const mockMyDonations = [
+  { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00  },
+  { id: 'DON-002', datetime: '2026-04-15T09:15:00', amount: 50.00  },
+  { id: 'DON-003', datetime: '2026-03-22T18:47:00', amount: 10.00  },
+  { id: 'DON-004', datetime: '2026-02-10T11:05:00', amount: 100.00 },
+  { id: 'DON-005', datetime: '2026-01-05T16:20:00', amount: 25.00  },
+];
+
+// ── Mock Attendance (member view) ─────────────────────────────
+
+const mockMyAttendance = [
+  { id: 'ATT-001', session: 'Shakha — Wembley Activity Centre',     date: '2026-06-01', status: 'present' },
+  { id: 'ATT-002', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-25', status: 'present' },
+  { id: 'ATT-003', session: 'Youth Leadership Workshop',            date: '2026-05-20', status: 'present' },
+  { id: 'ATT-004', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-18', status: 'absent'  },
+  { id: 'ATT-005', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-11', status: 'present' },
+  { id: 'ATT-006', session: 'Annual Sports Day',                    date: '2026-05-04', status: 'present' },
+  { id: 'ATT-007', session: 'Shakha — Wembley Activity Centre',     date: '2026-04-27', status: 'absent'  },
+  { id: 'ATT-008', session: 'Bal Vihar — Cultural Evening',        date: '2026-04-20', status: 'present' },
+];
+
+// ── Mock current logged-in member ─────────────────────────────
+
+const mockCurrentMember = {
+  firstName:          'John',
+  lastName:           'Doe',
+  shakha:             'Harrow Activity Centre',
+  town:               'Harrow',
+  vibhaag:            'London & South East',
+  sanghResponsibility:'Ghatnayak',
+};
+
+// ── Member / Teen Dashboard ────────────────────────────────────
+
+function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const upcomingEvents = useMemo(
+    () => mockEvents
+      .filter(e => e.status === 'published' || e.status === 'active')
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()),
+    [],
+  );
+
+  const presentCount  = mockMyAttendance.filter(a => a.status === 'present').length;
+  const absentCount   = mockMyAttendance.filter(a => a.status === 'absent').length;
+  const attendancePct = Math.round((presentCount / mockMyAttendance.length) * 100);
+  const highPriority  = mockAnnouncements.filter(a => a.priority === 'high').length;
+
+  return (
+    <div className="px-6 py-6">
+
+      {/* Member Identity Header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
+            {mockCurrentMember.firstName} {mockCurrentMember.lastName}
+          </h1>
+          <span className="text-neutral-300 dark:text-neutral-600 font-light text-xl leading-tight">|</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="flex items-center gap-1">
+              <Award className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.sanghResponsibility}
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-600">·</span>
+            <span className="flex items-center gap-1">
+              <Building2 className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.shakha}
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-600">·</span>
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.town}
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-600">·</span>
+            <span className="flex items-center gap-1">
+              <Globe2 className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.vibhaag}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => onNavigate?.('donate')}
+          className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
+        >
+          <Heart className="w-4 h-4" />
+          Donate
+        </button>
+      </div>
+
+      {/* ── Row 1: Stat cards ─────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+        {/* My Attendance */}
+        <div
+          role="button" tabIndex={0}
+          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          onClick={() => onNavigate?.('sessions')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('sessions')}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Attendance</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{attendancePct}%</p>
+              <p className="text-xs mt-1 text-neutral-400 dark:text-neutral-500">Current month</p>
+              <p className="text-xs mt-1 text-emerald-600 dark:text-emerald-400">
+                {presentCount} present · {absentCount} absent
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <CheckCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Upcoming Karyakrams */}
+        <div
+          role="button" tabIndex={0}
+          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          onClick={() => onNavigate?.('event-management')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('event-management')}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
+              <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
+                {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
+                {upcomingEvents.filter(e => e.status === 'published').length} published
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Announcements */}
+        <div
+          role="button" tabIndex={0}
+          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          onClick={() => onNavigate?.('announcements')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('announcements')}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{mockAnnouncements.length}</p>
+              <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">
+                {highPriority} high priority
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <Megaphone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* My Donations */}
+        <div
+          role="button" tabIndex={0}
+          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          onClick={() => onNavigate?.('donate')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('donate')}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Donations</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
+                £{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(0)}
+              </p>
+              <p className="text-xs mt-1 text-primary-600 dark:text-primary-400">
+                {mockMyDonations.length} donation{mockMyDonations.length !== 1 ? 's' : ''} total
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Upcoming Karyakrams + My Attendance ───────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-stretch">
+
+        {/* Upcoming Karyakrams list (2/3) */}
+        <div className="lg:col-span-2 flex flex-col">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {upcomingEvents.length}
+                </span>
+              </div>
+              <button onClick={() => onNavigate?.('event-management')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
+              {upcomingEvents.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">No upcoming events scheduled.</div>
+              ) : upcomingEvents.map(event => {
+                const cfg = EVENT_STATUS_CFG[event.status] ?? EVENT_STATUS_CFG.draft;
+                return (
+                  <div key={event.id} className="px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-12 text-center pt-0.5">
+                        <div className="text-xl font-bold text-primary-600 dark:text-primary-400 leading-tight">{new Date(event.startDate).getDate()}</div>
+                        <div className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wide font-medium">{new Date(event.startDate).toLocaleString('en-GB', { month: 'short' })}</div>
+                        <div className="text-[10px] text-neutral-400 dark:text-neutral-500">{new Date(event.startDate).getFullYear()}</div>
+                      </div>
+                      <div className="w-px self-stretch bg-neutral-100 dark:bg-neutral-800 my-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">{event.name}</span>
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />{cfg.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 flex-wrap">
+                          <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} – {formatEventTime(event.endDate)}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.activityCentre}</span>
+                          <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" />{event.metrics.participantCount} registered</span>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {event.paymentType === 'paid'
+                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">£{event.price}</span>
+                          : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">Free</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* My Attendance list (1/3) */}
+        <div className="lg:col-span-1 flex flex-col">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Attendance</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {attendancePct}%
+                </span>
+              </div>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
+              {mockMyAttendance.map(att => (
+                <div key={att.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{att.session}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
+                    </div>
+                    {att.status === 'present'
+                      ? <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Present</span>
+                      : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Absent</span>
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Announcements + Donations ─────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Announcements (2/3) */}
+        <div className="lg:col-span-2">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Suchana</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {mockAnnouncements.length}
+                </span>
+              </div>
+              <button onClick={() => onNavigate?.('announcements')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              {mockAnnouncements.map(ann => {
+                const pcfg = PRIORITY_CFG[ann.priority];
+                const PIcon = pcfg.icon;
+                return (
+                  <div key={ann.id} className="px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${pcfg.bg}`}>
+                        <PIcon className={`w-3.5 h-3.5 ${pcfg.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug">{ann.title}</h4>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0 mt-0.5">{timeAgo(ann.postedAt)}</span>
+                        </div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed line-clamp-2">{ann.body}</p>
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1.5">Posted by {ann.postedBy}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* My Donations (1/3) */}
+        <div className="lg:col-span-1">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Donations</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {mockMyDonations.length}
+                </span>
+              </div>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
+              {mockMyDonations.map(don => (
+                <div key={don.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {new Date(don.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span className="text-neutral-400 dark:text-neutral-500 ml-1">
+                        {new Date(don.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </p>
+                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                      £{don.amount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                Total: <span className="font-semibold text-neutral-900 dark:text-white">£{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(2)}</span>
+              </span>
+              <button
+                onClick={() => onNavigate?.('donate')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all"
+              >
+                <Heart className="w-3.5 h-3.5" />
+                Donate
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 // ── Dashboard Component ───────────────────────────────────────
 
 interface DashboardProps {
@@ -156,6 +529,12 @@ interface DashboardProps {
 export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const { selectedRole } = useRoleScope();
+
+  // Member (18+) and Teen get a simplified personal dashboard
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
+  if (isMemberRole) {
+    return <MemberDashboard onNavigate={onNavigate} />;
+  }
 
   // Hide org-structure cards that are redundant for the current role's scope
   const hideRegions  = selectedRole === 'Regional Head' || selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
@@ -228,7 +607,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         />
         {!hideRegions && (
           <StatCard
-            label="Regions"
+            label="Vibhaag"
             value={regionsCount}
             icon={Globe2}
             trend={{ value: `Across ${MASTERS_CASCADE.countries.length} countries`, positive: true }}
@@ -236,18 +615,18 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         )}
         {!hideTowns && (
           <StatCard
-            label="Towns"
+            label="Nagar"
             value={townsCount}
             icon={MapPin}
-            trend={{ value: `Across ${regionsCount} regions`, positive: true }}
+            trend={{ value: `Across ${regionsCount} vibhaags`, positive: true }}
           />
         )}
         {!hideCentres && (
           <StatCard
-            label="Activity Centres"
+            label="Shakha"
             value={centresCount}
             icon={Building2}
-            trend={{ value: `Across ${townsCount} towns`, positive: true }}
+            trend={{ value: `Across ${townsCount} nagars`, positive: true }}
           />
         )}
       </div>
@@ -255,7 +634,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       {/* ── Row 2: Activity KPIs ─────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-        {/* Upcoming Events */}
+        {/* Upcoming Karyakrams */}
         <div
           role="button"
           tabIndex={0}
@@ -265,7 +644,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Events</p>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
               <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
                 {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
@@ -288,7 +667,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Announcements</p>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{mockAnnouncements.length}</p>
               <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">
                 {mockAnnouncements.filter(a => a.priority === 'high').length} high priority
@@ -345,16 +724,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </div>
       </div>
 
-      {/* ── Section: Upcoming Events + Pending Approvals ─── */}
+      {/* ── Section: Upcoming Karyakrams + Pending Approvals ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
-        {/* Upcoming Events list (2/3) */}
+        {/* Upcoming Karyakrams list (2/3) */}
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Upcoming Events</h3>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {upcomingEvents.length}
                 </span>
@@ -513,7 +892,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Announcements</h3>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Suchana</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {mockAnnouncements.length}
                 </span>

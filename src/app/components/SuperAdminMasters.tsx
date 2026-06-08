@@ -115,9 +115,9 @@ const initialRoleTypes: MasterItem[] = ROLE_TYPE_OPTIONS.map((name, index) => ({
 
 const MASTER_TABS: { id: MasterType; label: string }[] = [
   { id: 'country',    label: 'Country' },
-  { id: 'region',     label: 'Region' },
-  { id: 'town',       label: 'Town' },
-  { id: 'centre',     label: 'Activity Centre' },
+  { id: 'region',     label: 'Vibhaag' },
+  { id: 'town',       label: 'Nagar' },
+  { id: 'centre',     label: 'Shakha' },
   { id: 'role-types', label: 'Responsibility' },
 ];
 
@@ -240,27 +240,27 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         idPrefix: 'CNT',
       };
       case 'region': return {
-        title: 'Region',
-        subtitle: 'Manage Regions linked to a Country.',
+        title: 'Vibhaag',
+        subtitle: 'Manage Vibhaags linked to a Country.',
         icon: Map,
-        addLabel: 'Add Region',
-        nameLabel: 'Region Name',
+        addLabel: 'Add Vibhaag',
+        nameLabel: 'Vibhaag Name',
         idPrefix: 'RGN',
       };
       case 'town': return {
-        title: 'Town',
-        subtitle: 'Manage Towns linked to a Region.',
+        title: 'Nagar',
+        subtitle: 'Manage Nagars linked to a Vibhaag.',
         icon: MapPin,
-        addLabel: 'Add Town',
-        nameLabel: 'Town Name',
+        addLabel: 'Add Nagar',
+        nameLabel: 'Nagar Name',
         idPrefix: 'TWN',
       };
       case 'centre': return {
-        title: 'Activity Centre',
-        subtitle: 'Manage Activity Centres linked to a Town.',
+        title: 'Shakha',
+        subtitle: 'Manage Shakhas linked to a Nagar.',
         icon: Building2,
-        addLabel: 'Add Activity Centre',
-        nameLabel: 'Activity Centre Name',
+        addLabel: 'Add Shakha',
+        nameLabel: 'Shakha Name',
         idPrefix: 'CTR',
       };
       case 'role-types': return {
@@ -283,8 +283,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     if (masterType !== 'country' && !isStandaloneMaster)
                                      cols.push({ key: 'countryName', label: 'Country' });
     if (masterType === 'town' || masterType === 'centre')
-                                     cols.push({ key: 'regionName', label: 'Region' });
-    if (masterType === 'centre')     cols.push({ key: 'townName',     label: 'Town' });
+                                     cols.push({ key: 'regionName', label: 'Vibhaag' });
+    if (masterType === 'centre')     cols.push({ key: 'townName',     label: 'Nagar' });
     if (masterType === 'centre')     cols.push({ key: 'contactName',  label: 'Contact Name' });
     if (masterType === 'centre')     cols.push({ key: 'contactPhone', label: 'Phone' });
     if (masterType === 'centre')     cols.push({ key: 'contactEmail', label: 'Email' });
@@ -469,11 +469,11 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       return;
     }
     if ((masterType === 'town' || masterType === 'centre') && !activeItem.regionName) {
-      toast.error('Region is required.');
+      toast.error('Vibhaag is required.');
       return;
     }
     if (masterType === 'centre' && !activeItem.townName) {
-      toast.error('Town is required.');
+      toast.error('Nagar is required.');
       return;
     }
 
@@ -665,7 +665,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 value={filterRegion}
                 onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); }}
               >
-                <option value="">All Regions</option>
+                <option value="">All Vibhaag</option>
                 {regionOptions.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             )}
@@ -677,7 +677,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 onChange={e => setFilterTown(e.target.value)}
                 disabled={!filterRegion}
               >
-                <option value="">All Towns</option>
+                <option value="">All Nagar</option>
                 {townOptions.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             )}
@@ -740,24 +740,24 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               ]} />
             )}
             {masterType === 'region' && (
-              <SummaryWidgets title="Region Summary" widgets={[
-                { label: 'Total Regions',  value: regions.length,                               icon: 'Map'         },
-                { label: 'Active Regions', value: regions.filter(r => r.status === 'active').length, icon: 'CheckCircle' },
+              <SummaryWidgets title="Vibhaag Summary" widgets={[
+                { label: 'Total Vibhaag',  value: regions.length,                               icon: 'Map'         },
+                { label: 'Active Vibhaag', value: regions.filter(r => r.status === 'active').length, icon: 'CheckCircle' },
                 { label: 'Countries',      value: new Set(regions.map(r => r.countryName)).size, icon: 'Globe'       },
               ]} />
             )}
             {masterType === 'town' && (
-              <SummaryWidgets title="Town Summary" widgets={[
-                { label: 'Total Towns',  value: towns.length,                              icon: 'MapPin'      },
-                { label: 'Active Towns', value: towns.filter(t => t.status === 'active').length, icon: 'CheckCircle' },
-                { label: 'Regions',      value: new Set(towns.map(t => t.regionName)).size, icon: 'Map'         },
+              <SummaryWidgets title="Nagar Summary" widgets={[
+                { label: 'Total Nagars',  value: towns.length,                              icon: 'MapPin'      },
+                { label: 'Active Nagars', value: towns.filter(t => t.status === 'active').length, icon: 'CheckCircle' },
+                { label: 'Vibhaag',       value: new Set(towns.map(t => t.regionName)).size, icon: 'Map'         },
               ]} />
             )}
             {masterType === 'centre' && (
-              <SummaryWidgets title="Activity Centre Summary" widgets={[
-                { label: 'Total Centres',  value: centres.length,                                icon: 'Building2'   },
-                { label: 'Active Centres', value: centres.filter(c => c.status === 'active').length, icon: 'CheckCircle' },
-                { label: 'Towns',          value: new Set(centres.map(c => c.townName)).size,    icon: 'MapPin'      },
+              <SummaryWidgets title="Shakha Summary" widgets={[
+                { label: 'Total Shakhas',  value: centres.length,                                icon: 'Building2'   },
+                { label: 'Active Shakhas', value: centres.filter(c => c.status === 'active').length, icon: 'CheckCircle' },
+                { label: 'Nagar',          value: new Set(centres.map(c => c.townName)).size,    icon: 'MapPin'      },
               ]} />
             )}
             {masterType === 'role-types' && (
@@ -822,13 +822,13 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     )}
                     {item.regionName && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-400">Region:</span>
+                        <span className="text-neutral-400">Vibhaag:</span>
                         <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.regionName}</span>
                       </div>
                     )}
                     {item.townName && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-400">Town:</span>
+                        <span className="text-neutral-400">Nagar:</span>
                         <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.townName}</span>
                       </div>
                     )}
@@ -856,9 +856,9 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     {item.childCount !== undefined && masterType !== 'centre' && !isStandaloneMaster && (
                       <div className="flex justify-between">
                         <span className="text-neutral-400">
-                          {masterType === 'country' ? 'Regions:'
-                          : masterType === 'region'  ? 'Towns:'
-                          : masterType === 'town'    ? 'Activity Centres:'
+                          {masterType === 'country' ? 'Vibhaag:'
+                          : masterType === 'region'  ? 'Nagar:'
+                          : masterType === 'town'    ? 'Shakha:'
                           : 'Children:'}
                         </span>
                         <span className="font-semibold text-neutral-800 dark:text-neutral-200">{item.childCount}</span>
@@ -914,8 +914,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     </div>
                     {item.code        && <span className="text-xs text-neutral-500">Code: {item.code}</span>}
                     {item.countryName && <span className="text-xs text-neutral-500 truncate">Country: {item.countryName}</span>}
-                    {item.regionName  && <span className="text-xs text-neutral-500 truncate">Region: {item.regionName}</span>}
-                    {item.townName    && <span className="text-xs text-neutral-500 truncate">Town: {item.townName}</span>}
+                    {item.regionName  && <span className="text-xs text-neutral-500 truncate">Vibhaag: {item.regionName}</span>}
+                    {item.townName    && <span className="text-xs text-neutral-500 truncate">Nagar: {item.townName}</span>}
                     {masterType === 'centre' && item.contactName  && <span className="text-xs text-neutral-500 truncate">Contact: {item.contactName}</span>}
                     {masterType === 'centre' && item.contactPhone && <span className="text-xs text-neutral-500">{item.contactPhone}</span>}
                     {masterType === 'centre' && (item.city || item.postCode) && (
@@ -971,12 +971,12 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     )}
                     {(masterType === 'town' || masterType === 'centre') && visibleColumns.regionName && (
                       <th onClick={() => handleSort('regionName')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800">
-                        Region {renderSortIndicator('regionName')}
+                        Vibhaag {renderSortIndicator('regionName')}
                       </th>
                     )}
                     {masterType === 'centre' && visibleColumns.townName && (
                       <th onClick={() => handleSort('townName')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800">
-                        Town {renderSortIndicator('townName')}
+                        Nagar {renderSortIndicator('townName')}
                       </th>
                     )}
                     {masterType === 'centre' && visibleColumns.contactName && (
@@ -1156,7 +1156,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               {(masterType === 'town' || masterType === 'centre') && (
                 <FormSection>
                   <FormField>
-                    <FormLabel required={modalMode !== 'view'}>Region</FormLabel>
+                    <FormLabel required={modalMode !== 'view'}>Vibhaag</FormLabel>
                     {modalMode === 'view' ? (
                       <FormInput value={activeItem.regionName ?? ''} readOnly />
                     ) : (
@@ -1165,7 +1165,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         onChange={e => setActiveItem({ ...activeItem, regionName: e.target.value, townName: '' })}
                         disabled={!activeItem.countryName}
                       >
-                        <option value="">Select Region</option>
+                        <option value="">Select Vibhaag</option>
                         {formRegionOptions.map(n => <option key={n} value={n}>{n}</option>)}
                       </FormSelect>
                     )}
@@ -1177,7 +1177,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               {masterType === 'centre' && (
                 <FormSection>
                   <FormField>
-                    <FormLabel required={modalMode !== 'view'}>Town</FormLabel>
+                    <FormLabel required={modalMode !== 'view'}>Nagar</FormLabel>
                     {modalMode === 'view' ? (
                       <FormInput value={activeItem.townName ?? ''} readOnly />
                     ) : (
@@ -1186,7 +1186,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         onChange={e => setActiveItem({ ...activeItem, townName: e.target.value })}
                         disabled={!activeItem.regionName}
                       >
-                        <option value="">Select Town</option>
+                        <option value="">Select Nagar</option>
                         {formTownOptions.map(n => <option key={n} value={n}>{n}</option>)}
                       </FormSelect>
                     )}

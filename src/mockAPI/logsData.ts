@@ -406,7 +406,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-003',
     user: 'Priya Patel',
-    module: 'Events',
+    module: 'Karyakrams',
     actionType: 'Create',
     recordName: 'HSS Annual General Meeting 2026',
     recordId: 'EVT-006',
@@ -498,7 +498,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-009',
     user: 'Priya Patel',
-    module: 'Announcements',
+    module: 'Suchana',
     actionType: 'Create',
     recordName: 'HSS Annual Camp 2026',
     recordId: 'ANN-012',
@@ -513,7 +513,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-010',
     user: 'Michael Kumar',
-    module: 'Events',
+    module: 'Karyakrams',
     actionType: 'Update',
     recordName: 'Youth Leadership Summit',
     recordId: 'EVT-001',
@@ -588,7 +588,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-015',
     user: 'Sarah Smith',
-    module: 'Events',
+    module: 'Karyakrams',
     actionType: 'Delete',
     recordName: 'Birmingham Fundraiser — May 2026',
     recordId: 'EVT-004',
@@ -636,7 +636,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-018',
     user: 'Sunita Sharma',
-    module: 'Announcements',
+    module: 'Suchana',
     actionType: 'Update',
     recordName: 'General Meeting — June 2026',
     recordId: 'ANN-011',
@@ -698,7 +698,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-022',
     user: 'Sarah Smith',
-    module: 'Events',
+    module: 'Karyakrams',
     actionType: 'Status Change',
     recordName: 'Cultural Evening — Edinburgh',
     recordId: 'EVT-005',
@@ -775,7 +775,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-027',
     user: 'Sunita Sharma',
-    module: 'Announcements',
+    module: 'Suchana',
     actionType: 'Delete',
     recordName: 'Diwali Celebration 2024',
     recordId: 'ANN-003',
@@ -806,7 +806,7 @@ export const mockAuditLogs: AuditLog[] = [
   {
     id: 'AUD-029',
     user: 'Priya Patel',
-    module: 'Events',
+    module: 'Karyakrams',
     actionType: 'Create',
     recordName: 'Fundraising Gala — Dublin',
     recordId: 'EVT-003',

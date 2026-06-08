@@ -749,9 +749,9 @@ export const MEMBER_FILTER_OPTIONS: Record<string, string[]> = {
   'Gender':            ['Male', 'Female'],
   'Responsibility':    [...ROLE_TYPE_OPTIONS],
   'Country':           MASTERS_CASCADE.countries,
-  'Region':            Object.keys(MASTERS_CASCADE.towns),
-  'Town':              Object.values(MASTERS_CASCADE.towns).flat(),
-  'Activity Centre':   Object.values(MASTERS_CASCADE.centres).flat(),
+  'Vibhaag':           Object.keys(MASTERS_CASCADE.towns),
+  'Nagar':             Object.values(MASTERS_CASCADE.towns).flat(),
+  'Shakha':            Object.values(MASTERS_CASCADE.centres).flat(),
   'DBS Status':        ['Pending', 'Completed'],
   'First Aid Status':  ['Pending', 'Completed'],
 };

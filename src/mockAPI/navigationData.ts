@@ -8,6 +8,7 @@ import {
   Database,
   Settings,
   History,
+  Heart,
 } from "lucide-react";
 
 export interface SubMenuItem {
@@ -51,10 +52,10 @@ export const getNavigationData = (
       active: currentPage === "dashboard",
     },
 
-    // ── 2. Masters ───────────────────────────────────────────────
+    // ── 2. HSS (UK) Setup ────────────────────────────────────────
     {
       id: "masters-group",
-      label: "Masters",
+      label: "HSS (UK) Setup",
       icon: Database,
       subItems: [
         {
@@ -65,19 +66,19 @@ export const getNavigationData = (
         },
         {
           id: "region",
-          label: "Regions",
+          label: "Vibhaag",
           onClick: () => onNavigate("region"),
           active: currentPage === "region",
         },
         {
           id: "town",
-          label: "Towns",
+          label: "Nagar",
           onClick: () => onNavigate("town"),
           active: currentPage === "town",
         },
         {
           id: "centre",
-          label: "Activity Centres",
+          label: "Shakha",
           onClick: () => onNavigate("centre"),
           active: currentPage === "centre",
         },
@@ -117,25 +118,19 @@ export const getNavigationData = (
       ],
     },
 
-    // ── 4. Events Management ─────────────────────────────────────
+    // ── 4. Karyakrams ────────────────────────────────────────────
     {
-      id: "events-management-group",
-      label: "Events Management",
+      id: "event-management",
+      label: "Karyakrams",
       icon: Calendar,
-      subItems: [
-        {
-          id: "event-management",
-          label: "Events",
-          onClick: () => onNavigate("event-management"),
-          active: currentPage === "event-management",
-        },
-      ],
+      onClick: () => onNavigate("event-management"),
+      active: currentPage === "event-management",
     },
 
-    // ── 5. Announcements ─────────────────────────────────────────
+    // ── 5. Suchana (Announcements) ───────────────────────────────
     {
       id: "announcements",
-      label: "Announcements",
+      label: "Suchana",
       icon: Megaphone,
       onClick: () => onNavigate("announcements"),
       active: currentPage === "announcements",
@@ -160,6 +155,15 @@ export const getNavigationData = (
           active: currentPage === "attendance-log",
         },
       ],
+    },
+
+    // ── 6b. My Donations (member-facing) ─────────────────────────
+    {
+      id: "my-donations",
+      label: "Donations",
+      icon: Heart,
+      onClick: () => onNavigate("my-donations"),
+      active: currentPage === "my-donations",
     },
 
     // ── 7. Reports ───────────────────────────────────────────────

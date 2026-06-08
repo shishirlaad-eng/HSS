@@ -35,6 +35,7 @@ import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
 import StripeDonation from "./components/StripeDonation";
+import MyDonations from "./components/MyDonations";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
@@ -164,9 +165,15 @@ export default function App() {
     setCurrentPage(pageId);
   };
 
+  const MEMBER_ROLES = ["Member (18+)", "Teen (13–17)"];
+
   const handleRoleChange = (role: string) => {
     setSelectedRole(role);
     setCurrentPage("dashboard");
+    // Member & Teen roles default to horizontal layout; all others use vertical
+    const orientation = MEMBER_ROLES.includes(role) ? "horizontal" : "vertical";
+    setMenuOrientation(orientation);
+    localStorage.setItem("menuOrientation", orientation);
   };
 
   if (!isAuthenticated) {
@@ -221,6 +228,8 @@ export default function App() {
         {/* ── Existing implemented pages ── */}
         {currentPage === "donate" ? (
           <StripeDonation onBack={() => handleNavigate("dashboard")} />
+        ) : currentPage === "my-donations" ? (
+          <MyDonations onNavigate={handleNavigate} />
         ) : currentPage === "dashboard" ? (
           <Dashboard onNavigate={handleNavigate} />
         ) : currentPage === "members" ? (

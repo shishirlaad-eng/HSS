@@ -297,9 +297,9 @@ export default function PendingGuardianApprovals() {
         switch (f.field) {
           case 'Gender':           return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':          return f.values.includes(m.country);
-          case 'Region':           return f.values.includes(m.region);
-          case 'Town':             return f.values.includes(m.town);
-          case 'Activity Centre':  return f.values.includes(m.activityCentre);
+          case 'Vibhaag':          return f.values.includes(m.region);
+          case 'Nagar':            return f.values.includes(m.town);
+          case 'Shakha':           return f.values.includes(m.activityCentre);
           case 'DBS Status':       return f.values.some(v => v.toLowerCase() === m.compliance.dbs);
           case 'First Aid Status': return f.values.some(v => v.toLowerCase() === m.compliance.firstAid);
           default:                 return true;
@@ -390,7 +390,7 @@ export default function PendingGuardianApprovals() {
 
   const handleExportCSV = () => {
     if (!sortedMembers.length) { toast.error('No data to export.'); return; }
-    const headers = ['Member ID', 'Name', 'Email', 'Guardian Name', 'Guardian Email', 'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
+    const headers = ['Member ID', 'Name', 'Email', 'Guardian Name', 'Guardian Email', 'Country', 'Vibhaag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
     const csv = [
       headers.join(','),
       ...sortedMembers.map(m => [
@@ -517,9 +517,9 @@ export default function PendingGuardianApprovals() {
               filterOptions={{
                 'Gender':           ['Male', 'Female'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries }              : {}),
-                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions }       : {}),
-                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }         : {}),
-                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions }       : {}),
+                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions }       : {}),
+                ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }         : {}),
+                ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions }       : {}),
                 'DBS Status':       ['Pending', 'Completed'],
                 'First Aid Status': ['Pending', 'Completed'],
               }}
@@ -736,7 +736,7 @@ export default function PendingGuardianApprovals() {
                       { key: 'id',               label: 'Member ID'    },
                       { key: 'name',             label: 'Name'         },
                       { key: 'guardianName',     label: 'Guardian'     },
-                      { key: 'mastersScope',     label: 'Masters Scope'},
+                      { key: 'mastersScope',     label: 'HSS (UK) Setup Scope'},
                       { key: 'dbsStatus',        label: 'DBS Status'   },
                       { key: 'firstAidStatus',   label: 'First Aid'    },
                       { key: 'registrationDate', label: 'Waiting Since'},

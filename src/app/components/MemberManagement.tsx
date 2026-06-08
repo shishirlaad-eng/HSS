@@ -1040,7 +1040,7 @@ export default function MemberManagement({
     { key: 'name',             label: 'Name' },
     { key: 'memberType',       label: 'Age Groups (years old)' },
     { key: 'status',           label: 'Status' },
-    { key: 'mastersScope',     label: 'Masters Scope' },
+    { key: 'mastersScope',     label: 'HSS (UK) Setup Scope' },
     { key: 'dbsStatus',        label: 'DBS Status' },
     { key: 'firstAidStatus',   label: 'First Aid' },
     { key: 'registrationDate', label: 'Reg. Date' },
@@ -1101,11 +1101,11 @@ export default function MemberManagement({
             return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':
             return f.values.includes(m.country);
-          case 'Region':
+          case 'Vibhaag':
             return f.values.includes(m.region);
-          case 'Town':
+          case 'Nagar':
             return f.values.includes(m.town);
-          case 'Activity Centre':
+          case 'Shakha':
             return f.values.includes(m.activityCentre);
           case 'Responsibility':
             return f.values.includes(m.jobTitle);
@@ -1225,7 +1225,7 @@ export default function MemberManagement({
     const headers = [
       'Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Primary Contact Number', 'Secondary Email',
       'Emergency Contact', 'Emergency Phone', 'Guardian Name', 'Guardian Email', 'Status',
-      'Country', 'Region', 'Town', 'Activity Centre', 'DBS Status', 'First Aid Status',
+      'Country', 'Vibhaag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status',
       'First Aider', 'Dietary Requirements', 'Registration Date',
     ];
     const csv = [
@@ -1364,9 +1364,9 @@ export default function MemberManagement({
                 'Gender':            MEMBER_FILTER_OPTIONS['Gender'],
                 'Responsibility':    MEMBER_FILTER_OPTIONS['Responsibility'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
-                ...(scope.showRegionFilter   ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
-                ...(scope.showTownFilter     ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
-                ...(scope.showCentreFilter   ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
                 'DBS Status':        MEMBER_FILTER_OPTIONS['DBS Status'],
                 'First Aid Status':  MEMBER_FILTER_OPTIONS['First Aid Status'],
               }}

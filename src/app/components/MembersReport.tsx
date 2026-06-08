@@ -302,8 +302,8 @@ export default function MembersReport() {
       ...firstAidData.map(r => [r.name, String(r.value)]),
       ...(filterRegion ? [
         [],
-        [`MEMBERS BY ACTIVITY CENTRE (${filterRegion})`],
-        ['Activity Centre', 'Male', 'Female', 'Total'],
+        [`MEMBERS BY SHAKHA (${filterRegion})`],
+        ['Shakha', 'Male', 'Female', 'Total'],
         ...byCentre.map(r => [r.centre, String(r.male), String(r.female), String(r.total)]),
       ] : []),
     ];

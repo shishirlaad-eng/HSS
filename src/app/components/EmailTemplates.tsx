@@ -410,7 +410,7 @@ export default function EmailTemplates() {
                   >
                     <option value="Onboarding">Onboarding</option>
                     <option value="Security">Security</option>
-                    <option value="Events">Events</option>
+                    <option value="Karyakrams">Karyakrams</option>
                     <option value="Billing">Billing</option>
                     <option value="General">General</option>
                   </FormSelect>

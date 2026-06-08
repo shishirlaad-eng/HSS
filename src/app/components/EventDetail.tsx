@@ -178,7 +178,7 @@ export default function EventDetail({
       'Member ID', 'Name', 'Age Groups (years old)', 'Gender', 'Date of Birth',
       'Email', 'Secondary Email', 'Primary Contact Number', 'Secondary Contact Number',
       'Building Name', 'Address Line 1', 'Address Line 2', 'Town / City', 'Post Code',
-      'Country', 'Region', 'Town', 'Activity Centre',
+      'Country', 'Vibhaag', 'Nagar', 'Shakha',
       'Emergency Contact Name', 'Emergency Contact Phone', 'Emergency Contact Email', 'Emergency Relationship',
       'Guardian Name', 'Guardian Email', 'Guardian Phone',
       'Medical Info Declared', 'First Aider', 'Dietary Requirements',
@@ -474,9 +474,9 @@ export default function EventDetail({
                         { label: 'Event ID',        value: event.id,           mono: true  },
                         { label: 'Event Title',     value: event.name                      },
                         { label: 'Country',         value: event.country                   },
-                        { label: 'Region',          value: event.region                    },
-                        { label: 'Town',            value: event.town                      },
-                        { label: 'Activity Centre', value: event.activityCentre            },
+                        { label: 'Vibhaag',         value: event.region                    },
+                        { label: 'Nagar',           value: event.town                      },
+                        { label: 'Shakha',          value: event.activityCentre            },
                         { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
                         { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
                         { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${event.price ? ` · £${event.price}` : ''}` : 'Free' },
@@ -936,9 +936,9 @@ export default function EventDetail({
             </div>
 
             <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
-              <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-3">Masters Scope</label>
+              <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-3">HSS (UK) Setup Scope</label>
               <div className="space-y-1.5 text-sm text-neutral-700 dark:text-neutral-300">
-                {[['Country', event.country], ['Region', event.region], ['Town', event.town], ['Centre', event.activityCentre]].map(([k, v]) => (
+                {[['Country', event.country], ['Vibhaag', event.region], ['Nagar', event.town], ['Shakha', event.activityCentre]].map(([k, v]) => (
                   <div key={k} className="flex gap-2"><span className="text-neutral-400 w-14 flex-shrink-0 text-xs">{k}</span><span>{v}</span></div>
                 ))}
               </div>

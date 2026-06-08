@@ -41,9 +41,9 @@ const ALL_CENTRES  = Object.values(MASTERS_CASCADE.centres).flat();
 
 // ── Filter options for AdvancedSearchPanel ────────────────────
 const FILTER_OPTIONS: Record<string, string[]> = {
-  'Region':          ALL_REGIONS,
-  'Town':            ALL_TOWNS.sort(),
-  'Activity Centre': ALL_CENTRES.sort(),
+  'Vibhaag':         ALL_REGIONS,
+  'Nagar':           ALL_TOWNS.sort(),
+  'Shakha':          ALL_CENTRES.sort(),
   'Shakha Type':     [...SHAKHA_TYPES],
   'Gender':          ['Male', 'Female'],
   'Age Category':    ['Shishu', 'Bal', 'Kishor', 'Tarun', 'Yuva', 'Jyestha'],
@@ -267,9 +267,9 @@ export default function AttendanceLog() {
       for (const f of filters) {
         if (!f.values.length) continue;
         switch (f.field) {
-          case 'Region':          if (!f.values.includes(r.region))                          return false; break;
-          case 'Town':            if (!f.values.includes(r.town))                             return false; break;
-          case 'Activity Centre': if (!f.values.includes(r.activityCentre))                  return false; break;
+          case 'Vibhaag':         if (!f.values.includes(r.region))                          return false; break;
+          case 'Nagar':           if (!f.values.includes(r.town))                             return false; break;
+          case 'Shakha':          if (!f.values.includes(r.activityCentre))                  return false; break;
           case 'Shakha Type':     if (!f.values.includes(r.shakhaType))                       return false; break;
           case 'Gender':          if (!f.values.map(v=>v.toLowerCase()).includes(r.gender))          return false; break;
           case 'Age Category':    if (!f.values.map(v=>v.toLowerCase()).includes(r.ageCategory)) return false; break;
@@ -346,9 +346,9 @@ export default function AttendanceLog() {
               filters={filters}
               onFiltersChange={f => { setFilters(f); setPage(1); }}
               filterOptions={{
-                ...(scope.showRegionFilter  ? { 'Region':          scopedFilterOptions.regionOptions } : {}),
-                ...(scope.showTownFilter    ? { 'Town':            scopedFilterOptions.townOptions }   : {}),
-                ...(scope.showCentreFilter  ? { 'Activity Centre': scopedFilterOptions.centreOptions } : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter    ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter  ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
                 'Shakha Type':  FILTER_OPTIONS['Shakha Type'],
                 'Gender':       FILTER_OPTIONS['Gender'],
                 'Age Category': FILTER_OPTIONS['Age Category'],
@@ -408,7 +408,7 @@ export default function AttendanceLog() {
                   <SortTh label="Member"          sortKey="memberName"       current={sortKey} dir={sortDir} onSort={handleSort} />
                   <SortTh label="Role"             sortKey="jobTitle"         current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Gender</th>
-                  <SortTh label="Activity Centre"  sortKey="activityCentre"   current={sortKey} dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Shakha"           sortKey="activityCentre"   current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Session</th>
                   <SortTh label="Date"             sortKey="date"             current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Time</th>

@@ -135,12 +135,11 @@ export function Sidebar({
     "pending-approvals":              "Pending Approvals",
     "pending-guardian-approvals":     "Pending Guardian Approvals",
 
-    // 3. Events Management
-    "events-management-group":        "Events Management",
-    "event-management":               "Events",
+    // 3. Karyakrams
+    "event-management":               "Karyakrams",
 
-    // 4. Announcements
-    "announcements":                  "Announcements",
+    // 4. Suchana (Announcements)
+    "announcements":                  "Suchana",
 
     // 5. Attendance
     "attendance-group":               "Attendance",
@@ -155,12 +154,12 @@ export function Sidebar({
     "report-attendance":              "Attendance Report",
     "report-refunds":                 "Refund Report",
 
-    // 7. Masters
-    "masters-group":                  "Masters",
+    // 7. HSS (UK) Setup
+    "masters-group":                  "HSS (UK) Setup",
     "country":                        "Countries",
-    "region":                         "Regions",
-    "town":                           "Towns",
-    "centre":                         "Activity Centres",
+    "region":                         "Vibhaag",
+    "town":                           "Nagar",
+    "centre":                         "Shakha",
     "role-types":                     "Responsibility",
 
     // 8. Settings
@@ -187,9 +186,10 @@ export function Sidebar({
       className={`fixed left-0 top-0 bottom-0 bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 z-50 ${isCollapsed ? "w-16" : "w-64"
         }`}
     >
-      {/* Logo at Top - 48px height to match GlobalHeader */}
+      {/* Sidebar Header — HSS saffron brand bar */}
       <div
-        className={`h-12 flex-shrink-0 px-4 ${isCollapsed ? "flex justify-center items-center" : "flex items-center justify-between"}`}
+        className={`h-12 flex-shrink-0 px-3 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}
+        style={{ backgroundColor: "#F5A623" }}
       >
         {!isCollapsed && (
           <div className="flex items-center gap-2 min-w-0">
@@ -199,23 +199,21 @@ export function Sidebar({
               className="h-8 w-auto object-contain flex-shrink-0"
             />
             <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-sm font-bold tracking-tight text-primary-600 dark:text-primary-400 truncate">
+              <span className="text-sm font-bold tracking-tight text-white truncate">
                 HSS Admin
               </span>
-              <span className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
+              <span className="text-[10px] text-white/75 truncate">
                 Membership Management
               </span>
             </div>
           </div>
         )}
 
-        {/* Hamburger Toggle Button */}
+        {/* Hamburger Toggle */}
         <button
           onClick={onToggleCollapse}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
-          aria-label={
-            isCollapsed ? "Expand sidebar" : "Collapse sidebar"
-          }
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-white hover:bg-white/20 transition-colors flex-shrink-0"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={isCollapsed ? "Expand menu" : "Collapse menu"}
         >
           <Menu className="w-5 h-5" />

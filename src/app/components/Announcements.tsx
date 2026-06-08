@@ -90,9 +90,9 @@ const CONTENT_CFG: Record<AnnouncementContent, { icon: typeof FileText; label: s
 
 const SCOPE_CFG: Record<AnnouncementScope, { icon: typeof Globe2; label: string; color: string }> = {
   national: { icon: Globe2,     label: 'National',        color: 'text-primary-600 dark:text-primary-400' },
-  region:   { icon: Map,        label: 'Region',          color: 'text-violet-600 dark:text-violet-400'   },
-  town:     { icon: MapPin,     label: 'Town',            color: 'text-emerald-600 dark:text-emerald-400' },
-  centre:   { icon: Building2,  label: 'Activity Centre', color: 'text-amber-600 dark:text-amber-400'     },
+  region:   { icon: Map,        label: 'Vibhaag',         color: 'text-violet-600 dark:text-violet-400'   },
+  town:     { icon: MapPin,     label: 'Nagar',           color: 'text-emerald-600 dark:text-emerald-400' },
+  centre:   { icon: Building2,  label: 'Shakha',          color: 'text-amber-600 dark:text-amber-400'     },
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -133,9 +133,9 @@ function formatDateTime(iso: string) {
 
 function scopeLabel(ann: Announcement) {
   if (ann.scope === 'national') return 'National';
-  if (ann.scope === 'region')   return ann.targetRegion ?? 'Region';
-  if (ann.scope === 'town')     return ann.targetTown ?? 'Town';
-  return ann.targetCentre ?? 'Activity Centre';
+  if (ann.scope === 'region')   return ann.targetRegion ?? 'Vibhaag';
+  if (ann.scope === 'town')     return ann.targetTown ?? 'Nagar';
+  return ann.targetCentre ?? 'Shakha';
 }
 
 function getInitials(name: string) {
@@ -566,7 +566,7 @@ export default function Announcements() {
           title={selected.title}
           breadcrumbs={[
             { label: 'Home', href: '#' },
-            { label: 'Announcements', onClick: goBack },
+            { label: 'Suchana', onClick: goBack },
             { label: selected.title.length > 50 ? selected.title.slice(0, 50) + '…' : selected.title, current: true },
           ]}
         >
@@ -808,16 +808,16 @@ export default function Announcements() {
   return (
     <div className="px-6 py-6">
       <PageHeader
-        title="Announcements"
-        subtitle="Create and manage announcements for members across the network"
+        title="Suchana"
+        subtitle="Create and manage suchanas for members across the network"
         breadcrumbs={[
           { label: 'Home', href: '#' },
-          { label: 'Announcements', current: true },
+          { label: 'Suchana', current: true },
         ]}
       >
         {ap.canAdd && (
           <PrimaryButton icon={Plus} onClick={() => setShowCreate(true)}>
-            New Announcement
+            New Suchana
           </PrimaryButton>
         )}
       </PageHeader>

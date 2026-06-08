@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Edit, Save, X, Mail, Phone, MapPin, Clock, RotateCcw, Trash2, AlertTriangle } from "lucide-react";
+import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
@@ -47,6 +47,31 @@ interface MemberProfileForm {
   region: string;
   town: string;
   activityCentre: string;
+  // Compliance — DBS
+  dbsStatus: string;
+  dbsCertificateNumber: string;
+  dbsCertificateDate: string;
+  dbsCertificateFile: string;
+  dbsCertificateReceivedFrom: string;
+  dbsCertificateReceivedFromOther: string;
+  dbsUpdateService: string;
+  dbsUpdateServiceNumber: string;
+  dbsUpdateServiceCheckDate: string;
+  dbsAppUnderProcess: string;
+  dbsCheckedBy: string;
+  // Compliance — First Aid
+  firstAidStatus: string;
+  firstAidRef: string;
+  firstAidExpiry: string;
+  // Compliance — Safeguarding
+  safeguardingStatus: string;
+  safeguardingRef: string;
+  safeguardingExpiry: string;
+  // Sangh Responsibility
+  sanghTitle: string;
+  responsibilityType: string;
+  responsibilityLevel: string;
+  responsibilityStartDate: string;
 }
 
 const DEFAULT_PROFILE: ProfileForm = {
@@ -88,6 +113,30 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   region: "London & South East",
   town: "Harrow",
   activityCentre: "Harrow Activity Centre",
+  // Compliance — DBS
+  dbsStatus: "Completed",
+  dbsCertificateNumber: "001234567890",
+  dbsCertificateDate: "2024-06-01",
+  dbsCertificateFile: "dbs_john_doe_2024.pdf",
+  dbsCertificateReceivedFrom: "Disclosure Scotland",
+  dbsCertificateReceivedFromOther: "",
+  dbsUpdateService: "Yes",
+  dbsUpdateServiceNumber: "US-2024-00456",
+  dbsUpdateServiceCheckDate: "2025-06-01",
+  dbsAppUnderProcess: "No",
+  dbsCheckedBy: "Ramesh Patel (Karyawaha)",
+  // Compliance — First Aid
+  firstAidStatus: "Completed",
+  firstAidRef: "FA-2023-001",
+  firstAidExpiry: "2026-09-15",
+  safeguardingStatus: "Completed",
+  safeguardingRef: "SG-2024-042",
+  safeguardingExpiry: "2027-03-20",
+  // Sangh Responsibility
+  sanghTitle: "Ghatnayak",
+  responsibilityType: "Pramukh",
+  responsibilityLevel: "Shakha / Activity center",
+  responsibilityStartDate: "2023-04-01",
 };
 
 function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
@@ -122,6 +171,27 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
       region: "North West",
       town: "Manchester",
       activityCentre: "Manchester Central Activity Centre",
+      dbsStatus: "Pending",
+      dbsCertificateNumber: "",
+      dbsCertificateDate: "",
+      dbsCertificateFile: "",
+      dbsCertificateReceivedFrom: "",
+      dbsCertificateReceivedFromOther: "",
+      dbsUpdateService: "No",
+      dbsUpdateServiceNumber: "",
+      dbsUpdateServiceCheckDate: "",
+      dbsAppUnderProcess: "Yes",
+      dbsCheckedBy: "",
+      firstAidStatus: "Pending",
+      firstAidRef: "",
+      firstAidExpiry: "",
+      safeguardingStatus: "Pending",
+      safeguardingRef: "",
+      safeguardingExpiry: "",
+      sanghTitle: "Shakha Karyawaha",
+      responsibilityType: "Toli",
+      responsibilityLevel: "Shakha / Activity center",
+      responsibilityStartDate: "2024-09-01",
     };
   }
   return ADULT_MEMBER_PROFILE;
@@ -250,6 +320,8 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 // ── Member profile view ───────────────────────────────────────
 
+type ProfileTab = 'personal' | 'contact' | 'emergency' | 'organisation' | 'compliance' | 'sangh';
+
 function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const loadProfile = () => {
     if (typeof window === "undefined") return getDefaultMemberProfile(selectedRole);
@@ -266,6 +338,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const [savedProfile, setSavedProfile] = useState<MemberProfileForm>(profile);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
 
   useEffect(() => {
     const next = loadProfile();
@@ -317,196 +390,269 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+  const TABS: { id: ProfileTab; label: string }[] = [
+    { id: 'personal',     label: 'Personal Info'                                              },
+    { id: 'contact',      label: 'Contact'                                                    },
+    { id: 'emergency',    label: showGuardian ? 'Emergency & Guardian' : 'Emergency Contact'  },
+    { id: 'organisation', label: 'Organisation'                                               },
+    { id: 'compliance',   label: 'Compliance Details'                                         },
+    { id: 'sangh',        label: 'Sangh Responsibility'                                       },
+  ];
+
   return (
-    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
-      <div className="max-w-[100%] mx-auto">
+    <div className="px-6 py-6">
 
-        {/* ── Profile header ───────────────────────────────────── */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+      {/* ── Profile header ───────────────────────────────────── */}
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
 
-            {/* Left: avatar + info */}
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                {/* Row 1 — Name */}
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
-                  <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                  <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">{selectedRole}</span>
-                </div>
-                {/* Row 2 — Badges */}
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
-                    {getAgeGroupLabel(profile.dateOfBirth)}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                    <span className="text-[#d97706]">Pending Approval</span>
-                  </span>
-                </div>
-                {/* Row 3 — Contact */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-2">
-                  {profile.email && (
-                    <a href={`mailto:${profile.email}`} className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                      <Mail className="w-3.5 h-3.5" />{profile.email}
-                    </a>
-                  )}
-                  {profile.phone && (
-                    <>
-                      <span className="text-neutral-300 dark:text-neutral-700">|</span>
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" />{profile.phone}
-                      </span>
-                    </>
-                  )}
-                </div>
-                {/* Row 4 — Org details */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-500">
-                  <span>{profile.country}</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{profile.region}</span>
-                  <span>·</span>
-                  <span>{profile.town}</span>
-                  <span>·</span>
-                  <span>{profile.activityCentre}</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />DOB: {formatDate(profile.dateOfBirth)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: action buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              {isEditing ? (
-                <>
-                  <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
-                  <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Account
-                  </button>
-                  <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
-                </>
-              )}
+        {/* Left: avatar + info */}
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            {/* Row 1 — Name | Role | Age badge | Status badge — all inline */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
+              <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">{selectedRole}</span>
+              <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
+                {getAgeGroupLabel(profile.dateOfBirth)}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                <span className="text-[#d97706]">Pending Approval</span>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* ── Two-column layout ────────────────────────────────── */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        {/* Right: action buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {isEditing ? (
+            <>
+              <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Account
+              </button>
+              <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
+            </>
+          )}
+        </div>
+      </div>
 
-          {/* LEFT — main content (70%) */}
-          <div className="flex-1 lg:w-[70%] space-y-5">
+      {/* ── Tabbed content ───────────────────────────────────── */}
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
 
-            <InfoSection title="Personal Information">
-              <EditableInfoItem label="First Name"              value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
-              <EditableInfoItem label="Middle Name"             value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
-              <EditableInfoItem label="Surname"                 value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
-              <InfoItem label="Full Name">{valueOrDash(fullName)}</InfoItem>
-              <EditableInfoItem label="Gender"                  value={profile.gender}      isEditing={isEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
-              {isEditing ? (
-                <EditableInfoItem label="Date of Birth"         value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
-              ) : (
-                <InfoItem label="Date of Birth">
-                  {formatDate(profile.dateOfBirth)}
-                  <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
-                </InfoItem>
-              )}
-              <InfoItem label="Age Groups (years old)">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
-              <EditableInfoItem label="Occupation"              value={profile.occupation}  isEditing={isEditing} onChange={v => setField("occupation", v)} />
-            </InfoSection>
-
-            <InfoSection title="Contact Information">
-              <EditableInfoItem label="Primary Email Address"     value={profile.email}            isEditing={isEditing} onChange={v => setField("email", v)}            type="email" />
-              <EditableInfoItem label="Secondary Email Address"   value={profile.secondaryEmail}   isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}   type="email" />
-              <EditableInfoItem label="Primary Contact Number"    value={profile.phone}            isEditing={isEditing} onChange={v => setField("phone", v)}            type="tel" />
-              <EditableInfoItem label="Secondary Contact Number"  value={profile.secondaryPhone}   isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}   type="tel" />
-              <EditableInfoItem label="Building Name"             value={profile.buildingName}     isEditing={isEditing} onChange={v => setField("buildingName", v)} />
-              <EditableInfoItem label="Address Line 1"            value={profile.addressLine1}     isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
-              <EditableInfoItem label="Address Line 2"            value={profile.addressLine2}     isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
-              <EditableInfoItem label="Town / City"               value={profile.contactTownCity}  isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
-              <EditableInfoItem label="Post Code"                 value={profile.postCode}         isEditing={isEditing} onChange={v => setField("postCode", v)} />
-            </InfoSection>
-
-            <InfoSection title="Emergency Contact">
-              <EditableInfoItem label="Name"          value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
-              <EditableInfoItem label="Phone"         value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
-              <EditableInfoItem label="Email"         value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
-              <EditableInfoItem label="Relationship"  value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
-            </InfoSection>
-
-            {showGuardian && (
-              <InfoSection title="Parent / Guardian Approval Information">
-                <EditableInfoItem label="Parent / Guardian Name"  value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
-                <EditableInfoItem label="Phone"                   value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
-                <EditableInfoItem label="Email"                   value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
-                <EditableInfoItem label="Relationship"            value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
-              </InfoSection>
-            )}
-
-            <InfoSection title="Other Information">
-              <EditableInfoItem label="Medical Information Declared"        value={profile.medicalInfoDeclared}  isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}  options={["No", "Yes"]} />
-              <EditableInfoItem label="Medical Details"                     value={profile.medicalInfoDetails}   isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}   textarea />
-              <EditableInfoItem label="First Aider for Shakha / HSS UK"    value={profile.isFirstAider}         isEditing={isEditing} onChange={v => setField("isFirstAider", v)}         options={["No", "Yes"]} />
-              <EditableInfoItem label="Dietary Requirements"                value={profile.dietaryRequirements}  isEditing={isEditing} onChange={v => setField("dietaryRequirements", v)} />
-              <EditableInfoItem label="Originating State in India"          value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
-            </InfoSection>
+        {/* Tab bar */}
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <div className="flex overflow-x-auto">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* RIGHT — sidebar (30%) */}
-          <div className="lg:w-[30%] space-y-5">
+        {/* Tab content */}
+        <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
 
-            {/* Membership Status */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                Membership Status
-              </h4>
-              <div className="px-6 pb-5 pt-4">
-                <div className="mb-3">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                    <span className="text-[#d97706]">Pending Approval</span>
-                  </span>
+          {/* ── Personal Info ── */}
+          {activeTab === 'personal' && (
+            <>
+              <InfoSection title="Personal Information">
+                <EditableInfoItem label="First Name"    value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
+                <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
+                <EditableInfoItem label="Surname"       value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
+                <InfoItem label="Full Name">{valueOrDash(fullName)}</InfoItem>
+                <EditableInfoItem label="Gender"        value={profile.gender}      isEditing={isEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
+                {isEditing ? (
+                  <EditableInfoItem label="Date of Birth" value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
+                ) : (
+                  <InfoItem label="Date of Birth">
+                    {formatDate(profile.dateOfBirth)}
+                    <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
+                  </InfoItem>
+                )}
+                <InfoItem label="Age Group">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
+                <EditableInfoItem label="Occupation"    value={profile.occupation}  isEditing={isEditing} onChange={v => setField("occupation", v)} />
+              </InfoSection>
+
+              <InfoSection title="Other Information">
+                <EditableInfoItem label="Medical Information Declared"     value={profile.medicalInfoDeclared}   isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}   options={["No", "Yes"]} />
+                <EditableInfoItem label="Medical Details"                  value={profile.medicalInfoDetails}    isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}    textarea />
+                <EditableInfoItem label="First Aider for Shakha / HSS UK" value={profile.isFirstAider}          isEditing={isEditing} onChange={v => setField("isFirstAider", v)}          options={["No", "Yes"]} />
+                <EditableInfoItem label="Dietary Requirements"             value={profile.dietaryRequirements}   isEditing={isEditing} onChange={v => setField("dietaryRequirements", v)} />
+                <EditableInfoItem label="Originating State in India"       value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
+              </InfoSection>
+            </>
+          )}
+
+          {/* ── Contact ── */}
+          {activeTab === 'contact' && (
+            <InfoSection title="Contact Information">
+              <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}           type="email" />
+              <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
+              <EditableInfoItem label="Primary Contact Number"   value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}           type="tel" />
+              <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
+              <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
+              <EditableInfoItem label="Address Line 1"           value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
+              <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
+              <EditableInfoItem label="Town / City"              value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
+              <EditableInfoItem label="Post Code"                value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
+            </InfoSection>
+          )}
+
+          {/* ── Emergency & Guardian ── */}
+          {activeTab === 'emergency' && (
+            <>
+              <InfoSection title="Emergency Contact">
+                <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+              </InfoSection>
+
+              {showGuardian && (
+                <InfoSection title="Parent / Guardian Approval Information">
+                  <EditableInfoItem label="Parent / Guardian Name" value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
+                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                  <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+                  <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+                </InfoSection>
+              )}
+            </>
+          )}
+
+          {/* ── Compliance Details ── */}
+          {activeTab === 'compliance' && (
+            <>
+              <InfoSection title="DBS Check">
+                <EditableInfoItem label="Status"                          value={profile.dbsStatus}                      isEditing={isEditing} onChange={v => setField("dbsStatus", v)}                      options={["Pending", "Completed"]} />
+                <EditableInfoItem label="DBS Certificate Number"          value={profile.dbsCertificateNumber}            isEditing={isEditing} onChange={v => setField("dbsCertificateNumber", v)} />
+                <EditableInfoItem label="Certificate Date"                value={profile.dbsCertificateDate}              isEditing={isEditing} onChange={v => setField("dbsCertificateDate", v)}              type="date" />
+                {/* Certificate File — file upload in edit mode */}
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Certificate File</label>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
+                        <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                        <span className="text-sm text-neutral-500 dark:text-neutral-400 flex-1 truncate">
+                          {profile.dbsCertificateFile || "Click to upload certificate…"}
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="sr-only"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setField("dbsCertificateFile", file.name);
+                          }}
+                        />
+                      </label>
+                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Accepted: PDF, JPG, PNG</p>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-neutral-900 dark:text-white font-medium">
+                      {profile.dbsCertificateFile
+                        ? <span className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400">
+                            <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
+                            {profile.dbsCertificateFile}
+                          </span>
+                        : "—"}
+                    </div>
+                  )}
                 </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                  <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
-                    Your membership is pending approval. You will be notified once your application has been reviewed.
-                  </p>
-                </div>
-              </div>
-            </div>
+                <EditableInfoItem label="Certificate Received From"       value={profile.dbsCertificateReceivedFrom}      isEditing={isEditing} onChange={v => setField("dbsCertificateReceivedFrom", v)} />
+                <EditableInfoItem label="Other Source"                    value={profile.dbsCertificateReceivedFromOther} isEditing={isEditing} onChange={v => setField("dbsCertificateReceivedFromOther", v)} />
+                <EditableInfoItem label="Enrolled in DBS Update Service"  value={profile.dbsUpdateService}                isEditing={isEditing} onChange={v => setField("dbsUpdateService", v)}                options={["No", "Yes"]} />
+                <EditableInfoItem label="DBS Update Service Number"       value={profile.dbsUpdateServiceNumber}          isEditing={isEditing} onChange={v => setField("dbsUpdateServiceNumber", v)} />
+                <EditableInfoItem label="Last Update Service Check"       value={profile.dbsUpdateServiceCheckDate}       isEditing={isEditing} onChange={v => setField("dbsUpdateServiceCheckDate", v)}       type="date" />
+                <EditableInfoItem label="DBS Application Under Process"   value={profile.dbsAppUnderProcess}              isEditing={isEditing} onChange={v => setField("dbsAppUnderProcess", v)}              options={["No", "Yes"]} />
+                <EditableInfoItem label="Verified By"                     value={profile.dbsCheckedBy}                    isEditing={isEditing} onChange={v => setField("dbsCheckedBy", v)} />
+              </InfoSection>
 
-            {/* Organisation Details */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                Organisation Details
-              </h4>
-              <div className="px-6 pb-5 pt-4 space-y-4">
-                {[
-                  { label: "Country / Organisation", value: profile.country },
-                  { label: "Vibhag / Region",        value: profile.region },
-                  { label: "Nagar / Town",            value: profile.town },
-                  { label: "Shakha / Activity Centre",value: profile.activityCentre },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">{label}</span>
-                    <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                      {valueOrDash(value)}
+              <InfoSection title="First Aid">
+                <EditableInfoItem label="Status"           value={profile.firstAidStatus} isEditing={isEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
+                <EditableInfoItem label="Reference Number" value={profile.firstAidRef}    isEditing={isEditing} onChange={v => setField("firstAidRef", v)} />
+                <EditableInfoItem label="Expiry Date"      value={profile.firstAidExpiry} isEditing={isEditing} onChange={v => setField("firstAidExpiry", v)} type="date" />
+              </InfoSection>
+
+              <InfoSection title="Safeguarding">
+                <EditableInfoItem label="Status"           value={profile.safeguardingStatus} isEditing={isEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
+                <EditableInfoItem label="Reference Number" value={profile.safeguardingRef}    isEditing={isEditing} onChange={v => setField("safeguardingRef", v)} />
+                <EditableInfoItem label="Expiry Date"      value={profile.safeguardingExpiry} isEditing={isEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
+              </InfoSection>
+            </>
+          )}
+
+          {/* ── Sangh Responsibility ── */}
+          {activeTab === 'sangh' && (
+            <InfoSection title="Sangh Responsibility">
+              <InfoItem label="Title / Designation">{valueOrDash(profile.sanghTitle)}</InfoItem>
+              <InfoItem label="Responsibility Type">{valueOrDash(profile.responsibilityType)}</InfoItem>
+              <InfoItem label="Responsibility Level">{valueOrDash(profile.responsibilityLevel)}</InfoItem>
+              <InfoItem label="Since">
+                {profile.responsibilityStartDate
+                  ? new Date(profile.responsibilityStartDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                  : "—"}
+              </InfoItem>
+            </InfoSection>
+          )}
+
+          {/* ── Organisation ── */}
+          {activeTab === 'organisation' && (
+            <>
+              {/* Membership Status */}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                  Membership Status
+                </h4>
+                <div className="px-6 pb-5 pt-4">
+                  <div className="mb-3">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                      <span className="text-[#d97706]">Pending Approval</span>
+                    </span>
+                  </div>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                    <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
+                      Your membership is pending approval. You will be notified once your application has been reviewed.
                     </p>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          </div>
+
+              {/* Organisation Details */}
+              <InfoSection title="Organisation Details">
+                <InfoItem label="Country / Organisation">{valueOrDash(profile.country)}</InfoItem>
+                <InfoItem label="Vibhaag">{valueOrDash(profile.region)}</InfoItem>
+                <InfoItem label="Nagar">{valueOrDash(profile.town)}</InfoItem>
+                <InfoItem label="Shakha">{valueOrDash(profile.activityCentre)}</InfoItem>
+                <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
+              </InfoSection>
+            </>
+          )}
+
         </div>
       </div>
 

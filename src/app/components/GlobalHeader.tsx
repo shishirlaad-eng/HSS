@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
-import { ADMIN_ROLE_OPTIONS } from "../../mockAPI/rolesData";
+import { ADMIN_ROLE_OPTIONS, getPermittedNavIds } from "../../mockAPI/rolesData";
 import {
   FormModal,
   FormLabel,
@@ -440,7 +440,7 @@ export function GlobalHeader({
       id: 6,
       title: "Annual Tech Summit",
       type: "Event",
-      category: "Events",
+      category: "Karyakrams",
       icon: CalendarCheck,
       description: "Dec 28 - Jan 2 (5 days)",
       status: "Active",
@@ -449,7 +449,7 @@ export function GlobalHeader({
       id: 7,
       title: "Team Building Workshop",
       type: "Event",
-      category: "Events",
+      category: "Karyakrams",
       icon: CalendarX,
       description: "Dec 24 (1 day)",
       status: "Expired",
@@ -504,7 +504,9 @@ export function GlobalHeader({
     },
   ];
 
-  const navItems = getNavigationData(currentPage, onNavigate || (() => {}));
+  const permittedNavIds = getPermittedNavIds(selectedRole);
+  const navItems = getNavigationData(currentPage, onNavigate || (() => {}))
+    .filter(item => permittedNavIds.has(item.id));
   
   const quickAccessModules = useMemo(() => {
     const modules: any[] = [];
@@ -776,12 +778,12 @@ export function GlobalHeader({
     itemWidthsRef.current = [];
   }, [navItems.length]);
 
+  const isMemberRole = ["Member (18+)", "Teen (13–17)"].includes(selectedRole);
+
   return (
     <header
-      className={`sticky top-0 z-50 bg-white dark:bg-neutral-950 transition-all ${isScrolled
-        ? "border-b border-neutral-200 dark:border-neutral-800 shadow-sm"
-        : ""
-        }`}
+      className={`sticky top-0 z-50 transition-all ${isScrolled ? "shadow-sm" : ""}`}
+      style={{ backgroundColor: "#F5A623" }}
     >
       <div className="h-12 px-6 flex items-center justify-between gap-4">
         {/* Left Side */}
@@ -794,11 +796,13 @@ export function GlobalHeader({
                 alt="Admin Panel"
                 className="h-8 w-8 object-contain"
               />
-              <span className="text-base font-bold tracking-tight text-primary-600 dark:text-primary-400 hidden sm:inline">
-                HB Template
-              </span>
+              {!["Member (18+)", "Teen (13–17)"].includes(selectedRole) && (
+                <span className="text-base font-bold tracking-tight text-primary-600 dark:text-primary-400 hidden sm:inline">
+                  HB Template
+                </span>
+              )}
             </div>
-            <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />
+            <div className="w-px h-5 flex-shrink-0 bg-white/30" />
             <div
               ref={horizNavRef}
               className="flex items-center gap-0.5 min-w-0 flex-1"
@@ -832,8 +836,8 @@ export function GlobalHeader({
                       }}
                       className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                         isActive
-                          ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                          ? "bg-white/25 text-white font-semibold"
+                          : "text-white/90 hover:bg-white/20 hover:text-white"
                       }`}
                     >
                       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
@@ -873,8 +877,8 @@ export function GlobalHeader({
                     onClick={() => setShowMoreMenu(v => !v)}
                     className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                       navItems.slice(horizVisibleCount).some(i => i.active || i.subItems?.some(s => s.active))
-                        ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                        ? "bg-white/25 text-white font-semibold"
+                        : "text-white/90 hover:bg-white/20 hover:text-white"
                     }`}
                   >
                     <span>More</span>
@@ -1204,7 +1208,7 @@ export function GlobalHeader({
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Separator between nav and actions (horizontal only) */}
           {menuOrientation === "horizontal" && (
-            <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-800 mx-1.5 flex-shrink-0" />
+            <div className="w-px h-5 mx-1.5 flex-shrink-0 bg-white/30" />
           )}
           {/* Search Icon — horizontal mode only */}
           {menuOrientation === "horizontal" && (
@@ -1219,7 +1223,7 @@ export function GlobalHeader({
                     );
                   }
                 }}
-                className="w-8 h-8 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-white/90 hover:bg-white/20 hover:text-white"
                 title="Search"
               >
                 <Search className="w-[18px] h-[18px]" />
@@ -1395,14 +1399,14 @@ export function GlobalHeader({
               <select
                 value={selectedRole}
                 onChange={e => onRoleChange?.(e.target.value)}
-                className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
+                className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors border-white/30 bg-white/20 text-white hover:bg-white/30"
                 title="Switch role view"
               >
                 {ADMIN_ROLE_OPTIONS.map(role => (
-                  <option key={role} value={role}>{role}</option>
+                  <option key={role} value={role} className="text-neutral-900 bg-white">{role}</option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 dark:text-neutral-500" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/70" />
             </div>
           </div>
 
@@ -1414,7 +1418,7 @@ export function GlobalHeader({
                   !showNotificationsDropdown,
                 )
               }
-              className="relative w-8 h-8 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors"
+              className="relative w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-white/90 hover:bg-white/20 hover:text-white"
               title="Notifications"
             >
               <Bell className="w-[18px] h-[18px]" />
@@ -1480,7 +1484,7 @@ export function GlobalHeader({
                 setShowSupportPanel(!showSupportPanel);
                 if (showSupportPanel) setExpandedFaqs(new Set());
               }}
-              className="w-8 h-8 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-white/90 hover:bg-white/20 hover:text-white"
               title="Support & FAQ"
             >
               <HelpCircle className="w-[18px] h-[18px]" />
@@ -1558,7 +1562,7 @@ export function GlobalHeader({
               onClick={() =>
                 setShowSettingsPanel(!showSettingsPanel)
               }
-              className="w-8 h-8 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-white/90 hover:bg-white/20 hover:text-white"
               title="Appearance settings"
             >
               <Settings className="w-[18px] h-[18px]" />

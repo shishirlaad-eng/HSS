@@ -186,7 +186,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             { key: 'ipAddress', label: 'IP Address' },
           ] as ColumnConfig[],
           filterOptions: {
-            'Module': ['Members', 'Events', 'Sessions', 'Attendance', 'Announcements', 'Email Templates', 'Role Management', 'Static Pages', 'Settings'],
+            'Module': ['Members', 'Karyakrams', 'Sessions', 'Attendance', 'Suchana', 'Email Templates', 'Role Management', 'Static Pages', 'Settings'],
             'Action Type': ['Create', 'Update', 'Delete', 'Status Change', 'Import', 'Export', 'Permission Update'],
             'Date Range': ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month'],
           }

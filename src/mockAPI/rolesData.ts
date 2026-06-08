@@ -41,7 +41,7 @@ export const availableModules: ModulePermission[] = [
   // 2. Masters
   {
     id: "masters",
-    name: "Masters",
+    name: "HSS (UK) Setup",
     actions: [
       { id: "view",   name: "View / List",             code: "masters_view" },
       { id: "add",    name: "Add",                     code: "masters_add" },
@@ -64,10 +64,10 @@ export const availableModules: ModulePermission[] = [
       { id: "export",           name: "Export CSV",                          code: "members_export" },
     ],
   },
-  // 4. Events Management
+  // 4. Karyakrams (Events Management)
   {
     id: "events",
-    name: "Events Management",
+    name: "Karyakrams",
     actions: [
       { id: "view",    name: "View / List",            code: "events_view" },
       { id: "add",     name: "Create Event",           code: "events_add" },
@@ -77,15 +77,15 @@ export const availableModules: ModulePermission[] = [
       { id: "export",  name: "Export CSV",             code: "events_export" },
     ],
   },
-  // 5. Announcements
+  // 5. Suchana (Announcements)
   {
     id: "announcements",
-    name: "Announcements",
+    name: "Suchana",
     actions: [
       { id: "view",   name: "View / List",             code: "announcements_view" },
-      { id: "add",    name: "Create Announcement",     code: "announcements_add" },
-      { id: "edit",   name: "Edit Announcement",       code: "announcements_edit" },
-      { id: "delete", name: "Delete Announcement",     code: "announcements_delete" },
+      { id: "add",    name: "Create Suchana",          code: "announcements_add" },
+      { id: "edit",   name: "Edit Suchana",            code: "announcements_edit" },
+      { id: "delete", name: "Delete Suchana",          code: "announcements_delete" },
     ],
   },
   // 6. Attendance
@@ -143,6 +143,14 @@ export const availableModules: ModulePermission[] = [
     name: "Audit Logging",
     actions: [
       { id: "view",   name: "View Audit Logs",         code: "audit_view" },
+    ],
+  },
+  // 11. My Donations (member-facing)
+  {
+    id: "my-donations",
+    name: "My Donations",
+    actions: [
+      { id: "view", name: "View My Donations", code: "my_donations_view" },
     ],
   },
 ];
@@ -328,10 +336,11 @@ export const mockRoles: Role[] = [
     userCount: 320,
     lastUpdated: "2025-01-20T10:00:00Z",
     permissions: {
-      dashboard:     ["view"],
-      events:        ["view"],
-      announcements: ["view"],
-      attendance:    ["add", "edit"],
+      dashboard:        ["view"],
+      events:           ["view"],
+      announcements:    ["view"],
+      attendance:       ["add", "edit"],
+      "my-donations":   ["view"],
     },
   },
 
@@ -345,10 +354,11 @@ export const mockRoles: Role[] = [
     userCount: 85,
     lastUpdated: "2025-01-20T10:00:00Z",
     permissions: {
-      dashboard:     ["view"],
-      events:        ["view"],
-      announcements: ["view"],
-      attendance:    ["add", "edit"],
+      dashboard:        ["view"],
+      events:           ["view"],
+      announcements:    ["view"],
+      attendance:       ["add", "edit"],
+      "my-donations":   ["view"],
     },
   },
 ];
@@ -362,7 +372,7 @@ export const ADMIN_ROLE_OPTIONS: string[] = mockRoles
 const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   dashboard:     ['dashboard'],
   members:       ['members-management-group'],
-  events:        ['events-management-group'],
+  events:        ['event-management'],
   announcements: ['announcements'],
   attendance:    ['attendance-group'],
   reports:       ['reports-group'],
@@ -370,6 +380,7 @@ const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   rbac:          ['role-management'],
   settings:      ['settings-group'],
   'audit-logs':  ['audit-logging'],
+  'my-donations': ['my-donations'],
 };
 
 /**
