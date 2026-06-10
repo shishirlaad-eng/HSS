@@ -26,6 +26,7 @@ import {
   mockMembers,
   getAgeGroup,
 } from '../../mockAPI/membersData';
+import { applyMemberCentreOverrides } from '../../mockAPI/shakhaTransferData';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ const EMPTY_FORM = (date: string): CreateForm => ({
 // ── Helpers ───────────────────────────────────────────────────
 
 function buildAttendanceRecordsForCentre(activityCentre: string): AttendanceRecord[] {
-  return mockMembers
+  return applyMemberCentreOverrides(mockMembers)
     .filter(m => m.status === 'active' && m.activityCentre === activityCentre)
     .map(m => ({
       memberId:    m.id,

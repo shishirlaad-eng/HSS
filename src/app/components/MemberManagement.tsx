@@ -27,6 +27,7 @@ import {
   X,
   FileUp,
   CalendarDays,
+  Award,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -58,7 +59,6 @@ import {
   ROLE_TYPE_OPTIONS,
   DietaryRequirement,
   DIETARY_REQUIREMENTS,
-  SPOKEN_LANGUAGE_OPTIONS,
   getAge,
   getAgeCategory,
   AgeGroup,
@@ -66,6 +66,7 @@ import {
   getAgeGroup,
   getAgeGroupLabel,
   getMemberTypeFromAge,
+  hasResponsibility,
   MEMBER_FILTER_OPTIONS,
   MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
@@ -74,6 +75,7 @@ import MemberEdit from './MemberEdit';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
@@ -287,7 +289,6 @@ interface AddMemberForm {
   isFirstAider: boolean;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
-  spokenLanguages: string[];
   originatingStateIndia: string;
   dbsStatus: 'pending' | 'completed';
   firstAidStatus: 'pending' | 'completed';
@@ -306,7 +307,7 @@ const EMPTY_FORM: AddMemberForm = {
   country: '', region: '', town: '', activityCentre: '',
   guardianName: '', guardianPhone: '', guardianEmail: '', guardianRelationship: '',
   medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
-  dietaryRequirements: [], occupation: '', spokenLanguages: ['English'], originatingStateIndia: '',
+  dietaryRequirements: [], occupation: '', originatingStateIndia: '',
   dbsStatus: 'pending', firstAidStatus: 'pending',
   dbsRef: '', firstAidRef: '',
 };
@@ -356,15 +357,6 @@ function AddMemberModal({
       dietaryRequirements: prev.dietaryRequirements.includes(value)
         ? prev.dietaryRequirements.filter(item => item !== value)
         : [...prev.dietaryRequirements, value],
-    }));
-  };
-
-  const toggleSpokenLanguage = (value: string) => {
-    setForm(prev => ({
-      ...prev,
-      spokenLanguages: prev.spokenLanguages.includes(value)
-        ? prev.spokenLanguages.filter(item => item !== value)
-        : [...prev.spokenLanguages, value],
     }));
   };
 
@@ -459,7 +451,6 @@ function AddMemberModal({
       isFirstAider: form.isFirstAider,
       dietaryRequirements: form.dietaryRequirements,
       occupation: form.occupation.trim() || undefined,
-      spokenLanguages: form.spokenLanguages,
       originatingStateIndia: form.originatingStateIndia.trim() || undefined,
       eventsAttended: 0,
       shakhaSessionsAttended: 0,
@@ -664,17 +655,6 @@ function AddMemberModal({
                 {DIETARY_REQUIREMENTS.map(item => (
                   <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                     <input type="checkbox" checked={form.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
-                    {item}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <FormLabel>Spoken Language(s)</FormLabel>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SPOKEN_LANGUAGE_OPTIONS.map(item => (
-                  <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                    <input type="checkbox" checked={form.spokenLanguages.includes(item)} onChange={() => toggleSpokenLanguage(item)} className="w-4 h-4 accent-primary-600" />
                     {item}
                   </label>
                 ))}
@@ -994,9 +974,10 @@ export default function MemberManagement({
 
   // Base member list scoped to role's level
   const [members, setMembers] = useState<Member[]>(() => filterByScope(mockMembers, scope));
+  const [transferVersion, setTransferVersion] = useState(0);
 
   // Re-scope when role switches (scope comes from context which updates on role change)
-  const scopedMembers = useMemo(() => filterByScope(mockMembers, scope), [scope]);
+  const scopedMembers = useMemo(() => filterByScope(mockMembers, scope), [scope, transferVersion]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pageState, setPageState] = useState<PageState>('list');
@@ -1005,6 +986,7 @@ export default function MemberManagement({
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [showKaryakartasOnly, setShowKaryakartasOnly] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -1065,7 +1047,12 @@ export default function MemberManagement({
   }, []); // Run only on mount — intentionally ignores prop changes after mount
 
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, regDateStart, regDateEnd]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, regDateStart, regDateEnd, showKaryakartasOnly]);
+  useEffect(() => {
+    const refreshScope = () => setTransferVersion(version => version + 1);
+    window.addEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
+    return () => window.removeEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
+  }, []);
 
   // ── Filter & search ─────────────────────────────────────────
 
@@ -1126,9 +1113,11 @@ export default function MemberManagement({
         return true;
       })();
 
-      return matchesSearch && matchesFilters && matchesRegDate;
+      const matchesKaryakarta = !showKaryakartasOnly || hasResponsibility(m);
+
+      return matchesSearch && matchesFilters && matchesRegDate && matchesKaryakarta;
     });
-  }, [scopedMembers, searchQuery, filters, regDateStart, regDateEnd]);
+  }, [scopedMembers, searchQuery, filters, regDateStart, regDateEnd, showKaryakartasOnly]);
 
   const sortedMembers = useMemo(() => {
     return [...filteredMembers].sort((a, b) => {
@@ -1419,6 +1408,29 @@ export default function MemberManagement({
             />
           </div>
 
+          {/* Karyakartas — members with a Responsibility assigned (all roles) */}
+          <button
+            onClick={() => setShowKaryakartasOnly(p => !p)}
+            title="Show only Karyakartas (members with a sangh responsibility assigned)"
+            className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              showKaryakartasOnly
+                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            Karyakartas
+            {showKaryakartasOnly && (
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); setShowKaryakartasOnly(false); }}
+                className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+              >
+                <X className="w-3 h-3" />
+              </span>
+            )}
+          </button>
+
           {mp.canAdd && (
             <PrimaryButton icon={Plus} onClick={() => setShowAddModal(true)}>
               Add Member
@@ -1585,8 +1597,8 @@ export default function MemberManagement({
 
         {/* ── TABLE VIEW ───────────────────────────────────────── */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
+            <div className="overflow-x-auto slim-scroll">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
@@ -1707,11 +1719,23 @@ export default function MemberManagement({
                 </tbody>
               </table>
             </div>
+            {filteredMembers.length > 0 && (
+              <div className="sticky bottom-14 z-20 rounded-b-lg overflow-hidden shadow-[0_-4px_12px_rgba(0,0,0,0.06)] [&>div]:mt-0">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={filteredMembers.length}
+                  itemsPerPage={itemsPerPage}
+                  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
+                />
+              </div>
+            )}
           </div>
         )}
 
         {/* PAGINATION */}
-        <div className="mt-6">
+        <div className={viewMode === 'table' ? 'hidden' : 'mt-6'}>
           {filteredMembers.length > 0 && (
             <Pagination
               currentPage={currentPage}

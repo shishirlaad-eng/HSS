@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   UserCheck,
   CalendarClock,
+  ArrowRight,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -44,6 +45,12 @@ import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
 import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 import { getScopedFilterOptions } from '../../mockAPI/roleScope';
+import {
+  getTransferRequests,
+  reviewTransferRequest,
+  ShakhaTransferRequest,
+  TRANSFER_CHANGE_EVENT,
+} from '../../mockAPI/shakhaTransferData';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail';
@@ -259,7 +266,7 @@ function RejectReasonModal({
 
 export default function PendingApprovals() {
   const mp = useModulePermissions('members');
-  const { scope } = useRoleScope();
+  const { scope, selectedRole } = useRoleScope();
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
   // Source: all members; only pending-approval ones shown
@@ -277,6 +284,7 @@ export default function PendingApprovals() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const [showSummary, setShowSummary] = useState(true);
+  const [transferRequests, setTransferRequests] = useState<ShakhaTransferRequest[]>(getTransferRequests);
 
   const [sortField, setSortField]         = useState<string>('registrationDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // oldest first
@@ -286,6 +294,11 @@ export default function PendingApprovals() {
   }>({ isOpen: false, member: null, action: 'approve', isLoading: false, rejectionReason: '' });
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, filters]);
+  useEffect(() => {
+    const refreshTransfers = () => setTransferRequests(getTransferRequests());
+    window.addEventListener(TRANSFER_CHANGE_EVENT, refreshTransfers);
+    return () => window.removeEventListener(TRANSFER_CHANGE_EVENT, refreshTransfers);
+  }, []);
 
   // ── Derived pending list ────────────────────────────────────
 
@@ -293,6 +306,25 @@ export default function PendingApprovals() {
     () => members.filter(m => m.status === 'pending'),
     [members]
   );
+
+  const pendingTransfers = useMemo(
+    () => transferRequests.filter(request =>
+      request.status === 'pending' &&
+      (scope.level === 'all' || request.toCentre === scope.centre)
+    ),
+    [transferRequests, scope],
+  );
+
+  const canReviewTransfers = mp.canApprove || selectedRole === 'Ops User' || selectedRole === 'Activity Centre Admin' || selectedRole === 'Super Admin';
+
+  const handleTransferReview = (request: ShakhaTransferRequest, action: 'approved' | 'rejected') => {
+    const reason = action === 'rejected' ? 'Transfer request rejected by receiving Shakha.' : '';
+    reviewTransferRequest(request.id, action, selectedRole, reason);
+    setTransferRequests(getTransferRequests());
+    toast.success(action === 'approved'
+      ? `${request.memberName} transferred to ${request.toCentre}.`
+      : `${request.memberName}'s transfer request was rejected.`);
+  };
 
   const filteredMembers = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -547,6 +579,65 @@ export default function PendingApprovals() {
           />
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
+
+        {pendingTransfers.length > 0 && (
+          <div className="mb-6 bg-white dark:bg-neutral-950 border border-primary-200 dark:border-primary-900 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-primary-100 dark:border-primary-900 bg-primary-50/60 dark:bg-primary-950/20">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Shakha Transfer Requests</h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Requests awaiting approval from the receiving Shakha.
+                  </p>
+                </div>
+                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                  {pendingTransfers.length} pending
+                </span>
+              </div>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              {pendingTransfers.map(request => (
+                <div key={request.id} className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-neutral-900 dark:text-white">{request.memberName}</span>
+                      <span className="text-xs font-mono text-neutral-400">{request.memberId}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900">
+                        Pending transfer
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                      <span className="font-medium">{request.fromCentre}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-primary-500" />
+                      <span className="font-medium text-primary-700 dark:text-primary-300">{request.toCentre}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-neutral-400">
+                      Requested {new Date(request.requestedAt).toLocaleString('en-GB')} · {request.memberRole}
+                    </p>
+                  </div>
+                  {canReviewTransfers && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleTransferReview(request, 'approved')}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Approve Transfer
+                      </button>
+                      <button
+                        onClick={() => handleTransferReview(request, 'rejected')}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* SUMMARY WIDGETS */}
         {showSummary && (

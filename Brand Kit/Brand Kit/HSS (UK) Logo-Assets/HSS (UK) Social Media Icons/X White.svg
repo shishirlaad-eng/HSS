@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 430 430" style="enable-background:new 0 0 430 430;" xml:space="preserve" width="430" height="430">
+<style type="text/css">
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#121214;}
+	.st2{fill:#162842;}
+	.st3{fill:#FBA743;}
+</style>
+<g id="background">
+</g>
+<g id="objects">
+	<g>
+		<path class="st0" d="M215,16.3L215,16.3c-109.7,0-198.7,89-198.7,198.7v0c0,109.7,89,198.7,198.7,198.7h0    c109.7,0,198.7-89,198.7-198.7v0C413.7,105.3,324.7,16.3,215,16.3z M247.9,319.2l-51.5-71.9l-67.2,71.9H98.7l84.5-90.4l-84.5-118    h83.5l48.3,67.5l63.1-67.5H324l-80.4,86l87.7,122.5H247.9z"/>
+		<polygon class="st0" points="141.7,132.9 259.2,297.1 288.3,297.1 170.8,132.9   "/>
+	</g>
+</g>
+</svg>

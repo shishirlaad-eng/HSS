@@ -23,7 +23,6 @@ import {
   RESPONSIBILITY_LEVEL_OPTIONS,
   RESPONSIBILITY_TYPE_OPTIONS,
   ROLE_TYPE_OPTIONS,
-  SPOKEN_LANGUAGE_OPTIONS,
   getAge,
   getAgeGroupLabel,
   getMemberTypeFromAge,
@@ -89,13 +88,12 @@ type MemberForm = {
   isFirstAider: boolean;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
-  spokenLanguages: string[];
   originatingStateIndia: string;
   country: string;
   region: string;
   town: string;
   activityCentre: string;
-  jobTitle: string;
+  jobTitles: string[];
   orgRole: string;
   status: MemberStatus;
   dbsStatus: ComplianceStatus;
@@ -161,13 +159,12 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     isFirstAider: member.isFirstAider ?? false,
     dietaryRequirements: member.dietaryRequirements ?? [],
     occupation: member.occupation ?? '',
-    spokenLanguages: member.spokenLanguages ?? [],
     originatingStateIndia: member.originatingStateIndia ?? '',
     country: member.country,
     region: member.region,
     town: member.town,
     activityCentre: member.activityCentre,
-    jobTitle: member.jobTitle,
+    jobTitles: [member.jobTitle, ...(member.additionalJobTitles ?? [])].filter(Boolean),
     orgRole: member.orgRole,
     status: member.status,
     dbsStatus: member.compliance.dbs,
@@ -212,12 +209,12 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     }));
   };
 
-  const toggleSpokenLanguage = (value: string) => {
+  const toggleJobTitle = (value: string) => {
     setFormData(prev => ({
       ...prev,
-      spokenLanguages: prev.spokenLanguages.includes(value)
-        ? prev.spokenLanguages.filter(item => item !== value)
-        : [...prev.spokenLanguages, value],
+      jobTitles: prev.jobTitles.includes(value)
+        ? prev.jobTitles.filter(item => item !== value)
+        : [...prev.jobTitles, value],
     }));
   };
 
@@ -255,6 +252,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       toast.error('Organisation mapping fields are required.');
       return;
     }
+    if (formData.jobTitles.length === 0) {
+      toast.error('Select at least one Job Title (HSS Role).');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -289,7 +290,8 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         region: formData.region,
         town: formData.town,
         activityCentre: formData.activityCentre,
-        jobTitle: formData.jobTitle.trim(),
+        jobTitle: formData.jobTitles[0],
+        additionalJobTitles: formData.jobTitles.slice(1),
         orgRole: formData.orgRole.trim(),
         status: formData.status,
         compliance: {
@@ -304,7 +306,6 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         isFirstAider: formData.isFirstAider,
         dietaryRequirements: formData.dietaryRequirements,
         occupation: formData.occupation.trim() || undefined,
-        spokenLanguages: formData.spokenLanguages,
         originatingStateIndia: formData.originatingStateIndia.trim() || undefined,
         adminRole: formData.adminRole || undefined,
         responsibilityType: formData.responsibilityType as Member['responsibilityType'],
@@ -416,17 +417,6 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                 </div>
               </div>
 
-              <div>
-                <FormLabel>Spoken Language(s)</FormLabel>
-                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {SPOKEN_LANGUAGE_OPTIONS.map(item => (
-                    <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                      <input type="checkbox" checked={formData.spokenLanguages.includes(item)} onChange={() => toggleSpokenLanguage(item)} className="w-4 h-4 accent-primary-600" />
-                      {item}
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
           </SectionCard>
 
@@ -437,13 +427,20 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <FormField><FormLabel required>Vibhag (Region)</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
               <FormField><FormLabel required>Nagar (Town)</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
               <FormField><FormLabel required>Shakha (Branch)</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-              <FormField>
-                <FormLabel required>Job Title (HSS Role)</FormLabel>
-                <FormSelect value={formData.jobTitle} onChange={set('jobTitle')}>
-                  {ROLE_TYPE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
-                </FormSelect>
-              </FormField>
               <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
+            </div>
+
+            <div className="mt-6">
+              <FormLabel required>Job Title (HSS Role)</FormLabel>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-2">Select one or more roles held by this member.</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {ROLE_TYPE_OPTIONS.map(role => (
+                  <label key={role} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input type="checkbox" checked={formData.jobTitles.includes(role)} onChange={() => toggleJobTitle(role)} className="w-4 h-4 accent-primary-600" />
+                    {role}
+                  </label>
+                ))}
+              </div>
             </div>
           </SectionCard>
 

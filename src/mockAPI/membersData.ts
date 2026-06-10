@@ -33,6 +33,27 @@ export const RESPONSIBILITY_LEVEL_OPTIONS: ResponsibilityLevel[] = [
   'Shakha / Activity center',
 ];
 
+// ── Karyakartas — members who hold a sangh responsibility ─────
+// Only the members listed here have a Responsibility (Type + Level)
+// assigned. Everyone else has none — this drives the "Karyakartas"
+// view in Members Management. Spread across scopes so every role
+// sees a few within their hierarchy.
+export const KARYAKARTA_ASSIGNMENTS: Record<string, { type: ResponsibilityType; level: ResponsibilityLevel }> = {
+  // Wembley Activity Centre (Town Head / Activity Centre Admin / Regional / National / Super)
+  'MBR-001': { type: 'Pramukh', level: 'Shakha / Activity center' },
+  'WBL-001': { type: 'Pramukh', level: 'Nagar / Town' },
+  'WBL-002': { type: 'Saha',    level: 'Shakha / Activity center' },
+  'WBL-003': { type: 'Toli',    level: 'Shakha / Activity center' },
+  'WBL-005': { type: 'Saha',    level: 'Shakha / Activity center' },
+  'WBL-007': { type: 'Pramukh', level: 'Nagar / Town' },
+  'WBL-009': { type: 'Pramukh', level: 'Shakha / Activity center' },
+  'WBL-010': { type: 'Toli',    level: 'Shakha / Activity center' },
+  // Harrow (London & South East — Regional / National / Super)
+  'MBR-002': { type: 'Saha',    level: 'Nagar / Town' },
+  // Birmingham (Midlands — National / Super)
+  'MBR-003': { type: 'Pramukh', level: 'Vibhaag / Region' },
+};
+
 export const ROLE_TYPE_OPTIONS = [
   'Ghatnayak',
   'Sankhya',
@@ -91,6 +112,14 @@ export interface MemberCompliance {
   dbs: ComplianceStatus;
   firstAid: ComplianceStatus;
   parentalConsent: ConsentStatus;
+  safeguardingTraining?: ComplianceStatus;
+}
+
+export interface PreviousResponsibility {
+  responsibilityType: ResponsibilityType;
+  responsibilityLevel: ResponsibilityLevel;
+  startDate: string; // ISO date string
+  endDate: string;   // ISO date string
 }
 
 export interface Member {
@@ -120,6 +149,7 @@ export interface Member {
   dateOfBirth: string;        // ISO date string
   gender: Gender;
   jobTitle: string;           // Role within HSS (Ghatnayak, Shikshak, Karyawaha, etc.)
+  additionalJobTitles?: string[]; // Additional HSS roles held by the member
   orgRole: string;            // Organisational role label
   country: string;
   region: string;
@@ -140,11 +170,17 @@ export interface Member {
   adminRole?: string;
   responsibilityType?: ResponsibilityType;
   responsibilityLevel?: ResponsibilityLevel;
+  previousResponsibilities?: PreviousResponsibility[];
   eventsAttended: number;
   shakhaSessionsAttended: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
+
+// A "Karyakarta" is a member who has a sangh Responsibility assigned
+export function hasResponsibility(m: Member): boolean {
+  return !!m.responsibilityType && !!m.responsibilityLevel;
+}
 
 export function getAge(dateOfBirth: string): number {
   const today = new Date();
@@ -306,6 +342,12 @@ function withRegistrationFields(member: Member): Member {
     guardianEmail,
     guardianPhone,
     guardianRelationship: member.guardianRelationship ?? (isMinor ? 'Parent / Guardian' : undefined),
+    compliance: {
+      ...member.compliance,
+      // Deterministic mock: ~2/3 of members have completed safeguarding training
+      safeguardingTraining: member.compliance.safeguardingTraining
+        ?? (member.id.charCodeAt(member.id.length - 1) % 3 !== 0 ? 'completed' : 'pending'),
+    },
     medicalInfoDeclared: member.medicalInfoDeclared ?? false,
     medicalInfoDetails: member.medicalInfoDetails ?? '',
     isFirstAider: member.isFirstAider ?? member.compliance.firstAid === 'completed',
@@ -313,8 +355,12 @@ function withRegistrationFields(member: Member): Member {
     occupation: member.occupation ?? (member.memberType === 'adult' ? 'Professional' : 'Student'),
     spokenLanguages: member.spokenLanguages ?? ['English'],
     originatingStateIndia: member.originatingStateIndia ?? '',
-    responsibilityType: member.responsibilityType ?? 'Pramukh',
-    responsibilityLevel: member.responsibilityLevel ?? 'Shakha / Activity center',
+    responsibilityType: member.responsibilityType ?? KARYAKARTA_ASSIGNMENTS[member.id]?.type,
+    responsibilityLevel: member.responsibilityLevel ?? KARYAKARTA_ASSIGNMENTS[member.id]?.level,
+    previousResponsibilities: member.previousResponsibilities ?? [
+      { responsibilityType: 'Saha', responsibilityLevel: 'Shakha / Activity center', startDate: '2022-04-01', endDate: '2023-03-31' },
+      { responsibilityType: 'Toli', responsibilityLevel: 'Nagar / Town', startDate: '2023-04-01', endDate: '2024-03-31' },
+    ],
   };
 }
 

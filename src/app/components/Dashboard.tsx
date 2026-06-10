@@ -24,12 +24,17 @@ import {
   XCircle,
   Percent,
   Award,
+  PoundSterling,
+  ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
 import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { mockEvents } from '../../mockAPI/eventsData';
+import { mockSessions } from '../../mockAPI/attendanceData';
+import { mockDonations } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
 
 // ── Mock Announcements ────────────────────────────────────────
 
@@ -520,6 +525,247 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
   );
 }
 
+// ── Hierarchy KPI Section (Regional / Town / Activity Centre) ──
+
+// Age-group membership labels are NOT sangh responsibilities — exclude them
+// when counting "Shakha Karyakartas" (members holding a sangh responsibility).
+const AGE_GROUP_ROLE_LABELS = new Set([
+  'Bal(ika)', 'Shishu', 'Kishor(i)', 'Tarun(i)', 'Yuva(ti)', 'Jyestha(a)',
+]);
+
+interface KpiSubMetric {
+  label: string;
+  value: string | number;
+  tone?: 'default' | 'primary' | 'amber' | 'emerald' | 'red';
+}
+
+const SUB_TONE: Record<NonNullable<KpiSubMetric['tone']>, string> = {
+  default:  'text-neutral-500 dark:text-neutral-400',
+  primary:  'text-primary-600 dark:text-primary-400',
+  amber:    'text-amber-600 dark:text-amber-400',
+  emerald:  'text-emerald-600 dark:text-emerald-400',
+  red:      'text-red-600 dark:text-red-400',
+};
+
+function KpiCard({
+  title, value, icon: Icon, subMetrics, onClick,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
+  subMetrics: KpiSubMetric[];
+  onClick?: () => void;
+}) {
+  const interactive = !!onClick;
+  return (
+    <div
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={interactive ? (e) => e.key === 'Enter' && onClick?.() : undefined}
+      className={`p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 transition-colors ${
+        interactive ? 'cursor-pointer hover:border-primary-300 dark:hover:border-primary-700' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">{title}</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
+        </div>
+        <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        </div>
+      </div>
+      <div className="mt-3 space-y-1">
+        {subMetrics.map((s) => (
+          <div key={s.label} className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-neutral-500 dark:text-neutral-400 truncate">{s.label}</span>
+            <span className={`font-medium flex-shrink-0 ${SUB_TONE[s.tone ?? 'default']}`}>{s.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HierarchyKpiSection({
+  scope,
+  onNavigate,
+}: {
+  scope: RoleScope;
+  onNavigate?: (page: string) => void;
+}) {
+  const kpis = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`;
+
+    // ── Attendance ──
+    const completedSessions = filterByScope(mockSessions, scope).filter(s => s.status === 'completed');
+    const rateOf = (s: typeof completedSessions[number]) => {
+      const present = s.attendanceRecords.filter(r => r.status === 'present').length;
+      const absent  = s.attendanceRecords.filter(r => r.status === 'absent').length;
+      const denom = present + absent;
+      return denom > 0 ? (present / denom) * 100 : 0;
+    };
+    const sortedSessions = [...completedSessions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+    const last4 = sortedSessions.slice(0, 4);
+    const avgLast4 = last4.length
+      ? Math.round(last4.reduce((sum, s) => sum + rateOf(s), 0) / last4.length) : 0;
+    const ytdSessions = completedSessions.filter(s => new Date(s.date).getFullYear() === currentYear);
+    const avgYTD = ytdSessions.length
+      ? Math.round(ytdSessions.reduce((sum, s) => sum + rateOf(s), 0) / ytdSessions.length) : 0;
+    const sessionsHeldYTD = ytdSessions.length;
+
+    // ── Suchana ──
+    const suchanaActive = mockAnnouncements.length;
+    const suchanaHigh   = mockAnnouncements.filter(a => a.priority === 'high').length;
+    const suchanaMedium = mockAnnouncements.filter(a => a.priority === 'medium').length;
+    const suchanaLow    = mockAnnouncements.filter(a => a.priority === 'low').length;
+
+    // ── Upcoming Karyakrams ──
+    const scopedEvents = filterByScope(mockEvents, scope);
+    const upcomingEvents = scopedEvents.filter(
+      e => (e.status === 'published' || e.status === 'active') && new Date(e.startDate) >= now,
+    );
+    // Unscoped published/active events (active · published breakdown)
+    const allUpcomingList = mockEvents.filter(e => e.status === 'published' || e.status === 'active');
+    const allUpcomingActive = allUpcomingList.filter(e => e.status === 'active').length;
+    const allUpcomingPublished = allUpcomingList.filter(e => e.status === 'published').length;
+
+    // ── Members (scoped) ──
+    const scopedMembers = filterByScope(mockMembers, scope);
+    const pendingApprovals = scopedMembers.filter(
+      m => m.status === 'pending' || m.status === 'pending-parental-consent',
+    );
+    const pendingParental = pendingApprovals.filter(m => m.status === 'pending-parental-consent').length;
+
+    const karyakartas = scopedMembers.filter(
+      m => m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle),
+    ).length;
+
+    // ── Nidhi (donations) ──
+    const receivedDonations = filterByScope(mockDonations, scope).filter(d => d.status === 'received');
+    const totalIncome = receivedDonations.reduce((sum, d) => sum + d.amount, 0);
+    const onlineTotal = receivedDonations.filter(d => d.channel === 'online').reduce((sum, d) => sum + d.amount, 0);
+    const cashTotal   = receivedDonations.filter(d => d.channel === 'cash').reduce((sum, d) => sum + d.amount, 0);
+    const giftAidClaimable = receivedDonations.filter(d => d.giftAid).reduce((sum, d) => sum + d.amount, 0) * 0.25;
+
+    // ── Compliance ──
+    const firstAiders  = scopedMembers.filter(m => m.isFirstAider).length;
+    const dbsApproved  = scopedMembers.filter(m => m.compliance.dbs === 'completed').length;
+    const safeguarding = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'completed').length;
+
+    return {
+      avgLast4, avgYTD, sessionsHeldYTD,
+      suchanaActive, suchanaHigh, suchanaMedium, suchanaLow,
+      upcomingEvents: upcomingEvents.length,
+      allUpcoming: allUpcomingList.length, allUpcomingActive, allUpcomingPublished,
+      pendingApprovals: pendingApprovals.length, pendingParental,
+      karyakartas,
+      totalIncome, onlineTotal, cashTotal, giftAidClaimable,
+      firstAiders, dbsApproved, safeguarding,
+      gbp,
+    };
+  }, [scope]);
+
+  return (
+    <div className="mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        {/* 1. Attendance */}
+        <KpiCard
+          title="Attendance"
+          value={`${kpis.avgLast4}%`}
+          icon={Percent}
+          onClick={() => onNavigate?.('attendance-log')}
+          subMetrics={[
+            { label: 'Avg — last 4 sessions', value: `${kpis.avgLast4}%`, tone: 'primary' },
+            { label: 'Avg — YTD', value: `${kpis.avgYTD}%` },
+            { label: 'Sessions held YTD', value: kpis.sessionsHeldYTD },
+          ]}
+        />
+
+        {/* 2. Suchana */}
+        <KpiCard
+          title="Suchana"
+          value={kpis.suchanaActive}
+          icon={Megaphone}
+          onClick={() => onNavigate?.('announcements')}
+          subMetrics={[
+            { label: 'High priority', value: kpis.suchanaHigh, tone: 'red' },
+            { label: 'Medium priority', value: kpis.suchanaMedium, tone: 'amber' },
+            { label: 'Low priority', value: kpis.suchanaLow },
+          ]}
+        />
+
+        {/* 3. Pending Shakha Approvals */}
+        <KpiCard
+          title="Pending Shakha Approvals"
+          value={kpis.pendingApprovals}
+          icon={ClipboardCheck}
+          onClick={() => onNavigate?.('pending-approvals')}
+          subMetrics={[
+            { label: 'Awaiting your approval', value: kpis.pendingApprovals, tone: 'amber' },
+            { label: 'Awaiting parental consent', value: kpis.pendingParental },
+          ]}
+        />
+
+        {/* 5. Shakha Karyakartas */}
+        <KpiCard
+          title="Shakha Karyakartas"
+          value={kpis.karyakartas}
+          icon={Award}
+          onClick={() => onNavigate?.('members')}
+          subMetrics={[
+            { label: 'Holding sangh responsibility', value: kpis.karyakartas, tone: 'primary' },
+          ]}
+        />
+
+        {/* 6. Nidhi */}
+        <KpiCard
+          title="Nidhi"
+          value={kpis.gbp(kpis.totalIncome)}
+          icon={PoundSterling}
+          onClick={() => onNavigate?.('report-donations')}
+          subMetrics={[
+            { label: 'Online', value: kpis.gbp(kpis.onlineTotal), tone: 'primary' },
+            { label: 'Cash', value: kpis.gbp(kpis.cashTotal) },
+          ]}
+        />
+
+        {/* 7. Compliance */}
+        <KpiCard
+          title="Compliance"
+          value={kpis.dbsApproved}
+          icon={ShieldCheck}
+          onClick={() => onNavigate?.('members')}
+          subMetrics={[
+            { label: 'DBS approved', value: kpis.dbsApproved, tone: 'emerald' },
+            { label: 'First aiders', value: kpis.firstAiders, tone: 'primary' },
+            { label: 'Safeguarding complete', value: kpis.safeguarding },
+          ]}
+        />
+
+        {/* Upcoming Karyakrams — placed after Compliance */}
+        <KpiCard
+          title="Upcoming Karyakrams"
+          value={kpis.allUpcoming}
+          icon={CalendarDays}
+          onClick={() => onNavigate?.('event-management')}
+          subMetrics={[
+            { label: 'Active', value: kpis.allUpcomingActive, tone: 'primary' },
+            { label: 'Published', value: kpis.allUpcomingPublished, tone: 'amber' },
+          ]}
+        />
+
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard Component ───────────────────────────────────────
 
 interface DashboardProps {
@@ -528,13 +774,19 @@ interface DashboardProps {
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
 
-  const { selectedRole } = useRoleScope();
+  const { selectedRole, scope } = useRoleScope();
 
   // Member (18+) and Teen get a simplified personal dashboard
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
   if (isMemberRole) {
     return <MemberDashboard onNavigate={onNavigate} />;
   }
+
+  // Hierarchy-scoped KPI section shown for these mid-tier admin roles
+  const showHierarchyKpis =
+    selectedRole === 'Regional Head' ||
+    selectedRole === 'Town Head' ||
+    selectedRole === 'Activity Centre Admin';
 
   // Hide org-structure cards that are redundant for the current role's scope
   const hideRegions  = selectedRole === 'Regional Head' || selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
@@ -631,7 +883,13 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         )}
       </div>
 
-      {/* ── Row 2: Activity KPIs ─────────────────────────── */}
+      {/* ── Hierarchy-scoped KPIs (Regional / Town / Activity Centre) ── */}
+      {showHierarchyKpis && (
+        <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
+      )}
+
+      {/* ── Row 2: Activity KPIs (hidden for hierarchy roles — covered by Performance Overview) ── */}
+      {!showHierarchyKpis && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
         {/* Upcoming Karyakrams */}
@@ -723,6 +981,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Section: Upcoming Karyakrams + Pending Approvals ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

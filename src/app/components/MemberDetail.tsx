@@ -351,7 +351,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                  {member.jobTitle}
+                  {[member.jobTitle, ...(member.additionalJobTitles ?? [])].join(', ')}
                 </span>
                 <span className="text-neutral-400 dark:text-neutral-600">·</span>
                 <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">
@@ -551,12 +551,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <InfoItem label="First Aider for Shakha / HSS (UK)?">{valueOrDash(member.isFirstAider)}</InfoItem>
                     <InfoItem label="Special Dietary Requirements">{valueOrDash(member.dietaryRequirements)}</InfoItem>
                     <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
-                    <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
                     <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
                   </InfoSection>
 
                   <InfoSection title="Organisational Details">
-                    <InfoItem label="Job Title (HSS Role)">{member.jobTitle}</InfoItem>
+                    <InfoItem label="Job Title (HSS Role)">{[member.jobTitle, ...(member.additionalJobTitles ?? [])].join(', ')}</InfoItem>
                     <InfoItem label="Organisational Role">{member.orgRole}</InfoItem>
                     <InfoItem label="Country / Organisation">{member.country}</InfoItem>
                     <InfoItem label="Vibhag (Region)">{member.region}</InfoItem>
@@ -887,6 +886,27 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 })}
               </div>
             </div>
+
+            {/* Old Responsibilities */}
+            {member.previousResponsibilities && member.previousResponsibilities.length > 0 && (
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
+                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                  Old Responsibilities
+                </h4>
+                <div className="px-6 pb-5 pt-4 space-y-3">
+                  {member.previousResponsibilities.map((item, idx) => (
+                    <div key={idx} className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                        {item.responsibilityType} · {item.responsibilityLevel}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        {formatDate(item.startDate)} – {formatDate(item.endDate)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

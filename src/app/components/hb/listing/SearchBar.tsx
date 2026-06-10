@@ -71,7 +71,7 @@ export function SearchBar({
   activeFilterCount = 0,
   className = '' 
 }: SearchBarProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const handleClose = () => {
     setIsExpanded(false);
@@ -122,7 +122,6 @@ export function SearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="flex-1 bg-transparent text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none"
-          autoFocus
         />
         <div className="flex items-center gap-1">
           {onAdvancedSearch && (

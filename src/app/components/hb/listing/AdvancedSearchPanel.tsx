@@ -326,6 +326,20 @@ export function AdvancedSearchPanel({
     setLocalFilters(filters);
   }, [filters]);
 
+  // When the panel opens with no filters, seed it with 3 default empty rows
+  useEffect(() => {
+    if (isOpen && filters.length === 0) {
+      const firstField = Object.keys(filterOptions)[0] || '';
+      const defaultFilters: FilterCondition[] = Array.from({ length: 3 }, (_, i) => ({
+        id: `filter-${Date.now()}-${i}`,
+        field: firstField,
+        values: []
+      }));
+      setLocalFilters(defaultFilters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   // Close panel when clicking outside
   useEffect(() => {
     if (!isOpen) return;

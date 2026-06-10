@@ -1,9 +1,18 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload } from "lucide-react";
+import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload, MapPin, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
-import { getAge, getAgeGroupLabel } from "../../mockAPI/membersData";
+import { getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
+import { getRoleScope } from "../../mockAPI/roleScope";
+import {
+  createTransferRequest,
+  getMemberCentreOverrides,
+  getPendingTransferForMember,
+  getTransferRequests,
+  ShakhaTransferRequest,
+  TRANSFER_CHANGE_EVENT,
+} from "../../mockAPI/shakhaTransferData";
 
 const PROFILE_STORAGE_KEY = "myProfile";
 const MEMBER_PROFILE_STORAGE_KEY = "myMemberProfile";
@@ -197,6 +206,16 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
   return ADULT_MEMBER_PROFILE;
 }
 
+function getLocationForCentre(activityCentre: string) {
+  for (const [town, centres] of Object.entries(MASTERS_CASCADE.centres)) {
+    if (!centres.includes(activityCentre)) continue;
+    for (const [region, towns] of Object.entries(MASTERS_CASCADE.towns)) {
+      if (towns.includes(town)) return { country: "HSS UK", region, town, activityCentre };
+    }
+  }
+  return null;
+}
+
 function valueOrDash(value?: string) {
   return value && value.trim() ? value : "—";
 }
@@ -324,13 +343,21 @@ type ProfileTab = 'personal' | 'contact' | 'emergency' | 'organisation' | 'compl
 
 function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const loadProfile = () => {
-    if (typeof window === "undefined") return getDefaultMemberProfile(selectedRole);
+    const defaultProfile = getDefaultMemberProfile(selectedRole);
+    const scope = getRoleScope(selectedRole);
+    const approvedLocation = getMemberCentreOverrides()[scope.selfMemberId || selectedRole] || {
+      country: scope.country || defaultProfile.country,
+      region: scope.region || defaultProfile.region,
+      town: scope.town || defaultProfile.town,
+      activityCentre: scope.centre || defaultProfile.activityCentre,
+    };
+    if (typeof window === "undefined") return { ...defaultProfile, ...approvedLocation };
     const saved = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
-    if (!saved) return getDefaultMemberProfile(selectedRole);
+    if (!saved) return { ...defaultProfile, ...approvedLocation };
     try {
-      return { ...getDefaultMemberProfile(selectedRole), ...JSON.parse(saved) };
+      return { ...defaultProfile, ...JSON.parse(saved), ...approvedLocation };
     } catch {
-      return getDefaultMemberProfile(selectedRole);
+      return { ...defaultProfile, ...approvedLocation };
     }
   };
 
@@ -339,13 +366,38 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
+  const memberId = getRoleScope(selectedRole).selfMemberId || selectedRole;
+  const [requestedCentre, setRequestedCentre] = useState('');
+  const [pendingTransfer, setPendingTransfer] = useState<ShakhaTransferRequest | undefined>(
+    () => getPendingTransferForMember(memberId),
+  );
+  const [transferHistory, setTransferHistory] = useState<ShakhaTransferRequest[]>(
+    () => getTransferRequests().filter(request => request.memberId === memberId),
+  );
 
   useEffect(() => {
-    const next = loadProfile();
+    const override = getMemberCentreOverrides()[memberId];
+    const next = { ...loadProfile(), ...(override || {}) };
     setProfile(next);
     setSavedProfile(next);
     setIsEditing(false);
-  }, [selectedRole]);
+    setPendingTransfer(getPendingTransferForMember(memberId));
+    setTransferHistory(getTransferRequests().filter(request => request.memberId === memberId));
+  }, [selectedRole, memberId]);
+
+  useEffect(() => {
+    const refreshTransferState = () => {
+      const override = getMemberCentreOverrides()[memberId];
+      if (override) {
+        setProfile(current => ({ ...current, ...override }));
+        setSavedProfile(current => ({ ...current, ...override }));
+      }
+      setPendingTransfer(getPendingTransferForMember(memberId));
+      setTransferHistory(getTransferRequests().filter(request => request.memberId === memberId));
+    };
+    window.addEventListener(TRANSFER_CHANGE_EVENT, refreshTransferState);
+    return () => window.removeEventListener(TRANSFER_CHANGE_EVENT, refreshTransferState);
+  }, [memberId]);
 
   const fullName = [profile.firstName, profile.middleName, profile.surname]
     .map(p => p.trim())
@@ -367,13 +419,69 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
     });
   };
 
+  const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
+    setProfile(current => {
+      const next = { ...current, [field]: value };
+      if (field === 'country') {
+        next.region = '';
+        next.town = '';
+        next.activityCentre = '';
+      } else if (field === 'region') {
+        next.town = '';
+        next.activityCentre = '';
+      } else if (field === 'town') {
+        next.activityCentre = '';
+      }
+      return next;
+    });
+  };
+
   const handleSave = () => {
-    const next = { ...profile, fullName };
+    const organisationChanged = profile.activityCentre !== savedProfile.activityCentre;
+    if (organisationChanged) {
+      const destination = getLocationForCentre(profile.activityCentre);
+      if (!destination || pendingTransfer) {
+        toast.error(pendingTransfer ? "A Shakha transfer request is already pending." : "Please select a valid Shakha.");
+        return;
+      }
+      try {
+        const request = createTransferRequest({
+          memberId,
+          memberName: fullName,
+          memberRole: selectedRole,
+          fromCountry: savedProfile.country,
+          fromRegion: savedProfile.region,
+          fromTown: savedProfile.town,
+          fromCentre: savedProfile.activityCentre,
+          toCountry: destination.country,
+          toRegion: destination.region,
+          toTown: destination.town,
+          toCentre: destination.activityCentre,
+        });
+        setPendingTransfer(request);
+        setTransferHistory(getTransferRequests().filter(item => item.memberId === memberId));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to submit transfer request.");
+        return;
+      }
+    }
+    const next = {
+      ...profile,
+      fullName,
+      ...(organisationChanged ? {
+        country: savedProfile.country,
+        region: savedProfile.region,
+        town: savedProfile.town,
+        activityCentre: savedProfile.activityCentre,
+      } : {}),
+    };
     localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`, JSON.stringify(next));
     setProfile(next);
     setSavedProfile(next);
     setIsEditing(false);
-    toast.success("Profile updated successfully.");
+    toast.success(organisationChanged
+      ? "Profile updated and Shakha transfer submitted for approval."
+      : "Profile updated successfully.");
   };
 
   const handleCancel = () => {
@@ -385,6 +493,35 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
     localStorage.removeItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
     setShowDeleteModal(false);
     toast.success("Your account deletion request has been submitted. An administrator will process it shortly.");
+  };
+
+  const handleTransferRequest = () => {
+    const destination = getLocationForCentre(requestedCentre);
+    if (!destination || requestedCentre === profile.activityCentre) {
+      toast.error("Please select a different Shakha.");
+      return;
+    }
+    try {
+      const request = createTransferRequest({
+        memberId,
+        memberName: fullName,
+        memberRole: selectedRole,
+        fromCountry: profile.country,
+        fromRegion: profile.region,
+        fromTown: profile.town,
+        fromCentre: profile.activityCentre,
+        toCountry: destination.country,
+        toRegion: destination.region,
+        toTown: destination.town,
+        toCentre: destination.activityCentre,
+      });
+      setPendingTransfer(request);
+      setTransferHistory(getTransferRequests().filter(item => item.memberId === memberId));
+      setRequestedCentre('');
+      toast.success(`Transfer request sent to ${destination.activityCentre} for approval.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to submit transfer request.");
+    }
   };
 
   const formatDate = (iso: string) =>
@@ -420,10 +557,16 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
                 {getAgeGroupLabel(profile.dateOfBirth)}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                <span className="text-[#d97706]">Pending Approval</span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
+                <span className="text-[#3d8928]">Active &amp; Approved</span>
               </span>
+              {pendingTransfer && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                  <span className="text-[#d97706]">Shakha Transfer Pending</span>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -629,14 +772,28 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                 </h4>
                 <div className="px-6 pb-5 pt-4">
                   <div className="mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                      <span className="text-[#d97706]">Pending Approval</span>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
+                      <span className="text-[#3d8928]">Active &amp; Approved</span>
                     </span>
+                    {pendingTransfer && (
+                      <span className="ml-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                        <span className="text-[#d97706]">Shakha Transfer Pending</span>
+                      </span>
+                    )}
                   </div>
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                    <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
-                      Your membership is pending approval. You will be notified once your application has been reviewed.
+                  <div className={`p-3 border rounded-lg ${
+                    pendingTransfer
+                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30'
+                      : 'bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30'
+                  }`}>
+                    <p className={`text-[10px] leading-normal italic ${
+                      pendingTransfer ? 'text-amber-800 dark:text-amber-200' : 'text-green-800 dark:text-green-200'
+                    }`}>
+                      {pendingTransfer
+                        ? `Your transfer to ${pendingTransfer.toCentre} is awaiting approval. Your current Shakha remains active until reviewed.`
+                        : 'Your membership is active at your current Shakha.'}
                     </p>
                   </div>
                 </div>
@@ -644,12 +801,124 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
               {/* Organisation Details */}
               <InfoSection title="Organisation Details">
-                <InfoItem label="Country / Organisation">{valueOrDash(profile.country)}</InfoItem>
-                <InfoItem label="Vibhaag">{valueOrDash(profile.region)}</InfoItem>
-                <InfoItem label="Nagar">{valueOrDash(profile.town)}</InfoItem>
-                <InfoItem label="Shakha">{valueOrDash(profile.activityCentre)}</InfoItem>
+                <EditableInfoItem
+                  label="Country / Organisation"
+                  value={profile.country}
+                  isEditing={isEditing}
+                  onChange={value => setOrganisationField('country', value)}
+                  options={MASTERS_CASCADE.countries}
+                />
+                <EditableInfoItem
+                  label="Vibhaag"
+                  value={profile.region}
+                  isEditing={isEditing}
+                  onChange={value => setOrganisationField('region', value)}
+                  options={profile.country ? (MASTERS_CASCADE.regions[profile.country] ?? []) : []}
+                />
+                <EditableInfoItem
+                  label="Nagar"
+                  value={profile.town}
+                  isEditing={isEditing}
+                  onChange={value => setOrganisationField('town', value)}
+                  options={profile.region ? (MASTERS_CASCADE.towns[profile.region] ?? []) : []}
+                />
+                <EditableInfoItem
+                  label="Shakha"
+                  value={profile.activityCentre}
+                  isEditing={isEditing}
+                  onChange={value => setOrganisationField('activityCentre', value)}
+                  options={profile.town ? (MASTERS_CASCADE.centres[profile.town] ?? []) : []}
+                />
                 <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
               </InfoSection>
+
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                  Change Shakha / Activity Centre
+                </h4>
+                <div className="p-6">
+                  {pendingTransfer ? (
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20">
+                        <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Transfer pending approval</p>
+                          <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                            The admin team at <strong>{pendingTransfer.toCentre}</strong> has been notified.
+                            Your current Shakha remains <strong>{pendingTransfer.fromCentre}</strong> until approval.
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                            Requested {new Date(pendingTransfer.requestedAt).toLocaleString("en-GB")}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        You can continue viewing your profile, attendance, and donation history while this request is pending.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                        <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">Current approved Shakha</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.activityCentre}</p>
+                        </div>
+                      </div>
+                      <div className="max-w-xl">
+                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">New Shakha</label>
+                        <FormSelect value={requestedCentre} onChange={event => setRequestedCentre(event.target.value)}>
+                          <option value="">Select a new Shakha...</option>
+                          {Object.values(MASTERS_CASCADE.centres).flat()
+                            .filter(centre => centre !== profile.activityCentre)
+                            .map(centre => <option key={centre} value={centre}>{centre}</option>)}
+                        </FormSelect>
+                      </div>
+                      <div className="flex justify-end">
+                        <PrimaryButton onClick={handleTransferRequest} disabled={!requestedCentre}>
+                          Request Shakha Transfer
+                        </PrimaryButton>
+                      </div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        The new Shakha Admin or Ops team must approve the request before your current Shakha assignment changes.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {transferHistory.length > 0 && (
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                    Shakha Transfer History
+                  </h4>
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {transferHistory.map(request => (
+                      <div key={request.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                            {request.fromCentre} <span className="text-neutral-400 mx-1">to</span> {request.toCentre}
+                          </p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                            Requested {new Date(request.requestedAt).toLocaleString("en-GB")}
+                            {request.reviewedAt ? ` · Reviewed ${new Date(request.reviewedAt).toLocaleString("en-GB")}` : ''}
+                          </p>
+                          {request.rejectionReason && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{request.rejectionReason}</p>}
+                        </div>
+                        <span className={`self-start md:self-auto px-2 py-1 rounded-full border text-xs font-medium ${
+                          request.status === 'approved'
+                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-900'
+                            : request.status === 'rejected'
+                              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-900'
+                              : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900'
+                        }`}>
+                          {request.status === 'approved' ? 'Approved' : request.status === 'rejected' ? 'Rejected' : 'Pending Approval'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

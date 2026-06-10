@@ -12,11 +12,13 @@ export interface DonationRecord {
   town: string;
   activityCentre: string;
   donorType: 'member' | 'family' | 'organisation' | 'anonymous';
+  giftAid: boolean;   // UK taxpayer Gift Aid declaration — adds 25% claimable on top
 }
 
 export const mockDonations: DonationRecord[] = [
   {
     id: 'DON-001',
+    giftAid: true,
     date: '2026-01-12T10:30:00Z',
     amount: 250,
     status: 'received',
@@ -29,6 +31,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-002',
+    giftAid: true,
     date: '2026-01-20T14:00:00Z',
     amount: 500,
     status: 'received',
@@ -41,6 +44,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-003',
+    giftAid: true,
     date: '2026-02-05T09:45:00Z',
     amount: 100,
     status: 'pledged',
@@ -53,6 +57,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-004',
+    giftAid: false,
     date: '2026-02-18T12:20:00Z',
     amount: 1000,
     status: 'received',
@@ -65,6 +70,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-005',
+    giftAid: false,
     date: '2026-03-03T16:15:00Z',
     amount: 75,
     status: 'received',
@@ -77,6 +83,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-006',
+    giftAid: true,
     date: '2026-03-21T11:00:00Z',
     amount: 300,
     status: 'received',
@@ -89,6 +96,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-007',
+    giftAid: true,
     date: '2026-04-04T10:10:00Z',
     amount: 50,
     status: 'failed',
@@ -101,6 +109,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-008',
+    giftAid: false,
     date: '2026-04-15T18:30:00Z',
     amount: 750,
     status: 'received',
@@ -113,6 +122,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-009',
+    giftAid: true,
     date: '2026-05-02T08:50:00Z',
     amount: 125,
     status: 'received',
@@ -125,6 +135,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-010',
+    giftAid: true,
     date: '2026-05-11T13:25:00Z',
     amount: 200,
     status: 'refunded',
@@ -137,6 +148,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-011',
+    giftAid: false,
     date: '2026-05-22T17:10:00Z',
     amount: 400,
     status: 'received',
@@ -149,6 +161,7 @@ export const mockDonations: DonationRecord[] = [
   },
   {
     id: 'DON-012',
+    giftAid: false,
     date: '2026-06-03T09:00:00Z',
     amount: 650,
     status: 'pledged',

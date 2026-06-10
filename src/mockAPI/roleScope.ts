@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { MASTERS_CASCADE } from './membersData';
+import { applyMemberCentreOverrides } from './shakhaTransferData';
 
 export type ScopeLevel = 'all' | 'national' | 'regional' | 'town' | 'centre';
 
@@ -129,8 +130,9 @@ export function filterByScope<T extends {
   town?: string;
   activityCentre?: string;
 }>(data: T[], scope: RoleScope): T[] {
-  if (scope.level === 'all') return data;
-  return data.filter(item => {
+  const effectiveData = applyMemberCentreOverrides(data);
+  if (scope.level === 'all') return effectiveData;
+  return effectiveData.filter(item => {
     if (scope.level === 'national')  return item.country        === scope.country;
     if (scope.level === 'regional')  return item.region         === scope.region;
     if (scope.level === 'town')      return item.town           === scope.town;

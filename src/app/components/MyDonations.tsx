@@ -9,14 +9,15 @@ interface Donation {
   id: string;
   datetime: string; // ISO datetime
   amount: number;
+  activityCentre: string;
 }
 
 const mockMyDonations: Donation[] = [
-  { id: "DON-001", datetime: "2026-05-28T14:32:00", amount: 25.00  },
-  { id: "DON-002", datetime: "2026-04-15T09:15:00", amount: 50.00  },
-  { id: "DON-003", datetime: "2026-03-22T18:47:00", amount: 10.00  },
-  { id: "DON-004", datetime: "2026-02-10T11:05:00", amount: 100.00 },
-  { id: "DON-005", datetime: "2026-01-05T16:20:00", amount: 25.00  },
+  { id: "DON-001", datetime: "2026-05-28T14:32:00", amount: 25.00,  activityCentre: "Wembley Activity Centre" },
+  { id: "DON-002", datetime: "2026-04-15T09:15:00", amount: 50.00,  activityCentre: "Wembley Activity Centre" },
+  { id: "DON-003", datetime: "2026-03-22T18:47:00", amount: 10.00,  activityCentre: "Harrow Activity Centre" },
+  { id: "DON-004", datetime: "2026-02-10T11:05:00", amount: 100.00, activityCentre: "Harrow Activity Centre" },
+  { id: "DON-005", datetime: "2026-01-05T16:20:00", amount: 25.00,  activityCentre: "Harrow Activity Centre" },
 ];
 
 const formatDateTime = (iso: string) => {
@@ -47,9 +48,10 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
 
       <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
         {/* Table header */}
-        <div className="grid grid-cols-3 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+        <div className="grid grid-cols-4 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Reference</span>
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Date &amp; Time</span>
+          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Recorded Shakha</span>
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide text-right">Amount</span>
         </div>
 
@@ -58,11 +60,12 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
           {mockMyDonations.map(don => {
             const { date, time } = formatDateTime(don.datetime);
             return (
-              <div key={don.id} className="grid grid-cols-3 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors items-center">
+              <div key={don.id} className="grid grid-cols-4 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors items-center">
                 <span className="text-sm text-neutral-500 dark:text-neutral-400">{don.id}</span>
                 <p className="text-sm text-neutral-700 dark:text-neutral-300">
                   {date} <span className="text-neutral-400 dark:text-neutral-500">{time}</span>
                 </p>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">{don.activityCentre}</span>
                 <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 text-right">
                   £{don.amount.toFixed(2)}
                 </span>

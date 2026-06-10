@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Attendance Log
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react';
+import { Fragment, useState, useMemo, useRef } from 'react';
 import {
   RefreshCw,
   BarChart3,
@@ -17,6 +17,8 @@ import {
   Clock,
   MapPin,
   X,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -26,6 +28,7 @@ import {
   AdvancedSearchPanel,
   SummaryWidgets,
   FilterChips,
+  DateRangeFilter,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import { mockSessions, SHAKHA_TYPES, getSessionShakhaType } from '../../mockAPI/attendanceData';
@@ -108,6 +111,12 @@ FILTER_OPTIONS['Role Type'] = ALL_ROLE_TYPES;
 function formatDate(iso: string) {
   return new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
+  });
+}
+
+function formatMonth(iso: string) {
+  return new Date(iso + '-01T12:00:00').toLocaleDateString('en-GB', {
+    month: 'long', year: 'numeric',
   });
 }
 
@@ -221,11 +230,15 @@ export default function AttendanceLog() {
   const [filters,            setFilters]            = useState<FilterCondition[]>([]);
   const [dateFrom,           setDateFrom]           = useState('');
   const [dateTo,             setDateTo]             = useState('');
+  const [dateRangeLabel,     setDateRangeLabel]     = useState('');
+  const [showDateFilter,     setShowDateFilter]     = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showSummary,        setShowSummary]        = useState(true);
   const [sortKey,            setSortKey]            = useState<SortKey>('date');
   const [sortDir,            setSortDir]            = useState<SortDir>('desc');
   const [page,               setPage]               = useState(1);
   const [pageSize,           setPageSize]           = useState(15);
+  const [collapsedMonths,    setCollapsedMonths]    = useState<Set<string>>(new Set());
 
   const activeFilterCount = filters.filter(f => f.values.length > 0).length;
 
@@ -293,6 +306,38 @@ export default function AttendanceLog() {
 
   const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = pageSize === 0 ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
+  const monthTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    filtered.forEach(entry => {
+      const monthKey = entry.date.slice(0, 7);
+      totals.set(monthKey, (totals.get(monthKey) ?? 0) + 1);
+    });
+    return totals;
+  }, [filtered]);
+
+  const groupedPaginated = useMemo(() => {
+    const groups: { month: string; entries: LogEntry[]; totalEntries: number }[] = [];
+    paginated.forEach(entry => {
+      const monthKey = entry.date.slice(0, 7);
+      const existingGroup = groups.find(group => group.month === monthKey);
+      if (existingGroup) existingGroup.entries.push(entry);
+      else groups.push({
+        month: monthKey,
+        entries: [entry],
+        totalEntries: monthTotals.get(monthKey) ?? 0,
+      });
+    });
+    return groups;
+  }, [paginated, monthTotals]);
+
+  const toggleMonth = (month: string) => {
+    setCollapsedMonths(previous => {
+      const next = new Set(previous);
+      if (next.has(month)) next.delete(month);
+      else next.add(month);
+      return next;
+    });
+  };
 
   const presentCount = filtered.filter(r => r.attendanceStatus === 'present').length;
   const absentCount  = filtered.filter(r => r.attendanceStatus === 'absent').length;
@@ -359,8 +404,51 @@ export default function AttendanceLog() {
             />
           </div>
 
+          <div className="relative" ref={dateFilterRef}>
+            <button
+              onClick={() => setShowDateFilter(open => !open)}
+              title="Filter by attendance date"
+              className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                dateFrom
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              {dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo)}`) : 'Session Date'}
+              {dateFrom && (
+                <span
+                  role="button"
+                  onClick={event => {
+                    event.stopPropagation();
+                    setDateFrom('');
+                    setDateTo('');
+                    setDateRangeLabel('');
+                    setPage(1);
+                  }}
+                  className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
+            </button>
+            <DateRangeFilter
+              isOpen={showDateFilter}
+              onClose={() => setShowDateFilter(false)}
+              startDate={dateFrom}
+              endDate={dateTo}
+              onApply={(start, end, label) => {
+                setDateFrom(start);
+                setDateTo(end);
+                setDateRangeLabel(label || '');
+                setPage(1);
+              }}
+              title="Sessions Date Range"
+            />
+          </div>
+
           <IconButton icon={BarChart3}   onClick={() => setShowSummary(s => !s)} title="Toggle Summary" />
-          <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setPage(1); }} title="Reset" />
+          <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setDateRangeLabel(''); setPage(1); }} title="Reset" />
           <IconButton
             icon={MoreVertical}
             title="More options"
@@ -369,15 +457,6 @@ export default function AttendanceLog() {
             ]}
           />
         </PageHeader>
-
-        {/* ── DATE RANGE FILTER ── */}
-        <DateRangeBar
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          onFromChange={v => { setDateFrom(v); setPage(1); }}
-          onToChange={v => { setDateTo(v); setPage(1); }}
-          onClear={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
-        />
 
         {/* ── SUMMARY WIDGETS ── */}
         {showSummary && (
@@ -435,8 +514,37 @@ export default function AttendanceLog() {
                       </div>
                     </td>
                   </tr>
-                ) : paginated.map((entry, idx) => (
-                  <tr key={`${entry.sessionId}-${entry.memberId}-${idx}`}
+                ) : groupedPaginated.map(({ month, entries, totalEntries }, groupIndex) => (
+                  <Fragment key={`${page}-${month}-${groupIndex}`}>
+                    <tr>
+                      <td colSpan={8} className="p-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleMonth(month)}
+                          aria-expanded={!collapsedMonths.has(month)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-y border-neutral-200 dark:border-neutral-800 text-left transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            {collapsedMonths.has(month)
+                              ? <ChevronRight className="w-4 h-4 text-neutral-500" />
+                              : <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            }
+                            <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                            <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                              {formatMonth(month)}
+                            </span>
+                          </span>
+                          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                            {entries.length === totalEntries
+                              ? `${totalEntries} ${totalEntries === 1 ? 'record' : 'records'}`
+                              : `${entries.length} on this page · ${totalEntries} total`
+                            }
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                    {!collapsedMonths.has(month) && entries.map((entry, idx) => (
+                  <tr key={`${entry.sessionId}-${entry.memberId}-${month}-${idx}`}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
 
                     {/* Member */}
@@ -514,6 +622,8 @@ export default function AttendanceLog() {
                       <StatusBadge status={entry.attendanceStatus} />
                     </td>
                   </tr>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

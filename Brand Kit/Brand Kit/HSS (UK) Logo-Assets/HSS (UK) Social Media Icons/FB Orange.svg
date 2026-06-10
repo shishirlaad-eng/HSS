@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 430 430" style="enable-background:new 0 0 430 430;" xml:space="preserve" width="430" height="430">
+<style type="text/css">
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#121214;}
+	.st2{fill:#162842;}
+	.st3{fill:#FBA743;}
+</style>
+<g id="background">
+</g>
+<g id="objects">
+	<g>
+		<path class="st3" d="M215,16.3L215,16.3c-109.7,0-198.7,89-198.7,198.7v0c0,109.7,89,198.7,198.7,198.7h0    c109.7,0,198.7-89,198.7-198.7v0C413.7,105.3,324.7,16.3,215,16.3z M273.9,199.6l-3.3,26.6c-0.6,4.4-4.3,7.8-8.8,7.8h-43v111.1    c-4.5,0.4-9.1,0.6-13.8,0.6c-10.4,0-20.6-1-30.4-3V233.9h-33.1c-3,0-5.5-2.5-5.5-5.5v-33.3c0-3,2.5-5.5,5.5-5.5h33.1v-49.9    c0-30.6,24.7-55.4,55.2-55.4h38.6c3,0,5.5,2.5,5.5,5.5v33.3c0,3-2.5,5.5-5.5,5.5h-27.6c-12.2,0-22.1,9.9-22.1,22.2v38.8h46.4    C270.4,189.6,274.5,194.3,273.9,199.6z"/>
+	</g>
+</g>
+</svg>
