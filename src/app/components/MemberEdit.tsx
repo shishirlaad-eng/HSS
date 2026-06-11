@@ -3,10 +3,15 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  CalendarDays,
+  ChevronDown,
   HeartPulse,
+  History,
+  Plus,
   Phone,
   Save,
   Shield,
+  Trash2,
   User as UserIcon,
   Users,
 } from 'lucide-react';
@@ -20,6 +25,7 @@ import {
   Member,
   MemberStatus,
   MemberType,
+  ResponsibilityAssignment,
   RESPONSIBILITY_LEVEL_OPTIONS,
   RESPONSIBILITY_TYPE_OPTIONS,
   ROLE_TYPE_OPTIONS,
@@ -34,6 +40,15 @@ const GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
 ];
+
+const LEVEL_OPTIONS = [
+  { value: 'Kendriya / National', label: 'Kendriya' },
+  { value: 'Vibhaag / Region', label: 'Vibhaag' },
+  { value: 'Nagar / Town', label: 'Nagar' },
+  { value: 'Shakha / Activity center', label: 'Shakha' },
+] as const;
+
+const REQUIRED_MEMBER_ROLE = 'Member (18+)';
 
 const STATUS_OPTIONS: MemberStatus[] = ['active', 'pending', 'pending-parental-consent', 'inactive', 'rejected'];
 
@@ -93,15 +108,14 @@ type MemberForm = {
   region: string;
   town: string;
   activityCentre: string;
-  jobTitles: string[];
+  responsibilities: ResponsibilityAssignment[];
   orgRole: string;
   status: MemberStatus;
   dbsStatus: ComplianceStatus;
   firstAidStatus: ComplianceStatus;
   dbsRef: string;
   firstAidRef: string;
-  responsibilityType: string;
-  responsibilityLevel: string;
+  adminRoles: string[];
 };
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
@@ -113,13 +127,15 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
   );
 }
 
-function SectionCard({ children }: { children: React.ReactNode }) {
+function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+    <div className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm ${className}`}>
       {children}
     </div>
   );
 }
+
+type EditTab = 'profile' | 'compliance' | 'activity' | 'history';
 
 function buildName(firstName: string, middleName: string, surname: string) {
   return [firstName, middleName, surname].map(p => p.trim()).filter(Boolean).join(' ');
@@ -164,18 +180,32 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     region: member.region,
     town: member.town,
     activityCentre: member.activityCentre,
-    jobTitles: [member.jobTitle, ...(member.additionalJobTitles ?? [])].filter(Boolean),
+    responsibilities: member.responsibilities?.length
+      ? member.responsibilities
+      : [{
+          responsibilityLevel: member.responsibilityLevel ?? RESPONSIBILITY_LEVEL_OPTIONS[3],
+          sanghResponsibility: member.jobTitle,
+          responsibilityType: member.responsibilityType ?? RESPONSIBILITY_TYPE_OPTIONS[0],
+        }],
     orgRole: member.orgRole,
     status: member.status,
     dbsStatus: member.compliance.dbs,
     firstAidStatus: member.compliance.firstAid,
     dbsRef: member.dbsRef ?? '',
     firstAidRef: member.firstAidRef ?? '',
-    adminRole: member.adminRole ?? 'Member (18+)',
-    responsibilityType: member.responsibilityType ?? RESPONSIBILITY_TYPE_OPTIONS[0],
-    responsibilityLevel: member.responsibilityLevel ?? RESPONSIBILITY_LEVEL_OPTIONS[3],
+    adminRoles: Array.from(new Set([
+      REQUIRED_MEMBER_ROLE,
+      ...(member.adminRoles?.length ? member.adminRoles : [member.adminRole].filter(Boolean) as string[]),
+    ])),
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<EditTab>('profile');
+  const tabs: { id: EditTab; label: string }[] = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'compliance', label: 'Compliance' },
+    { id: 'activity', label: 'Activity' },
+    { id: 'history', label: 'History' },
+  ];
 
   const calcAge = formData.dateOfBirth ? getAge(formData.dateOfBirth) : getAge(member.dateOfBirth);
   const isMinor = calcAge < 18;
@@ -209,12 +239,47 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     }));
   };
 
-  const toggleJobTitle = (value: string) => {
+  const updateResponsibility = (
+    index: number,
+    key: keyof ResponsibilityAssignment,
+    value: string,
+  ) => {
     setFormData(prev => ({
       ...prev,
-      jobTitles: prev.jobTitles.includes(value)
-        ? prev.jobTitles.filter(item => item !== value)
-        : [...prev.jobTitles, value],
+      responsibilities: prev.responsibilities.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } as ResponsibilityAssignment : item
+      ),
+    }));
+  };
+
+  const addResponsibility = () => {
+    setFormData(prev => ({
+      ...prev,
+      responsibilities: [
+        ...prev.responsibilities,
+        {
+          responsibilityLevel: '' as ResponsibilityAssignment['responsibilityLevel'],
+          sanghResponsibility: '',
+          responsibilityType: '' as ResponsibilityAssignment['responsibilityType'],
+        },
+      ],
+    }));
+  };
+
+  const removeResponsibility = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      responsibilities: prev.responsibilities.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const toggleAdminRole = (role: string) => {
+    if (role === REQUIRED_MEMBER_ROLE) return;
+    setFormData(prev => ({
+      ...prev,
+      adminRoles: prev.adminRoles.includes(role)
+        ? prev.adminRoles.filter(item => item !== role)
+        : [...prev.adminRoles, role],
     }));
   };
 
@@ -252,14 +317,13 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       toast.error('Organisation mapping fields are required.');
       return;
     }
-    if (formData.jobTitles.length === 0) {
-      toast.error('Select at least one Job Title (HSS Role).');
-      return;
-    }
-
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 900));
+      const completedResponsibilities = formData.responsibilities.filter(item =>
+        item.responsibilityLevel || item.sanghResponsibility || item.responsibilityType
+      );
+      const primaryResponsibility = completedResponsibilities[0];
       const updated: Member = {
         ...member,
         memberType: getMemberTypeFromAge(formData.dateOfBirth),
@@ -290,8 +354,8 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         region: formData.region,
         town: formData.town,
         activityCentre: formData.activityCentre,
-        jobTitle: formData.jobTitles[0],
-        additionalJobTitles: formData.jobTitles.slice(1),
+        jobTitle: primaryResponsibility?.sanghResponsibility || member.jobTitle,
+        additionalJobTitles: completedResponsibilities.slice(1).map(item => item.sanghResponsibility).filter(Boolean),
         orgRole: formData.orgRole.trim(),
         status: formData.status,
         compliance: {
@@ -307,9 +371,11 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         dietaryRequirements: formData.dietaryRequirements,
         occupation: formData.occupation.trim() || undefined,
         originatingStateIndia: formData.originatingStateIndia.trim() || undefined,
-        adminRole: formData.adminRole || undefined,
-        responsibilityType: formData.responsibilityType as Member['responsibilityType'],
-        responsibilityLevel: formData.responsibilityLevel as Member['responsibilityLevel'],
+        adminRole: formData.adminRoles[0] || undefined,
+        adminRoles: formData.adminRoles,
+        responsibilityType: primaryResponsibility?.responsibilityType || undefined,
+        responsibilityLevel: primaryResponsibility?.responsibilityLevel || undefined,
+        responsibilities: completedResponsibilities,
       };
       onSave(updated);
     } catch {
@@ -339,7 +405,26 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <SectionCard>
+          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
+            <div className="flex px-2 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/30 overflow-x-auto">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative px-4 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                    activeTab === tab.id
+                      ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                      : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={UserIcon} title="Personal Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} /></FormField>
@@ -351,7 +436,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </div>
           </SectionCard>
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={Phone} title="Contact Information" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel required>Primary Contact Number</FormLabel><FormInput type="tel" value={formData.phone} onChange={set('phone')} /></FormField>
@@ -366,7 +451,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </div>
           </SectionCard>
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={Users} title="Emergency Contact" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} /></FormField>
@@ -377,7 +462,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           </SectionCard>
 
           {isMinor && (
-            <SectionCard>
+            <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
               <SectionHeader icon={Users} title="Parent / Guardian Approval Information" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField><FormLabel required>Parent / Guardian Name</FormLabel><FormInput value={formData.guardianName} onChange={set('guardianName')} /></FormField>
@@ -388,7 +473,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </SectionCard>
           )}
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={HeartPulse} title="Other Information" />
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -420,7 +505,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </div>
           </SectionCard>
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={Building2} title="Organisational Details" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
@@ -431,20 +516,54 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </div>
 
             <div className="mt-6">
-              <FormLabel required>Job Title (HSS Role)</FormLabel>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-2">Select one or more roles held by this member.</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {ROLE_TYPE_OPTIONS.map(role => (
-                  <label key={role} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                    <input type="checkbox" checked={formData.jobTitles.includes(role)} onChange={() => toggleJobTitle(role)} className="w-4 h-4 accent-primary-600" />
-                    {role}
-                  </label>
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <FormLabel>Responsibility</FormLabel>
+                <SecondaryButton icon={Plus} onClick={addResponsibility}>
+                  Add more responsibility
+                </SecondaryButton>
+              </div>
+              <div className="space-y-4">
+                {formData.responsibilities.map((responsibility, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
+                    <FormField>
+                      <FormLabel>Level</FormLabel>
+                      <FormSelect value={responsibility.responsibilityLevel} onChange={event => updateResponsibility(index, 'responsibilityLevel', event.target.value)}>
+                        <option value="">Select Level</option>
+                        {LEVEL_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </FormSelect>
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Sangh Responsibility (HSS Role)</FormLabel>
+                      <FormSelect value={responsibility.sanghResponsibility} onChange={event => updateResponsibility(index, 'sanghResponsibility', event.target.value)}>
+                        <option value="">Select Sangh Responsibility</option>
+                        {ROLE_TYPE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
+                      </FormSelect>
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Responsibility Type</FormLabel>
+                      <FormSelect value={responsibility.responsibilityType} onChange={event => updateResponsibility(index, 'responsibilityType', event.target.value)}>
+                        <option value="">Select Responsibility Type</option>
+                        {RESPONSIBILITY_TYPE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                      </FormSelect>
+                    </FormField>
+                    {formData.responsibilities.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeResponsibility(index)}
+                        className="h-10 w-10 rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30 flex items-center justify-center"
+                        aria-label={`Remove responsibility ${index + 1}`}
+                        title="Remove responsibility"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
           </SectionCard>
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'compliance' ? '' : 'hidden'}>
             <SectionHeader icon={Shield} title="Compliance" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
@@ -457,7 +576,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             </p>
           </SectionCard>
 
-          <SectionCard>
+          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
             <SectionHeader icon={Shield} title="Membership Status" />
             <div className="flex flex-wrap gap-3">
               {STATUS_OPTIONS.map(status => (
@@ -477,6 +596,46 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               ))}
             </div>
           </SectionCard>
+
+          {activeTab === 'activity' && (
+            <SectionCard>
+              <SectionHeader icon={CalendarDays} title="Activity" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Events Attended</p>
+                  <p className="text-2xl font-semibold text-neutral-900 dark:text-white mt-1">{member.eventsAttended}</p>
+                </div>
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Shakha Sessions Attended</p>
+                  <p className="text-2xl font-semibold text-neutral-900 dark:text-white mt-1">{member.shakhaSessionsAttended}</p>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
+                Activity records are read-only and managed through the Events and Attendance modules.
+              </p>
+            </SectionCard>
+          )}
+
+          {activeTab === 'history' && (
+            <SectionCard>
+              <SectionHeader icon={History} title="History" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Member ID</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white mt-1">{member.id}</p>
+                </div>
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Registration Date</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white mt-1">
+                    {new Date(member.registrationDate).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
+                Audit history is read-only and available from the member detail view.
+              </p>
+            </SectionCard>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -484,22 +643,35 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <div className="space-y-4">
               <FormField>
                 <FormLabel>Role</FormLabel>
-                <FormSelect value={formData.adminRole} onChange={set('adminRole')}>
-                  <option value="">— Select Role —</option>
-                  {ADMIN_ROLE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
-                </FormSelect>
-              </FormField>
-              <FormField>
-                <FormLabel>Responsibility Type</FormLabel>
-                <FormSelect value={formData.responsibilityType} onChange={set('responsibilityType')}>
-                  {RESPONSIBILITY_TYPE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                </FormSelect>
-              </FormField>
-              <FormField>
-                <FormLabel>Level</FormLabel>
-                <FormSelect value={formData.responsibilityLevel} onChange={set('responsibilityLevel')}>
-                  {RESPONSIBILITY_LEVEL_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                </FormSelect>
+                <details className="relative group">
+                  <summary className="relative h-10 w-full px-3 py-2 pr-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white cursor-pointer list-none focus:outline-none focus:border-primary-500">
+                    <span className={formData.adminRoles.length ? '' : 'text-neutral-400'}>
+                      {formData.adminRoles.length
+                        ? `${formData.adminRoles.length} role${formData.adminRoles.length > 1 ? 's' : ''} selected`
+                        : 'Select Roles'}
+                    </span>
+                    <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto slim-scroll rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1">
+                    {ADMIN_ROLE_OPTIONS.map(role => (
+                      <label key={role} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.adminRoles.includes(role)}
+                          onChange={() => toggleAdminRole(role)}
+                          disabled={role === REQUIRED_MEMBER_ROLE}
+                          className="w-4 h-4 accent-primary-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                        />
+                        <span className={role === REQUIRED_MEMBER_ROLE ? 'font-medium' : ''}>{role}</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+                {formData.adminRoles.length > 0 && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+                    {formData.adminRoles.join(', ')}
+                  </p>
+                )}
               </FormField>
             </div>
           </div>

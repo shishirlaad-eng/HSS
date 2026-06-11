@@ -273,7 +273,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     entries.push({
       id: 'h-6',
       timestamp: shift(seed % 20 + 30, 11, 0),
-      changedFields: ['Job Title (HSS Role)', 'Vibhag (Region)', 'Shakha (Branch)'],
+      changedFields: ['Sangh Responsibility (HSS Role)', 'Vibhag (Region)', 'Shakha (Branch)'],
       changedBy: 'Admin',
       changedByName: 'Priya Sharma (Admin)',
     });
@@ -555,7 +555,20 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </InfoSection>
 
                   <InfoSection title="Organisational Details">
-                    <InfoItem label="Job Title (HSS Role)">{[member.jobTitle, ...(member.additionalJobTitles ?? [])].join(', ')}</InfoItem>
+                    <InfoItem label="Responsibility">
+                      {(member.responsibilities?.length
+                        ? member.responsibilities
+                        : [{
+                            responsibilityLevel: member.responsibilityLevel,
+                            sanghResponsibility: member.jobTitle,
+                            responsibilityType: member.responsibilityType,
+                          }]
+                      ).map((item, index) => (
+                        <span key={index} className="block">
+                          {[item.responsibilityLevel, item.sanghResponsibility, item.responsibilityType].filter(Boolean).join(' · ')}
+                        </span>
+                      ))}
+                    </InfoItem>
                     <InfoItem label="Organisational Role">{member.orgRole}</InfoItem>
                     <InfoItem label="Country / Organisation">{member.country}</InfoItem>
                     <InfoItem label="Vibhag (Region)">{member.region}</InfoItem>
@@ -834,7 +847,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     Role
                   </span>
                   <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                    {valueOrDash(member.adminRole)}
+                    {valueOrDash(member.adminRoles?.length ? member.adminRoles : member.adminRole)}
                   </p>
                 </div>
                 <div>

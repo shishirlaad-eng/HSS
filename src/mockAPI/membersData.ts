@@ -10,7 +10,7 @@ export type AgeCategory = 'child' | 'teen' | 'adult';
 export type MemberType = 'adult' | 'teen' | 'child';
 export type AgeGroup = 'bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha';
 export type DietaryRequirement = 'FODMAP' | 'Gluten-free' | 'No Onions Or Garlic' | 'Vegan';
-export type ResponsibilityType = 'Pramukh' | 'Saha' | 'Toli';
+export type ResponsibilityType = 'Pramukh' | 'Pramukh (Saha)' | 'Toli';
 export type ResponsibilityLevel = 'Kendriya / National' | 'Vibhaag / Region' | 'Nagar / Town' | 'Shakha / Activity center';
 
 export const DIETARY_REQUIREMENTS: DietaryRequirement[] = [
@@ -22,7 +22,7 @@ export const DIETARY_REQUIREMENTS: DietaryRequirement[] = [
 
 export const RESPONSIBILITY_TYPE_OPTIONS: ResponsibilityType[] = [
   'Pramukh',
-  'Saha',
+  'Pramukh (Saha)',
   'Toli',
 ];
 
@@ -42,14 +42,14 @@ export const KARYAKARTA_ASSIGNMENTS: Record<string, { type: ResponsibilityType; 
   // Wembley Activity Centre (Town Head / Activity Centre Admin / Regional / National / Super)
   'MBR-001': { type: 'Pramukh', level: 'Shakha / Activity center' },
   'WBL-001': { type: 'Pramukh', level: 'Nagar / Town' },
-  'WBL-002': { type: 'Saha',    level: 'Shakha / Activity center' },
+  'WBL-002': { type: 'Pramukh (Saha)', level: 'Shakha / Activity center' },
   'WBL-003': { type: 'Toli',    level: 'Shakha / Activity center' },
-  'WBL-005': { type: 'Saha',    level: 'Shakha / Activity center' },
+  'WBL-005': { type: 'Pramukh (Saha)', level: 'Shakha / Activity center' },
   'WBL-007': { type: 'Pramukh', level: 'Nagar / Town' },
   'WBL-009': { type: 'Pramukh', level: 'Shakha / Activity center' },
   'WBL-010': { type: 'Toli',    level: 'Shakha / Activity center' },
   // Harrow (London & South East — Regional / National / Super)
-  'MBR-002': { type: 'Saha',    level: 'Nagar / Town' },
+  'MBR-002': { type: 'Pramukh (Saha)', level: 'Nagar / Town' },
   // Birmingham (Midlands — National / Super)
   'MBR-003': { type: 'Pramukh', level: 'Vibhaag / Region' },
 };
@@ -122,6 +122,12 @@ export interface PreviousResponsibility {
   endDate: string;   // ISO date string
 }
 
+export interface ResponsibilityAssignment {
+  responsibilityLevel: ResponsibilityLevel;
+  sanghResponsibility: string;
+  responsibilityType: ResponsibilityType;
+}
+
 export interface Member {
   id: string;
   memberType: MemberType;
@@ -168,8 +174,10 @@ export interface Member {
   spokenLanguages?: string[];
   originatingStateIndia?: string;
   adminRole?: string;
+  adminRoles?: string[];
   responsibilityType?: ResponsibilityType;
   responsibilityLevel?: ResponsibilityLevel;
+  responsibilities?: ResponsibilityAssignment[];
   previousResponsibilities?: PreviousResponsibility[];
   eventsAttended: number;
   shakhaSessionsAttended: number;
@@ -358,7 +366,7 @@ function withRegistrationFields(member: Member): Member {
     responsibilityType: member.responsibilityType ?? KARYAKARTA_ASSIGNMENTS[member.id]?.type,
     responsibilityLevel: member.responsibilityLevel ?? KARYAKARTA_ASSIGNMENTS[member.id]?.level,
     previousResponsibilities: member.previousResponsibilities ?? [
-      { responsibilityType: 'Saha', responsibilityLevel: 'Shakha / Activity center', startDate: '2022-04-01', endDate: '2023-03-31' },
+      { responsibilityType: 'Pramukh (Saha)', responsibilityLevel: 'Shakha / Activity center', startDate: '2022-04-01', endDate: '2023-03-31' },
       { responsibilityType: 'Toli', responsibilityLevel: 'Nagar / Town', startDate: '2023-04-01', endDate: '2024-03-31' },
     ],
   };
