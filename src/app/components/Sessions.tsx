@@ -276,7 +276,7 @@ export default function Sessions() {
             icon={Plus}
             onClick={() => setCreateDate(isoDate(today.getFullYear(), today.getMonth(), today.getDate()))}
           >
-            Create Session
+            Create Shakha
           </PrimaryButton>
         )}
       </PageHeader>
@@ -414,7 +414,7 @@ export default function Sessions() {
           </div>
         ))}
         <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-          {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} shown
+          {filteredSessions.length} Shakha{filteredSessions.length !== 1 ? 's' : ''} shown
         </span>
       </div>
 

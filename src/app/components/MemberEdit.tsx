@@ -510,7 +510,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Important Note</h3>
             </div>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed italic">
-              Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to events, Shakha sessions, and the member portal.
+              Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to events, Shakhas, and the member portal.
             </p>
           </div>
 

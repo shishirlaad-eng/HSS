@@ -97,7 +97,7 @@ export const availableModules: ModulePermission[] = [
       { id: "view_log", name: "View Attendance Log",   code: "attendance_view_log" },
       { id: "add",      name: "Mark Attendance",       code: "attendance_add" },
       { id: "edit",     name: "Edit / Unmark",         code: "attendance_edit" },
-      { id: "delete",   name: "Delete Session",        code: "attendance_delete" },
+      { id: "delete",   name: "Delete Shakha",         code: "attendance_delete" },
     ],
   },
   // 7. Reports
@@ -313,7 +313,7 @@ export const mockRoles: Role[] = [
     id: "8",
     name: "Ops User",
     code: "ops_user",
-    description: "Operational staff. Full attendance management (sessions + mark/unmark + log). View-only events.",
+    description: "Operational staff. Full attendance management (Shakha + mark/unmark + log). View-only events.",
     status: "active",
     userCount: 15,
     lastUpdated: "2025-01-19T10:00:00Z",

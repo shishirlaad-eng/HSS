@@ -144,7 +144,7 @@ export function Sidebar({
 
     // 5. Attendance
     "attendance-group":               "Attendance",
-    "sessions":                       "Sessions",
+    "sessions":                       "Shakha",
     "attendance-log":                 "Attendance Log",
 
     // 6. Reports

@@ -90,7 +90,7 @@ function MemberRow({
       <div className="flex-shrink-0 w-8 text-center">
         <span
           className="inline-block min-w-[1.5rem] px-1 py-0.5 rounded text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 leading-none"
-          title={`${attendanceCount} session${attendanceCount !== 1 ? 's' : ''} attended`}
+          title={`${attendanceCount} Shakha${attendanceCount !== 1 ? 's' : ''} attended`}
         >
           {attendanceCount}
         </span>
@@ -292,7 +292,7 @@ export default function SessionDetail({
               className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-950/20 hover:bg-error-100 dark:hover:bg-error-950/40 transition-colors"
             >
               <Ban className="w-3.5 h-3.5" />
-              Cancel Session
+              Cancel Shakha
             </button>
           )}
         </PageHeader>
@@ -303,9 +303,9 @@ export default function SessionDetail({
           {/* ── Left: main content (col-span-2) ──────────── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* ── Card: Session Info ───────────────────────── */}
+            {/* ── Card: Shakha Info ───────────────────────── */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={Calendar} title="Session Details" />
+              <SectionHeader icon={Calendar} title="Shakha Details" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
@@ -351,6 +351,16 @@ export default function SessionDetail({
 
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
                   <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
+                    <Tag className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Utsav</p>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.utsav || 'None'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
+                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
                     <RefreshCw className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
@@ -388,7 +398,7 @@ export default function SessionDetail({
                   </div>
                   <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No attendance records yet</p>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                    Records appear here once members have been registered for this session
+                    Records appear here once members have been registered for this Shakha
                   </p>
                 </div>
               ) : (
@@ -612,7 +622,7 @@ export default function SessionDetail({
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 <span className="font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Attendance count (#)</span>
-                The number before each name shows their total historical attendance across all sessions.
+                The number before each name shows their total historical attendance across all Shakhas.
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 mr-1">Guest</span>
@@ -624,7 +634,7 @@ export default function SessionDetail({
         </div>
       </div>
 
-      {/* ── Cancel Session Confirmation Modal ──────── */}
+      {/* ── Cancel Shakha Confirmation Modal ──────── */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
@@ -634,7 +644,7 @@ export default function SessionDetail({
               </div>
               <div>
                 <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
-                  Cancel Session
+                  Cancel Shakha
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
                   Are you sure you want to cancel{' '}
@@ -652,7 +662,7 @@ export default function SessionDetail({
                 disabled={isCancelling}
                 className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
               >
-                Keep Session
+                Keep Shakha
               </button>
               <button
                 onClick={handleConfirmCancel}

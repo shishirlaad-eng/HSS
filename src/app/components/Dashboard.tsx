@@ -795,6 +795,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const hideRegions  = selectedRole === 'Regional Head' || selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
   const hideTowns    = selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
   const hideCentres  = selectedRole === 'Activity Centre Admin';
+  const showDonateButton = selectedRole !== 'Super Admin';
 
   // ── Derived KPI values ──────────────────────────────────────
 
@@ -843,13 +844,15 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           { label: 'Dashboard', current: true },
         ]}
       >
-        <button
-          onClick={() => onNavigate?.('donate')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
-        >
-          <Heart className="w-4 h-4" />
-          Donate
-        </button>
+        {showDonateButton && (
+          <button
+            onClick={() => onNavigate?.('donate')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
+          >
+            <Heart className="w-4 h-4" />
+            Donate
+          </button>
+        )}
       </PageHeader>
 
       {/* ── Row 1: Org structure KPIs ────────────────────── */}

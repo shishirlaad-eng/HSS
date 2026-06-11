@@ -53,7 +53,7 @@ import {
   FormSection,
 } from './hb/common';
 import { toast } from 'sonner';
-import { useModulePermissions } from '../contexts/RoleScopeContext';
+import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 import {
   mockAnnouncements as initialAnnouncements,
   Announcement,
@@ -338,6 +338,8 @@ type PageState = 'list' | 'detail';
 
 export default function Announcements() {
   const ap = useModulePermissions('announcements');
+  const { selectedRole } = useRoleScope();
+  const canViewAdminSuchanaValues = selectedRole === 'Super Admin' || selectedRole.includes('Admin');
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [pageState, setPageState]         = useState<PageState>('list');
@@ -388,6 +390,11 @@ export default function Announcements() {
   // ── Form helpers ────────────────────────────────────────────
   const setField = <K extends keyof CreateForm>(key: K, val: CreateForm[K]) =>
     setForm(f => ({ ...f, [key]: val }));
+
+  const createBlankForm = () => ({
+    ...blankForm(),
+    scope: canViewAdminSuchanaValues ? 'national' as AnnouncementScope : 'region' as AnnouncementScope,
+  });
 
   const toggleArrayItem = <T extends string>(arr: T[], item: T): T[] =>
     arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
@@ -456,7 +463,7 @@ export default function Announcements() {
       }));
       setShowCreate(false);
       setEditingId(null);
-      setForm(blankForm());
+      setForm(createBlankForm());
       setFormErrors({});
       toast.success(asDraft ? 'Draft updated.' : isScheduled ? 'Scheduled announcement updated.' : 'Announcement sent successfully.');
     } else {
@@ -494,7 +501,7 @@ export default function Announcements() {
       };
       setAnnouncements(prev => [newAnn, ...prev]);
       setShowCreate(false);
-      setForm(blankForm());
+      setForm(createBlankForm());
       setFormErrors({});
       toast.success(asDraft ? 'Announcement saved as draft.' : isScheduled ? 'Announcement scheduled.' : 'Announcement sent successfully.');
     }
@@ -523,7 +530,7 @@ export default function Announcements() {
   const openDetail = (ann: Announcement) => { setSelected(ann); setPageState('detail'); };
   const goBack     = () => { setSelected(null); setPageState('list'); };
 
-  const closeCreate = () => { setShowCreate(false); setEditingId(null); setForm(blankForm()); setFormErrors({}); setBodyWordCount(0); };
+  const closeCreate = () => { setShowCreate(false); setEditingId(null); setForm(createBlankForm()); setFormErrors({}); setBodyWordCount(0); };
 
   const openEdit = (ann: Announcement) => {
     setForm({
@@ -705,22 +712,25 @@ export default function Announcements() {
             </div>
 
             {/* Scope */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">Audience Scope</p>
-              <div className={`flex items-center gap-2 ${scpc.color}`}>
-                <ScopeIcon className="w-4 h-4" />
-                <span className="text-sm font-semibold">{scopeLabel(selected)}</span>
-              </div>
-              {selected.scope !== 'national' && (
-                <div className="mt-3 space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  {selected.targetRegion && <p>Region: {selected.targetRegion}</p>}
-                  {selected.targetTown   && <p>Town: {selected.targetTown}</p>}
-                  {selected.targetCentre && <p>Centre: {selected.targetCentre}</p>}
+            {canViewAdminSuchanaValues && (
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">Audience Scope</p>
+                <div className={`flex items-center gap-2 ${scpc.color}`}>
+                  <ScopeIcon className="w-4 h-4" />
+                  <span className="text-sm font-semibold">{scopeLabel(selected)}</span>
                 </div>
-              )}
-            </div>
+                {selected.scope !== 'national' && (
+                  <div className="mt-3 space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    {selected.targetRegion && <p>Region: {selected.targetRegion}</p>}
+                    {selected.targetTown   && <p>Town: {selected.targetTown}</p>}
+                    {selected.targetCentre && <p>Centre: {selected.targetCentre}</p>}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Notifications */}
+            {canViewAdminSuchanaValues && (
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 space-y-3">
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Notifications</p>
 
@@ -765,6 +775,7 @@ export default function Announcements() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Meta */}
             <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-2">
@@ -816,7 +827,7 @@ export default function Announcements() {
         ]}
       >
         {ap.canAdd && (
-          <PrimaryButton icon={Plus} onClick={() => setShowCreate(true)}>
+          <PrimaryButton icon={Plus} onClick={() => { setForm(createBlankForm()); setShowCreate(true); }}>
             New Suchana
           </PrimaryButton>
         )}
@@ -843,36 +854,40 @@ export default function Announcements() {
             className="w-full h-10 pl-9 pr-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all"
           />
         </div>
-        {/* Status filter */}
-        <div className="relative">
-          <select
-            value={filterStatus}
-            onChange={e => { setFilterStatus(e.target.value as AnnouncementStatus | 'all'); setPage(1); }}
-            className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="all">All Status</option>
-            <option value="sent">Sent</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="draft">Draft</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
-        {/* Scope filter */}
-        <div className="relative">
-          <select
-            value={filterScope}
-            onChange={e => { setFilterScope(e.target.value as AnnouncementScope | 'all'); setPage(1); }}
-            className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="all">All Scope</option>
-            <option value="national">National</option>
-            <option value="region">Region</option>
-            <option value="town">Town</option>
-            <option value="centre">Activity Centre</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
-        {(searchQuery || filterStatus !== 'all' || filterScope !== 'all') && (
+        {canViewAdminSuchanaValues && (
+          <>
+            {/* Status filter */}
+            <div className="relative">
+              <select
+                value={filterStatus}
+                onChange={e => { setFilterStatus(e.target.value as AnnouncementStatus | 'all'); setPage(1); }}
+                className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="all">All Status</option>
+                <option value="sent">Sent</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="draft">Draft</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+            </div>
+            {/* Scope filter */}
+            <div className="relative">
+              <select
+                value={filterScope}
+                onChange={e => { setFilterScope(e.target.value as AnnouncementScope | 'all'); setPage(1); }}
+                className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="all">All Scope</option>
+                <option value="national">National</option>
+                <option value="region">Region</option>
+                <option value="town">Town</option>
+                <option value="centre">Activity Centre</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+            </div>
+          </>
+        )}
+        {(searchQuery || (canViewAdminSuchanaValues && (filterStatus !== 'all' || filterScope !== 'all'))) && (
           <button
             className={btnGhost}
             onClick={() => { setSearchQuery(''); setFilterStatus('all'); setFilterScope('all'); setPage(1); }}
@@ -927,10 +942,12 @@ export default function Announcements() {
                             {ann.title}
                           </h3>
                           {/* Status */}
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                            {sc.label}
-                          </span>
+                          {canViewAdminSuchanaValues && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                              {sc.label}
+                            </span>
+                          )}
                           {/* Priority */}
                           <span className={`text-xs font-medium ${pc.text}`}>
                             {pc.label} priority
@@ -944,29 +961,35 @@ export default function Announcements() {
                         {/* Bottom meta row */}
                         <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
                           {/* Scope */}
-                          <ScopeChip ann={ann} />
+                          {canViewAdminSuchanaValues && <ScopeChip ann={ann} />}
 
                           {/* Demographic filter chips */}
-                          {ann.filterAgeCategories.length > 0 && (
+                          {canViewAdminSuchanaValues && ann.filterAgeCategories.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
                               <Users className="w-3 h-3" />
                               {ann.filterAgeCategories.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ')}
                             </span>
                           )}
-                          {ann.filterGenders.length > 0 && (
+                          {canViewAdminSuchanaValues && ann.filterGenders.length > 0 && (
                             <span className="text-xs text-neutral-400 dark:text-neutral-500 capitalize">
                               {ann.filterGenders.join(' & ')}
                             </span>
                           )}
 
                           {/* Notification badges */}
-                          <NotifBadge label="Push"  enabled={ann.push.enabled}  scheduled={ann.push.enabled  && ann.push.schedule  === 'scheduled'} />
-                          <NotifBadge label="Email" enabled={ann.email.enabled} scheduled={ann.email.enabled && ann.email.schedule === 'scheduled'} />
+                          {canViewAdminSuchanaValues && (
+                            <>
+                              <NotifBadge label="Push"  enabled={ann.push.enabled}  scheduled={ann.push.enabled  && ann.push.schedule  === 'scheduled'} />
+                              <NotifBadge label="Email" enabled={ann.email.enabled} scheduled={ann.email.enabled && ann.email.schedule === 'scheduled'} />
+                            </>
+                          )}
 
                           {/* Bell receive indicator */}
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <Bell className="w-3 h-3" /> Bell
-                          </span>
+                          {canViewAdminSuchanaValues && (
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                              <Bell className="w-3 h-3" /> Bell
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1158,7 +1181,7 @@ export default function Announcements() {
                       setField('targetCentre', '');
                     }}
                     options={[
-                      { value: 'national', label: '🌐 National'        },
+                      ...(canViewAdminSuchanaValues ? [{ value: 'national', label: '🌐 National' }] : []),
                       { value: 'region',   label: '🗺 Region'          },
                       { value: 'town',     label: '📍 Town'            },
                       { value: 'centre',   label: '🏢 Activity Centre' },
@@ -1272,6 +1295,7 @@ export default function Announcements() {
             <div className="border-t border-neutral-200 dark:border-neutral-800" />
 
             {/* ── Section 3: Notifications ───────────────── */}
+            {canViewAdminSuchanaValues && (
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold">3</div>
@@ -1363,8 +1387,9 @@ export default function Announcements() {
                 </div>
               </div>
             </div>
+            )}
 
-            <div className="border-t border-neutral-200 dark:border-neutral-800" />
+            {canViewAdminSuchanaValues && <div className="border-t border-neutral-200 dark:border-neutral-800" />}
 
             {/* ── Section 4: Priority ────────────────────── */}
             <div>

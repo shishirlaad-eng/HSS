@@ -171,7 +171,7 @@ export const mockAnnouncements: Announcement[] = [
   {
     id: 'ANN-007',
     title: 'Manchester Shakha — Summer Schedule Update',
-    body: 'Due to school summer holidays, the Manchester Shakha schedule will change from 28 July to 1 September 2026. Sessions will move to Saturday mornings (10:00–12:00) during this period. Please ensure all members and parents are informed. The regular Thursday evening sessions will resume from 4 September.',
+    body: 'Due to school summer holidays, the Manchester Shakha schedule will change from 28 July to 1 September 2026. Shakhas will move to Saturday mornings (10:00–12:00) during this period. Please ensure all members and parents are informed. The regular Thursday evening Shakhas will resume from 4 September.',
     contentType: 'text',
     cooldownHours: 0,
     priority: 'low',

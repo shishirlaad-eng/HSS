@@ -630,7 +630,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <StatMini label="Events Attended"           value={member.eventsAttended}           icon={CalendarDays} />
-                    <StatMini label="Shakha Sessions Attended"  value={member.shakhaSessionsAttended}   icon={UserCheck} />
+                    <StatMini label="Shakhas Attended"          value={member.shakhaSessionsAttended}   icon={UserCheck} />
                   </div>
 
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -643,7 +643,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
                             <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date</th>
                             <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Type</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event / Session</th>
+                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event / Shakha</th>
                             <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Centre</th>
                           </tr>
                         </thead>
@@ -820,7 +820,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
                   <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
-                    Changing the member status will immediately affect their access to HSS events, Shakha sessions, and the member portal.
+                    Changing the member status will immediately affect their access to HSS events, Shakhas, and the member portal.
                   </p>
                 </div>
               </div>

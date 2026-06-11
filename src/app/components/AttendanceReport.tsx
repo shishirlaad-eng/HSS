@@ -338,30 +338,30 @@ export default function AttendanceReport() {
       [`Generated: ${new Date().toLocaleDateString('en-GB')}`],
       [],
       ['SUMMARY KPIs'],
-      ['Total Sessions', String(totalSessions)],
-      ['Completed Sessions', String(completedSessions)],
-      ['Scheduled Sessions', String(scheduledSessions)],
-      ['Cancelled Sessions', String(cancelledSessions)],
+      ['Total Shakhas', String(totalSessions)],
+      ['Completed Shakhas', String(completedSessions)],
+      ['Scheduled Shakhas', String(scheduledSessions)],
+      ['Cancelled Shakhas', String(cancelledSessions)],
       ['Attendance Rate', pct(attendanceRate)],
       ['Present Marks', String(totalPresent)],
       ['Absent Marks', String(totalAbsent)],
       ['Unmarked Records', String(totalUnmarked)],
       ['Total Expected', String(totalExpected)],
       [],
-      ['SESSION STATUS'],
-      ['Status', 'Sessions'],
+      ['SHAKHA STATUS'],
+      ['Status', 'Shakhas'],
       ...statusData.map(r => [r.name, String(r.value)]),
       [],
       ['ATTENDANCE BY VIBHAAG'],
-      ['Vibhaag', 'Sessions', 'Present', 'Absent', 'Expected', 'Attendance Rate'],
+      ['Vibhaag', 'Shakhas', 'Present', 'Absent', 'Expected', 'Attendance Rate'],
       ...byRegion.map(r => [r.fullRegion, String(r.sessions), String(r.present), String(r.absent), String(r.expected), pct(r.attendanceRate)]),
       [],
       ['ATTENDANCE BY SHAKHA TYPE'],
-      ['Shakha Type', 'Sessions', 'Present', 'Absent'],
+      ['Shakha Type', 'Shakhas', 'Present', 'Absent'],
       ...byShakhaType.map(r => [r.type, String(r.sessions), String(r.present), String(r.absent)]),
       [],
       ['MONTHLY TREND'],
-      ['Month', 'Sessions', 'Present', 'Absent', 'Attendance Rate'],
+      ['Month', 'Shakhas', 'Present', 'Absent', 'Attendance Rate'],
       ...monthlyTrend.map(r => [r.month, String(r.sessions), String(r.present), String(r.absent), pct(r.attendanceRate)]),
     ];
     const csv = rows.map(r => r.map(c => `"${c.replaceAll('"', '""')}"`).join(',')).join('\n');
@@ -434,16 +434,16 @@ export default function AttendanceReport() {
           )}
 
           <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
-            Showing <strong className="text-neutral-900 dark:text-white">{fmt(totalSessions)}</strong> session{totalSessions !== 1 ? 's' : ''}
+            Showing <strong className="text-neutral-900 dark:text-white">{fmt(totalSessions)}</strong> Shakha{totalSessions !== 1 ? 's' : ''}
           </span>
         </div>
 
         <div className="mt-6 grid grid-cols-2 xl:grid-cols-5 gap-4">
-          <KpiCard label="Total Sessions" value={totalSessions} icon={CalendarCheck2} color="bg-primary-500" />
-          <KpiCard label="Completed Sessions" value={completedSessions} icon={ClipboardCheck} color="bg-success-500" sub={`${pct(completionRate)} completion rate`} />
+          <KpiCard label="Total Shakhas" value={totalSessions} icon={CalendarCheck2} color="bg-primary-500" />
+          <KpiCard label="Completed Shakhas" value={completedSessions} icon={ClipboardCheck} color="bg-success-500" sub={`${pct(completionRate)} completion rate`} />
           <KpiCard label="Attendance Rate" value={pct(attendanceRate)} icon={TrendingUp} color="bg-blue-500" sub={`${fmt(totalPresent)} present of ${fmt(totalMarked)} marked`} />
-          <KpiCard label="Avg Present / Session" value={avgPresentPerSession} icon={Users} color="bg-violet-500" />
-          <KpiCard label="Scheduled Sessions" value={scheduledSessions} icon={CheckCircle2} color="bg-cyan-500" />
+          <KpiCard label="Avg Present / Shakha" value={avgPresentPerSession} icon={Users} color="bg-violet-500" />
+          <KpiCard label="Scheduled Shakhas" value={scheduledSessions} icon={CheckCircle2} color="bg-cyan-500" />
         </div>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -453,7 +453,7 @@ export default function AttendanceReport() {
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Busiest Centre</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{busiestCentre ? `${busiestCentre.centre} (${fmt(busiestCentre.sessions)} sessions)` : 'No session data'}</p>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{busiestCentre ? `${busiestCentre.centre} (${fmt(busiestCentre.sessions)} Shakhas)` : 'No Shakha data'}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Unmarked Records</p>
@@ -486,7 +486,7 @@ export default function AttendanceReport() {
             </div>
           </ChartCard>
 
-          <ChartCard title="Session Status" subtitle="Scheduled, completed and cancelled sessions">
+          <ChartCard title="Shakha Status" subtitle="Scheduled, completed and cancelled Shakhas">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
@@ -553,7 +553,7 @@ export default function AttendanceReport() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Sessions by Shakha Type" subtitle="Session count and attendance marks by Shakha type">
+          <ChartCard title="Shakhas by Shakha Type" subtitle="Shakha count and attendance marks by Shakha type">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byShakhaType} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -561,7 +561,7 @@ export default function AttendanceReport() {
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="sessions" name="Sessions" fill={PRIMARY} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sessions" name="Shakhas" fill={PRIMARY} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="absent" name="Absent" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -570,7 +570,7 @@ export default function AttendanceReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Top Activity Centres" subtitle="Centres with the highest number of filtered sessions">
+          <ChartCard title="Top Activity Centres" subtitle="Centres with the highest number of filtered Shakhas">
             <ResponsiveContainer width="100%" height={Math.max(260, byCentre.length * 42 + 60)}>
               <BarChart data={byCentre} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
@@ -578,7 +578,7 @@ export default function AttendanceReport() {
                 <YAxis type="category" dataKey="centre" tick={{ fontSize: 10, fill: '#6b7280' }} width={135} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="sessions" name="Sessions" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
+                <Bar dataKey="sessions" name="Shakhas" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
                 <Bar dataKey="present" name="Present" fill="#22c55e" radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
             </ResponsiveContainer>
@@ -600,7 +600,7 @@ export default function AttendanceReport() {
         </div>
 
         <div className="mt-6">
-          <ChartCard title="Monthly Attendance Trend" subtitle="Sessions and attendance rate over time">
+          <ChartCard title="Monthly Attendance Trend" subtitle="Shakhas and attendance rate over time">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={monthlyTrend} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -609,7 +609,7 @@ export default function AttendanceReport() {
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#6b7280' }} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line yAxisId="left" type="monotone" dataKey="sessions" name="Sessions" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
+                <Line yAxisId="left" type="monotone" dataKey="sessions" name="Shakhas" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
                 <Line yAxisId="right" type="monotone" dataKey="attendanceRate" name="Attendance Rate %" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: '#22c55e', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>

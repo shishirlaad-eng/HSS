@@ -351,7 +351,7 @@ export default function AttendanceLog() {
 
   const handleExportCSV = () => {
     if (!filtered.length) { toast.error('No data to export.'); return; }
-    const header = 'Member,Role,Gender,Activity Centre,Town,Region,Session,Date,Start,End,Status';
+    const header = 'Member,Role,Gender,Activity Centre,Town,Region,Shakha,Date,Start,End,Status';
     const rows = filtered.map(r =>
       [r.memberName, r.jobTitle, r.gender, r.activityCentre, r.town, r.region,
        `"${r.sessionTitle}"`, r.date, r.startTime, r.endTime, r.attendanceStatus].join(',')
@@ -383,7 +383,7 @@ export default function AttendanceLog() {
               onChange={v => { setSearchQuery(v); setPage(1); }}
               onAdvancedSearch={scope.selfOnly ? undefined : () => setShowAdvancedSearch(true)}
               activeFilterCount={activeFilterCount}
-              placeholder={scope.selfOnly ? "Search sessions…" : "Search member, role, centre, session…"}
+              placeholder={scope.selfOnly ? "Search Shakhas…" : "Search member, role, centre, Shakha…"}
             />
             <AdvancedSearchPanel
               isOpen={showAdvancedSearch}
@@ -415,7 +415,7 @@ export default function AttendanceLog() {
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo)}`) : 'Session Date'}
+              {dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo)}`) : 'Shakha Date'}
               {dateFrom && (
                 <span
                   role="button"
@@ -443,7 +443,7 @@ export default function AttendanceLog() {
                 setDateRangeLabel(label || '');
                 setPage(1);
               }}
-              title="Sessions Date Range"
+              title="Shakha Date Range"
             />
           </div>
 
@@ -488,7 +488,7 @@ export default function AttendanceLog() {
                   <SortTh label="Role"             sortKey="jobTitle"         current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Gender</th>
                   <SortTh label="Shakha"           sortKey="activityCentre"   current={sortKey} dir={sortDir} onSort={handleSort} />
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Session</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Shakha</th>
                   <SortTh label="Date"             sortKey="date"             current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Time</th>
                   <SortTh label="Status"           sortKey="attendanceStatus" current={sortKey} dir={sortDir} onSort={handleSort} />

@@ -16,6 +16,17 @@ export const SHAKHA_TYPES = [
 
 export type ShakhaType = typeof SHAKHA_TYPES[number];
 
+export const UTSAV_OPTIONS = [
+  'None',
+  'Makar Sankranti',
+  'Varsh Pratipada',
+  'Guru Purnima',
+  'Rakshabandhan',
+  'Vijya Dashmi',
+] as const;
+
+export type UtsavOption = typeof UTSAV_OPTIONS[number];
+
 export interface ShakhaSession {
   id: string;
   title: string;
@@ -23,6 +34,7 @@ export interface ShakhaSession {
   region: string;
   town: string;
   shakhaType?: ShakhaType;
+  utsav?: UtsavOption;
   frequency: SessionFrequency;
   dayOfWeek: number;        // 0=Sun … 6=Sat
   startTime: string;        // "HH:MM"

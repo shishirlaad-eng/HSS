@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Shield,
+  Landmark,
 } from 'lucide-react';
 import hssLogoColour from '../../assets/brand/hss/logos/hss-logo-colour.png';
 
@@ -67,6 +68,9 @@ interface StripeDonationProps {
 
 // ── Component ─────────────────────────────────────────────────
 export default function StripeDonation({ onBack }: StripeDonationProps) {
+  const [donationMode, setDonationMode] = useState<'one-off' | 'standing-order'>('one-off');
+  const [standingOrderFrequency, setStandingOrderFrequency] = useState<'Monthly' | 'Quarterly' | 'Annually'>('Monthly');
+
   // Amount
   const [selectedPreset, setSelectedPreset] = useState<number | null>(25);
   const [customAmount, setCustomAmount]     = useState('');
@@ -167,7 +171,20 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center px-4 py-10">
+      <div className="px-4 pt-8">
+        <div className="w-full max-w-4xl mx-auto">
+          <SlidingSwitch
+            value={donationMode}
+            onChange={(value) => setDonationMode(value as 'one-off' | 'standing-order')}
+            options={[
+              { value: 'one-off', label: 'One-off online donation', color: 'bg-primary-600' },
+              { value: 'standing-order', label: 'Recurring donation', color: 'bg-primary-600' },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-start justify-center px-4 py-6">
         <div className="w-full max-w-4xl flex flex-col lg:flex-row gap-6">
 
           {/* ── Left panel: Organisation summary ── */}
@@ -187,64 +204,36 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
               </p>
             </div>
 
-            {/* Amount selector */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
-                Select donation amount
-              </p>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {PRESET_AMOUNTS.map(amt => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => { setSelectedPreset(amt); setCustomAmount(''); setErrors(e => ({ ...e, amount: '' })); }}
-                    className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      selectedPreset === amt && customAmount === ''
-                        ? 'bg-primary-600 border-primary-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-primary-400'
-                    }`}
-                  >
-                    £{amt}
-                  </button>
-                ))}
-              </div>
-              {/* Custom amount */}
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium text-sm">£</span>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Other amount"
-                  value={customAmount}
-                  onChange={e => { setCustomAmount(e.target.value); setSelectedPreset(null); setErrors(err => ({ ...err, amount: '' })); }}
-                  className={`w-full pl-7 pr-3 py-2.5 rounded-lg border text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all ${
-                    errors.amount ? 'border-red-400 dark:border-red-500' : 'border-neutral-200 dark:border-neutral-700'
-                  }`}
-                />
-              </div>
-              {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount}</p>}
-
-              {amount > 0 && (
-                <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-500 dark:text-neutral-400">Donation total</span>
-                    <span className="font-bold text-neutral-900 dark:text-white">£{amount.toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AmountSelector
+              selectedPreset={selectedPreset}
+              customAmount={customAmount}
+              amount={amount}
+              amountError={errors.amount}
+              onPresetSelect={(amt) => {
+                setSelectedPreset(amt);
+                setCustomAmount('');
+                setErrors(e => ({ ...e, amount: '' }));
+              }}
+              onCustomAmountChange={(value) => {
+                setCustomAmount(value);
+                setSelectedPreset(null);
+                setErrors(err => ({ ...err, amount: '' }));
+              }}
+            />
 
             {/* Trust badges */}
             <div className="flex items-center gap-3 px-2">
               <Shield className="w-4 h-4 text-neutral-400 flex-shrink-0" />
               <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                256-bit SSL encryption. Your payment details are never stored on our servers.
+                {donationMode === 'one-off'
+                  ? '256-bit SSL encryption. Your payment details are never stored on our servers.'
+                  : 'Your selected amount will be used for the recurring payment frequency.'}
               </p>
             </div>
           </div>
 
           {/* ── Right panel: Payment form ── */}
-          <div className="lg:w-[62%]">
+          <div className="lg:w-[62%] space-y-4">
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden">
 
               {/* Header */}
@@ -253,10 +242,41 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                   <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <h2 className="text-base font-bold text-neutral-900 dark:text-white">Payment Details</h2>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">All fields are required</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {donationMode === 'one-off'
+                    ? 'All fields are required'
+                    : `All fields are required. Recurring frequency: ${standingOrderFrequency}`}
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
+              <form id="one-off-donation-form" onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
+
+                {donationMode === 'standing-order' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Recurring frequency</label>
+                      <SlidingSwitch
+                        value={standingOrderFrequency}
+                        onChange={(value) => setStandingOrderFrequency(value as 'Monthly' | 'Quarterly' | 'Annually')}
+                        options={[
+                          { value: 'Monthly', label: 'Monthly', color: 'bg-primary-600' },
+                          { value: 'Quarterly', label: 'Quarterly', color: 'bg-primary-600' },
+                          { value: 'Annually', label: 'Annually', color: 'bg-primary-600' },
+                        ]}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Membership Id</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value="MYHSS-MBR-000001"
+                        className="w-full px-3 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 focus:outline-none cursor-default"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Email */}
                 <div>
@@ -357,55 +377,171 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                   />
                 </div>
 
-                {/* Gift Aid */}
-                <label className="flex items-start gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-amber-50/50 dark:bg-amber-950/20 cursor-pointer hover:border-amber-300 transition-colors">
-                  <input type="checkbox" className="mt-0.5 accent-primary-600 w-4 h-4 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                      Boost my donation by 25% with Gift Aid 🇬🇧
-                    </p>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
-                      I am a UK taxpayer and understand that if I pay less Income Tax and/or Capital Gains Tax than the amount of Gift Aid claimed on all my donations, it is my responsibility to pay any difference.
-                    </p>
-                  </div>
-                </label>
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                      </svg>
-                      Processing…
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      {amount > 0 ? `Donate £${amount.toFixed(2)}` : 'Donate'}
-                      <ChevronRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                {/* Footer note */}
-                <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
-                  By donating you agree to our{' '}
-                  <span className="underline cursor-pointer">Terms</span> and{' '}
-                  <span className="underline cursor-pointer">Privacy Policy</span>.
-                  Powered by{' '}
-                  <span className="font-semibold text-[#635bff]">stripe</span>
-                </p>
               </form>
             </div>
+
+            <CommonDonationAction
+              mode={donationMode}
+              amount={amount}
+              loading={loading}
+              frequency={standingOrderFrequency}
+            />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CommonDonationAction({
+  mode,
+  amount,
+  loading,
+  frequency,
+}: {
+  mode: 'one-off' | 'standing-order';
+  amount: number;
+  loading: boolean;
+  frequency: 'Monthly' | 'Quarterly' | 'Annually';
+}) {
+  return (
+    <div className="space-y-3">
+      <button
+        type="submit"
+        form="one-off-donation-form"
+        disabled={loading}
+        className="w-full py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+            Processing…
+          </>
+        ) : (
+          <>
+            <Lock className="w-4 h-4" />
+            {amount > 0
+              ? mode === 'one-off'
+                ? `Donate £${amount.toFixed(2)}`
+                : `Donate £${amount.toFixed(2)} ${frequency}`
+              : 'Donate'}
+            <ChevronRight className="w-4 h-4" />
+          </>
+        )}
+      </button>
+
+      <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+        By donating you agree to our{' '}
+        <span className="underline cursor-pointer">Terms</span> and{' '}
+        <span className="underline cursor-pointer">Privacy Policy</span>.
+        Powered by{' '}
+        <span className="font-semibold text-[#635bff]">stripe</span>
+      </p>
+    </div>
+  );
+}
+
+function SlidingSwitch({
+  value,
+  onChange,
+  options,
+  className = '',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string; color?: string }[];
+  className?: string;
+}) {
+  const activeIndex = Math.max(0, options.findIndex(option => option.value === value));
+  const segmentWidth = 100 / options.length;
+
+  return (
+    <div className={`relative inline-flex p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl w-full h-12 border border-neutral-200 dark:border-neutral-700 shadow-inner overflow-hidden ${className}`}>
+      <div
+        className={`absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-out shadow-sm ${options[activeIndex]?.color || 'bg-primary-600'}`}
+        style={{
+          width: `calc(${segmentWidth}% - 4px)`,
+          left: `calc(${activeIndex * segmentWidth}% + ${activeIndex === 0 ? 4 : 2}px)`,
+        }}
+      />
+      {options.map(option => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={`relative flex-1 flex items-center justify-center px-2 text-[11px] sm:text-xs font-bold transition-colors duration-200 z-10 uppercase tracking-wider text-center leading-tight ${
+            value === option.value ? 'text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AmountSelector({
+  selectedPreset,
+  customAmount,
+  amount,
+  amountError,
+  onPresetSelect,
+  onCustomAmountChange,
+}: {
+  selectedPreset: number | null;
+  customAmount: string;
+  amount: number;
+  amountError?: string;
+  onPresetSelect: (amount: number) => void;
+  onCustomAmountChange: (value: string) => void;
+}) {
+  return (
+    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm">
+      <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+        Select donation amount
+      </p>
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {PRESET_AMOUNTS.map(amt => (
+          <button
+            key={amt}
+            type="button"
+            onClick={() => onPresetSelect(amt)}
+            className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+              selectedPreset === amt && customAmount === ''
+                ? 'bg-primary-600 border-primary-600 text-white shadow-sm'
+                : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-primary-400'
+            }`}
+          >
+            £{amt}
+          </button>
+        ))}
+      </div>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium text-sm">£</span>
+        <input
+          type="number"
+          min="1"
+          placeholder="Other amount"
+          value={customAmount}
+          onChange={e => onCustomAmountChange(e.target.value)}
+          className={`w-full pl-7 pr-3 py-2.5 rounded-lg border text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all ${
+            amountError ? 'border-red-400 dark:border-red-500' : 'border-neutral-200 dark:border-neutral-700'
+          }`}
+        />
+      </div>
+      {amountError && <p className="text-xs text-red-500 mt-1">{amountError}</p>}
+
+      {amount > 0 && (
+        <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex justify-between text-sm">
+            <span className="text-neutral-500 dark:text-neutral-400">Donation total</span>
+            <span className="font-bold text-neutral-900 dark:text-white">£{amount.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

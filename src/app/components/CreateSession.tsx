@@ -20,6 +20,7 @@ import {
   ShakhaSession,
   AttendanceRecord,
   SHAKHA_TYPES,
+  UTSAV_OPTIONS,
 } from '../../mockAPI/attendanceData';
 import {
   MASTERS_CASCADE,
@@ -58,6 +59,7 @@ interface CreateForm {
   town: string;
   activityCentre: string;
   shakhaType: string;
+  utsav: string;
   recurDays: number[];
   repeatUntil: string;
 }
@@ -70,6 +72,7 @@ const EMPTY_FORM = (date: string): CreateForm => ({
   town: '',
   activityCentre: '',
   shakhaType: '',
+  utsav: 'None',
   recurDays: [],
   repeatUntil: '',
 });
@@ -155,7 +158,7 @@ export default function CreateSession({
     if (!form.activityCentre) e.activityCentre = 'This field is required.';
     if (!form.shakhaType)     e.shakhaType     = 'This field is required.';
     if (isRecurring && !form.repeatUntil)
-                              e.repeatUntil    = 'Repeat until date is required for recurring sessions.';
+                              e.repeatUntil    = 'Repeat until date is required for recurring Shakhas.';
     if (isRecurring && form.repeatUntil && form.repeatUntil < form.date)
                               e.repeatUntil    = 'Repeat until must be on or after the start date.';
     setErrors(e);
@@ -171,6 +174,7 @@ export default function CreateSession({
       region:         form.region,
       town:           form.town,
       shakhaType:     form.shakhaType,
+      utsav:          form.utsav,
       startTime:      form.startTime,
       endTime:        form.endTime,
       status:         'scheduled' as const,
@@ -234,8 +238,8 @@ export default function CreateSession({
       onCreate(newSessions);
       toast.success(
         newSessions.length === 1
-          ? 'Session created successfully'
-          : `${newSessions.length} recurring sessions created successfully`,
+          ? 'Shakha created successfully'
+          : `${newSessions.length} recurring Shakhas created successfully`,
       );
       setSaving(false);
     }, 600);
@@ -252,8 +256,8 @@ export default function CreateSession({
   const createBtnLabel = saving
     ? 'Creating…'
     : isRecurring && recurringPreviewCount > 0
-      ? `Create ${recurringPreviewCount} Sessions`
-      : 'Create Session';
+      ? `Create ${recurringPreviewCount} Shakhas`
+      : 'Create Shakha';
 
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
@@ -290,9 +294,9 @@ export default function CreateSession({
           {/* ── Left: main form (col-span-2) ──────────────── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* ── Card: Session Details ───────────────────── */}
+            {/* ── Card: Shakha Details ───────────────────── */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={Calendar} title="Session Details" />
+              <SectionHeader icon={Calendar} title="Shakha Details" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Date — full width */}
@@ -345,6 +349,16 @@ export default function CreateSession({
                     {SHAKHA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </FormSelect>
                   {touched && errors.shakhaType && <p className="text-xs text-error-600 mt-1">{errors.shakhaType}</p>}
+                </FormField>
+
+                <FormField>
+                  <FormLabel>Utsav</FormLabel>
+                  <FormSelect
+                    value={form.utsav}
+                    onChange={e => setField('utsav', e.target.value)}
+                  >
+                    {UTSAV_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </FormSelect>
                 </FormField>
               </div>
             </div>
@@ -402,7 +416,7 @@ export default function CreateSession({
               <SectionHeader icon={RefreshCw} title="Recurrence" />
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                Select days to create recurring sessions, or leave all unchecked for a one-off session.
+                Select days to create recurring Shakhas, or leave all unchecked for a one-off Shakha.
               </p>
 
               {/* Day checkboxes */}
@@ -455,7 +469,7 @@ export default function CreateSession({
                       {touched && errors.repeatUntil && <p className="text-xs text-error-600 mt-1">{errors.repeatUntil}</p>}
                       {recurringPreviewCount > 0 && (
                         <p className="text-xs text-primary-600 dark:text-primary-400 mt-1.5 font-medium">
-                          {recurringPreviewCount} session{recurringPreviewCount !== 1 ? 's' : ''} will be created
+                          {recurringPreviewCount} Shakha{recurringPreviewCount !== 1 ? 's' : ''} will be created
                         </p>
                       )}
                     </FormField>
@@ -469,11 +483,11 @@ export default function CreateSession({
           {/* ── Right: sidebar summary ───────────────────────── */}
           <div className="space-y-6">
 
-            {/* Session Summary */}
+            {/* Shakha Summary */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-5 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
                 <Info className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                Session Summary
+                Shakha Summary
               </div>
               <dl className="space-y-3.5">
                 <div className="flex items-start justify-between gap-3">
@@ -505,6 +519,15 @@ export default function CreateSession({
 
                 <div className="flex items-start justify-between gap-3">
                   <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <Tag className="w-3.5 h-3.5" /> Utsav
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {form.utsav || 'None'}
+                  </dd>
+                </div>
+
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
                     <MapPin className="w-3.5 h-3.5" /> Centre
                   </dt>
                   <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
@@ -526,7 +549,7 @@ export default function CreateSession({
                 {isRecurring && recurringPreviewCount > 0 && (
                   <div className="pt-3 mt-1 border-t border-neutral-100 dark:border-neutral-800">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">Total sessions</span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">Total Shakhas</span>
                       <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
                         {recurringPreviewCount}
                       </span>
@@ -540,7 +563,7 @@ export default function CreateSession({
             <div className="bg-primary-50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/40 rounded-lg p-4">
               <p className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
                 <span className="font-semibold block mb-1">Attendance tracking</span>
-                Once a session is created, attendance records will be auto-populated for all active members at the selected activity centre.
+                Once a Shakha is created, attendance records will be auto-populated for all active members at the selected activity centre.
               </p>
             </div>
 
