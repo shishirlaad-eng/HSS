@@ -202,7 +202,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Welcome Back</h1>
-                  <p className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-1">HSS Membership Management System</p>
+                  <p className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-1">My HSS</p>
                   <p className="text-neutral-500 dark:text-neutral-400 text-xs">Sign in with your administrator credentials.</p>
                 </div>
 

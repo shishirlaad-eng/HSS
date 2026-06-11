@@ -378,11 +378,11 @@ export default function AttendanceReport() {
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
       <div className="max-w-[100%] mx-auto">
         <PageHeader
-          title="Attendance Report"
-          subtitle="Aggregated attendance statistics across sessions, centres, regions and Shakha types"
+          title="Sankhya Report"
+          subtitle="Aggregated Sankhya statistics across Shakha gatherings, centres, regions and Shakha types"
           breadcrumbs={[
             { label: 'Reports' },
-            { label: 'Attendance Report', current: true },
+            { label: 'Sankhya Report', current: true },
           ]}
         >
           <PrimaryButton icon={Download} onClick={handleExport}>

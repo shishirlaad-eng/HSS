@@ -278,13 +278,13 @@ export default function SessionDetail({
           title={session.title}
           subtitle={dateLabel}
           breadcrumbs={[
-            { label: 'Attendance' },
-            { label: 'Sessions', onClick: onBack },
+            { label: 'Sankhya' },
+            { label: 'Shakha', onClick: onBack },
             { label: session.title, current: true },
           ]}
         >
           <SecondaryButton icon={ArrowLeft} onClick={onBack}>
-            Back to Sessions
+            Back to Shakha
           </SecondaryButton>
           {canCancel && (
             <button

@@ -369,11 +369,11 @@ export default function AttendanceLog() {
 
         {/* ── PAGE HEADER ── */}
         <PageHeader
-          title="Attendance Log"
-          subtitle={scope.selfOnly ? "Your personal attendance record." : "Complete record of member attendance across all Shakha sessions."}
+          title="Sankhya Log"
+          subtitle={scope.selfOnly ? "Your personal Sankhya record." : "Complete record of member Sankhya across all Shakha gatherings."}
           breadcrumbs={[
-            { label: 'Attendance' },
-            { label: 'Attendance Log', current: true },
+            { label: 'Sankhya' },
+            { label: 'Sankhya Log', current: true },
           ]}
         >
           {/* Search + Advanced Filter panel */}

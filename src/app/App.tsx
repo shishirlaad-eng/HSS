@@ -43,7 +43,7 @@ const PAGE_LABELS: Record<string, string> = {
   "report-members":             "Members Report",
   "report-events":              "Events Report",
   "report-donations":           "Donations / Payment Report",
-  "report-attendance":          "Attendance Report",
+  "report-attendance":          "Sankhya Report",
   "report-refunds":             "Refund Report",
   "role-types":                 "Responsibility",
 };
@@ -60,7 +60,7 @@ function PlaceholderPage({ page }: { page: string }) {
       </div>
       <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">{label}</h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
-        This module is part of the HSS Membership Management System and will be implemented in the next development phase.
+        This module is part of My HSS and will be implemented in the next development phase.
       </p>
     </div>
   );
@@ -206,7 +206,7 @@ export default function App() {
             : isSidebarCollapsed
               ? "ml-16"
               : "ml-64"
-        } pb-14`}
+        }`}
       >
         {/* Global Header */}
         <GlobalHeader

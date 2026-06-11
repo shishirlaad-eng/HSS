@@ -261,12 +261,12 @@ export default function CreateSession({
 
         {/* ── Page Header ──────────────────────────────────── */}
         <PageHeader
-          title="Create Session"
-          subtitle="Schedule a new Shakha attendance session"
+          title="Create Shakha"
+          subtitle="Schedule a new Shakha gathering"
           breadcrumbs={[
-            { label: 'Attendance' },
-            { label: 'Sessions', onClick: onCancel },
-            { label: 'Create Session', current: true },
+            { label: 'Sankhya' },
+            { label: 'Shakha', onClick: onCancel },
+            { label: 'Create Shakha', current: true },
           ]}
         >
           <div className="flex items-center gap-3">

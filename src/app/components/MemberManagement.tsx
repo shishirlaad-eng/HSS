@@ -1720,7 +1720,7 @@ export default function MemberManagement({
               </table>
             </div>
             {filteredMembers.length > 0 && (
-              <div className="sticky bottom-14 z-20 rounded-b-lg overflow-hidden shadow-[0_-4px_12px_rgba(0,0,0,0.06)] [&>div]:mt-0">
+              <div className="rounded-b-lg overflow-hidden [&>div]:mt-0">
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}

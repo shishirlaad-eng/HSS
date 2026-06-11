@@ -213,32 +213,35 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
 
       {/* Member Identity Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
-            {mockCurrentMember.firstName} {mockCurrentMember.lastName}
-          </h1>
-          <span className="text-neutral-300 dark:text-neutral-600 font-light text-xl leading-tight">|</span>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-            <span className="flex items-center gap-1">
-              <Award className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.sanghResponsibility}
-            </span>
-            <span className="text-neutral-300 dark:text-neutral-600">·</span>
-            <span className="flex items-center gap-1">
-              <Building2 className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.shakha}
-            </span>
-            <span className="text-neutral-300 dark:text-neutral-600">·</span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.town}
-            </span>
-            <span className="text-neutral-300 dark:text-neutral-600">·</span>
-            <span className="flex items-center gap-1">
-              <Globe2 className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.vibhaag}
-            </span>
+        <div className="flex flex-col gap-1">
+          {/* Name + location details (Shakha · Town · Region) on the same row */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
+              {mockCurrentMember.firstName} {mockCurrentMember.lastName}
+            </h1>
+            <span className="text-neutral-300 dark:text-neutral-600 font-light text-xl leading-tight">|</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3 h-3 flex-shrink-0" />
+                {mockCurrentMember.shakha}
+              </span>
+              <span className="text-neutral-300 dark:text-neutral-600">|</span>
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                {mockCurrentMember.town}
+              </span>
+              <span className="text-neutral-300 dark:text-neutral-600">|</span>
+              <span className="flex items-center gap-1">
+                <Globe2 className="w-3 h-3 flex-shrink-0" />
+                {mockCurrentMember.vibhaag}
+              </span>
+            </div>
           </div>
+          {/* Job title below the name */}
+          <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <Award className="w-3 h-3 flex-shrink-0" />
+            {mockCurrentMember.sanghResponsibility}
+          </span>
         </div>
         <button
           onClick={() => onNavigate?.('donate')}
@@ -261,7 +264,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Attendance</p>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Sankhya</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{attendancePct}%</p>
               <p className="text-xs mt-1 text-neutral-400 dark:text-neutral-500">Current month</p>
               <p className="text-xs mt-1 text-emerald-600 dark:text-emerald-400">
@@ -406,7 +409,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Attendance</h3>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Sankhya</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {attendancePct}%
                 </span>
@@ -675,16 +678,16 @@ function HierarchyKpiSection({
     <div className="mb-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        {/* 1. Attendance */}
+        {/* 1. Sankhya */}
         <KpiCard
-          title="Attendance"
+          title="Sankhya"
           value={`${kpis.avgLast4}%`}
           icon={Percent}
           onClick={() => onNavigate?.('attendance-log')}
           subMetrics={[
-            { label: 'Avg — last 4 sessions', value: `${kpis.avgLast4}%`, tone: 'primary' },
+            { label: 'Avg — last 4 Shakhas', value: `${kpis.avgLast4}%`, tone: 'primary' },
             { label: 'Avg — YTD', value: `${kpis.avgYTD}%` },
-            { label: 'Sessions held YTD', value: kpis.sessionsHeldYTD },
+            { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD },
           ]}
         />
 

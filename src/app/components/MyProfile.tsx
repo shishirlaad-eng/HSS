@@ -580,13 +580,6 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
             </>
           ) : (
             <>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Account
-              </button>
               <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
             </>
           )}

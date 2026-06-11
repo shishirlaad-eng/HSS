@@ -785,7 +785,7 @@ export function GlobalHeader({
       className={`sticky top-0 z-50 transition-all ${isScrolled ? "shadow-sm" : ""}`}
       style={{ backgroundColor: "#009FE3" }}
     >
-      <div className="h-12 px-6 flex items-center justify-between gap-4">
+      <div className="h-[53px] px-6 flex items-center justify-between gap-4">
         {/* Left Side */}
         {menuOrientation === "horizontal" ? (
           /* HORIZONTAL: Logo + Brand + Nav with submenus */

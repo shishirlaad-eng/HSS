@@ -10,6 +10,7 @@ import {
   HelpCircle,
   User,
 } from "lucide-react";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getPermittedNavIds } from "../../mockAPI/rolesData";
@@ -186,25 +187,25 @@ export function Sidebar({
       className={`fixed left-0 top-0 bottom-0 bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 z-50 ${isCollapsed ? "w-16" : "w-64"
         }`}
     >
-      {/* Sidebar Header — HSS saffron brand bar */}
+      {/* Sidebar Header — HSS brand blue bar */}
       <div
-        className={`h-12 flex-shrink-0 px-3 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}
-        style={{ backgroundColor: "#F5A623" }}
+        className={`h-[53px] flex-shrink-0 px-3 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}
+        style={{ backgroundColor: "#009FE3" }}
       >
         {!isCollapsed && (
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <img
               src={logoUrl}
               alt="HSS UK Logo"
-              className="h-8 w-auto object-contain flex-shrink-0"
+              className="h-9 w-auto object-contain flex-shrink-0"
             />
-            <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-sm font-bold tracking-tight text-white truncate">
-                HSS Admin
-              </span>
-              <span className="text-[10px] text-white/75 truncate">
-                Membership Management
-              </span>
+            <div className="w-px h-7 bg-white/40 flex-shrink-0" />
+            <div className="flex items-center justify-center bg-black rounded-md px-2 py-1 flex-shrink-0">
+              <img
+                src={myHssLogo}
+                alt="My HSS"
+                className="h-9 w-auto object-contain"
+              />
             </div>
           </div>
         )}
@@ -222,7 +223,7 @@ export function Sidebar({
 
       {/* Scrollable Menu */}
       <div
-        className={`overflow-y-auto overflow-x-hidden h-[calc(100vh-96px)] py-2 transition-all slim-scroll ${isHoveringMenu
+        className={`overflow-y-auto overflow-x-hidden h-[calc(100vh-53px)] py-2 transition-all slim-scroll ${isHoveringMenu
           ? ""
           : "[&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar-thumb]:bg-transparent"
           }`}
@@ -320,113 +321,7 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* User Profile Section at Bottom */}
-      <div
-        ref={profileRef}
-        className="absolute bottom-0 left-0 right-0 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
-        onMouseEnter={(e) => {
-          if (isCollapsed) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            handleMouseEnter("profile", rect.top, true);
-          }
-        }}
-        onMouseLeave={handleMouseLeave}
-      >
-        <button
-          onClick={() =>
-            setShowProfileDrawer(!showProfileDrawer)
-          }
-          className={`w-full p-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors focus:outline-none ${isCollapsed ? "flex justify-center" : ""}`}
-        >
-          {isCollapsed ? (
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm">
-              JD
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm flex-shrink-0">
-                JD
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-sm text-neutral-900 dark:text-white truncate">
-                  John Doe
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                  john.doe@company.com
-                </div>
-              </div>
-              <ChevronUp
-                className={`w-4 h-4 text-neutral-400 flex-shrink-0 transition-transform ${showProfileDrawer ? "rotate-180" : ""}`}
-              />
-            </div>
-          )}
-        </button>
-
-        {/* Profile Popover */}
-        {showProfileDrawer && !isCollapsed && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 mx-2">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden">
-              {/* User Info Header */}
-              <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
-                    JD
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-neutral-900 dark:text-white mb-0.5">
-                      John Doe
-                    </div>
-                    <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">
-                      john.doe@company.com
-                    </div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-500">
-                      Sales Manager
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Menu Items */}
-              <div className="p-1">
-                <button
-                  onClick={() => {
-                    setShowProfileDrawer(false);
-                    onNavigate?.("my-profile");
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  <span>My Profile</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowProfileDrawer(false);
-                    setShowChangePasswordModal(true);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
-                >
-                  <Key className="w-4 h-4" />
-                  <span>Change Password</span>
-                </button>
-              </div>
-
-              {/* Logout */}
-              <div className="p-1 border-t border-neutral-200 dark:border-neutral-800">
-                <button
-                  onClick={() => {
-                    setShowProfileDrawer(false);
-                    onLogout?.();
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950 rounded transition-colors flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* User profile removed from sidebar — available in the top-right header dropdown */}
 
       {/* Change Password Modal */}
       <FormModal

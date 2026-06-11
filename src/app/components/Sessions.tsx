@@ -264,11 +264,11 @@ export default function Sessions() {
   return (
     <div className="p-6">
       <PageHeader
-        title="Sessions"
-        subtitle="Shakha session calendar — view and manage recurring attendance sessions"
+        title="Shakha"
+        subtitle="Shakha calendar — view and manage recurring Shakha gatherings"
         breadcrumbs={[
-          { label: 'Attendance' },
-          { label: 'Sessions', current: true },
+          { label: 'Sankhya' },
+          { label: 'Shakha', current: true },
         ]}
       >
         {atp.canView && atp.canAdd && (

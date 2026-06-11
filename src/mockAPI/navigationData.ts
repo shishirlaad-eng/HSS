@@ -136,21 +136,21 @@ export const getNavigationData = (
       active: currentPage === "announcements",
     },
 
-    // ── 6. Attendance ────────────────────────────────────────────
+    // ── 6. Sankhya (Attendance) ──────────────────────────────────
     {
       id: "attendance-group",
-      label: "Attendance",
+      label: "Sankhya",
       icon: ClipboardCheck,
       subItems: [
         {
           id: "sessions",
-          label: "Sessions",
+          label: "Shakha",
           onClick: () => onNavigate("sessions"),
           active: currentPage === "sessions",
         },
         {
           id: "attendance-log",
-          label: "Attendance Log",
+          label: "Sankhya Log",
           onClick: () => onNavigate("attendance-log"),
           active: currentPage === "attendance-log",
         },
@@ -192,7 +192,7 @@ export const getNavigationData = (
         },
         {
           id: "report-attendance",
-          label: "Attendance Report",
+          label: "Sankhya Report",
           onClick: () => onNavigate("report-attendance"),
           active: currentPage === "report-attendance",
         },
