@@ -122,7 +122,11 @@ export interface EventParticipant {
   email: string;
   phone: string;
   memberType: 'adult' | 'teen' | 'child';
-  rsvp: 'going' | 'maybe' | 'notGoing';
+  // Registration/approval status:
+  //  requested = member asked to attend (awaiting approval)
+  //  going     = approved by an admin
+  //  denied    = rejected by an admin
+  rsvp: 'requested' | 'going' | 'denied';
 }
 
 export const mockParticipants: Record<string, EventParticipant[]> = {
@@ -132,32 +136,32 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going'    },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'maybe'    },
-    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'maybe'    },
-    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'notGoing' },
-    { memberId: 'MBR-009', name: 'Deepak Rao',      email: 'deepak.rao@example.com',    phone: '+44 7799 012345', memberType: 'adult', rsvp: 'notGoing' },
+    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested'    },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
+    { memberId: 'MBR-009', name: 'Deepak Rao',      email: 'deepak.rao@example.com',    phone: '+44 7799 012345', memberType: 'adult', rsvp: 'denied' },
     { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',phone: '',               memberType: 'child', rsvp: 'going'    },
   ],
   'EVT-103': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'maybe'    },
-    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'notGoing' },
+    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested'    },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'denied' },
   ],
   'EVT-104': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going'    },
-    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'maybe'    },
-    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'notGoing' },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
   ],
   'EVT-105': [
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'maybe'    },
-    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'notGoing' },
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'requested'    },
+    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'denied' },
   ],
   'EVT-109': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
@@ -165,10 +169,10 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'maybe'    },
-    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'maybe'    },
-    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'notGoing' },
-    { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',phone: '',               memberType: 'child', rsvp: 'notGoing' },
+    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
+    { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',phone: '',               memberType: 'child', rsvp: 'denied' },
   ],
   'EVT-110': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
@@ -177,8 +181,8 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going'    },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'maybe'    },
-    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'notGoing' },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
   ],
 };
 

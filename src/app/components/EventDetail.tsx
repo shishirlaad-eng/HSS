@@ -7,7 +7,6 @@ import {
   Image as ImageIcon,
   Video,
   CheckCircle2,
-  HelpCircle,
   XCircle,
   Edit,
   Play,
@@ -23,6 +22,10 @@ import {
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
+  Check,
+  Ban,
+  CalendarCheck,
+  Clock as ClockIcon,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -34,6 +37,7 @@ import {
   mockMediaPosts,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
 
 // ─── Age group display labels (matches HSS naming convention) ─────────────────
@@ -84,12 +88,12 @@ function StatusBadge({ status }: { status: Event['status'] }) {
   );
 }
 
-// ─── RSVP badge ────────────────────────────────────────────────────────────────
+// ─── Registration status badge ──────────────────────────────────────────────────
 function RsvpBadge({ rsvp }: { rsvp: EventParticipant['rsvp'] }) {
   const map = {
-    going:    { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400', dot: 'bg-success-500', label: 'Going'     },
-    maybe:    { bg: 'bg-primary-50 dark:bg-primary-950/20', text: 'text-primary-700 dark:text-primary-400', dot: 'bg-primary-500', label: 'Maybe'     },
-    notGoing: { bg: 'bg-neutral-50 dark:bg-neutral-900',    text: 'text-neutral-600 dark:text-neutral-400', dot: 'bg-neutral-400', label: 'Not Going' },
+    requested: { bg: 'bg-amber-50 dark:bg-amber-950/20',     text: 'text-amber-700 dark:text-amber-400',     dot: 'bg-amber-500',   label: 'Requested' },
+    going:     { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400', dot: 'bg-success-500', label: 'Going'     },
+    denied:    { bg: 'bg-error-50 dark:bg-error-950/20',     text: 'text-error-700 dark:text-error-400',      dot: 'bg-error-500',   label: 'Denied'    },
   };
   const s = map[rsvp];
   return (
@@ -116,7 +120,7 @@ function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab         = 'overview' | 'participants' | 'media';
-type RsvpFilter  = 'all' | 'going' | 'maybe' | 'notGoing';
+type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied';
 type MediaFilter = 'all' | 'image' | 'video';
 
 interface LightboxState {
@@ -158,17 +162,52 @@ export default function EventDetail({
   // ── Tabs ────────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
-  // ── Participants ────────────────────────────────────────────────────────────
+  // ── Role / current member ───────────────────────────────────────────────────
+  const { selectedRole, scope } = useRoleScope();
+  const isMember = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
+
+  // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
-  const allParticipants = mockParticipants[event.id] ?? [];
+  const [participants, setParticipants] = useState<EventParticipant[]>(mockParticipants[event.id] ?? []);
+  const allParticipants = participants;
+  const requestedList   = allParticipants.filter(p => p.rsvp === 'requested');
   const goingList       = allParticipants.filter(p => p.rsvp === 'going');
-  const maybeList       = allParticipants.filter(p => p.rsvp === 'maybe');
-  const notGoingList    = allParticipants.filter(p => p.rsvp === 'notGoing');
+  const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
   const filteredParticipants =
-    rsvpFilter === 'all'      ? allParticipants :
-    rsvpFilter === 'going'    ? goingList :
-    rsvpFilter === 'maybe'    ? maybeList :
-                                notGoingList;
+    rsvpFilter === 'all'       ? allParticipants :
+    rsvpFilter === 'requested' ? requestedList :
+    rsvpFilter === 'going'     ? goingList :
+                                 deniedList;
+
+  // ── Approve / Deny a registration request (admins) ──────────────────────────
+  const handleApprove = (memberId: string) => {
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'going' } : p));
+    toast.success('Registration approved — marked as Going.');
+  };
+  const handleDeny = (memberId: string) => {
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
+    toast('Registration denied.');
+  };
+
+  // ── Member self-registration ("Request to Attend") ──────────────────────────
+  const myMemberId = scope.selfMemberId;
+  const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
+  const handleAttend = () => {
+    if (!myMemberId) return;
+    const me = mockMembers.find(m => m.id === myMemberId);
+    setParticipants(prev => ([
+      ...prev,
+      {
+        memberId: myMemberId,
+        name: me?.name ?? 'You',
+        email: me?.email ?? '',
+        phone: me?.phone ?? '',
+        memberType: me?.memberType ?? 'adult',
+        rsvp: 'requested',
+      },
+    ]));
+    toast.success('Request to attend sent for approval.');
+  };
 
   // ── Export participants as CSV ─────────────────────────────────────────────
   const handleExportParticipants = () => {
@@ -188,7 +227,7 @@ export default function EventDetail({
     ];
 
     const rsvpLabel = (r: EventParticipant['rsvp']) =>
-      r === 'going' ? 'Going' : r === 'maybe' ? 'Maybe' : 'Not Going';
+      r === 'going' ? 'Going' : r === 'requested' ? 'Requested' : 'Denied';
 
     const escape = (v: string | undefined | null) =>
       `"${(v ?? '').toString().replace(/"/g, '""')}"`;
@@ -392,6 +431,31 @@ export default function EventDetail({
 
             <div className="flex flex-wrap items-center gap-2">
               <SecondaryButton icon={ArrowLeft} onClick={onBack}>Back to Events</SecondaryButton>
+
+              {/* Member self-registration */}
+              {isMember && !isCancelledOrCompleted && (
+                !myParticipation ? (
+                  <button
+                    className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+                    onClick={handleAttend}
+                  >
+                    <CalendarCheck className="w-3.5 h-3.5" /> Request to Attend
+                  </button>
+                ) : myParticipation.rsvp === 'requested' ? (
+                  <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
+                    <ClockIcon className="w-3.5 h-3.5" /> Requested — awaiting approval
+                  </span>
+                ) : myParticipation.rsvp === 'going' ? (
+                  <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Going
+                  </span>
+                ) : (
+                  <span className={`${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-error-50 dark:bg-error-950/20`}>
+                    <XCircle className="w-3.5 h-3.5" /> Request Denied
+                  </span>
+                )
+              )}
+
               {modifyOk ? (
                 <button className={btnGhost} onClick={onModify}><Edit className="w-3.5 h-3.5" /> Modify</button>
               ) : (
@@ -450,9 +514,9 @@ export default function EventDetail({
               {activeTab === 'overview' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard label="Going"     value={event.metrics.going}    icon={CheckCircle2} valueClassName="text-success-600 dark:text-success-400" className="bg-neutral-50 dark:bg-neutral-900/50" />
-                    <StatCard label="Maybe"     value={event.metrics.maybe}    icon={HelpCircle}   valueClassName="text-primary-600 dark:text-primary-400"  className="bg-neutral-50 dark:bg-neutral-900/50" />
-                    <StatCard label="Not Going" value={event.metrics.notGoing} icon={XCircle}      className="bg-neutral-50 dark:bg-neutral-900/50" />
+                    <StatCard label="Requested" value={requestedList.length} icon={ClockIcon}    valueClassName="text-amber-600 dark:text-amber-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
+                    <StatCard label="Going"     value={goingList.length}     icon={CheckCircle2} valueClassName="text-success-600 dark:text-success-400" className="bg-neutral-50 dark:bg-neutral-900/50" />
+                    <StatCard label="Denied"    value={deniedList.length}    icon={XCircle}      valueClassName="text-error-600 dark:text-error-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
                   </div>
 
                   {/* Description */}
@@ -551,10 +615,10 @@ export default function EventDetail({
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1 flex-wrap">
                       {([
-                        { id: 'all',      label: 'All',       count: allParticipants.length },
-                        { id: 'going',    label: 'Going',     count: goingList.length       },
-                        { id: 'maybe',    label: 'Maybe',     count: maybeList.length       },
-                        { id: 'notGoing', label: 'Not Going', count: notGoingList.length    },
+                        { id: 'all',       label: 'All',       count: allParticipants.length },
+                        { id: 'requested', label: 'Requested', count: requestedList.length   },
+                        { id: 'going',     label: 'Going',     count: goingList.length       },
+                        { id: 'denied',    label: 'Denied',    count: deniedList.length      },
                       ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
                         <button
                           key={f.id}
@@ -585,7 +649,7 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','Name','Member ID','Email','Phone','Type','RSVP'].map(h => (
+                            {['#','Name','Member ID','Email','Phone','Type','Status', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
@@ -612,6 +676,32 @@ export default function EventDetail({
                               </td>
                               <td className="px-4 py-3"><TypeBadge type={p.memberType} /></td>
                               <td className="px-4 py-3"><RsvpBadge rsvp={p.rsvp} /></td>
+                              {!isMember && (
+                                <td className="px-4 py-3">
+                                  {p.rsvp === 'requested' ? (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => handleApprove(p.memberId)}
+                                        title="Approve"
+                                        aria-label="Approve"
+                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-success-600 hover:bg-success-700 text-white transition-colors"
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeny(p.memberId)}
+                                        title="Deny"
+                                        aria-label="Deny"
+                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
+                                      >
+                                        <Ban className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-neutral-400">—</span>
+                                  )}
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
