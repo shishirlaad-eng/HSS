@@ -112,7 +112,20 @@ export function applyMemberCentreOverrides<T extends {
   region?: string;
   town?: string;
   activityCentre?: string;
+  status?: string;
 }>(items: T[]): T[] {
   const overrides = getMemberCentreOverrides();
-  return items.map(item => item.id && overrides[item.id] ? { ...item, ...overrides[item.id] } : item);
+  const pendingMemberIds = new Set(
+    getTransferRequests()
+      .filter(request => request.status === 'pending')
+      .map(request => request.memberId),
+  );
+
+  return items.map(item => {
+    const approvedItem = item.id && overrides[item.id] ? { ...item, ...overrides[item.id] } : item;
+    if (item.id && pendingMemberIds.has(item.id) && 'status' in item) {
+      return { ...approvedItem, status: 'pending' } as T;
+    }
+    return approvedItem;
+  });
 }

@@ -22,6 +22,8 @@ import {
 import { PageHeader, SecondaryButton } from './hb/listing';
 import { ShakhaSession, AttendanceRecord, getSessionShakhaType } from '../../mockAPI/attendanceData';
 import { mockMembers, ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
+import { toast } from 'sonner';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -187,6 +189,9 @@ export default function SessionDetail({
   const [filterJobTitle,    setFilterJobTitle]    = useState('');
   const [showCancelModal,   setShowCancelModal]   = useState(false);
   const [isCancelling,      setIsCancelling]      = useState(false);
+  const { scope, selectedRole } = useRoleScope();
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
 
   const rate       = attendanceRate(session);
   const shakhaType = getSessionShakhaType(session);
@@ -198,7 +203,7 @@ export default function SessionDetail({
   // Future session = date is strictly after today (midnight)
   const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
   const isFutureSession = dateObj > todayMidnight;
-  const canCancel = isFutureSession && session.status !== 'cancelled' && !!onCancelSession;
+  const canCancel = !isMemberRole && isFutureSession && session.status !== 'cancelled' && !!onCancelSession;
 
   const handleConfirmCancel = async () => {
     if (!onCancelSession) return;
@@ -250,7 +255,12 @@ export default function SessionDetail({
   };
 
   // ── Derived attendance groups ─────────────────────────────
-  const allRecords  = session.attendanceRecords;
+  const allRecords = isMemberRole
+    ? session.attendanceRecords.filter(record => record.memberId === selfMemberId)
+    : session.attendanceRecords;
+  const selfAttendance = selfMemberId
+    ? session.attendanceRecords.find(record => record.memberId === selfMemberId)
+    : undefined;
   const present     = processRecords(allRecords.filter(r => r.status === 'present'));
   const absent      = processRecords(allRecords.filter(r => r.status === 'absent'));
   const unmarked    = processRecords(allRecords.filter(r => r.status === 'unmarked'));
@@ -286,6 +296,19 @@ export default function SessionDetail({
           <SecondaryButton icon={ArrowLeft} onClick={onBack}>
             Back to Shakha
           </SecondaryButton>
+          {isMemberRole && selfMemberId && session.status !== 'cancelled' && (
+            <button
+              onClick={() => {
+                onMarkAttendance(session.id, selfMemberId, 'present');
+                toast.success('Your attendance has been marked.');
+              }}
+              disabled={selfAttendance?.status === 'present'}
+              className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg bg-success-600 hover:bg-success-700 text-white transition-colors disabled:opacity-60 disabled:cursor-default"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {selfAttendance?.status === 'present' ? 'Attendance Marked' : 'Mark Attendance'}
+            </button>
+          )}
           {canCancel && (
             <button
               onClick={() => setShowCancelModal(true)}

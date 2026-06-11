@@ -26,6 +26,8 @@ import {
   ShieldAlert,
   AlertTriangle,
   Loader2,
+  CalendarDays,
+  X,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -37,6 +39,7 @@ import {
   PrimaryButton,
   ColumnVisibilityPanel,
   SummaryWidgets,
+  DateRangeFilter,
   type ColumnConfig,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
@@ -602,18 +605,29 @@ const EVENT_FILTER_BASE = {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function EventManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
-  const { scope } = useRoleScope();
+  const { scope, selectedRole } = useRoleScope();
   const ep = useModulePermissions('events');
   const scopedFilterOptions = getScopedFilterOptions(scope);
-  const scopedEvents = useMemo(() => filterByScope(mockEvents, scope), [scope]);
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const scopedEvents = useMemo(
+    () => isMemberRole ? mockEvents : filterByScope(mockEvents, scope),
+    [isMemberRole, scope],
+  );
 
-  const [viewMode, setViewMode]       = useState<ViewMode>('grid');
+  const [viewMode, setViewMode]       = useState<ViewMode>(
+    isMemberRole ? 'list' : 'grid'
+  );
   const [events, setEvents]           = useState<Event[]>(mockEvents);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters]         = useState<FilterCondition[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [eventDateStart, setEventDateStart] = useState('');
+  const [eventDateEnd, setEventDateEnd] = useState('');
+  const [eventDateLabel, setEventDateLabel] = useState('');
+  const [showEventDateFilter, setShowEventDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pageState, setPageState]         = useState<PageState>('list');
@@ -703,9 +717,14 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
         }
       });
 
-      return matchesSearch && matchesFilters;
+      const eventDate = event.startDate.split('T')[0];
+      const matchesEventDates =
+        (!eventDateStart || eventDate >= eventDateStart) &&
+        (!eventDateEnd || eventDate <= eventDateEnd);
+
+      return matchesSearch && matchesFilters && matchesEventDates;
     });
-  }, [events, searchQuery, filters]);
+  }, [scopedEvents, searchQuery, filters, eventDateStart, eventDateEnd]);
 
   const sortedEvents = useMemo(() => {
     return [...filteredEvents].sort((a, b) => {
@@ -945,35 +964,79 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
             { label: 'Karyakrams', current: true },
           ]}
         >
-          <div className="relative" ref={columnAnchorRef}>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onAdvancedSearch={() => setShowAdvancedSearch(true)}
-              onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
-              activeFilterCount={filters.filter(f => f.values.length > 0).length}
-              placeholder="Search events..."
-            />
-            <AdvancedSearchPanel
-              isOpen={showAdvancedSearch}
-              onClose={() => setShowAdvancedSearch(false)}
-              filters={filters}
-              onFiltersChange={setFilters}
-              filterOptions={{
-                ...EVENT_FILTER_BASE,
-                ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
-                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
-                ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
-                ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
+          {!isMemberRole && (
+            <div className="relative" ref={columnAnchorRef}>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onAdvancedSearch={() => setShowAdvancedSearch(true)}
+                onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
+                activeFilterCount={filters.filter(f => f.values.length > 0).length}
+                placeholder="Search events..."
+              />
+              <AdvancedSearchPanel
+                isOpen={showAdvancedSearch}
+                onClose={() => setShowAdvancedSearch(false)}
+                filters={filters}
+                onFiltersChange={setFilters}
+                filterOptions={{
+                  ...EVENT_FILTER_BASE,
+                  ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
+                  ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                  ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
+                  ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
+                }}
+              />
+              <ColumnVisibilityPanel
+                isOpen={showColumnPanel}
+                onClose={() => setShowColumnPanel(false)}
+                columns={eventColumns}
+                visibleColumns={visibleColumns}
+                onToggleColumn={toggleColumn}
+                anchorRef={columnAnchorRef}
+              />
+            </div>
+          )}
+
+          <div className="relative" ref={dateFilterRef}>
+            <button
+              onClick={() => setShowEventDateFilter(p => !p)}
+              title="Filter by Event Dates"
+              className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                eventDateStart
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              {eventDateStart ? (eventDateLabel || `${eventDateStart} - ${eventDateEnd}`) : 'Event dates'}
+              {eventDateStart && (
+                <span
+                  role="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setEventDateStart('');
+                    setEventDateEnd('');
+                    setEventDateLabel('');
+                  }}
+                  className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
+            </button>
+            <DateRangeFilter
+              isOpen={showEventDateFilter}
+              onClose={() => setShowEventDateFilter(false)}
+              startDate={eventDateStart}
+              endDate={eventDateEnd}
+              onApply={(start, end, label) => {
+                setEventDateStart(start);
+                setEventDateEnd(end);
+                setEventDateLabel(label || '');
+                setCurrentPage(1);
               }}
-            />
-            <ColumnVisibilityPanel
-              isOpen={showColumnPanel}
-              onClose={() => setShowColumnPanel(false)}
-              columns={eventColumns}
-              visibleColumns={visibleColumns}
-              onToggleColumn={toggleColumn}
-              anchorRef={columnAnchorRef}
+              title="Event Date Range"
             />
           </div>
 
@@ -982,8 +1045,12 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
               Create Event
             </PrimaryButton>
           )}
-          <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
-          <IconButton icon={RefreshCw} onClick={() => toast.info('Refreshed.')} title="Refresh" />
+          {!isMemberRole && (
+            <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+          )}
+          {!isMemberRole && (
+            <IconButton icon={RefreshCw} onClick={() => toast.info('Refreshed.')} title="Refresh" />
+          )}
           {ep.canExport && (
             <IconButton
               icon={MoreVertical}
@@ -994,11 +1061,13 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
               ]}
             />
           )}
-          <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
+          {!isMemberRole && (
+            <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
+          )}
         </PageHeader>
 
         {/* SUMMARY WIDGETS */}
-        {showSummary && (
+        {!isMemberRole && showSummary && (
           <SummaryWidgets
             title="Event Summary"
             widgets={[

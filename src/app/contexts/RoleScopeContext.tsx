@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { getRoleScope, RoleScope } from '../../mockAPI/roleScope';
 import { mockRoles } from '../../mockAPI/rolesData';
+import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 
 interface RoleScopeContextValue {
   selectedRole: string;
@@ -19,9 +20,19 @@ export function RoleScopeProvider({
   selectedRole: string;
   children: ReactNode;
 }) {
+  const [transferVersion, setTransferVersion] = useState(0);
+
+  useEffect(() => {
+    const refreshScope = () => setTransferVersion(version => version + 1);
+    window.addEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
+    return () => window.removeEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
+  }, []);
+
+  const scope = useMemo(() => getRoleScope(selectedRole), [selectedRole, transferVersion]);
+
   return (
     <RoleScopeContext.Provider
-      value={{ selectedRole, scope: getRoleScope(selectedRole) }}
+      value={{ selectedRole, scope }}
     >
       {children}
     </RoleScopeContext.Provider>

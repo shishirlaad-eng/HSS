@@ -557,14 +557,15 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
                 {getAgeGroupLabel(profile.dateOfBirth)}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                <span className="text-[#3d8928]">Active &amp; Approved</span>
-              </span>
-              {pendingTransfer && (
+              {pendingTransfer ? (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                  <span className="text-[#d97706]">Shakha Transfer Pending</span>
+                  <span className="text-[#d97706]">Pending Approval</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
+                  <span className="text-[#3d8928]">Active &amp; Approved</span>
                 </span>
               )}
             </div>
@@ -858,9 +859,17 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                           <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.activityCentre}</p>
                         </div>
                       </div>
+                      {pendingTransfer && (
+                        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Transfer awaiting approval</p>
+                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                            Requested move to {pendingTransfer.toCentre}. You can continue viewing your profile, attendance, and donations while the receiving Shakha reviews it.
+                          </p>
+                        </div>
+                      )}
                       <div className="max-w-xl">
                         <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">New Shakha</label>
-                        <FormSelect value={requestedCentre} onChange={event => setRequestedCentre(event.target.value)}>
+                        <FormSelect value={requestedCentre} onChange={event => setRequestedCentre(event.target.value)} disabled={!!pendingTransfer}>
                           <option value="">Select a new Shakha...</option>
                           {Object.values(MASTERS_CASCADE.centres).flat()
                             .filter(centre => centre !== profile.activityCentre)
@@ -868,7 +877,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                         </FormSelect>
                       </div>
                       <div className="flex justify-end">
-                        <PrimaryButton onClick={handleTransferRequest} disabled={!requestedCentre}>
+                        <PrimaryButton onClick={handleTransferRequest} disabled={!requestedCentre || !!pendingTransfer}>
                           Request Shakha Transfer
                         </PrimaryButton>
                       </div>

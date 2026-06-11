@@ -198,8 +198,8 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
 
   const upcomingEvents = useMemo(
     () => mockEvents
-      .filter(e => e.status === 'published' || e.status === 'active')
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()),
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+      .slice(0, 10),
     [],
   );
 

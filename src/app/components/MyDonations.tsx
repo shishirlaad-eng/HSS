@@ -4,21 +4,8 @@
 
 import { Heart } from "lucide-react";
 import { PageHeader } from "./hb/listing";
-
-interface Donation {
-  id: string;
-  datetime: string; // ISO datetime
-  amount: number;
-  activityCentre: string;
-}
-
-const mockMyDonations: Donation[] = [
-  { id: "DON-001", datetime: "2026-05-28T14:32:00", amount: 25.00,  activityCentre: "Wembley Activity Centre" },
-  { id: "DON-002", datetime: "2026-04-15T09:15:00", amount: 50.00,  activityCentre: "Wembley Activity Centre" },
-  { id: "DON-003", datetime: "2026-03-22T18:47:00", amount: 10.00,  activityCentre: "Harrow Activity Centre" },
-  { id: "DON-004", datetime: "2026-02-10T11:05:00", amount: 100.00, activityCentre: "Harrow Activity Centre" },
-  { id: "DON-005", datetime: "2026-01-05T16:20:00", amount: 25.00,  activityCentre: "Harrow Activity Centre" },
-];
+import { mockMemberDonations } from "../../mockAPI/donationsData";
+import { useRoleScope } from "../contexts/RoleScopeContext";
 
 const formatDateTime = (iso: string) => {
   const d = new Date(iso);
@@ -28,6 +15,8 @@ const formatDateTime = (iso: string) => {
 };
 
 export default function MyDonations({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const { scope } = useRoleScope();
+  const mockMyDonations = mockMemberDonations.filter(donation => donation.memberId === scope.selfMemberId);
   const total = mockMyDonations.reduce((s, d) => s + d.amount, 0);
 
   return (

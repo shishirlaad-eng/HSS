@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { MASTERS_CASCADE } from './membersData';
-import { applyMemberCentreOverrides } from './shakhaTransferData';
+import { applyMemberCentreOverrides, getMemberCentreOverrides } from './shakhaTransferData';
 
 export type ScopeLevel = 'all' | 'national' | 'regional' | 'town' | 'centre';
 
@@ -116,7 +116,19 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
 // UTILITY — get scope for a role name
 // ─────────────────────────────────────────────────────────────
 export function getRoleScope(roleName: string): RoleScope {
-  return ROLE_SCOPE_MAP[roleName] ?? ROLE_SCOPE_MAP['Super Admin'];
+  const scope = ROLE_SCOPE_MAP[roleName] ?? ROLE_SCOPE_MAP['Super Admin'];
+  if (!scope.selfOnly || !scope.selfMemberId) return scope;
+
+  const approvedLocation = getMemberCentreOverrides()[scope.selfMemberId];
+  if (!approvedLocation) return scope;
+
+  return {
+    ...scope,
+    country: approvedLocation.country,
+    region: approvedLocation.region,
+    town: approvedLocation.town,
+    centre: approvedLocation.activityCentre,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────

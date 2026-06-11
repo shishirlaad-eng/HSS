@@ -41,6 +41,7 @@ import {
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { ADMIN_ROLE_OPTIONS, getPermittedNavIds } from "../../mockAPI/rolesData";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import {
   FormModal,
   FormLabel,
@@ -793,10 +794,21 @@ export function GlobalHeader({
             <div className="flex items-center gap-2 flex-shrink-0">
               <img
                 src={logoUrl}
-                alt="Admin Panel"
-                className="h-8 w-8 object-contain"
+                alt="HSS UK Logo"
+                className="h-8 w-auto max-w-20 object-contain flex-shrink-0"
               />
-              {!["Member (18+)", "Teen (13–17)"].includes(selectedRole) && (
+              {isMemberRole ? (
+                <>
+                  <div className="w-px h-7 bg-white/40 flex-shrink-0" />
+                  <div className="flex items-center justify-center bg-black rounded-md px-2 py-0.5 flex-shrink-0">
+                    <img
+                      src={myHssLogo}
+                      alt="My HSS"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </div>
+                </>
+              ) : (
                 <span className="text-base font-bold tracking-tight text-primary-600 dark:text-primary-400 hidden sm:inline">
                   HB Template
                 </span>
@@ -1211,7 +1223,7 @@ export function GlobalHeader({
             <div className="w-px h-5 mx-1.5 flex-shrink-0 bg-white/30" />
           )}
           {/* Search Icon — horizontal mode only */}
-          {menuOrientation === "horizontal" && (
+          {menuOrientation === "horizontal" && !isMemberRole && (
             <div className="relative" ref={searchRef}>
               <button
                 onClick={() => {

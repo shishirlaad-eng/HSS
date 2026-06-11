@@ -1053,6 +1053,21 @@ export default function MemberManagement({
     window.addEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
     return () => window.removeEventListener(TRANSFER_CHANGE_EVENT, refreshScope);
   }, []);
+  useEffect(() => {
+    if (!selectedMember) return;
+    const currentScopedMember = scopedMembers.find(member => member.id === selectedMember.id);
+    if (!currentScopedMember) {
+      setSelectedMember(null);
+      setPageState('list');
+      return;
+    }
+    if (
+      currentScopedMember.status !== selectedMember.status ||
+      currentScopedMember.activityCentre !== selectedMember.activityCentre
+    ) {
+      setSelectedMember(currentScopedMember);
+    }
+  }, [scopedMembers, selectedMember]);
 
   // ── Filter & search ─────────────────────────────────────────
 

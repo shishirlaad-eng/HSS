@@ -15,6 +15,24 @@ export interface DonationRecord {
   giftAid: boolean;   // UK taxpayer Gift Aid declaration — adds 25% claimable on top
 }
 
+export interface MemberDonationRecord {
+  id: string;
+  memberId: string;
+  datetime: string;
+  amount: number;
+  activityCentre: string;
+}
+
+// Recorded Shakha is immutable transaction history across member transfers.
+export const mockMemberDonations: MemberDonationRecord[] = [
+  { id: 'MDON-001', memberId: 'WBL-001', datetime: '2026-05-28T14:32:00', amount: 25,  activityCentre: 'Wembley Activity Centre' },
+  { id: 'MDON-002', memberId: 'WBL-001', datetime: '2026-04-15T09:15:00', amount: 50,  activityCentre: 'Wembley Activity Centre' },
+  { id: 'MDON-003', memberId: 'WBL-001', datetime: '2026-03-22T18:47:00', amount: 10,  activityCentre: 'Harrow Activity Centre' },
+  { id: 'MDON-004', memberId: 'WBL-001', datetime: '2026-02-10T11:05:00', amount: 100, activityCentre: 'Harrow Activity Centre' },
+  { id: 'MDON-005', memberId: 'WBL-001', datetime: '2026-01-05T16:20:00', amount: 25,  activityCentre: 'Harrow Activity Centre' },
+  { id: 'MDON-006', memberId: 'WBL-004', datetime: '2026-05-09T12:15:00', amount: 15,  activityCentre: 'Wembley Activity Centre' },
+];
+
 export const mockDonations: DonationRecord[] = [
   {
     id: 'DON-001',

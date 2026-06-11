@@ -88,6 +88,8 @@ export default function Sessions() {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
   const atp = useModulePermissions('attendance');
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const canManageShakha = !isMemberRole && atp.canView && atp.canAdd;
 
   // Super Admin defaults to week view; all other roles default to month view
   const [viewMode, setViewMode] = useState<'month' | 'week'>(
@@ -126,20 +128,25 @@ export default function Sessions() {
   };
 
   const handleMarkAttendance = (sessionId: string, memberId: string, status: AttendanceRecord['status']) => {
+    const memberRecordTemplate = sessions
+      .flatMap(session => session.attendanceRecords)
+      .find(record => record.memberId === memberId);
+
     const updateSession = (session: ShakhaSession): ShakhaSession => {
       if (session.id !== sessionId) return session;
 
+      const hasMemberRecord = session.attendanceRecords.some(record => record.memberId === memberId);
+      const markedAt = status === 'unmarked' ? undefined : new Date().toISOString();
+
       return {
         ...session,
-        attendanceRecords: session.attendanceRecords.map(record =>
-          record.memberId === memberId
-            ? {
-                ...record,
-                status,
-                markedAt: status === 'unmarked' ? undefined : new Date().toISOString(),
-              }
-            : record,
-        ),
+        attendanceRecords: hasMemberRecord
+          ? session.attendanceRecords.map(record =>
+              record.memberId === memberId ? { ...record, status, markedAt } : record,
+            )
+          : memberRecordTemplate
+            ? [...session.attendanceRecords, { ...memberRecordTemplate, status, markedAt }]
+            : session.attendanceRecords,
       };
     };
 
@@ -245,13 +252,13 @@ export default function Sessions() {
         allSessions={sessions}
         onBack={() => setSelectedSession(null)}
         onMarkAttendance={handleMarkAttendance}
-        onCancelSession={handleCancelSession}
+        onCancelSession={canManageShakha ? handleCancelSession : undefined}
       />
     );
   }
 
   // ── Show Create Session page ───────────────────────────────
-  if (createDate) {
+  if (createDate && canManageShakha) {
     return (
       <CreateSession
         initialDate={createDate}
@@ -271,7 +278,7 @@ export default function Sessions() {
           { label: 'Shakha', current: true },
         ]}
       >
-        {atp.canView && atp.canAdd && (
+        {canManageShakha && (
           <PrimaryButton
             icon={Plus}
             onClick={() => setCreateDate(isoDate(today.getFullYear(), today.getMonth(), today.getDate()))}
@@ -439,19 +446,23 @@ export default function Sessions() {
               return (
                 <div
                   key={idx}
-                  onClick={() => cell.date && setCreateDate(cell.date)}
+                  onClick={() => canManageShakha && cell.date && setCreateDate(cell.date)}
                   className={`min-h-[110px] p-1.5 border-r border-b border-neutral-100 dark:border-neutral-800 last:border-r-0 ${
                     isLastRow ? 'border-b-0' : ''
                   } ${
                     !cell.date
                       ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
-                      : 'bg-white dark:bg-neutral-950 cursor-pointer hover:bg-primary-50/40 dark:hover:bg-primary-950/20 transition-colors group'
+                      : canManageShakha
+                        ? 'bg-white dark:bg-neutral-950 cursor-pointer hover:bg-primary-50/40 dark:hover:bg-primary-950/20 transition-colors group'
+                        : 'bg-white dark:bg-neutral-950'
                   }`}
                 >
                   {cell.dayNum !== null && (
                     <>
                       <div className="flex items-center justify-between mb-1">
-                        <Plus className="w-3 h-3 text-neutral-300 dark:text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {canManageShakha && (
+                          <Plus className="w-3 h-3 text-neutral-300 dark:text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
                         <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium ${
                           isToday
                             ? 'bg-primary-600 text-white'
@@ -507,14 +518,18 @@ export default function Sessions() {
               return (
                 <div
                   key={wd.date}
-                  onClick={() => setCreateDate(wd.date)}
-                  className={`p-2 border-r border-neutral-100 dark:border-neutral-800 last:border-r-0 cursor-pointer group ${
-                    isToday ? 'bg-primary-50/30 dark:bg-primary-950/10' : 'hover:bg-primary-50/30 dark:hover:bg-primary-950/10'
+                  onClick={() => canManageShakha && setCreateDate(wd.date)}
+                  className={`p-2 border-r border-neutral-100 dark:border-neutral-800 last:border-r-0 group ${
+                    canManageShakha ? 'cursor-pointer' : ''
+                  } ${
+                    isToday
+                      ? 'bg-primary-50/30 dark:bg-primary-950/10'
+                      : canManageShakha ? 'hover:bg-primary-50/30 dark:hover:bg-primary-950/10' : ''
                   } transition-colors`}
                 >
                   <div className="space-y-1">
                     {/* "+" hint when hovering empty area */}
-                    {wdSessions.length === 0 && (
+                    {canManageShakha && wdSessions.length === 0 && (
                       <div className="h-20 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-neutral-300 dark:text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>

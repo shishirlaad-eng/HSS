@@ -339,6 +339,7 @@ type PageState = 'list' | 'detail';
 export default function Announcements() {
   const ap = useModulePermissions('announcements');
   const { selectedRole } = useRoleScope();
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
   const canViewAdminSuchanaValues = selectedRole === 'Super Admin' || selectedRole.includes('Admin');
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
@@ -834,12 +835,14 @@ export default function Announcements() {
       </PageHeader>
 
       {/* ── KPI Row ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total"     value={totalCount}     icon={Megaphone}      trend={{ value: 'All announcements',    positive: true }} />
-        <StatCard label="Sent"      value={sentCount}      icon={Send}           trend={{ value: 'Delivered to members', positive: true }} />
-        <StatCard label="Scheduled" value={scheduledCount} icon={CalendarClock}  trend={{ value: 'Awaiting delivery',    positive: true }} />
-        <StatCard label="Drafts"    value={draftCount}     icon={BookmarkCheck}  trend={{ value: 'Not yet published',    positive: false }} />
-      </div>
+      {!isMemberRole && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard label="Total"     value={totalCount}     icon={Megaphone}      trend={{ value: 'All announcements',    positive: true }} />
+          <StatCard label="Sent"      value={sentCount}      icon={Send}           trend={{ value: 'Delivered to members', positive: true }} />
+          <StatCard label="Scheduled" value={scheduledCount} icon={CalendarClock}  trend={{ value: 'Awaiting delivery',    positive: true }} />
+          <StatCard label="Drafts"    value={draftCount}     icon={BookmarkCheck}  trend={{ value: 'Not yet published',    positive: false }} />
+        </div>
+      )}
 
       {/* ── Search + Filters ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
