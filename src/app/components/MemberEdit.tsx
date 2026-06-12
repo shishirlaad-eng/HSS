@@ -35,6 +35,7 @@ import {
 } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 import { ADMIN_ROLE_OPTIONS } from '../../mockAPI/rolesData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
@@ -67,6 +68,24 @@ const STATUS_COLOURS: Record<MemberStatus, string> = {
   inactive: 'bg-[#9C9C9D]',
   rejected: 'bg-[#BC0F1C]',
 };
+
+const QUALIFIED_FIRST_AIDER_ROLES = new Set([
+  'Super Admin',
+  'Member',
+  'Member (18+)',
+  'Teen',
+  'Teen (13–17)',
+  'Shakha Admin',
+  'Activity Centre Admin',
+  'Nagar Admin',
+  'Town Head',
+  'Vibhaag Admin',
+  'Regional Head',
+]);
+
+function canAccessQualifiedFirstAider(selectedRole: string) {
+  return QUALIFIED_FIRST_AIDER_ROLES.has(selectedRole);
+}
 
 interface MemberEditProps {
   member: Member;
@@ -101,6 +120,8 @@ type MemberForm = {
   medicalInfoDeclared: boolean;
   medicalInfoDetails: string;
   isFirstAider: boolean;
+  firstAidQualificationLevel: '' | 'Level 1' | 'Level 2' | 'Level 3';
+  firstAidQualificationExpiryDate: string;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
   originatingStateIndia: string;
@@ -146,6 +167,8 @@ function validEmail(value: string) {
 }
 
 export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) {
+  const { selectedRole } = useRoleScope();
+  const canEditQualifiedFirstAider = canAccessQualifiedFirstAider(selectedRole);
   const [formData, setFormData] = useState<MemberForm>({
     memberType: member.memberType,
     firstName: member.firstName ?? member.name.split(' ')[0] ?? '',
@@ -173,6 +196,8 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     medicalInfoDeclared: member.medicalInfoDeclared ?? false,
     medicalInfoDetails: member.medicalInfoDetails ?? '',
     isFirstAider: member.isFirstAider ?? false,
+    firstAidQualificationLevel: member.firstAidQualificationLevel ?? '',
+    firstAidQualificationExpiryDate: member.firstAidQualificationExpiryDate ?? '',
     dietaryRequirements: member.dietaryRequirements ?? [],
     occupation: member.occupation ?? '',
     originatingStateIndia: member.originatingStateIndia ?? '',
@@ -227,7 +252,14 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
   const setBoolean = (key: keyof Pick<MemberForm, 'medicalInfoDeclared' | 'isFirstAider'>) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData(prev => ({ ...prev, [key]: e.target.checked }));
+      const checked = e.target.checked;
+      setFormData(prev => ({
+        ...prev,
+        [key]: checked,
+        ...(key === 'isFirstAider' && !checked
+          ? { firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '' }
+          : {}),
+      }));
     };
 
   const toggleDietaryRequirement = (value: DietaryRequirement) => {
@@ -367,7 +399,13 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         firstAidRef: formData.firstAidRef.trim() || undefined,
         medicalInfoDeclared: formData.medicalInfoDeclared,
         medicalInfoDetails: formData.medicalInfoDetails.trim() || undefined,
-        isFirstAider: formData.isFirstAider,
+        isFirstAider: canEditQualifiedFirstAider ? formData.isFirstAider : member.isFirstAider,
+        firstAidQualificationLevel: canEditQualifiedFirstAider && formData.isFirstAider
+          ? formData.firstAidQualificationLevel || undefined
+          : member.firstAidQualificationLevel,
+        firstAidQualificationExpiryDate: canEditQualifiedFirstAider && formData.isFirstAider
+          ? formData.firstAidQualificationExpiryDate || undefined
+          : member.firstAidQualificationExpiryDate,
         dietaryRequirements: formData.dietaryRequirements,
         occupation: formData.occupation.trim() || undefined,
         originatingStateIndia: formData.originatingStateIndia.trim() || undefined,
@@ -481,11 +519,32 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <input type="checkbox" checked={formData.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
                   Medical information declared
                 </label>
-                <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                  <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                  First aider for Shakha / HSS (UK)
-                </label>
                 <FormField className="md:col-span-2"><FormLabel>Medical Information Details</FormLabel><FormTextarea rows={3} value={formData.medicalInfoDetails} onChange={set('medicalInfoDetails')} /></FormField>
+                {canEditQualifiedFirstAider && (
+                  <>
+                    <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                      <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
+                      Is Qualified First Aider
+                    </label>
+                    {formData.isFirstAider && (
+                      <>
+                        <FormField>
+                          <FormLabel>Level of qualification</FormLabel>
+                          <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
+                            <option value="">Select level</option>
+                            <option value="Level 1">Level 1</option>
+                            <option value="Level 2">Level 2</option>
+                            <option value="Level 3">Level 3</option>
+                          </FormSelect>
+                        </FormField>
+                        <FormField>
+                          <FormLabel>Qualification expiry date</FormLabel>
+                          <FormInput type="date" value={formData.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} />
+                        </FormField>
+                      </>
+                    )}
+                  </>
+                )}
                 <FormField><FormLabel>Occupation</FormLabel><FormInput value={formData.occupation} onChange={set('occupation')} /></FormField>
                 <FormField><FormLabel>Originating State in India</FormLabel><FormInput value={formData.originatingStateIndia} onChange={set('originatingStateIndia')} /></FormField>
               </div>

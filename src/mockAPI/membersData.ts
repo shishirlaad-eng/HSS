@@ -169,6 +169,8 @@ export interface Member {
   medicalInfoDeclared?: boolean;
   medicalInfoDetails?: string;
   isFirstAider?: boolean;
+  firstAidQualificationLevel?: 'Level 1' | 'Level 2' | 'Level 3';
+  firstAidQualificationExpiryDate?: string;
   dietaryRequirements?: DietaryRequirement[];
   occupation?: string;
   spokenLanguages?: string[];

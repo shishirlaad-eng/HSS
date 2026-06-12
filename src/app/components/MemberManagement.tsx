@@ -108,6 +108,24 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
   jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
+const QUALIFIED_FIRST_AIDER_ROLES = new Set([
+  'Super Admin',
+  'Member',
+  'Member (18+)',
+  'Teen',
+  'Teen (13–17)',
+  'Shakha Admin',
+  'Activity Centre Admin',
+  'Nagar Admin',
+  'Town Head',
+  'Vibhaag Admin',
+  'Regional Head',
+]);
+
+function canAccessQualifiedFirstAider(selectedRole: string) {
+  return QUALIFIED_FIRST_AIDER_ROLES.has(selectedRole);
+}
+
 function StatusBadge({ status }: { status: MemberStatus }) {
   const cfg = STATUS_CONFIG[status];
   return (
@@ -326,6 +344,8 @@ function AddMemberModal({
   onSave: (member: Member) => void;
   existingMembers: Member[];
 }) {
+  const { selectedRole } = useRoleScope();
+  const canEditQualifiedFirstAider = canAccessQualifiedFirstAider(selectedRole);
   const [form, setForm] = useState<AddMemberForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof AddMemberForm, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -451,7 +471,7 @@ function AddMemberModal({
       firstAidRef: form.firstAidRef.trim() || undefined,
       medicalInfoDeclared: form.medicalInfoDeclared,
       medicalInfoDetails: form.medicalInfoDetails.trim() || undefined,
-      isFirstAider: form.isFirstAider,
+      isFirstAider: canEditQualifiedFirstAider ? form.isFirstAider : false,
       dietaryRequirements: form.dietaryRequirements,
       occupation: form.occupation.trim() || undefined,
       originatingStateIndia: form.originatingStateIndia.trim() || undefined,
@@ -635,14 +655,16 @@ function AddMemberModal({
                 <input type="checkbox" checked={form.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
                 Medical information declared
               </label>
-              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                First aider for Shakha / HSS (UK)
-              </label>
               <FormField className="md:col-span-2">
                 <FormLabel>Medical Information Details</FormLabel>
                 <FormTextarea rows={3} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} placeholder="Allergies or medical details" />
               </FormField>
+              {canEditQualifiedFirstAider && (
+                <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                  <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
+                  Is Qualified First Aider
+                </label>
+              )}
               <FormField>
                 <FormLabel>Occupation</FormLabel>
                 <FormInput value={form.occupation} onChange={set('occupation')} placeholder="Occupation" />
