@@ -10,6 +10,8 @@ import {
   Filter,
   LayoutGrid,
   Plus,
+  MapPin,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from './hb/listing/PageHeader';
@@ -109,6 +111,14 @@ export default function Sessions() {
   const [selectedSession, setSelectedSession] = useState<ShakhaSession | null>(null);
   const [createDate,      setCreateDate]      = useState<string | null>(null);
 
+  // Members can browse Shakhas outside their own centre to request to join
+  const [browseOtherShakha, setBrowseOtherShakha] = useState(false);
+  const browse = isMemberRole && browseOtherShakha;
+  const toggleBrowse = () => {
+    setBrowseOtherShakha(b => !b);
+    setFilterRegion(''); setFilterTown(''); setFilterCentre('');
+  };
+
   // Sessions scoped to role level
   const scopedSessions = useMemo(() => filterByScope(mockSessions, scope), [scope]);
   const [sessions, setSessions] = useState<ShakhaSession[]>(mockSessions);
@@ -154,34 +164,49 @@ export default function Sessions() {
     setSelectedSession(prev => (prev ? updateSession(prev) : prev));
   };
 
-  // Cascade options — scoped to role level
-  const regionOptions  = scope.level === 'all' || scope.level === 'national'
+  // Cascade options — scoped to role level, OR full cascade when a member is
+  // browsing other Shakhas ("Attend another Shakha").
+  const regionOptions  = browse
     ? (MASTERS_CASCADE.regions[scope.country ?? 'HSS UK'] ?? [])
-    : scope.region ? [scope.region] : [];
-  const townOptions    = scope.showTownFilter
-    ? (filterRegion
-        ? (MASTERS_CASCADE.towns[filterRegion] ?? [])
-        : scope.region ? (MASTERS_CASCADE.towns[scope.region] ?? []) : [])
-    : [];
-  const centreOptions  = scope.showCentreFilter
-    ? (filterTown
-        ? (MASTERS_CASCADE.centres[filterTown] ?? [])
-        : scope.town ? (MASTERS_CASCADE.centres[scope.town] ?? []) : [])
-    : [];
+    : scope.level === 'all' || scope.level === 'national'
+      ? (MASTERS_CASCADE.regions[scope.country ?? 'HSS UK'] ?? [])
+      : scope.region ? [scope.region] : [];
+  const townOptions    = browse
+    ? (filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [])
+    : scope.showTownFilter
+      ? (filterRegion
+          ? (MASTERS_CASCADE.towns[filterRegion] ?? [])
+          : scope.region ? (MASTERS_CASCADE.towns[scope.region] ?? []) : [])
+      : [];
+  const centreOptions  = browse
+    ? (filterTown ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [])
+    : scope.showCentreFilter
+      ? (filterTown
+          ? (MASTERS_CASCADE.centres[filterTown] ?? [])
+          : scope.town ? (MASTERS_CASCADE.centres[scope.town] ?? []) : [])
+      : [];
+
+  // Show the location filter bar when the role allows it, or in browse mode
+  const showRegionSelect = browse || scope.showRegionFilter;
+  const showTownSelect   = browse || scope.showTownFilter;
+  const showCentreSelect = browse || scope.showCentreFilter;
+  const showFilterBar    = showRegionSelect || showTownSelect || showCentreSelect;
 
   // Reset dependent filters on parent change
   const handleRegionChange = (v: string) => { setFilterRegion(v); setFilterTown(''); setFilterCentre(''); };
   const handleTownChange   = (v: string) => { setFilterTown(v);   setFilterCentre(''); };
 
-  // Filtered sessions — base is already scoped, then apply user-selected filters
+  // Filtered sessions — normally scoped to the role; when a member is browsing
+  // other Shakhas, use the full set so they can find Shakhas at other locations.
   const filteredSessions = useMemo(() => {
-    return scopedSessions.filter(s => {
+    const base = browse ? sessions : scopedSessions;
+    return base.filter(s => {
       if (filterRegion && s.region !== filterRegion) return false;
       if (filterTown   && s.town   !== filterTown)   return false;
       if (filterCentre && s.activityCentre !== filterCentre) return false;
       return true;
     });
-  }, [scopedSessions, filterRegion, filterTown, filterCentre]);
+  }, [browse, sessions, scopedSessions, filterRegion, filterTown, filterCentre]);
 
   // Sessions indexed by ISO date
   const sessionsByDate = useMemo(() => {
@@ -272,12 +297,17 @@ export default function Sessions() {
     <div className="p-6">
       <PageHeader
         title="Shakha"
-        subtitle="Shakha calendar — view and manage recurring Shakha gatherings"
+        subtitle={isMemberRole ? undefined : "Shakha calendar — view and manage recurring Shakha gatherings"}
         breadcrumbs={[
           { label: 'Sankhya' },
           { label: 'Shakha', current: true },
         ]}
       >
+        {isMemberRole && (
+          <PrimaryButton icon={browseOtherShakha ? X : MapPin} onClick={toggleBrowse}>
+            {browseOtherShakha ? 'Back to my Shakha' : 'Attend another Shakha'}
+          </PrimaryButton>
+        )}
         {canManageShakha && (
           <PrimaryButton
             icon={Plus}
@@ -348,11 +378,17 @@ export default function Sessions() {
         </div>
       </div>
 
-      {/* ── Toolbar row 2: always-visible filters ── */}
+      {/* ── Toolbar row 2: location filters (role-scoped or member browse) ── */}
+      {showFilterBar && (
       <div className="flex flex-wrap items-end gap-3 mb-4 p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
         <Filter className="w-4 h-4 text-neutral-400 self-center mt-4 flex-shrink-0" />
+        {browse && (
+          <p className="w-full text-xs text-neutral-500 dark:text-neutral-400 -mb-1">
+            Pick a Region, Nagar and Shakha to find another Shakha you'd like to attend, then open it to request to join.
+          </p>
+        )}
         {/* Region — hidden if role is already scoped to a specific region */}
-        {scope.showRegionFilter && (
+        {showRegionSelect && (
           <div className="flex flex-col gap-1 min-w-[180px] flex-1">
             <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Region</label>
             <select
@@ -366,13 +402,13 @@ export default function Sessions() {
           </div>
         )}
         {/* Town — hidden if role is already scoped to a specific town */}
-        {scope.showTownFilter && (
+        {showTownSelect && (
           <div className="flex flex-col gap-1 min-w-[160px] flex-1">
             <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Town</label>
             <select
               value={filterTown}
               onChange={e => handleTownChange(e.target.value)}
-              disabled={scope.showRegionFilter && !filterRegion}
+              disabled={showRegionSelect && !filterRegion}
               className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">All Towns</option>
@@ -381,13 +417,13 @@ export default function Sessions() {
           </div>
         )}
         {/* Activity Centre — hidden if role is already scoped to a specific centre */}
-        {scope.showCentreFilter && (
+        {showCentreSelect && (
           <div className="flex flex-col gap-1 min-w-[200px] flex-1">
             <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Activity Centre</label>
             <select
               value={filterCentre}
               onChange={e => setFilterCentre(e.target.value)}
-              disabled={scope.showTownFilter && !filterTown}
+              disabled={showTownSelect && !filterTown}
               className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">All Centres</option>
@@ -407,6 +443,7 @@ export default function Sessions() {
           <div className="h-9 w-16 self-end" /> /* spacer to keep row height consistent */
         )}
       </div>
+      )}
 
       {/* ── Legend ── */}
       <div className="flex items-center gap-4 mb-3">

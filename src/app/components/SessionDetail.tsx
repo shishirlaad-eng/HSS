@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   Ban,
   AlertTriangle,
+  UserPlus,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton } from './hb/listing';
 import { ShakhaSession, AttendanceRecord, getSessionShakhaType } from '../../mockAPI/attendanceData';
@@ -189,9 +190,13 @@ export default function SessionDetail({
   const [filterJobTitle,    setFilterJobTitle]    = useState('');
   const [showCancelModal,   setShowCancelModal]   = useState(false);
   const [isCancelling,      setIsCancelling]      = useState(false);
+  const [joinRequested,     setJoinRequested]     = useState(false);
   const { scope, selectedRole } = useRoleScope();
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
   const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
+  // A member's "own" Shakha is the one at their home activity centre. Any other
+  // Shakha is one they can request to join (via "Attend another Shakha").
+  const isOwnShakha  = !!scope.centre && session.activityCentre === scope.centre;
 
   const rate       = attendanceRate(session);
   const shakhaType = getSessionShakhaType(session);
@@ -296,7 +301,7 @@ export default function SessionDetail({
           <SecondaryButton icon={ArrowLeft} onClick={onBack}>
             Back to Shakha
           </SecondaryButton>
-          {isMemberRole && selfMemberId && session.status !== 'cancelled' && (
+          {isMemberRole && selfMemberId && session.status !== 'cancelled' && isOwnShakha && (
             <button
               onClick={() => {
                 onMarkAttendance(session.id, selfMemberId, 'present');
@@ -307,6 +312,19 @@ export default function SessionDetail({
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               {selfAttendance?.status === 'present' ? 'Attendance Marked' : 'Mark Attendance'}
+            </button>
+          )}
+          {isMemberRole && !isOwnShakha && session.status !== 'cancelled' && (
+            <button
+              onClick={() => {
+                setJoinRequested(true);
+                toast.success('Request to join this Shakha sent for approval.');
+              }}
+              disabled={joinRequested}
+              className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors disabled:opacity-60 disabled:cursor-default"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              {joinRequested ? 'Request Sent' : 'Request to Join'}
             </button>
           )}
           {canCancel && (

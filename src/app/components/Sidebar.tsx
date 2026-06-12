@@ -190,7 +190,7 @@ export function Sidebar({
       {/* Sidebar Header — HSS brand blue bar */}
       <div
         className={`h-[53px] flex-shrink-0 px-3 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}
-        style={{ backgroundColor: "#009FE3" }}
+        style={{ backgroundColor: "#172E4D" }}
       >
         {!isCollapsed && (
           <div className="flex items-center gap-2.5 min-w-0">
@@ -200,13 +200,11 @@ export function Sidebar({
               className="h-9 w-auto object-contain flex-shrink-0"
             />
             <div className="w-px h-7 bg-white/40 flex-shrink-0" />
-            <div className="flex items-center justify-center bg-black rounded-md px-2 py-1 flex-shrink-0">
-              <img
-                src={myHssLogo}
-                alt="My HSS"
-                className="h-9 w-auto object-contain"
-              />
-            </div>
+            <img
+              src={myHssLogo}
+              alt="My HSS"
+              className="h-9 w-auto object-contain flex-shrink-0"
+            />
           </div>
         )}
 

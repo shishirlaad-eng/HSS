@@ -784,7 +784,7 @@ export function GlobalHeader({
   return (
     <header
       className={`sticky top-0 z-50 transition-all ${isScrolled ? "shadow-sm" : ""}`}
-      style={{ backgroundColor: "#009FE3" }}
+      style={{ backgroundColor: "#172E4D" }}
     >
       <div className="h-[53px] px-6 flex items-center justify-between gap-4">
         {/* Left Side */}

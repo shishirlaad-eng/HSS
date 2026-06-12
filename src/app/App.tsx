@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import hssLogoColour from "../assets/brand/hss/logos/hss-logo-colour.png";
-import hssLogoWhite from "../assets/brand/hss/logos/hss-logo-white.png";
+import hssLogoOrange from "../assets/brand/hss/logos/hss-logo-orange.png";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
 import { Sidebar } from "./components/Sidebar";
@@ -113,9 +112,8 @@ export default function App() {
     return null;
   });
 
-  // Active logo: custom upload takes priority; otherwise use HSS brand logos
-  // White logo on dark sidebar, colour logo on light sidebar
-  const logoUrl = customLogoUrl || (isDark ? hssLogoWhite : hssLogoColour);
+  // Active logo: custom upload takes priority; otherwise use HSS brand orange logo
+  const logoUrl = customLogoUrl || hssLogoOrange;
 
   const handleLogoChange = (newLogo: string) => {
     setCustomLogoUrl(newLogo);
