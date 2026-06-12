@@ -797,22 +797,12 @@ export function GlobalHeader({
                 alt="HSS UK Logo"
                 className="h-8 w-auto max-w-20 object-contain flex-shrink-0"
               />
-              {isMemberRole ? (
-                <>
-                  <div className="w-px h-7 bg-white/40 flex-shrink-0" />
-                  <div className="flex items-center justify-center bg-black rounded-md px-2 py-0.5 flex-shrink-0">
-                    <img
-                      src={myHssLogo}
-                      alt="My HSS"
-                      className="h-8 w-auto object-contain"
-                    />
-                  </div>
-                </>
-              ) : (
-                <span className="text-base font-bold tracking-tight text-primary-600 dark:text-primary-400 hidden sm:inline">
-                  HB Template
-                </span>
-              )}
+              <div className="w-px h-7 bg-white/40 flex-shrink-0" />
+              <img
+                src={myHssLogo}
+                alt="My HSS"
+                className="h-8 w-auto object-contain flex-shrink-0"
+              />
             </div>
             <div className="w-px h-5 flex-shrink-0 bg-white/30" />
             <div
