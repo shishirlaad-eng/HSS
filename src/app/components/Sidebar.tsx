@@ -151,7 +151,7 @@ export function Sidebar({
     "reports-group":                  "Reports",
     "report-members":                 "Members Report",
     "report-events":                  "Events Report",
-    "report-donations":               "Donations / Payment Report",
+    "report-donations":               "Nidhi Report",
     "report-attendance":              "Attendance Report",
     "report-refunds":                 "Refund Report",
 

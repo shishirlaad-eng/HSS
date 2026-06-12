@@ -186,7 +186,7 @@ export const getNavigationData = (
         },
         {
           id: "report-donations",
-          label: "Donations / Payment Report",
+          label: "Nidhi Report",
           onClick: () => onNavigate("report-donations"),
           active: currentPage === "report-donations",
         },

@@ -41,7 +41,7 @@ import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 const PAGE_LABELS: Record<string, string> = {
   "report-members":             "Members Report",
   "report-events":              "Events Report",
-  "report-donations":           "Donations / Payment Report",
+  "report-donations":           "Nidhi Report",
   "report-attendance":          "Sankhya Report",
   "report-refunds":             "Refund Report",
   "role-types":                 "Responsibility",

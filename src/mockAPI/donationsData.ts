@@ -1,5 +1,6 @@
 export type DonationStatus = 'received' | 'pledged' | 'failed' | 'refunded';
 export type DonationChannel = 'online' | 'bank-transfer' | 'cash' | 'cheque';
+export type IncomeStream = 'online-donation' | 'cash-income' | 'standing-order';
 
 export interface DonationRecord {
   id: string;
@@ -13,6 +14,7 @@ export interface DonationRecord {
   activityCentre: string;
   donorType: 'member' | 'family' | 'organisation' | 'anonymous';
   giftAid: boolean;   // UK taxpayer Gift Aid declaration — adds 25% claimable on top
+  incomeStream: IncomeStream;
 }
 
 export interface MemberDonationRecord {
@@ -46,6 +48,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Wembley',
     activityCentre: 'Wembley Activity Centre',
     donorType: 'member',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-002',
@@ -59,6 +62,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Birmingham',
     activityCentre: 'Birmingham East Activity Centre',
     donorType: 'family',
+    incomeStream: 'standing-order',
   },
   {
     id: 'DON-003',
@@ -72,6 +76,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Manchester',
     activityCentre: 'Manchester Central Activity Centre',
     donorType: 'member',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-004',
@@ -85,6 +90,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Harrow',
     activityCentre: 'Harrow Activity Centre',
     donorType: 'organisation',
+    incomeStream: 'standing-order',
   },
   {
     id: 'DON-005',
@@ -98,6 +104,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Edinburgh',
     activityCentre: 'Edinburgh Activity Centre',
     donorType: 'anonymous',
+    incomeStream: 'cash-income',
   },
   {
     id: 'DON-006',
@@ -111,6 +118,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Dublin City',
     activityCentre: 'Dublin Activity Centre',
     donorType: 'family',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-007',
@@ -124,6 +132,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Leeds',
     activityCentre: 'Leeds North Activity Centre',
     donorType: 'member',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-008',
@@ -137,6 +146,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Cardiff',
     activityCentre: 'Cardiff Activity Centre',
     donorType: 'organisation',
+    incomeStream: 'standing-order',
   },
   {
     id: 'DON-009',
@@ -150,6 +160,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Leicester',
     activityCentre: 'Leicester Activity Centre',
     donorType: 'member',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-010',
@@ -163,6 +174,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'Southall',
     activityCentre: 'Southall Activity Centre',
     donorType: 'family',
+    incomeStream: 'standing-order',
   },
   {
     id: 'DON-011',
@@ -176,6 +188,7 @@ export const mockDonations: DonationRecord[] = [
     town: 'New York',
     activityCentre: 'New York Activity Centre',
     donorType: 'anonymous',
+    incomeStream: 'online-donation',
   },
   {
     id: 'DON-012',
@@ -189,5 +202,6 @@ export const mockDonations: DonationRecord[] = [
     town: 'Ilford',
     activityCentre: 'Ilford Activity Centre',
     donorType: 'organisation',
+    incomeStream: 'standing-order',
   },
 ];
