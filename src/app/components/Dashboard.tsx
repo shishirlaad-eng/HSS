@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
-import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel } from '../../mockAPI/membersData';
+import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup } from '../../mockAPI/membersData';
 import { mockEvents } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations } from '../../mockAPI/donationsData';
@@ -628,16 +628,6 @@ function HierarchyKpiSection({
     const suchanaMedium = mockAnnouncements.filter(a => a.priority === 'medium').length;
     const suchanaLow    = mockAnnouncements.filter(a => a.priority === 'low').length;
 
-    // ── Upcoming Karyakrams ──
-    const scopedEvents = filterByScope(mockEvents, scope);
-    const upcomingEvents = scopedEvents.filter(
-      e => (e.status === 'published' || e.status === 'active') && new Date(e.startDate) >= now,
-    );
-    // Unscoped published/active events (active · published breakdown)
-    const allUpcomingList = mockEvents.filter(e => e.status === 'published' || e.status === 'active');
-    const allUpcomingActive = allUpcomingList.filter(e => e.status === 'active').length;
-    const allUpcomingPublished = allUpcomingList.filter(e => e.status === 'published').length;
-
     // ── Members (scoped) ──
     const scopedMembers = filterByScope(mockMembers, scope);
     const pendingApprovals = scopedMembers.filter(
@@ -648,6 +638,22 @@ function HierarchyKpiSection({
     const karyakartas = scopedMembers.filter(
       m => m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle),
     ).length;
+
+    // ── Upcoming Karyakrams — events any member of this Shakha is eligible for ──
+    const isEligibleForShakha = (e: typeof mockEvents[number]) => {
+      if (!e.filterAgeCategories && !e.filterGenders && !e.filterJobTitles) return true;
+      return scopedMembers.some(m => {
+        const ageOk    = !e.filterAgeCategories || e.filterAgeCategories.includes(getAgeGroup(m.dateOfBirth));
+        const genderOk = !e.filterGenders || e.filterGenders.includes(m.gender);
+        const jobOk    = !e.filterJobTitles || e.filterJobTitles.includes(m.jobTitle);
+        return ageOk && genderOk && jobOk;
+      });
+    };
+    const allUpcomingList = mockEvents
+      .filter(e => e.status === 'published' || e.status === 'active')
+      .filter(isEligibleForShakha);
+    const allUpcomingActive = allUpcomingList.filter(e => e.status === 'active').length;
+    const allUpcomingPublished = allUpcomingList.filter(e => e.status === 'published').length;
 
     // ── Nidhi (donations) ──
     const receivedDonations = filterByScope(mockDonations, scope).filter(d => d.status === 'received');
@@ -664,7 +670,6 @@ function HierarchyKpiSection({
     return {
       avgLast4, avgYTD, sessionsHeldYTD,
       suchanaActive, suchanaHigh, suchanaMedium, suchanaLow,
-      upcomingEvents: upcomingEvents.length,
       allUpcoming: allUpcomingList.length, allUpcomingActive, allUpcomingPublished,
       pendingApprovals: pendingApprovals.length, pendingParental,
       karyakartas,
