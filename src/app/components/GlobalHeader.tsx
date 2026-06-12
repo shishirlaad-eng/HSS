@@ -66,6 +66,7 @@ interface GlobalHeaderProps {
   onNavigate?: (pageId: string) => void;
   selectedRole?: string;
   onRoleChange?: (role: string) => void;
+  onLogout?: () => void;
 }
 
 export function GlobalHeader({
@@ -81,6 +82,7 @@ export function GlobalHeader({
   onNavigate,
   selectedRole = "Super Admin",
   onRoleChange,
+  onLogout,
 }: GlobalHeaderProps) {
   const { language: currentLanguage, setLanguage, t, languages } =
     useLanguage();
@@ -171,7 +173,6 @@ export function GlobalHeader({
   const notificationsRef = useRef<HTMLDivElement>(null);
   const applicationsRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
   const supportRef = useRef<HTMLDivElement>(null);
   const horizNavRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -695,11 +696,6 @@ export function GlobalHeader({
         !userRef.current.contains(event.target as Node)
       ) {
         setShowUserDropdown(false);
-      }
-      if (
-        settingsRef.current &&
-        !settingsRef.current.contains(event.target as Node)
-      ) {
         setShowSettingsPanel(false);
       }
       if (
@@ -1558,127 +1554,6 @@ export function GlobalHeader({
             )}
           </div>
 
-          {/* Unified Appearance Settings */}
-          <div className="relative" ref={settingsRef}>
-            <button
-              onClick={() =>
-                setShowSettingsPanel(!showSettingsPanel)
-              }
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-white/90 hover:bg-white/20 hover:text-white"
-              title="Appearance settings"
-            >
-              <Settings className="w-[18px] h-[18px]" />
-            </button>
-            {showSettingsPanel && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden z-50">
-                {/* Panel Header */}
-                <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-neutral-800">
-                  <div className="text-sm font-semibold text-neutral-900 dark:text-white">{t.settings.appearance}</div>
-                </div>
-
-                {/* Color Theme */}
-                <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
-                  <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.colorTheme}</div>
-                  <div className="space-y-0.5">
-                    {themes.map((theme) => (
-                      <button
-                        key={theme.id}
-                        onClick={() => {
-                          if (onThemeChange) onThemeChange(theme.id);
-                        }}
-                        className="w-full px-2 py-1.5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-lg transition-colors flex items-center gap-2.5"
-                      >
-                        <span
-                          className="w-3 h-3 rounded-full flex-shrink-0 border border-black/10 dark:border-white/10"
-                          style={{ backgroundColor: themeColors[theme.id] }}
-                        />
-                        <span className="flex-1 text-sm text-neutral-800 dark:text-neutral-200">{theme.name}</span>
-                        {currentTheme === theme.id && (
-                          <Check className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Appearance Mode */}
-                <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
-                  <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.mode}</div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => { if (isDarkMode) onToggleDarkMode(); }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
-                        !isDarkMode
-                          ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
-                          : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                      }`}
-                    >
-                      <Sun className="w-3.5 h-3.5" />
-                      <span>{t.settings.light}</span>
-                    </button>
-                    <button
-                      onClick={() => { if (!isDarkMode) onToggleDarkMode(); }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
-                        isDarkMode
-                          ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
-                          : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                      }`}
-                    >
-                      <Moon className="w-3.5 h-3.5" />
-                      <span>{t.settings.dark}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Menu Layout */}
-                <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
-                  <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.menuLayout}</div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => { if (onMenuOrientationChange) onMenuOrientationChange("vertical"); }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
-                        menuOrientation !== "horizontal"
-                          ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
-                          : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                      }`}
-                    >
-                      <span>{t.settings.vertical}</span>
-                    </button>
-                    <button
-                      onClick={() => { if (onMenuOrientationChange) onMenuOrientationChange("horizontal"); }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
-                        menuOrientation === "horizontal"
-                          ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
-                          : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                      }`}
-                    >
-                      <span>{t.settings.horizontal}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Language */}
-                <div className="p-3">
-                  <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.language}</div>
-                  <div className="relative">
-                    <select
-                      value={currentLanguage}
-                      onChange={(e) => setLanguage(e.target.value as typeof currentLanguage)}
-                      className="w-full appearance-none px-3 py-1.5 pr-8 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors cursor-pointer"
-                    >
-                      {languages.map((lang) => (
-                        <option key={lang.id} value={lang.id}>
-                          {lang.flag} {lang.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* User Avatar Dropdown */}
           <div className="relative" ref={userRef}>
             <button
@@ -1733,11 +1608,130 @@ export function GlobalHeader({
                     <Key className="w-4 h-4" />
                     <span>Change Password</span>
                   </button>
+                  <button
+                    onClick={() => setShowSettingsPanel(!showSettingsPanel)}
+                    className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>{t.settings.appearance}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 ml-auto text-neutral-400 transition-transform ${showSettingsPanel ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
+
+                {/* Appearance Settings (expandable) */}
+                {showSettingsPanel && (
+                  <div className="border-t border-neutral-200 dark:border-neutral-800">
+                    {/* Color Theme */}
+                    <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.colorTheme}</div>
+                      <div className="space-y-0.5">
+                        {themes.map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => {
+                              if (onThemeChange) onThemeChange(theme.id);
+                            }}
+                            className="w-full px-2 py-1.5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-lg transition-colors flex items-center gap-2.5"
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full flex-shrink-0 border border-black/10 dark:border-white/10"
+                              style={{ backgroundColor: themeColors[theme.id] }}
+                            />
+                            <span className="flex-1 text-sm text-neutral-800 dark:text-neutral-200">{theme.name}</span>
+                            {currentTheme === theme.id && (
+                              <Check className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Appearance Mode */}
+                    <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.mode}</div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => { if (isDarkMode) onToggleDarkMode(); }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                            !isDarkMode
+                              ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
+                              : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                          }`}
+                        >
+                          <Sun className="w-3.5 h-3.5" />
+                          <span>{t.settings.light}</span>
+                        </button>
+                        <button
+                          onClick={() => { if (!isDarkMode) onToggleDarkMode(); }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                            isDarkMode
+                              ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
+                              : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                          }`}
+                        >
+                          <Moon className="w-3.5 h-3.5" />
+                          <span>{t.settings.dark}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Menu Layout */}
+                    <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.menuLayout}</div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => { if (onMenuOrientationChange) onMenuOrientationChange("vertical"); }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                            menuOrientation !== "horizontal"
+                              ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
+                              : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                          }`}
+                        >
+                          <span>{t.settings.vertical}</span>
+                        </button>
+                        <button
+                          onClick={() => { if (onMenuOrientationChange) onMenuOrientationChange("horizontal"); }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                            menuOrientation === "horizontal"
+                              ? "bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-400"
+                              : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                          }`}
+                        >
+                          <span>{t.settings.horizontal}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Language */}
+                    <div className="p-3">
+                      <div className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">{t.settings.language}</div>
+                      <div className="relative">
+                        <select
+                          value={currentLanguage}
+                          onChange={(e) => setLanguage(e.target.value as typeof currentLanguage)}
+                          className="w-full appearance-none px-3 py-1.5 pr-8 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors cursor-pointer"
+                        >
+                          {languages.map((lang) => (
+                            <option key={lang.id} value={lang.id}>
+                              {lang.flag} {lang.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500" />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Logout */}
                 <div className="p-1 border-t border-neutral-200 dark:border-neutral-800">
-                  <button className="w-full px-3 py-2 text-left text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950 rounded transition-colors flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onLogout?.();
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950 rounded transition-colors flex items-center gap-2"
+                  >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                   </button>

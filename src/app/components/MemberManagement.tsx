@@ -1045,19 +1045,22 @@ export default function MemberManagement({
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   const memberColumns: ColumnConfig[] = [
-    { key: 'id',               label: 'Member ID' },
-    { key: 'name',             label: 'Name' },
-    { key: 'memberType',       label: 'Age Groups (years old)' },
-    { key: 'status',           label: 'Status' },
-    { key: 'mastersScope',     label: 'HSS (UK) Setup Scope' },
-    { key: 'dbsStatus',        label: 'DBS Status' },
-    { key: 'firstAidStatus',   label: 'First Aid' },
-    { key: 'registrationDate', label: 'Reg. Date' },
+    { key: 'id',                  label: 'Member ID' },
+    { key: 'name',                label: 'Name' },
+    { key: 'memberType',          label: 'Age Groups (years old)' },
+    { key: 'status',               label: 'Status' },
+    { key: 'mastersScope',        label: 'HSS (UK) Setup Scope' },
+    { key: 'dbsStatus',           label: 'DBS Status' },
+    { key: 'firstAidStatus',      label: 'First Aid' },
+    { key: 'email',               label: 'Email' },
+    { key: 'phone',               label: 'Contact Number' },
+    { key: 'sanghResponsibility', label: 'Sangh Responsibility' },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     id: true, name: true, memberType: true, status: true,
-    mastersScope: true, dbsStatus: true, firstAidStatus: true, registrationDate: true,
+    mastersScope: true, dbsStatus: true, firstAidStatus: true,
+    email: true, phone: true, sanghResponsibility: true,
   });
 
   // Navigate directly to a member detail when arriving from another module
@@ -1721,9 +1724,19 @@ export default function MemberManagement({
                       {visibleColumns.firstAidStatus && (
                         <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
                       )}
-                      {visibleColumns.registrationDate && (
+                      {visibleColumns.email && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {new Date(m.registrationDate).toLocaleDateString('en-GB')}
+                          {m.email}
+                        </td>
+                      )}
+                      {visibleColumns.phone && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.phone}
+                        </td>
+                      )}
+                      {visibleColumns.sanghResponsibility && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.sanghResponsibility}
                         </td>
                       )}
                       <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>

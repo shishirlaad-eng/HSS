@@ -175,7 +175,16 @@ export default function App() {
   };
 
   if (!isAuthenticated) {
-    return <SuperAdminAuth onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return (
+      <SuperAdminAuth
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          setSelectedRole("Super Admin");
+          setMenuOrientation("vertical");
+          localStorage.setItem("menuOrientation", "vertical");
+        }}
+      />
+    );
   }
 
   return (
@@ -220,6 +229,7 @@ export default function App() {
           onNavigate={handleNavigate}
           selectedRole={selectedRole}
           onRoleChange={handleRoleChange}
+          onLogout={handleLogout}
         />
 
         {/* Page Content */}

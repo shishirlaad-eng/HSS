@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload, MapPin, Clock } from "lucide-react";
+import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
@@ -367,7 +367,6 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const memberId = getRoleScope(selectedRole).selfMemberId || selectedRole;
-  const [requestedCentre, setRequestedCentre] = useState('');
   const [pendingTransfer, setPendingTransfer] = useState<ShakhaTransferRequest | undefined>(
     () => getPendingTransferForMember(memberId),
   );
@@ -493,35 +492,6 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
     localStorage.removeItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
     setShowDeleteModal(false);
     toast.success("Your account deletion request has been submitted. An administrator will process it shortly.");
-  };
-
-  const handleTransferRequest = () => {
-    const destination = getLocationForCentre(requestedCentre);
-    if (!destination || requestedCentre === profile.activityCentre) {
-      toast.error("Please select a different Shakha.");
-      return;
-    }
-    try {
-      const request = createTransferRequest({
-        memberId,
-        memberName: fullName,
-        memberRole: selectedRole,
-        fromCountry: profile.country,
-        fromRegion: profile.region,
-        fromTown: profile.town,
-        fromCentre: profile.activityCentre,
-        toCountry: destination.country,
-        toRegion: destination.region,
-        toTown: destination.town,
-        toCentre: destination.activityCentre,
-      });
-      setPendingTransfer(request);
-      setTransferHistory(getTransferRequests().filter(item => item.memberId === memberId));
-      setRequestedCentre('');
-      toast.success(`Transfer request sent to ${destination.activityCentre} for approval.`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to submit transfer request.");
-    }
   };
 
   const formatDate = (iso: string) =>
@@ -825,69 +795,6 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                 />
                 <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
               </InfoSection>
-
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                  Change Shakha / Activity Centre
-                </h4>
-                <div className="p-6">
-                  {pendingTransfer ? (
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20">
-                        <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Transfer pending approval</p>
-                          <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
-                            The admin team at <strong>{pendingTransfer.toCentre}</strong> has been notified.
-                            Your current Shakha remains <strong>{pendingTransfer.fromCentre}</strong> until approval.
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                            Requested {new Date(pendingTransfer.requestedAt).toLocaleString("en-GB")}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        You can continue viewing your profile, attendance, and donation history while this request is pending.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                        <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400 mt-0.5" />
-                        <div>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">Current approved Shakha</p>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.activityCentre}</p>
-                        </div>
-                      </div>
-                      {pendingTransfer && (
-                        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Transfer awaiting approval</p>
-                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                            Requested move to {pendingTransfer.toCentre}. You can continue viewing your profile, attendance, and donations while the receiving Shakha reviews it.
-                          </p>
-                        </div>
-                      )}
-                      <div className="max-w-xl">
-                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">New Shakha</label>
-                        <FormSelect value={requestedCentre} onChange={event => setRequestedCentre(event.target.value)} disabled={!!pendingTransfer}>
-                          <option value="">Select a new Shakha...</option>
-                          {Object.values(MASTERS_CASCADE.centres).flat()
-                            .filter(centre => centre !== profile.activityCentre)
-                            .map(centre => <option key={centre} value={centre}>{centre}</option>)}
-                        </FormSelect>
-                      </div>
-                      <div className="flex justify-end">
-                        <PrimaryButton onClick={handleTransferRequest} disabled={!requestedCentre || !!pendingTransfer}>
-                          Request Shakha Transfer
-                        </PrimaryButton>
-                      </div>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        The new Shakha Admin or Ops team must approve the request before your current Shakha assignment changes.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {transferHistory.length > 0 && (
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
