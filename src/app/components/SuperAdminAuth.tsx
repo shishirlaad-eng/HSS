@@ -44,6 +44,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
   // OTP Form
   const [otp, setOtp] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [rememberDevice, setRememberDevice] = useState(true);
   
   // Reset Form
   const [newPassword, setNewPassword] = useState("");
@@ -107,7 +108,9 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
       setIsLoading(false);
       // Accept any 6 digit OTP
       if (currentScreen === "otp") {
-        setTrustedDeviceCookie(email);
+        if (rememberDevice) {
+          setTrustedDeviceCookie(email);
+        }
         onLoginSuccess();
       }
     }, 1000);
@@ -306,15 +309,18 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                   </div>
                 </FormField>
 
-                {/* Trusted device notice */}
-                <div className="flex items-start gap-2.5 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 px-3.5 py-3">
-                  <svg className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-                  </svg>
-                  <p className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
-                    Verifying this OTP will remember this device for <strong>30 days</strong>. You will not be asked for an OTP again on this device during that period.
-                  </p>
-                </div>
+                {/* Remember device checkbox */}
+                <label className="flex items-start gap-2.5 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 px-3.5 py-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberDevice}
+                    onChange={e => setRememberDevice(e.target.checked)}
+                    className="mt-0.5 h-12 w-12 shrink-0 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
+                    Remember this device for <strong>30 days</strong>. You will not be asked for an OTP again on this device during that period.
+                  </span>
+                </label>
 
                 <div className="pt-2">
                   <PrimaryButton

@@ -79,6 +79,9 @@ import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
+
+// Shakha Admin (Activity Centre Admin), Nagar Admin (Town Head), Vibhaag Admin (Regional Head), Shakha Ops (Ops User)
+const TABLE_VIEW_DEFAULT_ROLES = ['Activity Centre Admin', 'Town Head', 'Regional Head', 'Ops User'];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -968,7 +971,7 @@ export default function MemberManagement({
   onConsumeInitialMember?: () => void;
 } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
-  const { scope } = useRoleScope();
+  const { scope, selectedRole } = useRoleScope();
   const mp = useModulePermissions('members');
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
@@ -979,7 +982,9 @@ export default function MemberManagement({
   // Re-scope when role switches (scope comes from context which updates on role change)
   const scopedMembers = useMemo(() => filterByScope(mockMembers, scope), [scope, transferVersion]);
 
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    TABLE_VIEW_DEFAULT_ROLES.includes(selectedRole) ? 'table' : 'grid'
+  );
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -1047,6 +1052,10 @@ export default function MemberManagement({
   }, []); // Run only on mount — intentionally ignores prop changes after mount
 
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
+
+  useEffect(() => {
+    setViewMode(TABLE_VIEW_DEFAULT_ROLES.includes(selectedRole) ? 'table' : 'grid');
+  }, [selectedRole]);
   useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, regDateStart, regDateEnd, showKaryakartasOnly]);
   useEffect(() => {
     const refreshScope = () => setTransferVersion(version => version + 1);
