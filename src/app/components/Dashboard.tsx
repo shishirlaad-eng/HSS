@@ -628,15 +628,13 @@ function HierarchyKpiSection({
     const suchanaMedium = mockAnnouncements.filter(a => a.priority === 'medium').length;
     const suchanaLow    = mockAnnouncements.filter(a => a.priority === 'low').length;
 
-    // ── Upcoming Karyakrams ──
+    // ── Upcoming Karyakrams (scoped to this Shakha/centre) ──
     const scopedEvents = filterByScope(mockEvents, scope);
     const upcomingEvents = scopedEvents.filter(
       e => (e.status === 'published' || e.status === 'active') && new Date(e.startDate) >= now,
     );
-    // Unscoped published/active events (active · published breakdown)
-    const allUpcomingList = mockEvents.filter(e => e.status === 'published' || e.status === 'active');
-    const allUpcomingActive = allUpcomingList.filter(e => e.status === 'active').length;
-    const allUpcomingPublished = allUpcomingList.filter(e => e.status === 'published').length;
+    const upcomingActive    = upcomingEvents.filter(e => e.status === 'active').length;
+    const upcomingPublished = upcomingEvents.filter(e => e.status === 'published').length;
 
     // ── Members (scoped) ──
     const scopedMembers = filterByScope(mockMembers, scope);
@@ -665,7 +663,7 @@ function HierarchyKpiSection({
       avgLast4, avgYTD, sessionsHeldYTD,
       suchanaActive, suchanaHigh, suchanaMedium, suchanaLow,
       upcomingEvents: upcomingEvents.length,
-      allUpcoming: allUpcomingList.length, allUpcomingActive, allUpcomingPublished,
+      upcomingActive, upcomingPublished,
       pendingApprovals: pendingApprovals.length, pendingParental,
       karyakartas,
       totalIncome, onlineTotal, cashTotal, giftAidClaimable,
@@ -755,12 +753,12 @@ function HierarchyKpiSection({
         {/* Upcoming Karyakrams — placed after Compliance */}
         <KpiCard
           title="Upcoming Karyakrams"
-          value={kpis.allUpcoming}
+          value={kpis.upcomingEvents}
           icon={CalendarDays}
           onClick={() => onNavigate?.('event-management')}
           subMetrics={[
-            { label: 'Active', value: kpis.allUpcomingActive, tone: 'primary' },
-            { label: 'Published', value: kpis.allUpcomingPublished, tone: 'amber' },
+            { label: 'Active', value: kpis.upcomingActive, tone: 'primary' },
+            { label: 'Published', value: kpis.upcomingPublished, tone: 'amber' },
           ]}
         />
 
