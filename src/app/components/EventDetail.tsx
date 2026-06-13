@@ -32,6 +32,8 @@ import {
   ScrollText,
   ListChecks,
   Copy,
+  ShieldCheck,
+  ShieldOff,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -98,22 +100,6 @@ function StatusBadge({ status }: { status: Event['status'] }) {
     completed: { bg: 'bg-amber-50 dark:bg-amber-950/20',     text: 'text-amber-700 dark:text-amber-400',      dot: 'bg-amber-500',    label: 'Completed' },
   };
   const s = map[status] ?? map.draft;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-transparent ${s.bg} ${s.text}`}>
-      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
-      <span className="text-xs font-medium">{s.label}</span>
-    </span>
-  );
-}
-
-// ─── Registration status badge ──────────────────────────────────────────────────
-function RsvpBadge({ rsvp }: { rsvp: EventParticipant['rsvp'] }) {
-  const map = {
-    requested: { bg: 'bg-amber-50 dark:bg-amber-950/20',     text: 'text-amber-700 dark:text-amber-400',     dot: 'bg-amber-500',   label: 'Requested' },
-    going:     { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400', dot: 'bg-success-500', label: 'Going'     },
-    denied:    { bg: 'bg-error-50 dark:bg-error-950/20',     text: 'text-error-700 dark:text-error-400',      dot: 'bg-error-500',   label: 'Denied'    },
-  };
-  const s = map[rsvp];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-transparent ${s.bg} ${s.text}`}>
       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
@@ -205,6 +191,16 @@ export default function EventDetail({
   const handleDeny = (memberId: string) => {
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
     toast('Registration denied.');
+  };
+
+  // ── Make / remove participant coordinator (admins) ───────────────────────────
+  const handleMakeCoordinator = (memberId: string) => {
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, isCoordinator: true } : p));
+    toast.success('Participant marked as coordinator.');
+  };
+  const handleRemoveCoordinator = (memberId: string) => {
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, isCoordinator: false } : p));
+    toast('Coordinator role removed.');
   };
 
   // ── Member self-registration ("Request to Attend") ──────────────────────────
@@ -740,7 +736,7 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','Name','Member ID','Email','Phone','Type','Status', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','Name','Member ID','Email','Phone','Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
@@ -750,7 +746,14 @@ export default function EventDetail({
                             <tr key={p.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                               <td className="px-4 py-3 text-xs text-neutral-400">{idx + 1}</td>
                               <td className="px-4 py-3">
-                                <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{p.name}</button>
+                                <div className="flex items-center gap-1.5">
+                                  <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{p.name}</button>
+                                  {p.isCoordinator && (
+                                    <span title="Coordinator" className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 flex-shrink-0">
+                                      <ShieldCheck className="w-3 h-3" />
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{p.memberId}</td>
                               <td className="px-4 py-3">
@@ -766,7 +769,6 @@ export default function EventDetail({
                                 ) : <span className="text-xs text-neutral-400">—</span>}
                               </td>
                               <td className="px-4 py-3"><TypeBadge type={p.memberType} /></td>
-                              <td className="px-4 py-3"><RsvpBadge rsvp={p.rsvp} /></td>
                               {!isMember && (
                                 <td className="px-4 py-3">
                                   {p.rsvp === 'requested' ? (
@@ -788,6 +790,26 @@ export default function EventDetail({
                                         <Ban className="w-4 h-4" />
                                       </button>
                                     </div>
+                                  ) : p.rsvp === 'going' ? (
+                                    p.isCoordinator ? (
+                                      <button
+                                        onClick={() => handleRemoveCoordinator(p.memberId)}
+                                        title="Remove as Coordinator"
+                                        aria-label="Remove as Coordinator"
+                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
+                                      >
+                                        <ShieldOff className="w-4 h-4" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleMakeCoordinator(p.memberId)}
+                                        title="Make Coordinator"
+                                        aria-label="Make Coordinator"
+                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 bg-white dark:bg-neutral-900 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors"
+                                      >
+                                        <ShieldCheck className="w-4 h-4" />
+                                      </button>
+                                    )
                                   ) : (
                                     <span className="text-xs text-neutral-400">—</span>
                                   )}

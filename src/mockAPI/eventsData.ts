@@ -163,6 +163,8 @@ export interface EventParticipant {
   //  going     = approved by an admin
   //  denied    = rejected by an admin
   rsvp: 'requested' | 'going' | 'denied';
+  // Participant designated as a coordinator for this event (set by event admin):
+  isCoordinator?: boolean;
 }
 
 export const mockParticipants: Record<string, EventParticipant[]> = {
