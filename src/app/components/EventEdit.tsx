@@ -9,12 +9,24 @@ import {
   CreditCard,
   AlertCircle,
   AlertTriangle,
+  Globe,
+  Ticket,
+  ListChecks,
+  ScrollText,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormSection, FormField, FormLabel, FormInput, FormSelect } from './hb/common';
-import { MASTERS_CASCADE } from '../../mockAPI/membersData';
-import { Event } from '../../mockAPI/eventsData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
+import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
+import {
+  PriceCategoriesEditor,
+  CustomQuestionsEditor,
+  EventImageField,
+  AGE_GROUP_OPTIONS,
+  CheckChip,
+  toggleArr,
+} from './EventFormFields';
 
 interface EventEditProps {
   event: Event;
@@ -31,19 +43,27 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const [formData, setFormData] = useState({
     name:                event.name,
     description:         event.description ?? '',
+    imageUrl:            event.imageUrl ?? '',
     host:                event.host,
-    coHosts:             event.coHosts.join(', '),
     country:        event.country,
     region:         event.region,
     town:           event.town,
     activityCentre: event.activityCentre,
+    locationType:   event.locationType,
+    venueAddress:   event.venueAddress ?? '',
+    onlineUrl:      event.onlineUrl ?? '',
     startDate:      event.startDate.split('T')[0],
     startTime:      event.startDate.split('T')[1]?.substring(0, 5) ?? '09:00',
     endDate:        event.endDate.split('T')[0],
     endTime:        event.endDate.split('T')[1]?.substring(0, 5) ?? '17:00',
     paymentType:    event.paymentType as 'paid' | 'free',
-    price:          event.price ? String(event.price) : '',
+    priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     capacity:       event.capacity ? String(event.capacity) : '',
+    guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
+    customQuestions: event.customQuestions ?? [],
+    filterAgeCategories: event.filterAgeCategories ?? [],
+    filterGenders:       event.filterGenders ?? [],
+    filterJobTitles:     event.filterJobTitles ?? [],
     chatState:      event.chatState as 'active' | 'archived',
   });
 
@@ -56,7 +76,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const availableTowns    = formData.region  ? (MASTERS_CASCADE.towns[formData.region]   ?? []) : [];
   const availableCentres  = formData.town    ? (MASTERS_CASCADE.centres[formData.town]   ?? []) : [];
 
-  const set = (field: string, value: string) => {
+  const set = (field: string, value: any) => {
     setFormData(prev => {
       const next: any = { ...prev, [field]: value };
       if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
@@ -73,13 +93,15 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     if (!formData.region)              errs.region         = 'This field is required.';
     if (!formData.town)                errs.town           = 'This field is required.';
     if (!formData.activityCentre)      errs.activityCentre = 'This field is required.';
+    if (formData.locationType === 'physical' && !formData.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical events.';
+    if (formData.locationType === 'online' && !formData.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online events.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
     if (!formData.endTime)             errs.endTime        = 'This field is required.';
     if (!formData.paymentType)         errs.paymentType    = 'This field is required.';
-    if (formData.paymentType === 'paid' && !formData.price.trim()) {
-      errs.price = 'Price is required for paid events.';
+    if (formData.paymentType === 'paid' && formData.priceCategories.length === 0) {
+      errs.priceCategories = 'Add at least one price category for paid events.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -104,17 +126,26 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         ...event,
         name:           formData.name.trim(),
         description:    formData.description.trim() || undefined,
+        imageUrl:       formData.imageUrl || undefined,
         host:           formData.host.trim(),
-        coHosts:        formData.coHosts ? formData.coHosts.split(',').map(s => s.trim()).filter(Boolean) : [],
         country:        formData.country,
         region:         formData.region,
         town:           formData.town,
         activityCentre: formData.activityCentre,
+        locationType:   formData.locationType,
+        venueAddress:   formData.locationType === 'physical' ? formData.venueAddress.trim() : undefined,
+        onlineUrl:      formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
         startDate:      `${formData.startDate}T${formData.startTime}:00Z`,
         endDate:        `${formData.endDate}T${formData.endTime}:00Z`,
         paymentType:    formData.paymentType,
-        price:          formData.paymentType === 'paid' && formData.price ? parseFloat(formData.price) : undefined,
+        price:          formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
+        priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
         capacity:       formData.capacity ? parseInt(formData.capacity) : undefined,
+        guestRegistrationEnabled: formData.guestRegistrationEnabled,
+        customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
+        filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
+        filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
+        filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
         chatState:      formData.chatState,
         lastUpdated:    new Date().toISOString(),
       };
@@ -207,15 +238,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   />
                 </FormField>
                 <FormField>
-                  <FormLabel>Co-Hosts (comma separated)</FormLabel>
-                  <FormInput
-                    value={formData.coHosts}
-                    onChange={e => set('coHosts', e.target.value)}
-                    placeholder="e.g. John Smith, Emma Davis"
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
                   <FormLabel>Capacity</FormLabel>
                   <FormInput
                     type="number"
@@ -226,6 +248,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                     disabled={blocked}
                   />
                 </FormField>
+                <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
               </div>
             </div>
 
@@ -234,63 +257,174 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
                 <MapPin className="w-4 h-4 text-primary-600" /> Location
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField>
-                  <FormLabel required>Country</FormLabel>
-                  <FormSelect
-                    value={formData.country}
-                    onChange={e => set('country', e.target.value)}
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => set('locationType', 'physical')}
                     disabled={blocked}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${
+                      formData.locationType === 'physical'
+                        ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                    }`}
                   >
-                    <option value="">Select Country</option>
-                    {MASTERS_CASCADE.countries.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </FormSelect>
-                  {touched && errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
-                </FormField>
-                <FormField>
-                  <FormLabel required>Region</FormLabel>
-                  <FormSelect
-                    value={formData.region}
-                    onChange={e => set('region', e.target.value)}
-                    disabled={blocked || !formData.country}
+                    <MapPin className="w-4 h-4" /> Physical
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => set('locationType', 'online')}
+                    disabled={blocked}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${
+                      formData.locationType === 'online'
+                        ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                    }`}
                   >
-                    <option value="">Select Region</option>
-                    {availableRegions.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </FormSelect>
-                  {touched && errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
-                </FormField>
-                <FormField>
-                  <FormLabel required>Town</FormLabel>
-                  <FormSelect
-                    value={formData.town}
-                    onChange={e => set('town', e.target.value)}
-                    disabled={blocked || !formData.region}
-                  >
-                    <option value="">Select Town</option>
-                    {availableTowns.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </FormSelect>
-                  {touched && errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
-                </FormField>
-                <FormField>
-                  <FormLabel required>Activity Centre</FormLabel>
-                  <FormSelect
-                    value={formData.activityCentre}
-                    onChange={e => set('activityCentre', e.target.value)}
-                    disabled={blocked || !formData.town}
-                  >
-                    <option value="">Select Activity Centre</option>
-                    {availableCentres.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </FormSelect>
-                  {touched && errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
-                </FormField>
+                    <Globe className="w-4 h-4" /> Online
+                  </button>
+                </div>
+                {formData.locationType === 'physical' ? (
+                  <FormField>
+                    <FormLabel required>Venue Address</FormLabel>
+                    <FormInput
+                      value={formData.venueAddress}
+                      onChange={e => set('venueAddress', e.target.value)}
+                      placeholder="Enter full venue address"
+                      disabled={blocked}
+                    />
+                    {touched && errors.venueAddress && <p className="text-xs text-error-600 mt-1">{errors.venueAddress}</p>}
+                  </FormField>
+                ) : (
+                  <FormField>
+                    <FormLabel required>Online Call URL</FormLabel>
+                    <FormInput
+                      value={formData.onlineUrl}
+                      onChange={e => set('onlineUrl', e.target.value)}
+                      placeholder="e.g. https://meet.hssuk.org/your-event"
+                      disabled={blocked}
+                    />
+                    {touched && errors.onlineUrl && <p className="text-xs text-error-600 mt-1">{errors.onlineUrl}</p>}
+                  </FormField>
+                )}
+              </div>
+            </div>
+
+            {/* Target Audience */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <UsersIcon className="w-4 h-4 text-primary-600" /> Target Audience
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Sangh Scope</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField>
+                      <FormLabel required>Country</FormLabel>
+                      <FormSelect
+                        value={formData.country}
+                        onChange={e => set('country', e.target.value)}
+                        disabled={blocked}
+                      >
+                        <option value="">Select Country</option>
+                        {MASTERS_CASCADE.countries.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </FormSelect>
+                      {touched && errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
+                    </FormField>
+                    <FormField>
+                      <FormLabel required>Vibhaag</FormLabel>
+                      <FormSelect
+                        value={formData.region}
+                        onChange={e => set('region', e.target.value)}
+                        disabled={blocked || !formData.country}
+                      >
+                        <option value="">Select Vibhaag</option>
+                        {availableRegions.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </FormSelect>
+                      {touched && errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
+                    </FormField>
+                    <FormField>
+                      <FormLabel required>Nagar</FormLabel>
+                      <FormSelect
+                        value={formData.town}
+                        onChange={e => set('town', e.target.value)}
+                        disabled={blocked || !formData.region}
+                      >
+                        <option value="">Select Nagar</option>
+                        {availableTowns.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </FormSelect>
+                      {touched && errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
+                    </FormField>
+                    <FormField>
+                      <FormLabel required>Shakha</FormLabel>
+                      <FormSelect
+                        value={formData.activityCentre}
+                        onChange={e => set('activityCentre', e.target.value)}
+                        disabled={blocked || !formData.town}
+                      >
+                        <option value="">Select Shakha</option>
+                        {availableCentres.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </FormSelect>
+                      {touched && errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
+                    </FormField>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-4">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Optional demographic filters — leave unchecked to target all members within scope.
+                  </p>
+                  <div>
+                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age Category</p>
+                    <div className="flex flex-wrap gap-2">
+                      {AGE_GROUP_OPTIONS.map(({ value, label }) => (
+                        <CheckChip
+                          key={value}
+                          label={label}
+                          checked={formData.filterAgeCategories.includes(value)}
+                          onChange={() => !blocked && set('filterAgeCategories', toggleArr(formData.filterAgeCategories, value))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Gender</p>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { value: 'male',   label: 'Male'   },
+                        { value: 'female', label: 'Female' },
+                      ] as { value: 'male' | 'female'; label: string }[]).map(({ value, label }) => (
+                        <CheckChip
+                          key={value}
+                          label={label}
+                          checked={formData.filterGenders.includes(value)}
+                          onChange={() => !blocked && set('filterGenders', toggleArr(formData.filterGenders, value))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Role Type / Job Title</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ROLE_TYPE_OPTIONS.map(role => (
+                        <CheckChip
+                          key={role}
+                          label={role}
+                          checked={formData.filterJobTitles.includes(role)}
+                          onChange={() => !blocked && set('filterJobTitles', toggleArr(formData.filterJobTitles, role))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -361,22 +495,55 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </FormSelect>
                   {touched && errors.paymentType && <p className="text-xs text-error-600 mt-1">{errors.paymentType}</p>}
                 </FormField>
-                {formData.paymentType === 'paid' && (
-                  <FormField>
-                    <FormLabel required>Price (£)</FormLabel>
-                    <FormInput
-                      type="number"
-                      value={formData.price}
-                      onChange={e => set('price', e.target.value)}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      disabled={blocked}
-                    />
-                    {touched && errors.price && <p className="text-xs text-error-600 mt-1">{errors.price}</p>}
-                  </FormField>
-                )}
               </div>
+              {formData.paymentType === 'paid' && (
+                <div className="mt-4">
+                  <FormLabel required>Price Categories</FormLabel>
+                  <PriceCategoriesEditor
+                    categories={formData.priceCategories}
+                    onChange={cats => set('priceCategories', cats)}
+                  />
+                  {touched && errors.priceCategories && <p className="text-xs text-error-600 mt-1">{errors.priceCategories}</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Guest Registration */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.guestRegistrationEnabled}
+                  onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                  disabled={blocked}
+                  className="rounded border-neutral-300 dark:border-neutral-700"
+                />
+                Allow non-members to register via a guest registration link
+              </label>
+            </div>
+
+            {/* Custom Questions */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <ListChecks className="w-4 h-4 text-primary-600" /> Additional Questions
+              </div>
+              <CustomQuestionsEditor
+                questions={formData.customQuestions}
+                onChange={qs => set('customQuestions', qs)}
+              />
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
+              </div>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                {EVENT_TERMS_AND_CONDITIONS}
+              </p>
             </div>
 
             {/* Chat Room */}

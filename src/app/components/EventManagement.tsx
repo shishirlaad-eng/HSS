@@ -28,6 +28,11 @@ import {
   Loader2,
   CalendarDays,
   X,
+  Globe,
+  Link2,
+  ListChecks,
+  Ticket,
+  ScrollText,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -51,13 +56,14 @@ import {
   FormGrid,
   FormSelect,
 } from './hb/common';
-import { mockEvents, Event } from '../../mockAPI/eventsData';
+import { mockEvents, Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { PriceCategoriesEditor, CustomQuestionsEditor, EventImageField } from './EventFormFields';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
@@ -212,18 +218,24 @@ const AUDIENCE_AGE_LABELS: Record<AgeGroup, string> = {
 const EMPTY_CREATE = {
   name: '',
   description: '',
+  imageUrl: '',
   country: '',
   region: '',
   town: '',
   activityCentre: '',
+  locationType: 'physical' as 'physical' | 'online',
+  venueAddress: '',
+  onlineUrl: '',
   startDate: '',
   startTime: '',
   endDate: '',
   endTime: '',
   paymentType: '' as 'paid' | 'free' | '',
-  price: '',
+  priceCategories: [] as EventPriceCategory[],
   capacity: '',
-  coHosts: '',
+  guestRegistrationEnabled: false,
+  customQuestions: [] as EventCustomQuestion[],
+  termsAndConditions: EVENT_TERMS_AND_CONDITIONS,
   filterAgeCategories: [] as AgeGroup[],
   filterGenders:       [] as ('male' | 'female')[],
   filterJobTitles:     [] as string[],
@@ -251,7 +263,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
   const availableTowns   = form.region  ? (MASTERS_CASCADE.towns[form.region]   ?? []) : [];
   const availableCentres = form.town    ? (MASTERS_CASCADE.centres[form.town]   ?? []) : [];
 
-  const set = (field: keyof CreateForm, value: string | string[]) => {
+  const set = (field: keyof CreateForm, value: any) => {
     setForm(prev => {
       const next: CreateForm = { ...prev, [field]: value };
       if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
@@ -269,12 +281,14 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
     if (!f.region)              errs.region        = 'This field is required.';
     if (!f.town)                errs.town          = 'This field is required.';
     if (!f.activityCentre)      errs.activityCentre = 'This field is required.';
+    if (f.locationType === 'physical' && !f.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical events.';
+    if (f.locationType === 'online' && !f.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online events.';
     if (!f.startDate)           errs.startDate     = 'This field is required.';
     if (!f.startTime)           errs.startTime     = 'This field is required.';
     if (!f.endDate)             errs.endDate       = 'This field is required.';
     if (!f.endTime)             errs.endTime       = 'This field is required.';
     if (!f.paymentType)         errs.paymentType   = 'This field is required.';
-    if (f.paymentType === 'paid' && !f.price.trim()) errs.price = 'Price is required for paid events.';
+    if (f.paymentType === 'paid' && f.priceCategories.length === 0) errs.priceCategories = 'Add at least one price category for paid events.';
     if (f.startDate && f.startTime && f.endDate && f.endTime) {
       const start = new Date(`${f.startDate}T${f.startTime}`);
       const end   = new Date(`${f.endDate}T${f.endTime}`);
@@ -295,16 +309,23 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
       onSave({
         name: form.name.trim(),
         description: form.description.trim() || undefined,
+        imageUrl: form.imageUrl || undefined,
         country: form.country,
         region: form.region,
         town: form.town,
         activityCentre: form.activityCentre,
+        locationType: form.locationType,
+        venueAddress: form.locationType === 'physical' ? form.venueAddress.trim() : undefined,
+        onlineUrl:    form.locationType === 'online'   ? form.onlineUrl.trim()    : undefined,
         startDate: `${form.startDate}T${form.startTime}:00Z`,
         endDate: `${form.endDate}T${form.endTime}:00Z`,
         paymentType: form.paymentType as 'paid' | 'free',
-        price: form.paymentType === 'paid' ? parseFloat(form.price) : undefined,
+        price: form.paymentType === 'paid' ? form.priceCategories[0]?.price : undefined,
+        priceCategories: form.paymentType === 'paid' ? form.priceCategories : undefined,
         capacity: form.capacity ? parseInt(form.capacity) : undefined,
-        coHosts: form.coHosts ? form.coHosts.split(',').map(s => s.trim()).filter(Boolean) : [],
+        guestRegistrationEnabled: form.guestRegistrationEnabled,
+        customQuestions: form.customQuestions.length > 0 ? form.customQuestions : undefined,
+        termsAndConditions: form.termsAndConditions.trim() || undefined,
         filterAgeCategories: form.filterAgeCategories.length > 0 ? form.filterAgeCategories : undefined,
         filterGenders:       form.filterGenders.length > 0       ? form.filterGenders       : undefined,
         filterJobTitles:     form.filterJobTitles.length > 0     ? form.filterJobTitles     : undefined,
@@ -350,14 +371,6 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
               />
             </FormField>
             <FormField>
-              <FormLabel>Co-Hosts (comma separated)</FormLabel>
-              <FormInput
-                value={form.coHosts}
-                onChange={e => set('coHosts', e.target.value)}
-                placeholder="e.g. John Smith, Emma Davis"
-              />
-            </FormField>
-            <FormField>
               <FormLabel>Capacity</FormLabel>
               <FormInput
                 type="number"
@@ -367,6 +380,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
                 min="1"
               />
             </FormField>
+            <EventImageField value={form.imageUrl} onChange={v => set('imageUrl', v)} />
           </FormGrid>
         </div>
 
@@ -375,63 +389,53 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
           <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
             <MapPin className="w-3.5 h-3.5" /> Location
           </p>
-          <FormGrid cols={2}>
-            <FormField>
-              <FormLabel required>Country</FormLabel>
-              <FormSelect
-                value={form.country}
-                onChange={e => set('country', e.target.value)}
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => set('locationType', 'physical')}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  form.locationType === 'physical'
+                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                }`}
               >
-                <option value="">Select Country</option>
-                {MASTERS_CASCADE.countries.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </FormSelect>
-              {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Region</FormLabel>
-              <FormSelect
-                value={form.region}
-                onChange={e => set('region', e.target.value)}
-                disabled={!form.country}
+                <MapPin className="w-4 h-4" /> Physical
+              </button>
+              <button
+                type="button"
+                onClick={() => set('locationType', 'online')}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  form.locationType === 'online'
+                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                }`}
               >
-                <option value="">Select Region</option>
-                {availableRegions.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </FormSelect>
-              {errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Town</FormLabel>
-              <FormSelect
-                value={form.town}
-                onChange={e => set('town', e.target.value)}
-                disabled={!form.region}
-              >
-                <option value="">Select Town</option>
-                {availableTowns.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </FormSelect>
-              {errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Activity Centre</FormLabel>
-              <FormSelect
-                value={form.activityCentre}
-                onChange={e => set('activityCentre', e.target.value)}
-                disabled={!form.town}
-              >
-                <option value="">Select Activity Centre</option>
-                {availableCentres.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </FormSelect>
-              {errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
-            </FormField>
-          </FormGrid>
+                <Globe className="w-4 h-4" /> Online
+              </button>
+            </div>
+            {form.locationType === 'physical' ? (
+              <FormField>
+                <FormLabel required>Venue Address</FormLabel>
+                <FormInput
+                  value={form.venueAddress}
+                  onChange={e => set('venueAddress', e.target.value)}
+                  placeholder="Enter full venue address"
+                />
+                {errors.venueAddress && <p className="text-xs text-error-600 mt-1">{errors.venueAddress}</p>}
+              </FormField>
+            ) : (
+              <FormField>
+                <FormLabel required>Online Call URL</FormLabel>
+                <FormInput
+                  value={form.onlineUrl}
+                  onChange={e => set('onlineUrl', e.target.value)}
+                  placeholder="e.g. https://meet.hssuk.org/your-event"
+                />
+                {errors.onlineUrl && <p className="text-xs text-error-600 mt-1">{errors.onlineUrl}</p>}
+              </FormField>
+            )}
+          </div>
         </div>
 
         {/* Schedule */}
@@ -497,21 +501,44 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
               </FormSelect>
               {errors.paymentType && <p className="text-xs text-error-600 mt-1">{errors.paymentType}</p>}
             </FormField>
-            {form.paymentType === 'paid' && (
-              <FormField>
-                <FormLabel required>Price (£)</FormLabel>
-                <FormInput
-                  type="number"
-                  value={form.price}
-                  onChange={e => set('price', e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-                {errors.price && <p className="text-xs text-error-600 mt-1">{errors.price}</p>}
-              </FormField>
-            )}
           </FormGrid>
+          {form.paymentType === 'paid' && (
+            <div className="mt-3">
+              <FormLabel required>Price Categories</FormLabel>
+              <PriceCategoriesEditor
+                categories={form.priceCategories}
+                onChange={cats => set('priceCategories', cats)}
+              />
+              {errors.priceCategories && <p className="text-xs text-error-600 mt-1">{errors.priceCategories}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Guest Registration */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Ticket className="w-3.5 h-3.5" /> Guest Registration
+          </p>
+          <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.guestRegistrationEnabled}
+              onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+              className="rounded border-neutral-300 dark:border-neutral-700"
+            />
+            Allow non-members to register via a guest registration link
+          </label>
+        </div>
+
+        {/* Custom Questions */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <ListChecks className="w-3.5 h-3.5" /> Additional Questions
+          </p>
+          <CustomQuestionsEditor
+            questions={form.customQuestions}
+            onChange={qs => set('customQuestions', qs)}
+          />
         </div>
 
         {/* Target Audience */}
@@ -521,8 +548,70 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
           </p>
           <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-4">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Optional — leave all unchecked to target all members.
+              Define who this event is for — Sangh scope and demographic filters. Leave demographic filters unchecked to target all members within scope.
             </p>
+
+            {/* Sangh Scope */}
+            <div>
+              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Sangh Scope</p>
+              <FormGrid cols={2}>
+                <FormField>
+                  <FormLabel required>Country</FormLabel>
+                  <FormSelect
+                    value={form.country}
+                    onChange={e => set('country', e.target.value)}
+                  >
+                    <option value="">Select Country</option>
+                    {MASTERS_CASCADE.countries.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </FormSelect>
+                  {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
+                </FormField>
+                <FormField>
+                  <FormLabel required>Vibhaag</FormLabel>
+                  <FormSelect
+                    value={form.region}
+                    onChange={e => set('region', e.target.value)}
+                    disabled={!form.country}
+                  >
+                    <option value="">Select Vibhaag</option>
+                    {availableRegions.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </FormSelect>
+                  {errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
+                </FormField>
+                <FormField>
+                  <FormLabel required>Nagar</FormLabel>
+                  <FormSelect
+                    value={form.town}
+                    onChange={e => set('town', e.target.value)}
+                    disabled={!form.region}
+                  >
+                    <option value="">Select Nagar</option>
+                    {availableTowns.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </FormSelect>
+                  {errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
+                </FormField>
+                <FormField>
+                  <FormLabel required>Shakha</FormLabel>
+                  <FormSelect
+                    value={form.activityCentre}
+                    onChange={e => set('activityCentre', e.target.value)}
+                    disabled={!form.town}
+                  >
+                    <option value="">Select Shakha</option>
+                    {availableCentres.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </FormSelect>
+                  {errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
+                </FormField>
+              </FormGrid>
+            </div>
 
             {/* Age Category */}
             <div>
@@ -572,6 +661,19 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Terms & Conditions */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <ScrollText className="w-3.5 h-3.5" /> Terms &amp; Conditions
+          </p>
+          <textarea
+            value={form.termsAndConditions}
+            onChange={e => set('termsAndConditions', e.target.value)}
+            rows={8}
+            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y leading-relaxed"
+          />
         </div>
       </div>
 
@@ -830,19 +932,30 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
       id: newId,
       name: data.name ?? 'New Event',
       host: 'Sarah Johnson',
-      coHosts: data.coHosts ?? [],
       status: 'draft',
       country: data.country ?? '',
       region: data.region ?? '',
       town: data.town ?? '',
       activityCentre: data.activityCentre ?? '',
+      locationType: data.locationType ?? 'physical',
+      venueAddress: data.venueAddress,
+      onlineUrl: data.onlineUrl,
       startDate: data.startDate ?? new Date().toISOString(),
       endDate: data.endDate ?? new Date().toISOString(),
       createdDate: data.createdDate ?? new Date().toISOString(),
       lastUpdated: data.lastUpdated ?? new Date().toISOString(),
       paymentType: data.paymentType ?? 'free',
       price: data.price,
+      priceCategories: data.priceCategories,
       capacity: data.capacity,
+      description: data.description,
+      imageUrl: data.imageUrl,
+      guestRegistrationEnabled: data.guestRegistrationEnabled,
+      customQuestions: data.customQuestions,
+      termsAndConditions: data.termsAndConditions,
+      filterAgeCategories: data.filterAgeCategories,
+      filterGenders: data.filterGenders,
+      filterJobTitles: data.filterJobTitles,
       metrics: data.metrics ?? { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
       chatState: 'archived',
     };

@@ -26,6 +26,12 @@ import {
   Ban,
   CalendarCheck,
   Clock as ClockIcon,
+  Globe,
+  Link2,
+  Ticket,
+  ScrollText,
+  ListChecks,
+  Copy,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -35,10 +41,22 @@ import {
   EventMedia,
   mockParticipants,
   mockMediaPosts,
+  EVENT_TERMS_AND_CONDITIONS,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
+
+// ─── Price display helper ─────────────────────────────────────────────────────
+function formatPriceRange(event: Event): string {
+  if (event.priceCategories && event.priceCategories.length > 0) {
+    const prices = event.priceCategories.map(c => c.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return min === max ? `£${min}` : `£${min} – £${max}`;
+  }
+  return event.price !== undefined ? `£${event.price}` : '';
+}
 
 // ─── Age group display labels (matches HSS naming convention) ─────────────────
 const AUDIENCE_AGE_LABELS: Record<string, string> = {
@@ -401,7 +419,11 @@ export default function EventDetail({
         {/* HEADER */}
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex gap-4">
+              {event.imageUrl && (
+                <img src={event.imageUrl} alt={event.name} className="w-20 h-20 rounded-lg object-cover border border-neutral-200 dark:border-neutral-800 flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
@@ -409,14 +431,17 @@ export default function EventDetail({
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
                 <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>
-                <div className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /><span>{event.activityCentre} · {event.town} · {event.region} · {event.country}</span></div>
+                <div className="flex items-center gap-1">
+                  {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                  <span>{event.locationType === 'online' ? 'Online Event' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+                </div>
                 <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={event.status} />
                 {event.paymentType === 'paid' ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 text-xs font-medium">
-                    <CreditCard className="w-3 h-3" /> Paid{event.price ? ` · £${event.price}` : ''}
+                    <CreditCard className="w-3 h-3" /> Paid{formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs font-medium">Free</span>
@@ -426,6 +451,7 @@ export default function EventDetail({
                     <UsersIcon className="w-3 h-3" /> Cap: {event.capacity}
                   </span>
                 )}
+              </div>
               </div>
             </div>
 
@@ -541,14 +567,21 @@ export default function EventDetail({
                         { label: 'Vibhaag',         value: event.region                    },
                         { label: 'Nagar',           value: event.town                      },
                         { label: 'Shakha',          value: event.activityCentre            },
+                        { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
                         { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
                         { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
-                        { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${event.price ? ` · £${event.price}` : ''}` : 'Free' },
+                        { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free' },
                         ...(event.capacity ? [{ label: 'Capacity', value: String(event.capacity) }] : []),
                       ].map(({ label, value, mono }) => (
                         <div key={label}>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">{label}</label>
-                          <p className={`text-sm text-neutral-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</p>
+                          {label === 'Location' && event.locationType === 'online' && value ? (
+                            <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all">
+                              <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
+                            </a>
+                          ) : (
+                            <p className={`text-sm text-neutral-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -606,6 +639,64 @@ export default function EventDetail({
                       </p>
                     </div>
                   )}
+
+                  {/* Guest Registration */}
+                  {event.guestRegistrationEnabled && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+                      </h4>
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
+                            {`https://hssuk.org/events/${event.id}/register`}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://hssuk.org/events/${event.id}/register`);
+                              toast.success('Registration link copied to clipboard.');
+                            }}
+                            className="p-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Questions */}
+                  {event.customQuestions && event.customQuestions.length > 0 && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <ListChecks className="w-4 h-4 text-primary-600" /> Additional Registration Questions
+                      </h4>
+                      <div className="px-6 py-4 space-y-2">
+                        {event.customQuestions.map(q => (
+                          <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                            <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-xs text-neutral-400 capitalize">{q.type}</span>
+                              {q.required && (
+                                <span className="px-1.5 py-0.5 rounded bg-error-50 dark:bg-error-950/20 text-error-600 dark:text-error-400 text-[10px] font-medium">Required</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Terms & Conditions */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                      <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
+                    </h4>
+                    <p className="px-6 py-4 text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                      {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -990,16 +1081,6 @@ export default function EventDetail({
                     <p className="text-xs text-neutral-500">Primary Host</p>
                   </div>
                 </div>
-                {event.coHosts.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Co-Hosts</label>
-                    <div className="flex flex-wrap gap-2">
-                      {event.coHosts.map((c, i) => (
-                        <span key={i} className="px-2 py-1 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-600 dark:text-neutral-400">{c}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1010,7 +1091,17 @@ export default function EventDetail({
                   <span className="text-xs text-neutral-500">Payment Type</span>
                   <span className="text-xs font-medium text-neutral-900 dark:text-white capitalize">{event.paymentType}</span>
                 </div>
-                {event.price !== undefined && (
+                {event.priceCategories && event.priceCategories.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <span className="text-xs text-neutral-500">Price Categories</span>
+                    {event.priceCategories.map(c => (
+                      <div key={c.id} className="flex justify-between items-center">
+                        <span className="text-xs text-neutral-600 dark:text-neutral-400">{c.label}</span>
+                        <span className="text-xs font-medium text-neutral-900 dark:text-white">£{c.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : event.price !== undefined && (
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-neutral-500">Price</span>
                     <span className="text-xs font-medium text-neutral-900 dark:text-white">£{event.price}</span>

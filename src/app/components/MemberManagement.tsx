@@ -1019,7 +1019,7 @@ export default function MemberManagement({
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showSummary, setShowSummary] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
 
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
@@ -1698,8 +1698,6 @@ export default function MemberManagement({
                               <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
                                 {m.name}
                               </span>
-                              <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate block">{m.jobTitle}</span>
-                              <span className="text-xs text-neutral-400 truncate block">{m.email}</span>
                             </div>
                           </div>
                         </td>

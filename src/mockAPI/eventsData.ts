@@ -1,15 +1,33 @@
+export interface EventPriceCategory {
+  id: string;
+  label: string;
+  price: number;
+}
+
+export interface EventCustomQuestion {
+  id: string;
+  label: string;
+  type: 'text' | 'dropdown' | 'checkbox';
+  options?: string[];      // for 'dropdown'
+  required: boolean;
+}
+
 export interface Event {
   id: string;
   name: string;
   host: string;
-  coHosts: string[];
   status: 'draft' | 'published' | 'active' | 'cancelled' | 'completed';
 
-  // Masters scope
+  // Masters scope (used for Target Audience — Vibhaag/Nagar/Shakha)
   country: string;
   region: string;
   town: string;
   activityCentre: string;
+
+  // Venue — physical or online
+  locationType: 'physical' | 'online';
+  venueAddress?: string;   // Required when locationType === 'physical'
+  onlineUrl?: string;      // Required when locationType === 'online'
 
   // Schedule
   startDate: string;   // ISO datetime
@@ -19,16 +37,25 @@ export interface Event {
 
   // Payment
   paymentType: 'paid' | 'free';
-  price?: number;      // Required when paymentType === 'paid'
+  price?: number;      // Legacy single price (used when no price categories defined)
+  priceCategories?: EventPriceCategory[];   // Multiple ticket/price tiers
 
   // Configuration
   capacity?: number;
   description?: string;
+  imageUrl?: string;
+  termsAndConditions?: string;
 
   // Target audience filters
   filterAgeCategories?: ('bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha')[];
   filterGenders?: ('male' | 'female')[];
   filterJobTitles?: string[];
+
+  // Guest registration
+  guestRegistrationEnabled?: boolean;
+
+  // Custom registration questions
+  customQuestions?: EventCustomQuestion[];
 
   // Participant metrics (kept as-is — FINAL)
   metrics: {
@@ -45,6 +72,15 @@ export interface Event {
   cancelledDate?: string;
   cancellationReason?: string;
 }
+
+// ─── Standard Terms & Conditions shown on all events ─────────────────────────
+export const EVENT_TERMS_AND_CONDITIONS = `By registering for this event, you agree to the following terms:
+1. Registrations are confirmed on a first-come, first-served basis, subject to capacity.
+2. Cancellations must be made at least 48 hours before the event start time for any applicable refund.
+3. HSS (UK) reserves the right to amend, postpone, or cancel the event due to unforeseen circumstances.
+4. Participants are responsible for their own conduct and must follow all on-site safety instructions.
+5. Photographs and videos may be taken during the event for promotional purposes.
+6. Personal data submitted during registration will be handled in accordance with the HSS (UK) Privacy Policy.`;
 
 // ─── Media data ──────────────────────────────────────────────────────────────
 export interface EventMedia {
@@ -191,12 +227,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-101',
     name: 'Youth Leadership Summit',
     host: 'Sarah Johnson',
-    coHosts: ['Michael Chen', 'Emma Davis'],
     status: 'active',
     country: 'HSS UK',
     region: 'London & South East',
     town: 'Wembley',
     activityCentre: 'Wembley Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Wembley Activity Centre, Forty Avenue, Wembley, HA9 8JX',
     startDate: '2026-05-20T10:00:00Z',
     endDate: '2026-05-20T18:00:00Z',
     createdDate: '2026-03-10T09:00:00Z',
@@ -204,6 +241,13 @@ export const mockEvents: Event[] = [
     paymentType: 'free',
     capacity: 200,
     description: 'A full-day summit bringing together young leaders from across HSS UK to develop leadership skills, share experiences, and build networks. Sessions include workshops on communication, community service, and Sangh values.',
+    imageUrl: 'https://hssuk.org/wp-content/uploads/2025/09/Large-Banner-1-scaled.jpg',
+    guestRegistrationEnabled: true,
+    customQuestions: [
+      { id: 'CQ-1', label: 'Dietary requirements', type: 'text', required: false },
+      { id: 'CQ-2', label: 'T-shirt size', type: 'dropdown', options: ['S', 'M', 'L', 'XL'], required: true },
+      { id: 'CQ-3', label: 'I agree to be photographed during the event', type: 'checkbox', required: true },
+    ],
     metrics: {
       going: 156,
       maybe: 42,
@@ -217,18 +261,23 @@ export const mockEvents: Event[] = [
     id: 'EVT-102',
     name: 'Tech Workshop Series',
     host: 'Sarah Johnson',
-    coHosts: [],
     status: 'draft',
     country: 'HSS UK',
     region: 'Midlands',
     town: 'Birmingham',
     activityCentre: 'Birmingham East Activity Centre',
+    locationType: 'online',
+    onlineUrl: 'https://meet.hssuk.org/tech-workshop-series',
     startDate: '2026-07-15T09:00:00Z',
     endDate: '2026-07-15T17:00:00Z',
     createdDate: '2026-05-01T10:00:00Z',
     lastUpdated: '2026-05-10T11:00:00Z',
     paymentType: 'paid',
     price: 25,
+    priceCategories: [
+      { id: 'PC-1', label: 'Standard', price: 25 },
+      { id: 'PC-2', label: 'Student', price: 15 },
+    ],
     capacity: 50,
     description: 'An intensive hands-on workshop series covering modern web development, AI tools, and digital skills for HSS members. Suitable for beginners and intermediate participants. Refreshments included.',
     metrics: {
@@ -244,12 +293,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-103',
     name: 'Cultural Evening',
     host: 'David Park',
-    coHosts: ['Sarah Johnson'],
     status: 'published',
     country: 'HSS UK',
     region: 'North West',
     town: 'Manchester',
     activityCentre: 'Manchester Central Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Manchester Central Activity Centre, Oxford Road, Manchester, M1 5QA',
     startDate: '2026-06-10T18:30:00Z',
     endDate: '2026-06-10T21:30:00Z',
     createdDate: '2026-04-20T13:00:00Z',
@@ -270,12 +320,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-104',
     name: 'Annual Sports Day',
     host: 'Michael Chen',
-    coHosts: ['Emma Davis'],
     status: 'completed',
     country: 'HSS UK',
     region: 'Scotland',
     town: 'Edinburgh',
     activityCentre: 'Edinburgh Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Edinburgh Activity Centre, Meadowbank Stadium, Edinburgh, EH7 6AE',
     startDate: '2026-03-01T09:00:00Z',
     endDate: '2026-03-01T17:00:00Z',
     createdDate: '2026-01-05T08:00:00Z',
@@ -295,18 +346,23 @@ export const mockEvents: Event[] = [
     id: 'EVT-105',
     name: 'Fundraising Gala',
     host: 'Emma Davis',
-    coHosts: ['Sarah Johnson', 'David Park'],
     status: 'active',
     country: 'HSS Ireland',
     region: 'Dublin',
     town: 'Dublin City',
     activityCentre: 'Dublin Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Dublin Activity Centre, O\'Connell Street, Dublin 1, D01 F5P2',
     startDate: '2026-05-22T19:00:00Z',
     endDate: '2026-05-22T23:00:00Z',
     createdDate: '2026-03-15T11:00:00Z',
     lastUpdated: '2026-05-20T16:00:00Z',
     paymentType: 'paid',
     price: 75,
+    priceCategories: [
+      { id: 'PC-1', label: 'Adult', price: 75 },
+      { id: 'PC-2', label: 'Child (under 12)', price: 35 },
+    ],
     capacity: 100,
     description: 'An elegant black-tie fundraising gala to support HSS community welfare and youth programmes. Includes a three-course dinner, live entertainment, and a charity auction. Smart dress required.',
     metrics: {
@@ -322,12 +378,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-106',
     name: 'Charity Run 2026',
     host: 'David Park',
-    coHosts: [],
     status: 'cancelled',
     country: 'HSS UK',
     region: 'Yorkshire & Humber',
     town: 'Leeds',
     activityCentre: 'Leeds North Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Leeds North Activity Centre, Roundhay Park, Leeds, LS8 2HH',
     startDate: '2026-04-12T08:00:00Z',
     endDate: '2026-04-12T12:00:00Z',
     createdDate: '2026-02-01T09:00:00Z',
@@ -349,12 +406,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-107',
     name: 'Community Iftar',
     host: 'Sarah Johnson',
-    coHosts: ['Michael Chen'],
     status: 'draft',
     country: 'HSS UK',
     region: 'Wales',
     town: 'Cardiff',
     activityCentre: 'Cardiff Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Cardiff Activity Centre, Cathays, Cardiff, CF24 4HQ',
     startDate: '2026-08-01T18:00:00Z',
     endDate: '2026-08-01T21:00:00Z',
     createdDate: '2026-05-22T10:00:00Z',
@@ -375,18 +433,24 @@ export const mockEvents: Event[] = [
     id: 'EVT-108',
     name: 'Winter Carnival',
     host: 'Michael Chen',
-    coHosts: ['Emma Davis'],
     status: 'published',
     country: 'HSS UK',
     region: 'Scotland',
     town: 'Glasgow',
     activityCentre: 'Glasgow Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Glasgow Activity Centre, Pollok Park, Glasgow, G43 1AT',
     startDate: '2026-09-20T14:00:00Z',
     endDate: '2026-09-20T20:00:00Z',
     createdDate: '2026-05-18T12:00:00Z',
     lastUpdated: '2026-05-23T09:00:00Z',
     paymentType: 'paid',
     price: 15,
+    priceCategories: [
+      { id: 'PC-1', label: 'Adult', price: 15 },
+      { id: 'PC-2', label: 'Child', price: 8 },
+      { id: 'PC-3', label: 'Family (2+2)', price: 40 },
+    ],
     capacity: 300,
     description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
     metrics: {
@@ -402,12 +466,13 @@ export const mockEvents: Event[] = [
     id: 'EVT-109',
     name: 'HSS Annual General Meeting',
     host: 'Sarah Johnson',
-    coHosts: [],
     status: 'active',
     country: 'HSS UK',
     region: 'London & South East',
     town: 'Harrow',
     activityCentre: 'Harrow Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Harrow Activity Centre, Kenton Road, Harrow, HA3 8AE',
     startDate: '2026-05-24T10:00:00Z',
     endDate: '2026-05-24T16:00:00Z',
     createdDate: '2026-04-01T08:00:00Z',
@@ -427,19 +492,25 @@ export const mockEvents: Event[] = [
     id: 'EVT-110',
     name: 'Heritage Festival 2026',
     host: 'Emma Davis',
-    coHosts: ['David Park'],
     status: 'completed',
     country: 'HSS United States',
     region: 'East Coast',
     town: 'New York',
     activityCentre: 'New York Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'New York Activity Centre, Flushing Meadows, Queens, NY 11368',
     startDate: '2026-02-10T11:00:00Z',
     endDate: '2026-02-10T19:00:00Z',
     createdDate: '2025-12-01T09:00:00Z',
     lastUpdated: '2026-02-11T10:00:00Z',
     paymentType: 'paid',
     price: 30,
+    priceCategories: [
+      { id: 'PC-1', label: 'General Admission', price: 30 },
+      { id: 'PC-2', label: 'VIP', price: 75 },
+    ],
     capacity: 500,
+    guestRegistrationEnabled: true,
     description: 'A vibrant celebration of India\'s cultural heritage featuring folk performances, art exhibitions, traditional crafts, regional cuisine stalls, and talks on history and heritage. A must-attend for the whole family.',
     metrics: {
       going: 445,
