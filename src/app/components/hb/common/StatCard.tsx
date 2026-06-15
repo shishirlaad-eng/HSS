@@ -18,15 +18,17 @@ interface StatCardProps {
   };
   className?: string;
   valueClassName?: string;
+  labelClassName?: string;
 }
 
-export function StatCard({ 
-  label, 
-  value, 
+export function StatCard({
+  label,
+  value,
   icon: Icon,
   trend,
   className,
-  valueClassName 
+  valueClassName,
+  labelClassName
 }: StatCardProps) {
   return (
     <div className={cn(
@@ -35,7 +37,10 @@ export function StatCard({
     )}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">
+          <p className={cn(
+            "text-xs text-neutral-600 dark:text-neutral-400 mb-1.5",
+            labelClassName
+          )}>
             {label}
           </p>
           <p className={cn(

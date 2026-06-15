@@ -118,6 +118,7 @@ export function GlobalHeader({
       if (id === "event-management-group") label = "Event Mgmt";
       if (id === "organisational-master") label = "Master Mgmt";
     }
+    if (id === "attendance-group" && isMemberRole) label = "My Sankhya";
     return label;
   };
   const [searchQuery, setSearchQuery] = useState("");

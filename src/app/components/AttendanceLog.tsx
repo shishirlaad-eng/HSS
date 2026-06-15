@@ -449,13 +449,15 @@ export default function AttendanceLog() {
 
           <IconButton icon={BarChart3}   onClick={() => setShowSummary(s => !s)} title="Toggle Summary" />
           <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setDateRangeLabel(''); setPage(1); }} title="Reset" />
-          <IconButton
-            icon={MoreVertical}
-            title="More options"
-            menuItems={[
-              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
-            ]}
-          />
+          {!scope.selfOnly && (
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
+              ]}
+            />
+          )}
         </PageHeader>
 
         {/* ── SUMMARY WIDGETS ── */}
@@ -484,11 +486,17 @@ export default function AttendanceLog() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                  <SortTh label="Member"          sortKey="memberName"       current={sortKey} dir={sortDir} onSort={handleSort} />
-                  <SortTh label="Role"             sortKey="jobTitle"         current={sortKey} dir={sortDir} onSort={handleSort} />
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Gender</th>
+                  {!scope.selfOnly && (
+                    <>
+                      <SortTh label="Member"          sortKey="memberName"       current={sortKey} dir={sortDir} onSort={handleSort} />
+                      <SortTh label="Role"             sortKey="jobTitle"         current={sortKey} dir={sortDir} onSort={handleSort} />
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Gender</th>
+                    </>
+                  )}
                   <SortTh label="Shakha"           sortKey="activityCentre"   current={sortKey} dir={sortDir} onSort={handleSort} />
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Shakha</th>
+                  {!scope.selfOnly && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Shakha</th>
+                  )}
                   <SortTh label="Date"             sortKey="date"             current={sortKey} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Time</th>
                   <SortTh label="Status"           sortKey="attendanceStatus" current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -497,7 +505,7 @@ export default function AttendanceLog() {
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-16 text-center">
+                    <td colSpan={scope.selfOnly ? 4 : 8} className="px-4 py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                           <Users className="w-6 h-6 text-neutral-400" />
@@ -517,7 +525,7 @@ export default function AttendanceLog() {
                 ) : groupedPaginated.map(({ month, entries, totalEntries }, groupIndex) => (
                   <Fragment key={`${page}-${month}-${groupIndex}`}>
                     <tr>
-                      <td colSpan={8} className="p-0">
+                      <td colSpan={scope.selfOnly ? 4 : 8} className="p-0">
                         <button
                           type="button"
                           onClick={() => toggleMonth(month)}
@@ -547,6 +555,8 @@ export default function AttendanceLog() {
                   <tr key={`${entry.sessionId}-${entry.memberId}-${month}-${idx}`}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
 
+                    {!scope.selfOnly && (
+                    <>
                     {/* Member */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
@@ -577,6 +587,8 @@ export default function AttendanceLog() {
                         {entry.gender === 'male' ? 'Male' : 'Female'}
                       </span>
                     </td>
+                    </>
+                    )}
 
                     {/* Activity Centre */}
                     <td className="px-4 py-3">
@@ -592,6 +604,7 @@ export default function AttendanceLog() {
                     </td>
 
                     {/* Session */}
+                    {!scope.selfOnly && (
                     <td className="px-4 py-3">
                       <p className="text-sm text-neutral-700 dark:text-neutral-300 max-w-[180px] truncate" title={entry.sessionTitle}>
                         {entry.sessionTitle}
@@ -600,6 +613,7 @@ export default function AttendanceLog() {
                         <p className="text-[11px] text-neutral-400">{entry.shakhaType}</p>
                       )}
                     </td>
+                    )}
 
                     {/* Date */}
                     <td className="px-4 py-3 whitespace-nowrap">

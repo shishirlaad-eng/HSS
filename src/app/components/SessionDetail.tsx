@@ -79,11 +79,17 @@ function MemberRow({
   record,
   attendanceCount,
   isGuest,
+  postCode,
+  isExpanded,
+  onToggleExpand,
   onMark,
 }: {
   record: AttendanceRecord;
   attendanceCount: number;
   isGuest: boolean;
+  postCode?: string;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onMark?: (status: AttendanceRecord['status']) => void;
 }) {
   const initials = record.memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -100,8 +106,21 @@ function MemberRow({
       </div>
 
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
-        <span className="text-xs font-bold text-primary-700 dark:text-primary-300">{initials}</span>
+      <div className="relative flex-shrink-0">
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          title="Show post code"
+          className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center hover:ring-2 hover:ring-primary-300 dark:hover:ring-primary-700 transition-all"
+        >
+          <span className="text-xs font-bold text-primary-700 dark:text-primary-300">{initials}</span>
+        </button>
+        {isExpanded && (
+          <div className="absolute left-0 top-9 z-10 whitespace-nowrap rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-md px-2.5 py-1.5">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Post Code</p>
+            <p className="text-xs font-semibold text-neutral-900 dark:text-white">{postCode ?? '—'}</p>
+          </div>
+        )}
       </div>
 
       {/* Name + meta */}
@@ -191,6 +210,7 @@ export default function SessionDetail({
   const [showCancelModal,   setShowCancelModal]   = useState(false);
   const [isCancelling,      setIsCancelling]      = useState(false);
   const [joinRequested,     setJoinRequested]     = useState(false);
+  const [expandedMemberId,  setExpandedMemberId]  = useState<string | null>(null);
   const { scope, selectedRole } = useRoleScope();
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
   const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
@@ -223,6 +243,13 @@ export default function SessionDetail({
   const homeCentreMap = useMemo(() => {
     const map = new Map<string, string>();
     mockMembers.forEach(m => map.set(m.id, m.activityCentre ?? ''));
+    return map;
+  }, []);
+
+  // ── Computed: member postcode lookup (memberId → postCode) ──
+  const postCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    mockMembers.forEach(m => map.set(m.id, m.postCode ?? ''));
     return map;
   }, []);
 
@@ -536,6 +563,9 @@ export default function SessionDetail({
                                 record={r}
                                 attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
                                 isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
+                                postCode={postCodeMap.get(r.memberId)}
+                                isExpanded={expandedMemberId === r.memberId}
+                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
                                 onMark={status => onMarkAttendance(session.id, r.memberId, status)}
                               />
                             ))}
@@ -554,6 +584,9 @@ export default function SessionDetail({
                                 record={r}
                                 attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
                                 isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
+                                postCode={postCodeMap.get(r.memberId)}
+                                isExpanded={expandedMemberId === r.memberId}
+                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
                                 onMark={status => onMarkAttendance(session.id, r.memberId, status)}
                               />
                             ))}
@@ -572,6 +605,9 @@ export default function SessionDetail({
                                 record={r}
                                 attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
                                 isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
+                                postCode={postCodeMap.get(r.memberId)}
+                                isExpanded={expandedMemberId === r.memberId}
+                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
                                 onMark={status => onMarkAttendance(session.id, r.memberId, status)}
                               />
                             ))}

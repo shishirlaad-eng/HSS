@@ -340,7 +340,6 @@ export const mockRoles: Role[] = [
       events:           ["view"],
       announcements:    ["view"],
       attendance:       ["add", "edit"],
-      "my-donations":   ["view"],
     },
   },
 
@@ -358,7 +357,6 @@ export const mockRoles: Role[] = [
       events:           ["view"],
       announcements:    ["view"],
       attendance:       ["add", "edit"],
-      "my-donations":   ["view"],
     },
   },
 ];

@@ -159,11 +159,11 @@ const AGE_GROUP_CHIP = 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark
 // ── Mock Donations (member view) ──────────────────────────────
 
 const mockMyDonations = [
-  { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00  },
-  { id: 'DON-002', datetime: '2026-04-15T09:15:00', amount: 50.00  },
-  { id: 'DON-003', datetime: '2026-03-22T18:47:00', amount: 10.00  },
-  { id: 'DON-004', datetime: '2026-02-10T11:05:00', amount: 100.00 },
-  { id: 'DON-005', datetime: '2026-01-05T16:20:00', amount: 25.00  },
+  { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00,  type: 'recurring' },
+  { id: 'DON-002', datetime: '2026-04-15T09:15:00', amount: 50.00,  type: 'online'    },
+  { id: 'DON-003', datetime: '2026-03-22T18:47:00', amount: 10.00,  type: 'recurring' },
+  { id: 'DON-004', datetime: '2026-02-10T11:05:00', amount: 100.00, type: 'online'    },
+  { id: 'DON-005', datetime: '2026-01-05T16:20:00', amount: 25.00,  type: 'recurring' },
 ];
 
 // ── Mock Attendance (member view) ─────────────────────────────
@@ -184,6 +184,7 @@ const mockMyAttendance = [
 const mockCurrentMember = {
   firstName:          'John',
   lastName:           'Doe',
+  memberId:           'HSS-00001',
   shakha:             'Harrow Activity Centre',
   town:               'Harrow',
   vibhaag:            'London & South East',
@@ -206,6 +207,9 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
   const presentCount  = mockMyAttendance.filter(a => a.status === 'present').length;
   const absentCount   = mockMyAttendance.filter(a => a.status === 'absent').length;
   const attendancePct = Math.round((presentCount / mockMyAttendance.length) * 100);
+  const presentAnotherShakha = mockMyAttendance.filter(
+    a => a.status === 'present' && a.session.includes('Shakha') && !a.session.includes(mockCurrentMember.shakha),
+  ).length;
   const highPriority  = mockAnnouncements.filter(a => a.priority === 'high').length;
 
   return (
@@ -214,41 +218,42 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
       {/* Member Identity Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-1">
-          {/* Name + location details (Shakha · Town · Region) on the same row */}
+          {/* Name + Responsibility */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
-              {mockCurrentMember.firstName} {mockCurrentMember.lastName}
+              {mockCurrentMember.firstName} {mockCurrentMember.lastName}{' '}
+              <span className="text-base font-medium text-neutral-400 dark:text-neutral-500">[{mockCurrentMember.memberId}]</span>
             </h1>
             <span className="text-neutral-300 dark:text-neutral-600 font-light text-xl leading-tight">|</span>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-              <span className="flex items-center gap-1">
-                <Building2 className="w-3 h-3 flex-shrink-0" />
-                {mockCurrentMember.shakha}
-              </span>
-              <span className="text-neutral-300 dark:text-neutral-600">|</span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                {mockCurrentMember.town}
-              </span>
-              <span className="text-neutral-300 dark:text-neutral-600">|</span>
-              <span className="flex items-center gap-1">
-                <Globe2 className="w-3 h-3 flex-shrink-0" />
-                {mockCurrentMember.vibhaag}
-              </span>
-            </div>
+            <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+              <Award className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.sanghResponsibility}
+            </span>
           </div>
-          {/* Job title below the name */}
-          <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-            <Award className="w-3 h-3 flex-shrink-0" />
-            {mockCurrentMember.sanghResponsibility}
-          </span>
+          {/* Activity Centre · Town · Region */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="flex items-center gap-1">
+              <Building2 className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.shakha}
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.town}
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span className="flex items-center gap-1">
+              <Globe2 className="w-3 h-3 flex-shrink-0" />
+              {mockCurrentMember.vibhaag}
+            </span>
+          </div>
         </div>
         <button
           onClick={() => onNavigate?.('donate')}
           className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
         >
           <Heart className="w-4 h-4" />
-          Donate
+          Give Dakshina
         </button>
       </div>
 
@@ -259,16 +264,18 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
         <div
           role="button" tabIndex={0}
           className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('sessions')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('sessions')}
+          onClick={() => onNavigate?.('attendance-log')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('attendance-log')}
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Sankhya</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{attendancePct}%</p>
-              <p className="text-xs mt-1 text-neutral-400 dark:text-neutral-500">Current month</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">My Sankhya</p>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{attendancePct}% YTD</p>
               <p className="text-xs mt-1 text-emerald-600 dark:text-emerald-400">
                 {presentCount} present · {absentCount} absent
+              </p>
+              <p className="text-xs mt-1 text-neutral-400 dark:text-neutral-500">
+                {presentAnotherShakha} present in another shakha
               </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
@@ -277,7 +284,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
           </div>
         </div>
 
-        {/* Upcoming Karyakrams */}
+        {/* Karyakrams */}
         <div
           role="button" tabIndex={0}
           className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
@@ -286,11 +293,10 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Karyakrams</p>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">5</p>
               <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
-                {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
-                {upcomingEvents.filter(e => e.status === 'published').length} published
+                3 upcoming · 2 registered
               </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
@@ -308,7 +314,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{mockAnnouncements.length}</p>
               <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">
                 {highPriority} high priority
@@ -320,21 +326,24 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
           </div>
         </div>
 
-        {/* My Donations */}
+        {/* My Dakshina */}
         <div
           role="button" tabIndex={0}
           className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('donate')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('donate')}
+          onClick={() => onNavigate?.('my-donations')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">My Donations</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                £{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(0)}
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">My Dakshina</p>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                £{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(0)} YTD
               </p>
               <p className="text-xs mt-1 text-primary-600 dark:text-primary-400">
-                {mockMyDonations.length} donation{mockMyDonations.length !== 1 ? 's' : ''} total
+                £{mockMyDonations.filter(d => d.type === 'online').reduce((s, d) => s + d.amount, 0).toFixed(0)} online Dakshina
+              </p>
+              <p className="text-xs mt-1 text-primary-600 dark:text-primary-400">
+                £{mockMyDonations.filter(d => d.type === 'recurring').reduce((s, d) => s + d.amount, 0).toFixed(0)} recurring Dakshina
               </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
@@ -353,7 +362,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {upcomingEvents.length}
                 </span>
@@ -365,11 +374,17 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
               {upcomingEvents.length === 0 ? (
                 <div className="px-5 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">No upcoming events scheduled.</div>
-              ) : upcomingEvents.map(event => {
+              ) : upcomingEvents.slice(0, 3).map(event => {
                 const cfg = EVENT_STATUS_CFG[event.status] ?? EVENT_STATUS_CFG.draft;
                 return (
-                  <div key={event.id} className="px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-                    <div className="flex items-start gap-4">
+                  <div
+                    key={event.id}
+                    role="button" tabIndex={0}
+                    className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    onClick={() => onNavigate?.('event-management')}
+                    onKeyDown={e => e.key === 'Enter' && onNavigate?.('event-management')}
+                  >
+                    <div className="flex items-start gap-4 w-full">
                       <div className="flex-shrink-0 w-12 text-center pt-0.5">
                         <div className="text-xl font-bold text-primary-600 dark:text-primary-400 leading-tight">{new Date(event.startDate).getDate()}</div>
                         <div className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wide font-medium">{new Date(event.startDate).toLocaleString('en-GB', { month: 'short' })}</div>
@@ -409,16 +424,22 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Sankhya</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Sankhya</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {attendancePct}%
                 </span>
               </div>
             </div>
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
-              {mockMyAttendance.map(att => (
-                <div key={att.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
+              {mockMyAttendance.slice(0, 3).map(att => (
+                <div
+                  key={att.id}
+                  role="button" tabIndex={0}
+                  className="h-[60px] px-5 py-3 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                  onClick={() => onNavigate?.('sessions')}
+                  onKeyDown={e => e.key === 'Enter' && onNavigate?.('sessions')}
+                >
+                  <div className="flex items-center justify-between gap-2 w-full">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{att.session}</p>
                       <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
@@ -435,7 +456,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
         </div>
       </div>
 
-      {/* ── Row 3: Announcements + Donations ─────────────── */}
+      {/* ── Row 3: Announcements + Dakshina ─────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Announcements (2/3) */}
@@ -444,7 +465,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Suchana</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Suchana</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {mockAnnouncements.length}
                 </span>
@@ -454,12 +475,18 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
               </button>
             </div>
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {mockAnnouncements.map(ann => {
+              {mockAnnouncements.slice(0, 3).map(ann => {
                 const pcfg = PRIORITY_CFG[ann.priority];
                 const PIcon = pcfg.icon;
                 return (
-                  <div key={ann.id} className="px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-                    <div className="flex items-start gap-3">
+                  <div
+                    key={ann.id}
+                    role="button" tabIndex={0}
+                    className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    onClick={() => onNavigate?.('announcements')}
+                    onKeyDown={e => e.key === 'Enter' && onNavigate?.('announcements')}
+                  >
+                    <div className="flex items-start gap-3 w-full">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${pcfg.bg}`}>
                         <PIcon className={`w-3.5 h-3.5 ${pcfg.color}`} />
                       </div>
@@ -479,22 +506,33 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
           </div>
         </div>
 
-        {/* My Donations (1/3) */}
+        {/* My Dakshina (1/3) */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+            <div
+              role="button" tabIndex={0}
+              className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              onClick={() => onNavigate?.('my-donations')}
+              onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
+            >
               <div className="flex items-center gap-2">
                 <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">My Donations</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Dakshina</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {mockMyDonations.length}
                 </span>
               </div>
             </div>
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
-              {mockMyDonations.map(don => (
-                <div key={don.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
+              {mockMyDonations.slice(0, 3).map(don => (
+                <div
+                  key={don.id}
+                  role="button" tabIndex={0}
+                  className="h-[52px] px-5 py-3 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                  onClick={() => onNavigate?.('my-donations')}
+                  onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
+                >
+                  <div className="flex items-center justify-between gap-2 w-full">
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       {new Date(don.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       <span className="text-neutral-400 dark:text-neutral-500 ml-1">
@@ -517,7 +555,7 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all"
               >
                 <Heart className="w-3.5 h-3.5" />
-                Donate
+                Give Dakshina
               </button>
             </div>
           </div>
@@ -572,8 +610,8 @@ function KpiCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">{title}</p>
-          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
+          <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">{title}</p>
+          <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
         </div>
         <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center flex-shrink-0">
           <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -800,15 +838,15 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const hideRegions  = selectedRole === 'Regional Head' || selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
   const hideTowns    = selectedRole === 'Town Head' || selectedRole === 'Activity Centre Admin';
   const hideCentres  = selectedRole === 'Activity Centre Admin';
-  const showDonateButton = selectedRole !== 'Super Admin';
 
   // ── Derived KPI values ──────────────────────────────────────
 
-  const totalMembers   = mockMembers.length;
-  const activeMembers  = mockMembers.filter(m => m.status === 'active').length;
-  const pendingApprovals = mockMembers.filter(
-    m => m.status === 'pending' || m.status === 'pending-parental-consent',
-  ).length;
+  const scopedTotalMembers = filterByScope(mockMembers, scope);
+  const totalMembers   = scopedTotalMembers.length;
+  const activeMembers  = scopedTotalMembers.filter(m => m.status === 'active').length;
+  const inactiveMembers = scopedTotalMembers.filter(m => m.status === 'inactive').length;
+  const pendingApprovals = scopedTotalMembers.filter(m => m.status === 'pending').length;
+  const pendingGuardianApprovals = scopedTotalMembers.filter(m => m.status === 'pending-parental-consent').length;
 
   const regionsCount = Object.values(MASTERS_CASCADE.regions).flat().length;
   const townsCount   = Object.values(MASTERS_CASCADE.towns).flat().length;
@@ -842,28 +880,21 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* ── Page Header ──────────────────────────────────── */}
       <PageHeader
-        title="Dashboard"
-        subtitle={`${greeting} — here's what's happening across the network`}
+        title={scope.centre ? `${scope.centre} - Dashboard` : "Dashboard"}
+        subtitle={showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`}
         breadcrumbs={[
           { label: 'Home', href: '#' },
           { label: 'Dashboard', current: true },
         ]}
       >
-        {showDonateButton && (
-          <button
-            onClick={() => onNavigate?.('donate')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
-          >
-            <Heart className="w-4 h-4" />
-            Donate
-          </button>
-        )}
       </PageHeader>
 
       {/* ── Row 1: Org structure KPIs ────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <StatCard
           label="Total Members"
+          labelClassName="text-[14px] font-bold"
+          valueClassName="font-bold"
           value={totalMembers}
           icon={Users}
           trend={{ value: `${activeMembers} active · ${pendingApprovals} pending`, positive: true }}
@@ -871,6 +902,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {!hideRegions && (
           <StatCard
             label="Vibhaag"
+            labelClassName="text-[14px] font-bold"
+            valueClassName="font-bold"
             value={regionsCount}
             icon={Globe2}
             trend={{ value: `Across ${MASTERS_CASCADE.countries.length} countries`, positive: true }}
@@ -879,6 +912,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {!hideTowns && (
           <StatCard
             label="Nagar"
+            labelClassName="text-[14px] font-bold"
+            valueClassName="font-bold"
             value={townsCount}
             icon={MapPin}
             trend={{ value: `Across ${regionsCount} vibhaags`, positive: true }}
@@ -887,6 +922,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {!hideCentres && (
           <StatCard
             label="Shakha"
+            labelClassName="text-[14px] font-bold"
+            valueClassName="font-bold"
             value={centresCount}
             icon={Building2}
             trend={{ value: `Across ${townsCount} nagars`, positive: true }}
@@ -913,7 +950,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
               <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
                 {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
@@ -936,7 +973,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{mockAnnouncements.length}</p>
               <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">
                 {mockAnnouncements.filter(a => a.priority === 'high').length} high priority
@@ -958,7 +995,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Recent Registrations</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Recent Registrations</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{recentRegistrations.length}</p>
               <p className="text-xs mt-1.5 text-emerald-600 dark:text-emerald-400">
                 Latest: {timeAgo(recentRegistrations[0]?.registrationDate ?? '')}
@@ -980,7 +1017,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">Pending Approvals</p>
+              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Pending Approvals</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{pendingApprovals}</p>
               <p className="text-xs mt-1.5 text-amber-600 dark:text-amber-400">
                 {pendingList.filter(m => m.status === 'pending-parental-consent').length} awaiting parental consent
@@ -1003,7 +1040,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {upcomingEvents.length}
                 </span>
@@ -1098,7 +1135,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <ClipboardCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Pending Approvals</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Pending Approvals</h3>
                 {pendingApprovals > 0 && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                     {pendingApprovals}
@@ -1162,7 +1199,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Suchana</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Suchana</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   {mockAnnouncements.length}
                 </span>
@@ -1215,7 +1252,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Recent Registrations</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Recent Registrations</h3>
               </div>
               <button
                 onClick={() => onNavigate?.('members')}

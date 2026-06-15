@@ -102,7 +102,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
     const [mm] = expiry.replace(/\s/g, '').split('/');
     if (!mm || mm.length < 2 || expiry.replace(/\s/g, '').length < 4) e.expiry = 'MM / YY required';
     if (cvc.length < 3) e.cvc = 'Enter CVC';
-    if (!amount || amount < 1) e.amount = 'Enter a donation amount (min £1)';
+    if (!amount || amount < 1) e.amount = 'Enter a Dakshina amount (min £1)';
     return e;
   }
 
@@ -132,7 +132,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
             Thank you, {name.split(' ')[0]}!
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400 mb-1 text-sm">
-            Your donation of
+            Your Dakshina of
           </p>
           <p className="text-4xl font-black text-primary-600 dark:text-primary-400 mb-4">
             £{amount.toFixed(2)}
@@ -177,8 +177,8 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
             value={donationMode}
             onChange={(value) => setDonationMode(value as 'one-off' | 'standing-order')}
             options={[
-              { value: 'one-off', label: 'One-off online donation', color: 'bg-primary-600' },
-              { value: 'standing-order', label: 'Recurring donation', color: 'bg-primary-600' },
+              { value: 'one-off', label: 'One-off online Dakshina', color: 'bg-primary-600' },
+              { value: 'standing-order', label: 'Recurring Dakshina', color: 'bg-primary-600' },
             ]}
           />
         </div>
@@ -199,7 +199,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                 </div>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                Your donation supports our cultural, educational, and community service activities across the UK.
+                Your Dakshina supports our cultural, educational, and community service activities across the UK.
                 Every contribution makes a meaningful difference.
               </p>
             </div>
@@ -425,16 +425,16 @@ function CommonDonationAction({
             <Lock className="w-4 h-4" />
             {amount > 0
               ? mode === 'one-off'
-                ? `Donate £${amount.toFixed(2)}`
-                : `Donate £${amount.toFixed(2)} ${frequency}`
-              : 'Donate'}
+                ? `Give Dakshina £${amount.toFixed(2)}`
+                : `Give Dakshina £${amount.toFixed(2)} ${frequency}`
+              : 'Give Dakshina'}
             <ChevronRight className="w-4 h-4" />
           </>
         )}
       </button>
 
       <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
-        By donating you agree to our{' '}
+        By giving Dakshina you agree to our{' '}
         <span className="underline cursor-pointer">Terms</span> and{' '}
         <span className="underline cursor-pointer">Privacy Policy</span>.
         Powered by{' '}
@@ -501,7 +501,7 @@ function AmountSelector({
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm">
       <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
-        Select donation amount
+        Select Dakshina amount
       </p>
       <div className="grid grid-cols-3 gap-2 mb-3">
         {PRESET_AMOUNTS.map(amt => (
@@ -537,7 +537,7 @@ function AmountSelector({
       {amount > 0 && (
         <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex justify-between text-sm">
-            <span className="text-neutral-500 dark:text-neutral-400">Donation total</span>
+            <span className="text-neutral-500 dark:text-neutral-400">Dakshina total</span>
             <span className="font-bold text-neutral-900 dark:text-white">£{amount.toFixed(2)}</span>
           </div>
         </div>

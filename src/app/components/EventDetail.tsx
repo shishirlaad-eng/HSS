@@ -206,7 +206,10 @@ export default function EventDetail({
   // ── Member self-registration ("Request to Attend") ──────────────────────────
   const myMemberId = scope.selfMemberId;
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
-  const handleAttend = () => {
+  const [showAttendQuestions, setShowAttendQuestions] = useState(false);
+  const [attendAnswers, setAttendAnswers] = useState<Record<string, string | boolean>>({});
+
+  const handleAttend = (customAnswers?: Record<string, string | boolean>) => {
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
     setParticipants(prev => ([
@@ -218,9 +221,34 @@ export default function EventDetail({
         phone: me?.phone ?? '',
         memberType: me?.memberType ?? 'adult',
         rsvp: 'requested',
+        ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
       },
     ]));
     toast.success('Request to attend sent for approval.');
+  };
+
+  const handleRequestToAttendClick = () => {
+    if (event.customQuestions && event.customQuestions.length > 0) {
+      setAttendAnswers({});
+      setShowAttendQuestions(true);
+    } else {
+      handleAttend();
+    }
+  };
+
+  const handleSubmitAttendQuestions = () => {
+    const missing = (event.customQuestions ?? []).find(q => {
+      if (!q.required) return false;
+      const ans = attendAnswers[q.id];
+      if (q.type === 'checkbox') return ans !== true;
+      return !ans || (typeof ans === 'string' && !ans.trim());
+    });
+    if (missing) {
+      toast.error(`Please answer: "${missing.label}"`);
+      return;
+    }
+    handleAttend(attendAnswers);
+    setShowAttendQuestions(false);
   };
 
   // ── Export participants as CSV ─────────────────────────────────────────────
@@ -402,7 +430,7 @@ export default function EventDetail({
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview',     label: 'Event Overview'                           },
-    { id: 'participants', label: `Participants (${allParticipants.length})` },
+    ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     { id: 'media',        label: `Media (${mediaPosts.length})`             },
   ];
 
@@ -424,6 +452,20 @@ export default function EventDetail({
                 <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
                 <span className="text-sm text-neutral-500 font-mono">{event.id}</span>
+                {isMember && (
+                  <>
+                    <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                    <span className="text-sm text-neutral-500">
+                      {event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free'}
+                    </span>
+                    {event.capacity && (
+                      <>
+                        <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                        <span className="text-sm text-neutral-500">Cap: {event.capacity}</span>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
                 <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>
@@ -433,21 +475,23 @@ export default function EventDetail({
                 </div>
                 <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge status={event.status} />
-                {event.paymentType === 'paid' ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 text-xs font-medium">
-                    <CreditCard className="w-3 h-3" /> Paid{formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs font-medium">Free</span>
-                )}
-                {event.capacity && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs">
-                    <UsersIcon className="w-3 h-3" /> Cap: {event.capacity}
-                  </span>
-                )}
-              </div>
+              {!isMember && (
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge status={event.status} />
+                  {event.paymentType === 'paid' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 text-xs font-medium">
+                      <CreditCard className="w-3 h-3" /> Paid{formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs font-medium">Free</span>
+                  )}
+                  {event.capacity && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs">
+                      <UsersIcon className="w-3 h-3" /> Cap: {event.capacity}
+                    </span>
+                  )}
+                </div>
+              )}
               </div>
             </div>
 
@@ -459,7 +503,7 @@ export default function EventDetail({
                 !myParticipation ? (
                   <button
                     className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
-                    onClick={handleAttend}
+                    onClick={handleRequestToAttendClick}
                   >
                     <CalendarCheck className="w-3.5 h-3.5" /> Request to Attend
                   </button>
@@ -478,25 +522,29 @@ export default function EventDetail({
                 )
               )}
 
-              {modifyOk ? (
-                <button className={btnGhost} onClick={onModify}><Edit className="w-3.5 h-3.5" /> Modify</button>
-              ) : (
-                <button className={btnDisabled} title="This event can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
+              {!isMember && (
+                modifyOk ? (
+                  <button className={btnGhost} onClick={onModify}><Edit className="w-3.5 h-3.5" /> Modify</button>
+                ) : (
+                  <button className={btnDisabled} title="This event can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
+                )
               )}
-              {!isCancelledOrCompleted && (
+              {!isMember && !isCancelledOrCompleted && (
                 <button className={btnWarn} onClick={onCancel}><XCircle className="w-3.5 h-3.5" /> Cancel Event</button>
               )}
-              {deleteOk ? (
-                <button className={btnDanger} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Delete</button>
-              ) : (
-                <button className={btnDisabled} title={event.status === 'completed' ? 'Completed events cannot be deleted.' : 'This event can no longer be deleted after it starts.'} disabled>
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
+              {!isMember && (
+                deleteOk ? (
+                  <button className={btnDanger} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+                ) : (
+                  <button className={btnDisabled} title={event.status === 'completed' ? 'Completed events cannot be deleted.' : 'This event can no longer be deleted after it starts.'} disabled>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                )
               )}
             </div>
           </div>
 
-          {past && !isCancelledOrCompleted && (
+          {!isMember && past && !isCancelledOrCompleted && (
             <div className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-lg text-sm text-amber-700 dark:text-amber-400">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>This event has already started. Modify and Delete actions are locked.</span>
@@ -508,7 +556,7 @@ export default function EventDetail({
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* LEFT — Tabs */}
-          <div className="flex-1 lg:w-[70%] border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden flex flex-col">
+          <div className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden flex flex-col">
 
             {/* Tab bar */}
             <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/30">
@@ -535,11 +583,13 @@ export default function EventDetail({
               {/* ── EVENT OVERVIEW ── */}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard label="Requested" value={requestedList.length} icon={ClockIcon}    valueClassName="text-amber-600 dark:text-amber-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
-                    <StatCard label="Going"     value={goingList.length}     icon={CheckCircle2} valueClassName="text-success-600 dark:text-success-400" className="bg-neutral-50 dark:bg-neutral-900/50" />
-                    <StatCard label="Denied"    value={deniedList.length}    icon={XCircle}      valueClassName="text-error-600 dark:text-error-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
-                  </div>
+                  {!isMember && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <StatCard label="Requested" value={requestedList.length} icon={ClockIcon}    valueClassName="text-amber-600 dark:text-amber-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
+                      <StatCard label="Going"     value={goingList.length}     icon={CheckCircle2} valueClassName="text-success-600 dark:text-success-400" className="bg-neutral-50 dark:bg-neutral-900/50" />
+                      <StatCard label="Denied"    value={deniedList.length}    icon={XCircle}      valueClassName="text-error-600 dark:text-error-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
+                    </div>
+                  )}
 
                   {/* Description */}
                   {event.description && (
@@ -584,7 +634,7 @@ export default function EventDetail({
                   </div>
 
                   {/* Target Audience */}
-                  {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
+                  {!isMember && ((event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                         Target Audience
@@ -634,7 +684,7 @@ export default function EventDetail({
                         <span className="font-medium text-neutral-700 dark:text-neutral-300">Target Audience:</span> All members (no filters applied)
                       </p>
                     </div>
-                  )}
+                  ))}
 
                   {/* Guest Registration */}
                   {event.guestRegistrationEnabled && (
@@ -669,17 +719,26 @@ export default function EventDetail({
                         <ListChecks className="w-4 h-4 text-primary-600" /> Additional Registration Questions
                       </h4>
                       <div className="px-6 py-4 space-y-2">
-                        {event.customQuestions.map(q => (
-                          <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
-                            <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="text-xs text-neutral-400 capitalize">{q.type}</span>
-                              {q.required && (
-                                <span className="px-1.5 py-0.5 rounded bg-error-50 dark:bg-error-950/20 text-error-600 dark:text-error-400 text-[10px] font-medium">Required</span>
+                        {event.customQuestions.map(q => {
+                          const answer = myParticipation?.customAnswers?.[q.id];
+                          return (
+                            <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                              <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
+                              {isMember ? (
+                                <span className="text-neutral-900 dark:text-white font-medium text-right">
+                                  {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : (answer ? String(answer) : '—')}
+                                </span>
+                              ) : (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-xs text-neutral-400 capitalize">{q.type}</span>
+                                  {q.required && (
+                                    <span className="px-1.5 py-0.5 rounded bg-error-50 dark:bg-error-950/20 text-error-600 dark:text-error-400 text-[10px] font-medium">Required</span>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -736,13 +795,15 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','Name','Member ID','Email','Phone','Type', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','Name','Member ID','Email','Phone','Post Code','Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                          {filteredParticipants.map((p, idx) => (
+                          {filteredParticipants.map((p, idx) => {
+                            const postCode = mockMembers.find(mem => mem.id === p.memberId)?.postCode;
+                            return (
                             <tr key={p.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                               <td className="px-4 py-3 text-xs text-neutral-400">{idx + 1}</td>
                               <td className="px-4 py-3">
@@ -768,6 +829,7 @@ export default function EventDetail({
                                   </div>
                                 ) : <span className="text-xs text-neutral-400">—</span>}
                               </td>
+                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{postCode ?? '—'}</td>
                               <td className="px-4 py-3"><TypeBadge type={p.memberType} /></td>
                               {!isMember && (
                                 <td className="px-4 py-3">
@@ -816,7 +878,8 @@ export default function EventDetail({
                                 </td>
                               )}
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -1089,64 +1152,6 @@ export default function EventDetail({
             </div>
           </div>
 
-          {/* RIGHT — Sidebar */}
-          <div className="lg:w-[30%] space-y-6">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Host Information</h4>
-              <div className="px-6 py-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-lg bg-primary-100 dark:bg-primary-950 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm">
-                    {event.host.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">{event.host}</p>
-                    <p className="text-xs text-neutral-500">Primary Host</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Configuration</h4>
-              <div className="px-6 py-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-neutral-500">Payment Type</span>
-                  <span className="text-xs font-medium text-neutral-900 dark:text-white capitalize">{event.paymentType}</span>
-                </div>
-                {event.priceCategories && event.priceCategories.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <span className="text-xs text-neutral-500">Price Categories</span>
-                    {event.priceCategories.map(c => (
-                      <div key={c.id} className="flex justify-between items-center">
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400">{c.label}</span>
-                        <span className="text-xs font-medium text-neutral-900 dark:text-white">£{c.price}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : event.price !== undefined && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-neutral-500">Price</span>
-                    <span className="text-xs font-medium text-neutral-900 dark:text-white">£{event.price}</span>
-                  </div>
-                )}
-                {event.capacity !== undefined && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-neutral-500">Capacity</span>
-                    <span className="text-xs font-medium text-neutral-900 dark:text-white">{event.capacity} people</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
-              <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-3">HSS (UK) Setup Scope</label>
-              <div className="space-y-1.5 text-sm text-neutral-700 dark:text-neutral-300">
-                {[['Country', event.country], ['Vibhaag', event.region], ['Nagar', event.town], ['Shakha', event.activityCentre]].map(([k, v]) => (
-                  <div key={k} className="flex gap-2"><span className="text-neutral-400 w-14 flex-shrink-0 text-xs">{k}</span><span>{v}</span></div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1269,6 +1274,84 @@ export default function EventDetail({
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── REQUEST TO ATTEND — ADDITIONAL QUESTIONS ────────────────────────────── */}
+    {showAttendQuestions && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowAttendQuestions(false)}
+      >
+        <div
+          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200 dark:border-neutral-800">
+            <h4 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+              <ListChecks className="w-4 h-4 text-primary-600" /> Registration Questions
+            </h4>
+            <button onClick={() => setShowAttendQuestions(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            {(event.customQuestions ?? []).map(q => (
+              <div key={q.id}>
+                {q.type !== 'checkbox' && (
+                  <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                    {q.label} {q.required && <span className="text-error-500">*</span>}
+                  </label>
+                )}
+
+                {q.type === 'text' && (
+                  <input
+                    type="text"
+                    value={(attendAnswers[q.id] as string) ?? ''}
+                    onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                )}
+
+                {q.type === 'dropdown' && (
+                  <select
+                    value={(attendAnswers[q.id] as string) ?? ''}
+                    onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Select…</option>
+                    {(q.options ?? []).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                )}
+
+                {q.type === 'checkbox' && (
+                  <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(attendAnswers[q.id] as boolean) ?? false}
+                      onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
+                      className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>{q.label} {q.required && <span className="text-error-500">*</span>}</span>
+                  </label>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-200 dark:border-neutral-800">
+            <SecondaryButton onClick={() => setShowAttendQuestions(false)}>Cancel</SecondaryButton>
+            <button
+              className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+              onClick={handleSubmitAttendQuestions}
+            >
+              <Check className="w-3.5 h-3.5" /> Submit Request
+            </button>
           </div>
         </div>
       </div>

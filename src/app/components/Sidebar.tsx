@@ -131,7 +131,7 @@ export function Sidebar({
     "dashboard": t.nav.dashboard,
 
     // 2. Members Management
-    "members-management-group":      "Members Management",
+    "members-management-group":      "Members",
     "members":                        "Members",
     "pending-approvals":              "Pending Approvals",
     "pending-guardian-approvals":     "Pending Guardian Approvals",

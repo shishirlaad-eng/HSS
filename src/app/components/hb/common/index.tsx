@@ -21,5 +21,6 @@ export {
   FormSelectContent,
   FormSelectItem
 } from "./Form";
+export { RichTextEditor } from "./RichTextEditor";
 export { StatCard } from "./StatCard";
 export { StatusSlider } from "./StatusSlider";

@@ -51,6 +51,7 @@ import {
   FormTextarea,
   FormSelect,
   FormSection,
+  RichTextEditor,
 } from './hb/common';
 import { toast } from 'sonner';
 import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
@@ -555,7 +556,8 @@ export default function Announcements() {
       emailSchedule:       ann.email.schedule,
       emailScheduledAt:    ann.email.scheduledAt ?? '',
     });
-    setBodyWordCount(ann.body.trim().split(/\s+/).filter(Boolean).length);
+    const annText = ann.body.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+    setBodyWordCount(annText === '' ? 0 : annText.split(/\s+/).filter(Boolean).length);
     setEditingId(ann.id);
     setShowCreate(true);
   };
@@ -621,9 +623,10 @@ export default function Announcements() {
                 <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">Message</h4>
               </div>
               <div className="px-6 py-5">
-                <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
-                  {selected.body}
-                </p>
+                <div
+                  className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: selected.body }}
+                />
               </div>
             </div>
 
@@ -958,7 +961,7 @@ export default function Announcements() {
                         </div>
 
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2 mb-3">
-                          {ann.body}
+                          {ann.body.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()}
                         </p>
 
                         {/* Bottom meta row */}
@@ -1113,16 +1116,14 @@ export default function Announcements() {
                 {/* Body */}
                 <FormField>
                   <FormLabel required>Message</FormLabel>
-                  <FormTextarea
+                  <RichTextEditor
                     placeholder="Write your announcement message…"
                     value={form.body}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setField('body', val);
-                      const trimmed = val.trim();
-                      setBodyWordCount(trimmed === '' ? 0 : trimmed.split(/\s+/).length);
+                    onChange={html => {
+                      setField('body', html);
+                      const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+                      setBodyWordCount(text === '' ? 0 : text.split(/\s+/).filter(Boolean).length);
                     }}
-                    rows={4}
                   />
                   {/* Word count */}
                   <div className="flex items-center justify-end mt-1.5">

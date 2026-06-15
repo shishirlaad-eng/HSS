@@ -2,6 +2,71 @@
 
 @variant dark (.dark &);
 
+/* Brand fonts */
+@font-face {
+  font-family: "Open Sauce One";
+  src: url("/fonts/open-sauce/OpenSauceOne-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  src: url("/fonts/open-sauce/OpenSauceOne-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  src: url("/fonts/open-sauce/OpenSauceOne-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  src: url("/fonts/open-sauce/OpenSauceOne-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TT Ramillas";
+  src: url("/fonts/ramillas/TTRamillas-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TT Ramillas";
+  src: url("/fonts/ramillas/TTRamillas-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TT Ramillas";
+  src: url("/fonts/ramillas/TTRamillas-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TT Ramillas";
+  src: url("/fonts/ramillas/TTRamillas-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-scheme: light dark;
 
@@ -215,7 +280,7 @@ html {
 }
 
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Open Sauce One", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 0.875rem;
   /* 14px */
   -webkit-font-smoothing: antialiased;
@@ -256,48 +321,54 @@ p, span, h1, h2, h3, h4, h5, h6, label:not([for]) {
   cursor: default;
 }
 
-h1 {
-  font-size: 32px;
-  line-height: 40px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "TT Ramillas", "Open Sauce One", "Inter", sans-serif;
+  }
 
-h2 {
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
+  h1 {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
 
-h3 {
-  font-size: 18px;
-  line-height: 26px;
-  font-weight: 600;
-}
+  h2 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
 
-h4 {
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 600;
-}
+  h3 {
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 600;
+  }
 
-h5 {
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-}
+  h4 {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+  }
 
-h6 {
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 600;
-}
+  h5 {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
 
-p {
-  font-size: 14px;
-  line-height: 22px;
-  font-weight: 400;
+  h6 {
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 400;
+  }
 }
 
 /* Lead text - larger, important paragraphs */

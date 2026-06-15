@@ -96,7 +96,7 @@ function StatusBadge({ status }: { status: Event['status'] }) {
 function PaymentBadge({ type }: { type: Event['paymentType'] }) {
   return type === 'paid' ? (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 text-xs font-medium border border-transparent">
-      <CreditCard className="w-3 h-3" /> Paid
+      <CreditCard className="w-3 h-3" /> £
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs font-medium border border-transparent">
@@ -712,7 +712,9 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
   const scopedFilterOptions = getScopedFilterOptions(scope);
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
   const scopedEvents = useMemo(
-    () => isMemberRole ? mockEvents : filterByScope(mockEvents, scope),
+    () => isMemberRole
+      ? mockEvents.filter(e => e.status === 'published' || e.status === 'active')
+      : filterByScope(mockEvents, scope),
     [isMemberRole, scope],
   );
 
@@ -1077,7 +1079,13 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
             { label: 'Karyakrams', current: true },
           ]}
         >
-          {!isMemberRole && (
+          {isMemberRole ? (
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search events..."
+            />
+          ) : (
             <div className="relative" ref={columnAnchorRef}>
               <SearchBar
                 value={searchQuery}

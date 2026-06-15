@@ -22,16 +22,16 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
   return (
     <div className="px-6 py-6">
       <PageHeader
-        title="My Donations"
-        subtitle="Your donation history with HSS UK"
-        breadcrumbs={[{ label: "Home", href: "#" }, { label: "My Donations", current: true }]}
+        title="My Dakshina"
+        subtitle="Your Dakshina history with HSS UK"
+        breadcrumbs={[{ label: "Home", href: "#" }, { label: "My Dakshina", current: true }]}
       >
         <button
           onClick={() => onNavigate?.("donate")}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
         >
           <Heart className="w-4 h-4" />
-          Make a Donation
+          Give Dakshina
         </button>
       </PageHeader>
 
@@ -66,7 +66,7 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
         {/* Footer total */}
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
           <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            {mockMyDonations.length} donation{mockMyDonations.length !== 1 ? "s" : ""}
+            {mockMyDonations.length} Dakshina
           </span>
           <span className="text-sm font-bold text-neutral-900 dark:text-white">
             Total: <span className="text-emerald-600 dark:text-emerald-400">£{total.toFixed(2)}</span>

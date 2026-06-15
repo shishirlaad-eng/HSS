@@ -8,7 +8,7 @@ import {
   Database,
   Settings,
   History,
-  Heart,
+  ReceiptText,
 } from "lucide-react";
 
 export interface SubMenuItem {
@@ -94,7 +94,7 @@ export const getNavigationData = (
     // ── 3. Members Management ────────────────────────────────────
     {
       id: "members-management-group",
-      label: "Members Management",
+      label: "Members",
       icon: UserCheck,
       subItems: [
         {
@@ -160,8 +160,8 @@ export const getNavigationData = (
     // ── 6b. My Donations (member-facing) ─────────────────────────
     {
       id: "my-donations",
-      label: "Donations",
-      icon: Heart,
+      label: "Dakshina",
+      icon: ReceiptText,
       onClick: () => onNavigate("my-donations"),
       active: currentPage === "my-donations",
     },
