@@ -663,8 +663,6 @@ function HierarchyKpiSection({
     // ── Suchana ──
     const suchanaActive = mockAnnouncements.length;
     const suchanaHigh   = mockAnnouncements.filter(a => a.priority === 'high').length;
-    const suchanaMedium = mockAnnouncements.filter(a => a.priority === 'medium').length;
-    const suchanaLow    = mockAnnouncements.filter(a => a.priority === 'low').length;
 
     // ── Members (scoped) ──
     const scopedMembers = filterByScope(mockMembers, scope);
@@ -707,7 +705,7 @@ function HierarchyKpiSection({
 
     return {
       avgLast4, avgYTD, sessionsHeldYTD,
-      suchanaActive, suchanaHigh, suchanaMedium, suchanaLow,
+      suchanaActive, suchanaHigh,
       allUpcoming: allUpcomingList.length, allUpcomingActive, allUpcomingPublished,
       pendingApprovals: pendingApprovals.length, pendingParental,
       karyakartas,
@@ -724,13 +722,13 @@ function HierarchyKpiSection({
         {/* 1. Sankhya */}
         <KpiCard
           title="Sankhya"
-          value={`${kpis.avgLast4}%`}
+          value={kpis.sessionsHeldYTD}
           icon={Percent}
           onClick={() => onNavigate?.('attendance-log')}
           subMetrics={[
-            { label: 'Avg — last 4 Shakhas', value: `${kpis.avgLast4}%`, tone: 'primary' },
+            { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD, tone: 'primary' },
+            { label: 'Avg — last 4 Shakhas', value: `${kpis.avgLast4}%` },
             { label: 'Avg — YTD', value: `${kpis.avgYTD}%` },
-            { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD },
           ]}
         />
 
@@ -742,22 +740,22 @@ function HierarchyKpiSection({
           onClick={() => onNavigate?.('announcements')}
           subMetrics={[
             { label: 'High priority', value: kpis.suchanaHigh, tone: 'red' },
-            { label: 'Medium priority', value: kpis.suchanaMedium, tone: 'amber' },
-            { label: 'Low priority', value: kpis.suchanaLow },
           ]}
         />
 
         {/* 3. Pending Shakha Approvals */}
-        <KpiCard
-          title="Pending Shakha Approvals"
-          value={kpis.pendingApprovals}
-          icon={ClipboardCheck}
-          onClick={() => onNavigate?.('pending-approvals')}
-          subMetrics={[
-            { label: 'Awaiting your approval', value: kpis.pendingApprovals, tone: 'amber' },
-            { label: 'Awaiting parental consent', value: kpis.pendingParental },
-          ]}
-        />
+        {scope.level !== 'centre' && (
+          <KpiCard
+            title="Pending Shakha Approvals"
+            value={kpis.pendingApprovals}
+            icon={ClipboardCheck}
+            onClick={() => onNavigate?.('pending-approvals')}
+            subMetrics={[
+              { label: 'Awaiting your approval', value: kpis.pendingApprovals, tone: 'amber' },
+              { label: 'Awaiting parental consent', value: kpis.pendingParental },
+            ]}
+          />
+        )}
 
         {/* 5. Shakha Karyakartas */}
         <KpiCard
@@ -845,8 +843,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const totalMembers   = scopedTotalMembers.length;
   const activeMembers  = scopedTotalMembers.filter(m => m.status === 'active').length;
   const inactiveMembers = scopedTotalMembers.filter(m => m.status === 'inactive').length;
-  const pendingApprovals = scopedTotalMembers.filter(m => m.status === 'pending').length;
+  const pendingStatusApprovals = scopedTotalMembers.filter(m => m.status === 'pending').length;
   const pendingGuardianApprovals = scopedTotalMembers.filter(m => m.status === 'pending-parental-consent').length;
+  const pendingApprovals = pendingStatusApprovals + pendingGuardianApprovals;
 
   const regionsCount = Object.values(MASTERS_CASCADE.regions).flat().length;
   const townsCount   = Object.values(MASTERS_CASCADE.towns).flat().length;
@@ -891,13 +890,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* ── Row 1: Org structure KPIs ────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <StatCard
-          label="Total Members"
-          labelClassName="text-[14px] font-bold"
-          valueClassName="font-bold"
+        <KpiCard
+          title="Total Members"
           value={totalMembers}
           icon={Users}
-          trend={{ value: `${activeMembers} active · ${pendingApprovals} pending`, positive: true }}
+          subMetrics={[
+            { label: 'Active', value: activeMembers, tone: 'emerald' },
+            { label: 'Inactive', value: inactiveMembers },
+            { label: 'Pending Approval', value: pendingStatusApprovals, tone: 'amber' },
+            { label: 'Pending Guardian Approval', value: pendingGuardianApprovals, tone: 'amber' },
+          ]}
         />
         {!hideRegions && (
           <StatCard
@@ -1032,6 +1034,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       )}
 
       {/* ── Section: Upcoming Karyakrams + Pending Approvals ─── */}
+      {scope.level !== 'centre' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
         {/* Upcoming Karyakrams list (2/3) */}
@@ -1189,6 +1192,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Section: Announcements + Recent Registrations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
