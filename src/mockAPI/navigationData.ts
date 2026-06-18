@@ -137,7 +137,13 @@ export const getNavigationData = (
     },
 
     // ── 6. Sankhya (Attendance) ──────────────────────────────────
-    {
+    ...(['Member (18+)', 'Teen (13–17)'].includes(selectedRole) ? [{
+      id: "attendance-group",
+      label: "My Sankhya",
+      icon: ClipboardCheck,
+      onClick: () => onNavigate("attendance-log"),
+      active: currentPage === "attendance-log",
+    }] : [{
       id: "attendance-group",
       label: "Sankhya",
       icon: ClipboardCheck,
@@ -155,7 +161,7 @@ export const getNavigationData = (
           active: currentPage === "attendance-log",
         },
       ],
-    },
+    }]),
 
     // ── 6b. My Donations (member-facing) ─────────────────────────
     {
@@ -201,6 +207,12 @@ export const getNavigationData = (
           label: "Refund Report",
           onClick: () => onNavigate("report-refunds"),
           active: currentPage === "report-refunds",
+        },
+        {
+          id: "report-karyakarta",
+          label: "Karyakarta Report",
+          onClick: () => onNavigate("report-karyakarta"),
+          active: currentPage === "report-karyakarta",
         },
       ],
     },

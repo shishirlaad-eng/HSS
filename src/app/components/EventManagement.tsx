@@ -705,7 +705,7 @@ const EVENT_FILTER_BASE = {
 };
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function EventManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
+export default function EventManagement({ onNavigateToMember, initialEventId, onConsumeInitialEvent }: { onNavigateToMember?: (memberId: string) => void; initialEventId?: string | null; onConsumeInitialEvent?: () => void } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
   const ep = useModulePermissions('events');
@@ -737,6 +737,14 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
   const [pageState, setPageState]         = useState<PageState>('list');
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary]     = useState(true);
+
+  useEffect(() => {
+    if (initialEventId) {
+      const ev = mockEvents.find(e => e.id === initialEventId);
+      if (ev) { setSelectedEvent(ev); setPageState('detail'); }
+      onConsumeInitialEvent?.();
+    }
+  }, [initialEventId]);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -1230,7 +1238,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-neutral-900 dark:text-white font-semibold truncate">{event.name}</span>
+                          <span className="text-neutral-900 dark:text-white font-semibold truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</span>
                           <StatusBadge status={event.status} />
                           <PaymentBadge type={event.paymentType} />
                           <span className="text-xs text-neutral-500 font-mono ml-auto md:ml-0">{event.id}</span>
@@ -1329,7 +1337,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
                       <StatusBadge status={event.status} />
                       <PaymentBadge type={event.paymentType} />
                     </div>
-                    <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5 mt-2">
+                    <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5 mt-2" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                       {event.name}
                     </h4>
                     <p className="text-xs text-neutral-400 font-mono mb-3">{event.id}</p>
@@ -1462,7 +1470,7 @@ export default function EventManagement({ onNavigateToMember }: { onNavigateToMe
                         )}
                         {visibleColumns.name && (
                           <td className="px-6 py-4 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 transition-colors max-w-[200px]">
-                            <span className="truncate block">{event.name}</span>
+                            <span className="truncate block" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</span>
                           </td>
                         )}
                         {visibleColumns.location && (

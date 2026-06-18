@@ -70,6 +70,10 @@
 @theme {
   --color-scheme: light dark;
 
+  /* Brand fonts */
+  --font-ramillas: "TT Ramillas", "Open Sauce One", serif;
+  --font-body: "Open Sauce One", "Inter", sans-serif;
+
   /* Shadcn standard tokens */
   --color-background: #fafafa;
   --color-foreground: hsl(240, 10%, 3.9%);

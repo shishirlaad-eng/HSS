@@ -28,8 +28,8 @@ import EventsReport from "./components/EventsReport";
 import DonationsPaymentsReport from "./components/DonationsPaymentsReport";
 import AttendanceReport from "./components/AttendanceReport";
 import RefundReport from "./components/RefundReport";
+import KaryakartaReport from "./components/KaryakartaReport";
 import { SiteMap } from "./components/SiteMap";
-import { FeedbackSystem } from "./components/FeedbackSystem";
 import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
@@ -44,6 +44,7 @@ const PAGE_LABELS: Record<string, string> = {
   "report-donations":           "Nidhi Report",
   "report-attendance":          "Sankhya Report",
   "report-refunds":             "Refund Report",
+  "report-karyakarta":          "Karyakarta Report",
   "role-types":                 "Responsibility",
 };
 
@@ -104,6 +105,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [memberToView, setMemberToView] = useState<string | null>(null);
+  const [eventToView, setEventToView] = useState<string | null>(null);
 
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -239,7 +241,10 @@ export default function App() {
         ) : currentPage === "my-donations" ? (
           <MyDonations onNavigate={handleNavigate} />
         ) : currentPage === "dashboard" ? (
-          <Dashboard onNavigate={handleNavigate} />
+          <Dashboard
+            onNavigate={handleNavigate}
+            onNavigateToEvent={(id) => { setEventToView(id); setCurrentPage('event-management'); }}
+          />
         ) : currentPage === "members" ? (
           <MemberManagement
             initialMemberId={memberToView}
@@ -257,6 +262,8 @@ export default function App() {
               setMemberToView(id);
               setCurrentPage("members");
             }}
+            initialEventId={eventToView}
+            onConsumeInitialEvent={() => setEventToView(null)}
           />
         ) : currentPage === "country" ? (
           <SuperAdminMasters masterType="country"    onNavigate={handleNavigate} selectedRole={selectedRole} />
@@ -292,6 +299,8 @@ export default function App() {
           <AttendanceReport />
         ) : currentPage === "report-refunds" ? (
           <RefundReport />
+        ) : currentPage === "report-karyakarta" ? (
+          <KaryakartaReport />
         ) : currentPage === "my-profile" ? (
           <MyProfile selectedRole={selectedRole} />
         ) : currentPage === "logs" ? (
@@ -316,9 +325,6 @@ export default function App() {
           menuOrientation={menuOrientation} 
         />
       </main>
-
-      {/* Global Feedback System */}
-      <FeedbackSystem />
 
       {/* Toast */}
       <Toaster

@@ -115,6 +115,8 @@ export const availableModules: ModulePermission[] = [
       { id: "donations_export",  name: "Export Nidhi Report",                code: "reports_donations_export" },
       { id: "refunds_view",      name: "View Refunds Report",                code: "reports_refunds_view" },
       { id: "refunds_export",    name: "Export Refunds Report",              code: "reports_refunds_export" },
+      { id: "karyakarta_view",   name: "View Karyakarta Report",             code: "reports_karyakarta_view" },
+      { id: "karyakarta_export", name: "Export Karyakarta Report",           code: "reports_karyakarta_export" },
     ],
   },
   // 8. Roles & Permissions (under Settings in nav)
@@ -176,7 +178,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
       rbac:          ["view", "edit", "add", "delete"],
       settings:      ["view", "edit"],
       "audit-logs":  ["view"],
@@ -201,7 +203,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
     },
   },
 
@@ -223,7 +225,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
     },
   },
 
@@ -245,7 +247,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
     },
   },
 
@@ -266,7 +268,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
     },
   },
 
@@ -303,7 +305,7 @@ export const mockRoles: Role[] = [
       members:       ["view", "export"],
       events:        ["view", "export"],
       announcements: ["view"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export"],
     },
   },
 
@@ -340,6 +342,7 @@ export const mockRoles: Role[] = [
       events:           ["view"],
       announcements:    ["view"],
       attendance:       ["add", "edit"],
+      'my-donations':   ["view"],
     },
   },
 
@@ -357,6 +360,7 @@ export const mockRoles: Role[] = [
       events:           ["view"],
       announcements:    ["view"],
       attendance:       ["add", "edit"],
+      'my-donations':   ["view"],
     },
   },
 ];

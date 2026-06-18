@@ -449,7 +449,7 @@ export default function EventDetail({
               )}
               <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{event.name}</h1>
+                <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
                 <span className="text-sm text-neutral-500 font-mono">{event.id}</span>
                 {isMember && (

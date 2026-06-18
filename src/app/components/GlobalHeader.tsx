@@ -8,6 +8,7 @@ import {
   Moon,
   Monitor,
   Building2,
+  MapPin,
   ChevronDown,
   User,
   Settings,
@@ -50,6 +51,24 @@ import {
   FormFooter,
   FormSection,
 } from "./hb/common/Form";
+
+// ── Mock "My Shakha" details (shown via My Profile dropdown) ──
+const MY_SHAKHA_DETAILS = {
+  name:          "Wembley Activity Centre",
+  shakhaType:    "Swayamsevak Shakha",
+  vibhaag:       "London & South East",
+  nagar:         "Wembley",
+  addressLine1:  "12 Ealing Road",
+  addressLine2:  "Wembley",
+  city:          "London",
+  postCode:      "HA0 4TL",
+  meetingDay:    "Thursday",
+  meetingTime:   "18:00 – 20:00",
+  contactName:   "Ramesh Patel",
+  contactPhone:  "07700 900111",
+  contactEmail:  "wembley@hss.org.uk",
+  status:        "active",
+};
 
 interface GlobalHeaderProps {
   isDarkMode: boolean;
@@ -119,6 +138,7 @@ export function GlobalHeader({
       if (id === "organisational-master") label = "Master Mgmt";
     }
     if (id === "attendance-group" && isMemberRole) label = "My Sankhya";
+    if (id === "my-donations" && isMemberRole) label = "My Dakshina";
     return label;
   };
   const [searchQuery, setSearchQuery] = useState("");
@@ -159,6 +179,7 @@ export function GlobalHeader({
   const [isScrolled, setIsScrolled] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] =
     useState(false);
+  const [showMyShakhaModal, setShowMyShakhaModal] = useState(false);
   const [horizVisibleCount, setHorizVisibleCount] = useState(999);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -311,6 +332,11 @@ export function GlobalHeader({
 
   const themes = [
     {
+      id: "hss-brand",
+      name: "HSS Blue",
+      description: "HSS UK official navy blue",
+    },
+    {
       id: "default-black",
       name: "Default Black",
       description: "Premium SaaS dark slate accent",
@@ -338,6 +364,7 @@ export function GlobalHeader({
   ];
 
   const themeColors: Record<string, string> = {
+    "hss-brand": "#172E4D",
     "default-black": "#111827",
     "ocean-blue": "#2563eb",
     "emerald-green": "#10b981",
@@ -508,7 +535,7 @@ export function GlobalHeader({
   ];
 
   const permittedNavIds = getPermittedNavIds(selectedRole);
-  const navItems = getNavigationData(currentPage, onNavigate || (() => {}))
+  const navItems = getNavigationData(currentPage, onNavigate || (() => {}), selectedRole)
     .filter(item => permittedNavIds.has(item.id));
   
   const quickAccessModules = useMemo(() => {
@@ -786,157 +813,19 @@ export function GlobalHeader({
       <div className="h-[53px] px-6 flex items-center justify-between gap-4">
         {/* Left Side */}
         {menuOrientation === "horizontal" ? (
-          /* HORIZONTAL: Logo + Brand + Nav with submenus */
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <img
-                src={logoUrl}
-                alt="HSS UK Logo"
-                className="h-8 w-auto max-w-20 object-contain flex-shrink-0"
-              />
-              <div className="w-px h-7 bg-white/40 flex-shrink-0" />
-              <img
-                src={myHssLogo}
-                alt="My HSS"
-                className="h-8 w-auto object-contain flex-shrink-0"
-              />
-            </div>
-            <div className="w-px h-5 flex-shrink-0 bg-white/30" />
-            <div
-              ref={horizNavRef}
-              className="flex items-center gap-0.5 min-w-0 flex-1"
-            >
-              {navItems.map((item, index) => {
-                const isOverflow = index >= horizVisibleCount;
-                const Icon = item.icon;
-                const isActive =
-                  item.active ||
-                  item.subItems?.some((s) => s.active);
-                const hasSubItems =
-                  item.subItems && item.subItems.length > 0;
-                const isOpen = openHorizSubmenu === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    data-nav-item
-                    className={`relative flex-shrink-0 ${isOverflow ? 'invisible overflow-hidden !w-0 !p-0 pointer-events-none' : ''}`}
-                    onMouseEnter={() => !isOverflow && setOpenHorizSubmenu(item.id)}
-                    onMouseLeave={() => !isOverflow && setOpenHorizSubmenu(null)}
-                  >
-                    <button
-                      onClick={() => {
-                        if (isOverflow) return;
-                        if (hasSubItems) {
-                          setOpenHorizSubmenu(isOpen ? null : item.id);
-                        } else {
-                          item.onClick?.();
-                          setOpenHorizSubmenu(null);
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                        isActive
-                          ? "bg-white/25 text-white font-semibold"
-                          : "text-white/90 hover:bg-white/20 hover:text-white"
-                      }`}
-                    >
-                      {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-                      <span>{getNavLabel(item.id, item.label)}</span>
-                      {hasSubItems && (
-                        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                      )}
-                    </button>
-                    {hasSubItems && isOpen && !isOverflow && (
-                      <div className="absolute left-0 top-[100%] pt-1 min-w-[180px] z-50">
-                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
-                          {item.subItems!.map((subItem) => (
-                            <button
-                              key={subItem.id}
-                              onClick={() => { subItem.onClick?.(); setOpenHorizSubmenu(null); }}
-                              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                subItem.active
-                                  ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
-                              }`}
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
-                              <span>{getNavLabel(subItem.id, subItem.label)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* ── "More ▾" overflow button ───────────────────── */}
-              {horizVisibleCount < 999 && (
-                <div ref={moreMenuRef} className="relative flex-shrink-0">
-                  <button
-                    onClick={() => setShowMoreMenu(v => !v)}
-                    className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                      navItems.slice(horizVisibleCount).some(i => i.active || i.subItems?.some(s => s.active))
-                        ? "bg-white/25 text-white font-semibold"
-                        : "text-white/90 hover:bg-white/20 hover:text-white"
-                    }`}
-                  >
-                    <span>More</span>
-                    <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${showMoreMenu ? "rotate-180" : ""}`} />
-                  </button>
-                  {showMoreMenu && (
-                    <div className="absolute left-0 top-[calc(100%+4px)] min-w-[210px] z-50">
-                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
-                        {navItems.slice(horizVisibleCount).map((item) => {
-                          const Icon = item.icon;
-                          const isActive = item.active || item.subItems?.some(s => s.active);
-                          const hasSubItems = item.subItems && item.subItems.length > 0;
-                          if (hasSubItems) {
-                            return (
-                              <div key={item.id}>
-                                <div className="px-3 py-2 flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-100 dark:border-neutral-800">
-                                  {Icon && <Icon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />}
-                                  <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                                    {getNavLabel(item.id, item.label)}
-                                  </span>
-                                </div>
-                                {item.subItems!.map((subItem) => (
-                                  <button
-                                    key={subItem.id}
-                                    onClick={() => { subItem.onClick?.(); setShowMoreMenu(false); }}
-                                    className={`w-full pl-8 pr-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                      subItem.active
-                                        ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
-                                    }`}
-                                  >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
-                                    <span>{getNavLabel(subItem.id, subItem.label)}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => { item.onClick?.(); setShowMoreMenu(false); }}
-                              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                isActive
-                                  ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
-                              }`}
-                            >
-                              {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-                              <span>{getNavLabel(item.id, item.label)}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          /* HORIZONTAL: Logo + Brand */
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <img
+              src={logoUrl}
+              alt="HSS UK Logo"
+              className="h-8 w-auto max-w-20 object-contain flex-shrink-0"
+            />
+            <div className="w-px h-7 bg-white/40 flex-shrink-0" />
+            <img
+              src={myHssLogo}
+              alt="My HSS"
+              className="h-8 w-auto object-contain flex-shrink-0"
+            />
           </div>
         ) : (
           /* VERTICAL: Logo (when collapsed) + Search input */
@@ -957,10 +846,6 @@ export function GlobalHeader({
 
         {/* Right Side - Icons and Dropdowns */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Separator between nav and actions (horizontal only) */}
-          {menuOrientation === "horizontal" && (
-            <div className="w-px h-5 mx-1.5 flex-shrink-0 bg-white/30" />
-          )}
           {/* Search Icon — horizontal mode only */}
           {menuOrientation === "horizontal" && !isMemberRole && (
             <div className="relative" ref={searchRef}>
@@ -1355,6 +1240,16 @@ export function GlobalHeader({
                     <span>My Profile</span>
                   </button>
                   <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      setShowMyShakhaModal(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>My Shakha</span>
+                  </button>
+                  <button
                     onClick={() => setShowChangePasswordModal(true)}
                     className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                   >
@@ -1495,6 +1390,147 @@ export function GlobalHeader({
         </div>
       </div>
 
+      {/* ── Row 2: Navigation strip (horizontal mode only) ── */}
+      {menuOrientation === "horizontal" && (
+        <div
+          className="px-6 flex items-center h-10"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}
+        >
+          <div
+            ref={horizNavRef}
+            className="flex items-center gap-0.5 min-w-0 flex-1"
+          >
+            {navItems.map((item, index) => {
+              const isOverflow = index >= horizVisibleCount;
+              const Icon = item.icon;
+              const isActive = item.active || item.subItems?.some((s) => s.active);
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isOpen = openHorizSubmenu === item.id;
+              return (
+                <div
+                  key={item.id}
+                  data-nav-item
+                  className={`relative flex-shrink-0 ${isOverflow ? 'invisible overflow-hidden !w-0 !p-0 pointer-events-none' : ''}`}
+                  onMouseEnter={() => !isOverflow && setOpenHorizSubmenu(item.id)}
+                  onMouseLeave={() => !isOverflow && setOpenHorizSubmenu(null)}
+                >
+                  <button
+                    onClick={() => {
+                      if (isOverflow) return;
+                      if (hasSubItems) {
+                        setOpenHorizSubmenu(isOpen ? null : item.id);
+                      } else {
+                        item.onClick?.();
+                        setOpenHorizSubmenu(null);
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                      isActive
+                        ? "bg-white/25 text-white font-semibold"
+                        : "text-white/90 hover:bg-white/20 hover:text-white"
+                    }`}
+                  >
+                    {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                    <span>{getNavLabel(item.id, item.label)}</span>
+                    {hasSubItems && (
+                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    )}
+                  </button>
+                  {hasSubItems && isOpen && !isOverflow && (
+                    <div className="absolute left-0 top-[100%] pt-1 min-w-[180px] z-50">
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
+                        {item.subItems!.map((subItem) => (
+                          <button
+                            key={subItem.id}
+                            onClick={() => { subItem.onClick?.(); setOpenHorizSubmenu(null); }}
+                            className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                              subItem.active
+                                ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                            }`}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
+                            <span>{getNavLabel(subItem.id, subItem.label)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* ── "More ▾" overflow button ───────────────────── */}
+            {horizVisibleCount < 999 && (
+              <div ref={moreMenuRef} className="relative flex-shrink-0">
+                <button
+                  onClick={() => setShowMoreMenu(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                    navItems.slice(horizVisibleCount).some(i => i.active || i.subItems?.some(s => s.active))
+                      ? "bg-white/25 text-white font-semibold"
+                      : "text-white/90 hover:bg-white/20 hover:text-white"
+                  }`}
+                >
+                  <span>More</span>
+                  <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 opacity-60 transition-transform ${showMoreMenu ? "rotate-180" : ""}`} />
+                </button>
+                {showMoreMenu && (
+                  <div className="absolute left-0 top-[calc(100%+4px)] min-w-[210px] z-50">
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
+                      {navItems.slice(horizVisibleCount).map((item) => {
+                        const Icon = item.icon;
+                        const isActive = item.active || item.subItems?.some(s => s.active);
+                        const hasSubItems = item.subItems && item.subItems.length > 0;
+                        if (hasSubItems) {
+                          return (
+                            <div key={item.id}>
+                              <div className="px-3 py-2 flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-100 dark:border-neutral-800">
+                                {Icon && <Icon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />}
+                                <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                  {getNavLabel(item.id, item.label)}
+                                </span>
+                              </div>
+                              {item.subItems!.map((subItem) => (
+                                <button
+                                  key={subItem.id}
+                                  onClick={() => { subItem.onClick?.(); setShowMoreMenu(false); }}
+                                  className={`w-full pl-8 pr-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                    subItem.active
+                                      ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                                  }`}
+                                >
+                                  <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
+                                  <span>{getNavLabel(subItem.id, subItem.label)}</span>
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => { item.onClick?.(); setShowMoreMenu(false); }}
+                            className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                              isActive
+                                ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
+                                : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                            }`}
+                          >
+                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                            <span>{getNavLabel(item.id, item.label)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Change Password Modal */}
       <FormModal
         isOpen={showChangePasswordModal}
@@ -1608,6 +1644,70 @@ export function GlobalHeader({
             </button>
           </FormFooter>
         </form>
+      </FormModal>
+
+      {/* My Shakha Modal */}
+      <FormModal
+        isOpen={showMyShakhaModal}
+        onClose={() => setShowMyShakhaModal(false)}
+        title="My Shakha"
+        description="Details of your Activity Centre"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-white">{MY_SHAKHA_DETAILS.name}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{MY_SHAKHA_DETAILS.shakhaType} · {MY_SHAKHA_DETAILS.nagar}, {MY_SHAKHA_DETAILS.vibhaag}</p>
+            </div>
+          </div>
+
+          <div className="border-t border-neutral-200 dark:border-neutral-800 pt-4 space-y-3">
+            <div className="flex items-start gap-2.5">
+              <MapPin className="w-4 h-4 text-neutral-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-neutral-700 dark:text-neutral-300">
+                <p>{MY_SHAKHA_DETAILS.addressLine1}</p>
+                {MY_SHAKHA_DETAILS.addressLine2 && <p>{MY_SHAKHA_DETAILS.addressLine2}</p>}
+                <p>{MY_SHAKHA_DETAILS.city}, {MY_SHAKHA_DETAILS.postCode}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Clock className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                {MY_SHAKHA_DETAILS.meetingDay}, {MY_SHAKHA_DETAILS.meetingTime}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <User className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{MY_SHAKHA_DETAILS.contactName}</span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Phone className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{MY_SHAKHA_DETAILS.contactPhone}</span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Mail className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{MY_SHAKHA_DETAILS.contactEmail}</span>
+            </div>
+          </div>
+        </div>
+
+        <FormFooter>
+          <button
+            type="button"
+            onClick={() => setShowMyShakhaModal(false)}
+            className="px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+          >
+            Close
+          </button>
+        </FormFooter>
       </FormModal>
     </header>
   );

@@ -126,6 +126,7 @@ export function Sidebar({
 
   // Translate nav labels using the language context
   const { t } = useLanguage();
+  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
   const navLabelMap: Record<string, string> = {
     // 1. Dashboard
     "dashboard": t.nav.dashboard,
@@ -143,7 +144,7 @@ export function Sidebar({
     "announcements":                  "Suchana",
 
     // 5. Attendance
-    "attendance-group":               "Attendance",
+    "attendance-group":               isMemberRole ? "My Sankhya" : "Attendance",
     "sessions":                       "Shakha",
     "attendance-log":                 "Attendance Log",
 
@@ -154,6 +155,7 @@ export function Sidebar({
     "report-donations":               "Nidhi Report",
     "report-attendance":              "Attendance Report",
     "report-refunds":                 "Refund Report",
+    "report-karyakarta":              "Karyakarta Report",
 
     // 7. HSS (UK) Setup
     "masters-group":                  "HSS (UK) Setup",

@@ -39,6 +39,7 @@ import {
   Info,
   Loader2,
   Pencil,
+  Upload,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton, Pagination } from './hb/listing';
 import {
@@ -407,7 +408,7 @@ export default function Announcements() {
     if (!form.body.trim())   errs.body  = 'Message body is required.';
     else if (bodyIsOver) errs.body = 'Message must not exceed 150 words.';
     if ((form.contentType === 'image' || form.contentType === 'video') && !form.mediaUrl.trim())
-      errs.mediaUrl = 'Media URL is required for image/video content.';
+      errs.mediaUrl = 'Please upload an image or video attachment.';
     if (form.scope !== 'national' && !form.targetRegion) errs.targetRegion = 'Please select a target region.';
     if ((form.scope === 'town' || form.scope === 'centre') && !form.targetTown) errs.targetTown = 'Please select a target town.';
     if (form.scope === 'centre' && !form.targetCentre)   errs.targetCentre = 'Please select a target centre.';
@@ -1088,20 +1089,6 @@ export default function Announcements() {
               </div>
 
               <div className="space-y-4">
-                {/* Content type */}
-                <FormField>
-                  <FormLabel>Content Type</FormLabel>
-                  <ToggleGroup
-                    value={form.contentType}
-                    onChange={v => setField('contentType', v as AnnouncementContent)}
-                    options={[
-                      { value: 'text',  label: '📝 Text'  },
-                      { value: 'image', label: '🖼 Image' },
-                      { value: 'video', label: '🎬 Video' },
-                    ]}
-                  />
-                </FormField>
-
                 {/* Title */}
                 <FormField>
                   <FormLabel required>Title</FormLabel>
@@ -1138,18 +1125,70 @@ export default function Announcements() {
                   {formErrors.body && <p className="text-xs text-red-600 mt-1">{formErrors.body}</p>}
                 </FormField>
 
-                {/* Media URL */}
-                {(form.contentType === 'image' || form.contentType === 'video') && (
-                  <FormField>
-                    <FormLabel required>{form.contentType === 'image' ? 'Image' : 'Video'} URL</FormLabel>
-                    <FormInput
-                      placeholder={`https://example.com/${form.contentType}.${form.contentType === 'image' ? 'jpg' : 'mp4'}`}
-                      value={form.mediaUrl}
-                      onChange={e => setField('mediaUrl', e.target.value)}
-                    />
-                    {formErrors.mediaUrl && <p className="text-xs text-red-600 mt-1">{formErrors.mediaUrl}</p>}
-                  </FormField>
-                )}
+                {/* Attachment — upload image or video */}
+                <FormField>
+                  <FormLabel>Attachment</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <label className={`${btnGhost} cursor-pointer`}>
+                      <Image className="w-4 h-4" />
+                      Upload Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setField('mediaUrl', String(reader.result));
+                            setField('contentType', 'image');
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    <label className={`${btnGhost} cursor-pointer`}>
+                      <Video className="w-4 h-4" />
+                      Upload Video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setField('mediaUrl', String(reader.result));
+                            setField('contentType', 'video');
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    {form.mediaUrl && (
+                      <button
+                        type="button"
+                        onClick={() => { setField('mediaUrl', ''); setField('contentType', 'text'); }}
+                        className={btnDanger}
+                      >
+                        <X className="w-4 h-4" /> Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {form.mediaUrl && form.contentType === 'image' && (
+                    <img src={form.mediaUrl} alt="Attachment preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
+                  )}
+                  {form.mediaUrl && form.contentType === 'video' && (
+                    <video src={form.mediaUrl} controls className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700" />
+                  )}
+
+                  {formErrors.mediaUrl && <p className="text-xs text-red-600 mt-1">{formErrors.mediaUrl}</p>}
+                </FormField>
 
                 {/* Cooldown — fixed at 5 minutes */}
                 <FormField>

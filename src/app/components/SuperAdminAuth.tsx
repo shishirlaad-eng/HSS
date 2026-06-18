@@ -8,6 +8,7 @@ import {
 import { PrimaryButton } from "./hb/listing";
 import { Mail, Lock, KeyRound, UserPlus } from "lucide-react";
 import hssLogoColour from "../../assets/brand/hss/logos/hss-logo-colour.png";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import { toast } from "sonner";
 import { LanguageProvider } from "../../i18n/LanguageContext";
 import { Toaster } from "sonner";
@@ -176,11 +177,24 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
         <div className={`w-full ${currentScreen === "register" ? "max-w-5xl" : "max-w-md"}`}>
           {/* HSS Brand Header */}
           <div className="text-center mb-6">
-            <img
-              src={hssLogoColour}
-              alt="Hindu Swayamsevak Sangh UK"
-              className="h-14 w-auto mx-auto object-contain"
-            />
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src={hssLogoColour}
+                alt="Hindu Swayamsevak Sangh UK"
+                className="h-14 w-auto object-contain"
+              />
+              <div className="w-px h-10 bg-neutral-300 dark:bg-neutral-700" />
+              <div
+                className="h-14 px-2 flex items-center justify-center rounded"
+                style={{ backgroundColor: "#172E4D" }}
+              >
+                <img
+                  src={myHssLogo}
+                  alt="My HSS"
+                  className="h-10 w-auto object-contain"
+                />
+              </div>
+            </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
               Hindu Swayamsevak Sangh
             </p>
@@ -205,7 +219,6 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Welcome Back</h1>
-                  <p className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-1">My HSS</p>
                   <p className="text-neutral-500 dark:text-neutral-400 text-xs">Sign in with your administrator credentials.</p>
                 </div>
 

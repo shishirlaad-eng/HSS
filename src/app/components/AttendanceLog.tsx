@@ -19,6 +19,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -118,6 +119,10 @@ function formatMonth(iso: string) {
   return new Date(iso + '-01T12:00:00').toLocaleDateString('en-GB', {
     month: 'long', year: 'numeric',
   });
+}
+
+function formatMonthName(iso: string) {
+  return new Date(iso + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long' });
 }
 
 type SortKey = 'memberName' | 'date' | 'activityCentre' | 'jobTitle' | 'attendanceStatus';
@@ -238,7 +243,12 @@ export default function AttendanceLog() {
   const [sortDir,            setSortDir]            = useState<SortDir>('desc');
   const [page,               setPage]               = useState(1);
   const [pageSize,           setPageSize]           = useState(15);
+  const [collapsedYears,     setCollapsedYears]     = useState<Set<string>>(new Set());
   const [collapsedMonths,    setCollapsedMonths]    = useState<Set<string>>(new Set());
+  const [showMarkModal,      setShowMarkModal]      = useState(false);
+  const [markRegion,         setMarkRegion]         = useState(scope.region ?? '');
+  const [markTown,           setMarkTown]           = useState(scope.town   ?? '');
+  const [markCentre,         setMarkCentre]         = useState(scope.centre ?? '');
 
   const activeFilterCount = filters.filter(f => f.values.length > 0).length;
 
@@ -315,20 +325,44 @@ export default function AttendanceLog() {
     return totals;
   }, [filtered]);
 
-  const groupedPaginated = useMemo(() => {
-    const groups: { month: string; entries: LogEntry[]; totalEntries: number }[] = [];
-    paginated.forEach(entry => {
-      const monthKey = entry.date.slice(0, 7);
-      const existingGroup = groups.find(group => group.month === monthKey);
-      if (existingGroup) existingGroup.entries.push(entry);
-      else groups.push({
-        month: monthKey,
-        entries: [entry],
-        totalEntries: monthTotals.get(monthKey) ?? 0,
-      });
+  const yearTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    filtered.forEach(entry => {
+      const yearKey = entry.date.slice(0, 4);
+      totals.set(yearKey, (totals.get(yearKey) ?? 0) + 1);
     });
-    return groups;
-  }, [paginated, monthTotals]);
+    return totals;
+  }, [filtered]);
+
+  const groupedPaginated = useMemo(() => {
+    const yearMap = new Map<string, Map<string, LogEntry[]>>();
+    paginated.forEach(entry => {
+      const yearKey  = entry.date.slice(0, 4);
+      const monthKey = entry.date.slice(0, 7);
+      if (!yearMap.has(yearKey)) yearMap.set(yearKey, new Map());
+      const monthMap = yearMap.get(yearKey)!;
+      if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
+      monthMap.get(monthKey)!.push(entry);
+    });
+    return Array.from(yearMap.entries()).map(([year, monthMap]) => ({
+      year,
+      totalEntries: yearTotals.get(year) ?? 0,
+      months: Array.from(monthMap.entries()).map(([month, entries]) => ({
+        month,
+        entries,
+        totalEntries: monthTotals.get(month) ?? 0,
+      })),
+    }));
+  }, [paginated, monthTotals, yearTotals]);
+
+  const toggleYear = (year: string) => {
+    setCollapsedYears(previous => {
+      const next = new Set(previous);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
+  };
 
   const toggleMonth = (month: string) => {
     setCollapsedMonths(previous => {
@@ -458,6 +492,20 @@ export default function AttendanceLog() {
               ]}
             />
           )}
+          {scope.selfOnly && (
+            <button
+              onClick={() => {
+                setMarkRegion(scope.region ?? '');
+                setMarkTown(scope.town   ?? '');
+                setMarkCentre(scope.centre ?? '');
+                setShowMarkModal(true);
+              }}
+              className="h-10 px-4 flex items-center gap-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex-shrink-0"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              Attendance
+            </button>
+          )}
         </PageHeader>
 
         {/* ── SUMMARY WIDGETS ── */}
@@ -522,36 +570,61 @@ export default function AttendanceLog() {
                       </div>
                     </td>
                   </tr>
-                ) : groupedPaginated.map(({ month, entries, totalEntries }, groupIndex) => (
-                  <Fragment key={`${page}-${month}-${groupIndex}`}>
+                ) : groupedPaginated.map(({ year, months, totalEntries: yearTotal }) => (
+                  <Fragment key={`${page}-${year}`}>
+                    {/* ── Year header ── */}
                     <tr>
                       <td colSpan={scope.selfOnly ? 4 : 8} className="p-0">
                         <button
                           type="button"
-                          onClick={() => toggleMonth(month)}
-                          aria-expanded={!collapsedMonths.has(month)}
-                          className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-y border-neutral-200 dark:border-neutral-800 text-left transition-colors"
+                          onClick={() => toggleYear(year)}
+                          aria-expanded={!collapsedYears.has(year)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-primary-700 dark:bg-primary-950 hover:bg-primary-800 dark:hover:bg-primary-900 text-left transition-colors"
                         >
                           <span className="flex items-center gap-2">
-                            {collapsedMonths.has(month)
-                              ? <ChevronRight className="w-4 h-4 text-neutral-500" />
-                              : <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            {collapsedYears.has(year)
+                              ? <ChevronRight className="w-4 h-4 text-white/80" />
+                              : <ChevronDown className="w-4 h-4 text-white/80" />
                             }
-                            <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                              {formatMonth(month)}
-                            </span>
+                            <span className="text-sm font-bold text-white tracking-wide">{year}</span>
                           </span>
-                          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                            {entries.length === totalEntries
-                              ? `${totalEntries} ${totalEntries === 1 ? 'record' : 'records'}`
-                              : `${entries.length} on this page · ${totalEntries} total`
-                            }
+                          <span className="text-xs font-medium text-white/60">
+                            {yearTotal} {yearTotal === 1 ? 'record' : 'records'}
                           </span>
                         </button>
                       </td>
                     </tr>
-                    {!collapsedMonths.has(month) && entries.map((entry, idx) => (
+                    {/* ── Month groups within year ── */}
+                    {!collapsedYears.has(year) && months.map(({ month, entries, totalEntries }, groupIndex) => (
+                      <Fragment key={`${month}-${groupIndex}`}>
+                        <tr>
+                          <td colSpan={scope.selfOnly ? 4 : 8} className="p-0">
+                            <button
+                              type="button"
+                              onClick={() => toggleMonth(month)}
+                              aria-expanded={!collapsedMonths.has(month)}
+                              className="w-full flex items-center justify-between gap-3 pl-8 pr-4 py-3 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-y border-neutral-200 dark:border-neutral-800 text-left transition-colors"
+                            >
+                              <span className="flex items-center gap-2">
+                                {collapsedMonths.has(month)
+                                  ? <ChevronRight className="w-4 h-4 text-neutral-500" />
+                                  : <ChevronDown className="w-4 h-4 text-neutral-500" />
+                                }
+                                <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                                  {formatMonthName(month)}
+                                </span>
+                              </span>
+                              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                                {entries.length === totalEntries
+                                  ? `${totalEntries} ${totalEntries === 1 ? 'record' : 'records'}`
+                                  : `${entries.length} on this page · ${totalEntries} total`
+                                }
+                              </span>
+                            </button>
+                          </td>
+                        </tr>
+                        {!collapsedMonths.has(month) && entries.map((entry, idx) => (
                   <tr key={`${entry.sessionId}-${entry.memberId}-${month}-${idx}`}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
 
@@ -636,6 +709,8 @@ export default function AttendanceLog() {
                       <StatusBadge status={entry.attendanceStatus} />
                     </td>
                   </tr>
+                        ))}
+                      </Fragment>
                     ))}
                   </Fragment>
                 ))}
@@ -657,6 +732,87 @@ export default function AttendanceLog() {
         </div>
 
       </div>
+
+      {/* ── Mark Attendance Modal ── */}
+      {showMarkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-neutral-950 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+              <div>
+                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">Mark Attendance</h2>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Select your Shakha and mark today's attendance</p>
+              </div>
+              <button
+                onClick={() => setShowMarkModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Region */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Vibhaag (Region)</label>
+                <select
+                  value={markRegion}
+                  onChange={e => { setMarkRegion(e.target.value); setMarkTown(''); setMarkCentre(''); }}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select Vibhaag…</option>
+                  {ALL_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              {/* Town */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Nagar (Town)</label>
+                <select
+                  value={markTown}
+                  onChange={e => { setMarkTown(e.target.value); setMarkCentre(''); }}
+                  disabled={!markRegion}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Nagar…</option>
+                  {(MASTERS_CASCADE.towns[markRegion] ?? []).map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              {/* Activity Centre */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Shakha (Activity Centre)</label>
+                <select
+                  value={markCentre}
+                  onChange={e => setMarkCentre(e.target.value)}
+                  disabled={!markTown}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Shakha…</option>
+                  {(MASTERS_CASCADE.centres[markTown] ?? []).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowMarkModal(false)}
+                className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!markCentre}
+                onClick={() => {
+                  setShowMarkModal(false);
+                  toast.success(`Attendance marked at ${markCentre}`);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                Mark Attendance
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

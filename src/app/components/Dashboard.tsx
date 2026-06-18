@@ -2,7 +2,7 @@
 // HSS UK Membership Management System — Dashboard
 // ─────────────────────────────────────────────────────────────
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Users,
   Globe2,
@@ -45,6 +45,7 @@ interface Announcement {
   postedAt: string;
   priority: 'high' | 'medium' | 'low';
   postedBy: string;
+  eventId?: string;
 }
 
 const mockAnnouncements: Announcement[] = [
@@ -55,6 +56,7 @@ const mockAnnouncements: Announcement[] = [
     postedAt: '2026-05-20T09:00:00Z',
     priority: 'high',
     postedBy: 'HSS UK National Office',
+    eventId: 'EVT-111',
   },
   {
     id: 'ANN-002',
@@ -182,20 +184,25 @@ const mockMyAttendance = [
 // ── Mock current logged-in member ─────────────────────────────
 
 const mockCurrentMember = {
-  firstName:          'John',
-  lastName:           'Doe',
-  memberId:           'HSS-00001',
-  shakha:             'Harrow Activity Centre',
-  town:               'Harrow',
-  vibhaag:            'London & South East',
-  sanghResponsibility:'Ghatnayak',
+  firstName:           'John',
+  lastName:            'Doe',
+  memberId:            'HSS-00001',
+  shakha:              'Harrow Activity Centre',
+  town:                'Harrow',
+  vibhaag:             'London & South East',
+  sanghResponsibility: 'Ghatnayak',
+  sanghResponsibility2:'Shakha Mukhya Shikshak',
+  joinDate:            '2019-06-15',
+  ageGroup:            'Tarun',
 };
 
 // ── Member / Teen Dashboard ────────────────────────────────────
 
-function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
+function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page: string) => void; onNavigateToEvent?: (eventId: string) => void }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setAnimated(true), 80); return () => clearTimeout(t); }, []);
 
   const upcomingEvents = useMemo(
     () => mockEvents
@@ -218,7 +225,6 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
       {/* Member Identity Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-1">
-          {/* Name + Responsibility */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
               {mockCurrentMember.firstName} {mockCurrentMember.lastName}{' '}
@@ -230,7 +236,6 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
               {mockCurrentMember.sanghResponsibility}
             </span>
           </div>
-          {/* Activity Centre · Town · Region */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
             <span className="flex items-center gap-1">
               <Building2 className="w-3 h-3 flex-shrink-0" />
@@ -248,117 +253,254 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
             </span>
           </div>
         </div>
-        <button
-          onClick={() => onNavigate?.('donate')}
-          className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
-        >
-          <Heart className="w-4 h-4" />
-          Give Dakshina
-        </button>
       </div>
 
-      {/* ── Row 1: Stat cards ─────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* ── Row 1: Donut stat cards — My Sankhya · Suchana · Karyakrams · My Dakshina ── */}
+      {(() => {
+        const C      = 2 * Math.PI * 24;
+        const offset = C / 4;
+        const totalDakshina = mockMyDonations.reduce((s, d) => s + d.amount, 0);
+        const donutCards = [
+          {
+            label:    'My Sankhya',
+            arc:      (attendancePct / 100) * C,
+            color:    '#172E4D',
+            center:   `${attendancePct}%`,
+            sub:      `${presentCount} present · ${absentCount} absent`,
+            bg:       'bg-slate-50 dark:bg-slate-900/40',
+            track:    'text-slate-200 dark:text-slate-700',
+            onClick:  undefined as (() => void) | undefined,
+          },
+          {
+            label:    'Suchana',
+            arc:      (Math.min(mockAnnouncements.length, 10) / 10) * C,
+            color:    '#E24B4A',
+            center:   `${mockAnnouncements.length}`,
+            sub:      `${highPriority} high priority`,
+            bg:       'bg-red-50 dark:bg-red-950/30',
+            track:    'text-red-100 dark:text-red-900/60',
+            onClick:  () => onNavigate?.('announcements'),
+          },
+          {
+            label:    'Karyakrams',
+            arc:      (Math.min(upcomingEvents.length, 10) / 10) * C,
+            color:    '#378ADD',
+            center:   `${upcomingEvents.length}`,
+            sub:      `${upcomingEvents.length} upcoming`,
+            bg:       'bg-sky-50 dark:bg-sky-950/30',
+            track:    'text-sky-100 dark:text-sky-900/60',
+            onClick:  () => onNavigate?.('event-management'),
+          },
+          {
+            label:    'My Dakshina',
+            arc:      Math.min(totalDakshina / 500, 1) * C,
+            color:    '#1D9E75',
+            center:   `£${totalDakshina.toFixed(0)}`,
+            sub:      'YTD total',
+            bg:       'bg-emerald-50 dark:bg-emerald-950/30',
+            track:    'text-emerald-100 dark:text-emerald-900/60',
+            onClick:  () => onNavigate?.('my-donations'),
+          },
+        ];
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {donutCards.map(card => (
+              <div
+                key={card.label}
+                role={card.onClick ? 'button' : undefined}
+                tabIndex={card.onClick ? 0 : undefined}
+                className={`flex flex-col items-center py-5 px-4 rounded-lg border border-neutral-200 dark:border-neutral-800 transition-all duration-200 ${card.bg}${card.onClick ? ' cursor-pointer hover:scale-[1.03] hover:shadow-md hover:border-transparent' : ''}`}
+                onClick={card.onClick}
+                onKeyDown={card.onClick ? e => e.key === 'Enter' && card.onClick?.() : undefined}
+              >
+                <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-400 mb-3 text-center">{card.label}</p>
+                <svg width="84" height="84" viewBox="0 0 60 60" aria-hidden="true">
+                  <circle
+                    cx="30" cy="30" r="24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="7"
+                    className={card.track}
+                  />
+                  <circle
+                    cx="30" cy="30" r="24"
+                    fill="none"
+                    stroke={card.color}
+                    strokeWidth="7"
+                    strokeDasharray={animated ? `${card.arc} ${C - card.arc}` : `0 ${C}`}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke-dasharray 1.1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                  />
+                  <text
+                    x="30" y="34"
+                    textAnchor="middle"
+                    fontSize="11"
+                    fontWeight="600"
+                    fill="currentColor"
+                    className="text-neutral-900 dark:text-white"
+                  >{card.center}</text>
+                </svg>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
-        {/* My Attendance */}
-        <div
-          role="button" tabIndex={0}
-          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('attendance-log')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('attendance-log')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">My Sankhya</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{attendancePct}% YTD</p>
-              <p className="text-xs mt-1 text-emerald-600 dark:text-emerald-400">
-                {presentCount} present · {absentCount} absent
-              </p>
-              <p className="text-xs mt-1 text-neutral-400 dark:text-neutral-500">
-                {presentAnotherShakha} present in another shakha
-              </p>
+      {/* ── Row 2: My Profile + My Sankhya list ───────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+
+        {/* My Profile card */}
+        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col" style={{ borderTop: '3px solid #172E4D' }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Profile</h3>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
-              <CheckCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          </div>
+          <div className="px-5 py-5 flex items-start gap-5 flex-1">
+            {/* Avatar */}
+            <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center border-2 border-primary-200 dark:border-primary-800">
+              <span className="text-xl font-bold text-primary-700 dark:text-primary-300">
+                {mockCurrentMember.firstName[0]}{mockCurrentMember.lastName[0]}
+              </span>
+            </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold text-neutral-900 dark:text-white leading-tight">
+                {mockCurrentMember.firstName} {mockCurrentMember.lastName}
+              </p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-3">{mockCurrentMember.memberId}</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Shakha</span>
+                  <span className="text-xs font-medium text-neutral-900 dark:text-white truncate">{mockCurrentMember.shakha}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Nagar</span>
+                  <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.town}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Globe2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Vibhag</span>
+                  <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.vibhaag}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Zimmedari</span>
+                  <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
+                    {mockCurrentMember.sanghResponsibility}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Zimmedari 2</span>
+                  <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
+                    {mockCurrentMember.sanghResponsibility2}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Karyakrams */}
-        <div
-          role="button" tabIndex={0}
-          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('event-management')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('event-management')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Karyakrams</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">5</p>
-              <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
-                3 upcoming · 2 registered
-              </p>
+        {/* My Sankhya attendance list */}
+        <div className="flex flex-col">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1" style={{ borderTop: '3px solid #172E4D' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Sankhya</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {attendancePct}%
+                </span>
+              </div>
+              <button onClick={() => onNavigate?.('attendance-log')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
-              <CalendarDays className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Announcements */}
-        <div
-          role="button" tabIndex={0}
-          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('announcements')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('announcements')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Suchana</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{mockAnnouncements.length}</p>
-              <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">
-                {highPriority} high priority
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
-              <Megaphone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* My Dakshina */}
-        <div
-          role="button" tabIndex={0}
-          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-          onClick={() => onNavigate?.('my-donations')}
-          onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">My Dakshina</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                £{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(0)} YTD
-              </p>
-              <p className="text-xs mt-1 text-primary-600 dark:text-primary-400">
-                £{mockMyDonations.filter(d => d.type === 'online').reduce((s, d) => s + d.amount, 0).toFixed(0)} online Dakshina
-              </p>
-              <p className="text-xs mt-1 text-primary-600 dark:text-primary-400">
-                £{mockMyDonations.filter(d => d.type === 'recurring').reduce((s, d) => s + d.amount, 0).toFixed(0)} recurring Dakshina
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
+              {mockMyAttendance.slice(0, 3).map(att => (
+                <div
+                  key={att.id}
+                  role="button" tabIndex={0}
+                  className="h-[60px] px-5 py-3 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                  onClick={() => onNavigate?.('attendance-log')}
+                  onKeyDown={e => e.key === 'Enter' && onNavigate?.('attendance-log')}
+                >
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{att.session}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
+                    </div>
+                    {att.status === 'present'
+                      ? <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Present</span>
+                      : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Absent</span>
+                    }
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Row 2: Upcoming Karyakrams + My Attendance ───────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-stretch">
+      {/* ── Row 3: Suchana + Upcoming Karyakrams ──────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Upcoming Karyakrams list (2/3) */}
-        <div className="lg:col-span-2 flex flex-col">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1">
+        {/* Suchana */}
+        <div>
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800" style={{ borderTop: '3px solid #E24B4A' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Suchana</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                  {mockAnnouncements.length}
+                </span>
+              </div>
+              <button onClick={() => onNavigate?.('announcements')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              {mockAnnouncements.slice(0, 3).map(ann => {
+                const pcfg = PRIORITY_CFG[ann.priority];
+                const PIcon = pcfg.icon;
+                return (
+                  <div
+                    key={ann.id}
+                    role="button" tabIndex={0}
+                    className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    onClick={() => ann.eventId ? onNavigateToEvent?.(ann.eventId) : onNavigate?.('announcements')}
+                    onKeyDown={e => e.key === 'Enter' && (ann.eventId ? onNavigateToEvent?.(ann.eventId) : onNavigate?.('announcements'))}
+                  >
+                    <div className="flex items-start gap-3 w-full">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${pcfg.bg}`}>
+                        <PIcon className={`w-3.5 h-3.5 ${pcfg.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug">{ann.title}</h4>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0 mt-0.5">{timeAgo(ann.postedAt)}</span>
+                        </div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed line-clamp-2">{ann.body}</p>
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1.5">Posted by {ann.postedBy}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Upcoming Karyakrams */}
+        <div className="flex flex-col">
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1" style={{ borderTop: '3px solid #378ADD' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -381,8 +523,8 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
                     key={event.id}
                     role="button" tabIndex={0}
                     className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-                    onClick={() => onNavigate?.('event-management')}
-                    onKeyDown={e => e.key === 'Enter' && onNavigate?.('event-management')}
+                    onClick={() => onNavigateToEvent?.(event.id)}
+                    onKeyDown={e => e.key === 'Enter' && onNavigateToEvent?.(event.id)}
                   >
                     <div className="flex items-start gap-4 w-full">
                       <div className="flex-shrink-0 w-12 text-center pt-0.5">
@@ -414,149 +556,6 @@ function MemberDashboard({ onNavigate }: { onNavigate?: (page: string) => void }
                   </div>
                 );
               })}
-            </div>
-          </div>
-        </div>
-
-        {/* My Attendance list (1/3) */}
-        <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <CheckCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Sankhya</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
-                  {attendancePct}%
-                </span>
-              </div>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
-              {mockMyAttendance.slice(0, 3).map(att => (
-                <div
-                  key={att.id}
-                  role="button" tabIndex={0}
-                  className="h-[60px] px-5 py-3 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-                  onClick={() => onNavigate?.('sessions')}
-                  onKeyDown={e => e.key === 'Enter' && onNavigate?.('sessions')}
-                >
-                  <div className="flex items-center justify-between gap-2 w-full">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{att.session}</p>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
-                    </div>
-                    {att.status === 'present'
-                      ? <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Present</span>
-                      : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Absent</span>
-                    }
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 3: Announcements + Dakshina ─────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Announcements (2/3) */}
-        <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <Megaphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Suchana</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
-                  {mockAnnouncements.length}
-                </span>
-              </div>
-              <button onClick={() => onNavigate?.('announcements')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-                View all <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {mockAnnouncements.slice(0, 3).map(ann => {
-                const pcfg = PRIORITY_CFG[ann.priority];
-                const PIcon = pcfg.icon;
-                return (
-                  <div
-                    key={ann.id}
-                    role="button" tabIndex={0}
-                    className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-                    onClick={() => onNavigate?.('announcements')}
-                    onKeyDown={e => e.key === 'Enter' && onNavigate?.('announcements')}
-                  >
-                    <div className="flex items-start gap-3 w-full">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${pcfg.bg}`}>
-                        <PIcon className={`w-3.5 h-3.5 ${pcfg.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug">{ann.title}</h4>
-                          <span className="text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0 mt-0.5">{timeAgo(ann.postedAt)}</span>
-                        </div>
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed line-clamp-2">{ann.body}</p>
-                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1.5">Posted by {ann.postedBy}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* My Dakshina (1/3) */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full flex flex-col">
-            <div
-              role="button" tabIndex={0}
-              className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-              onClick={() => onNavigate?.('my-donations')}
-              onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
-            >
-              <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Dakshina</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
-                  {mockMyDonations.length}
-                </span>
-              </div>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
-              {mockMyDonations.slice(0, 3).map(don => (
-                <div
-                  key={don.id}
-                  role="button" tabIndex={0}
-                  className="h-[52px] px-5 py-3 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-                  onClick={() => onNavigate?.('my-donations')}
-                  onKeyDown={e => e.key === 'Enter' && onNavigate?.('my-donations')}
-                >
-                  <div className="flex items-center justify-between gap-2 w-full">
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      {new Date(don.datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      <span className="text-neutral-400 dark:text-neutral-500 ml-1">
-                        {new Date(don.datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </p>
-                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                      £{don.amount.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                Total: <span className="font-semibold text-neutral-900 dark:text-white">£{mockMyDonations.reduce((s, d) => s + d.amount, 0).toFixed(2)}</span>
-              </span>
-              <button
-                onClick={() => onNavigate?.('donate')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all"
-              >
-                <Heart className="w-3.5 h-3.5" />
-                Give Dakshina
-              </button>
             </div>
           </div>
         </div>
@@ -814,16 +813,17 @@ function HierarchyKpiSection({
 
 interface DashboardProps {
   onNavigate?: (page: string) => void;
+  onNavigateToEvent?: (eventId: string) => void;
 }
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
+export default function Dashboard({ onNavigate, onNavigateToEvent }: DashboardProps) {
 
   const { selectedRole, scope } = useRoleScope();
 
   // Member (18+) and Teen get a simplified personal dashboard
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
   if (isMemberRole) {
-    return <MemberDashboard onNavigate={onNavigate} />;
+    return <MemberDashboard onNavigate={onNavigate} onNavigateToEvent={onNavigateToEvent} />;
   }
 
   // Hierarchy-scoped KPI section shown for these mid-tier admin roles
@@ -1197,8 +1197,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       {/* ── Section: Announcements + Recent Registrations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Announcements (2/3) */}
-        <div className="lg:col-span-2">
+        {/* Announcements (2/3, or full-width for AC Admin) */}
+        <div className={scope.level === 'centre' ? 'lg:col-span-3' : 'lg:col-span-2'}>
           <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
@@ -1250,58 +1250,60 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
 
-        {/* Recent Registrations (1/3) */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Recent Registrations</h3>
+        {/* Recent Registrations (1/3) — hidden for AC Admin */}
+        {scope.level !== 'centre' && (
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Recent Registrations</h3>
+                </div>
+                <button
+                  onClick={() => onNavigate?.('members')}
+                  className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  View all <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => onNavigate?.('members')}
-                className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                View all <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {recentRegistrations.map((member) => {
-                const sc = MEMBER_STATUS_CFG[member.status];
-                return (
-                  <div key={member.id} className="px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${avatarColor(member.name)}`}>
-                        {getInitials(member.name)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                          {member.name}
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {recentRegistrations.map((member) => {
+                  const sc = MEMBER_STATUS_CFG[member.status];
+                  return (
+                    <div key={member.id} className="px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${avatarColor(member.name)}`}>
+                          {getInitials(member.name)}
                         </div>
-                        <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                          {member.activityCentre}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                            {member.name}
+                          </div>
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                            {member.activityCentre}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP}`}>
+                            {getAgeGroupLabel(member.dateOfBirth)}
+                          </span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] ${sc.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                            {sc.label}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP}`}>
-                          {getAgeGroupLabel(member.dateOfBirth)}
-                        </span>
-                        <span className={`inline-flex items-center gap-1 text-[10px] ${sc.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                          {sc.label}
-                        </span>
-                      </div>
+                      <p className="ml-11 text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                        {formatDate(member.registrationDate)}
+                      </p>
                     </div>
-                    <p className="ml-11 text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                      {formatDate(member.registrationDate)}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
     </div>
