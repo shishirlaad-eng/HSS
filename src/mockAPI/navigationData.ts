@@ -40,6 +40,47 @@ export const getNavigationData = (
   selectedRole: string = "Super Admin",
 ): MenuItem[] => {
   const hiddenMasters = new Set<string>(HIDDEN_MASTERS_BY_ROLE[selectedRole] ?? []);
+  const isMemberRole = ['Member (18+)', 'Teen (13–17)', 'Teen (13â€“17)'].includes(selectedRole);
+
+  if (isMemberRole) {
+    return [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        onClick: () => onNavigate("dashboard"),
+        active: currentPage === "dashboard",
+      },
+      {
+        id: "attendance-group",
+        label: "My Sankhya",
+        icon: ClipboardCheck,
+        onClick: () => onNavigate("attendance-log"),
+        active: currentPage === "attendance-log",
+      },
+      {
+        id: "announcements",
+        label: "Suchana",
+        icon: Megaphone,
+        onClick: () => onNavigate("announcements"),
+        active: currentPage === "announcements",
+      },
+      {
+        id: "event-management",
+        label: "Karyakrams",
+        icon: Calendar,
+        onClick: () => onNavigate("event-management"),
+        active: currentPage === "event-management",
+      },
+      {
+        id: "my-donations",
+        label: "My Dakshina",
+        icon: ReceiptText,
+        onClick: () => onNavigate("my-donations"),
+        active: currentPage === "my-donations",
+      },
+    ];
+  }
 
   return [
 

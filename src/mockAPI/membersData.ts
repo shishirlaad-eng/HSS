@@ -33,6 +33,16 @@ export const RESPONSIBILITY_LEVEL_OPTIONS: ResponsibilityLevel[] = [
   'Shakha / Activity center',
 ];
 
+export const FIRST_AID_QUALIFICATION_OPTIONS = [
+  '1-day First Aid qualification',
+  '3-day First Aid at Work qualification',
+  'Doctor registered and licensed with the General Medical Council',
+  'Nurse registered with the Nursing and Midwifery Council',
+  'Paramedic registered with the Health and Care Professions Council',
+] as const;
+
+export type FirstAidQualification = typeof FIRST_AID_QUALIFICATION_OPTIONS[number];
+
 // ── Karyakartas — members who hold a sangh responsibility ─────
 // Only the members listed here have a Responsibility (Type + Level)
 // assigned. Everyone else has none — this drives the "Karyakartas"
@@ -169,7 +179,7 @@ export interface Member {
   medicalInfoDeclared?: boolean;
   medicalInfoDetails?: string;
   isFirstAider?: boolean;
-  firstAidQualificationLevel?: 'Level 1' | 'Level 2' | 'Level 3';
+  firstAidQualificationLevel?: FirstAidQualification;
   firstAidQualificationExpiryDate?: string;
   dietaryRequirements?: DietaryRequirement[];
   occupation?: string;

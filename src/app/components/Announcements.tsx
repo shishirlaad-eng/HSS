@@ -338,7 +338,13 @@ function CheckChip({
 
 type PageState = 'list' | 'detail';
 
-export default function Announcements() {
+export default function Announcements({
+  initialAnnouncementId,
+  onConsumeInitialAnnouncement,
+}: {
+  initialAnnouncementId?: string | null;
+  onConsumeInitialAnnouncement?: () => void;
+} = {}) {
   const ap = useModulePermissions('announcements');
   const { selectedRole } = useRoleScope();
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
@@ -362,6 +368,16 @@ export default function Announcements() {
   // Create form
   const [form, setForm] = useState<CreateForm>(blankForm());
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateForm, string>>>({});
+
+  useEffect(() => {
+    if (!initialAnnouncementId) return;
+    const announcement = announcements.find(item => item.id === initialAnnouncementId);
+    if (announcement) {
+      setSelected(announcement);
+      setPageState('detail');
+    }
+    onConsumeInitialAnnouncement?.();
+  }, [initialAnnouncementId, announcements, onConsumeInitialAnnouncement]);
 
   // Cascade options based on form scope
   const regionOptions  = Object.values(MASTERS_CASCADE.regions).flat();
@@ -530,8 +546,22 @@ export default function Announcements() {
     setToDelete(null);
   };
 
-  const openDetail = (ann: Announcement) => { setSelected(ann); setPageState('detail'); };
-  const goBack     = () => { setSelected(null); setPageState('list'); };
+  const scrollToTop = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+  };
+
+  const openDetail = (ann: Announcement) => {
+    setSelected(ann);
+    setPageState('detail');
+    scrollToTop();
+  };
+  const goBack     = () => { setSelected(null); setPageState('list'); scrollToTop(); };
+
+  useEffect(() => {
+    if (pageState === 'detail' && selected) scrollToTop();
+  }, [pageState, selected?.id]);
 
   const closeCreate = () => { setShowCreate(false); setEditingId(null); setForm(createBlankForm()); setFormErrors({}); setBodyWordCount(0); };
 

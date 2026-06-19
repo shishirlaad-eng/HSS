@@ -7,7 +7,7 @@ import {
 } from "./hb/common";
 import { PrimaryButton } from "./hb/listing";
 import { Mail, Lock, KeyRound, UserPlus } from "lucide-react";
-import hssLogoColour from "../../assets/brand/hss/logos/hss-logo-colour.png";
+import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import { toast } from "sonner";
 import { LanguageProvider } from "../../i18n/LanguageContext";
@@ -173,41 +173,34 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4 transition-colors">
-        <div className={`w-full ${currentScreen === "register" ? "max-w-5xl" : "max-w-md"}`}>
-          {/* HSS Brand Header */}
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3">
-              <img
-                src={hssLogoColour}
-                alt="Hindu Swayamsevak Sangh UK"
-                className="h-14 w-auto object-contain"
-              />
-              <div className="w-px h-10 bg-neutral-300 dark:bg-neutral-700" />
-              <div
-                className="h-14 px-2 flex items-center justify-center rounded"
-                style={{ backgroundColor: "#172E4D" }}
-              >
-                <img
-                  src={myHssLogo}
-                  alt="My HSS"
-                  className="h-10 w-auto object-contain"
-                />
-              </div>
-            </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
-              Hindu Swayamsevak Sangh
-            </p>
-          </div>
-
-          {currentScreen === "register" ? (
+      {currentScreen === "register" ? (
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center p-4">
+          <div className="w-full max-w-5xl">
             <MemberRegistration
               onBackToLogin={() => {
                 setCurrentScreen("login");
                 setErrorMsg("");
               }}
             />
-          ) : (
+          </div>
+        </div>
+      ) : (
+      <div className="min-h-screen flex">
+        {/* Left panel — HSS blue with orange logo */}
+        <div
+          className="hidden lg:flex w-1/2 items-center justify-center"
+          style={{ backgroundColor: "#172E4D" }}
+        >
+          <img
+            src={hssLogoOrange}
+            alt="HSS Logo"
+            className="w-4/5 max-w-sm object-contain"
+          />
+        </div>
+
+        {/* Right panel — form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-neutral-950">
+          <div className="w-full max-w-md">
           <FormCard className="shadow-lg !p-8">
             {errorMsg && (
               <div className="mb-6 p-3 bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 text-sm rounded-lg border border-error-200 dark:border-error-800 text-center">
@@ -218,7 +211,17 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             {currentScreen === "login" && (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Welcome Back</h1>
+                  <div
+                    className="inline-flex items-center justify-center rounded-xl px-5 py-3 mb-4"
+                    style={{ backgroundColor: "#172E4D" }}
+                  >
+                    <img
+                      src={myHssLogo}
+                      alt="My HSS"
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Namaste</h1>
                   <p className="text-neutral-500 dark:text-neutral-400 text-xs">Sign in with your administrator credentials.</p>
                 </div>
 
@@ -291,9 +294,6 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                     <UserPlus className="w-4 h-4" />
                     Register as Member
                   </button>
-                </div>
-                <div className="text-center text-xs text-neutral-400 mt-4">
-                  Enter any valid email and password to continue.
                 </div>
               </form>
             )}
@@ -506,15 +506,16 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             )}
 
           </FormCard>
-          )}
+          </div>
         </div>
+      </div>
+      )}
         <Toaster
           position="top-right"
           expand
           richColors
           closeButton
         />
-      </div>
     </LanguageProvider>
   );
 }

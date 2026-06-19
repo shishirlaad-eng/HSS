@@ -687,7 +687,7 @@ export default function EventDetail({
                   ))}
 
                   {/* Guest Registration */}
-                  {event.guestRegistrationEnabled && (
+                  {event.guestRegistrationEnabled && !isMember && (
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                         <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration

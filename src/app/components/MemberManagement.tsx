@@ -57,6 +57,8 @@ import {
   MemberStatus,
   MemberType,
   ROLE_TYPE_OPTIONS,
+  FIRST_AID_QUALIFICATION_OPTIONS,
+  FirstAidQualification,
   DietaryRequirement,
   DIETARY_REQUIREMENTS,
   getAge,
@@ -308,6 +310,8 @@ interface AddMemberForm {
   medicalInfoDeclared: boolean;
   medicalInfoDetails: string;
   isFirstAider: boolean;
+  firstAidQualificationLevel: '' | FirstAidQualification;
+  firstAidQualificationExpiryDate: string;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
   originatingStateIndia: string;
@@ -328,6 +332,7 @@ const EMPTY_FORM: AddMemberForm = {
   country: '', region: '', town: '', activityCentre: '',
   guardianName: '', guardianPhone: '', guardianEmail: '', guardianRelationship: '',
   medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
+  firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '',
   dietaryRequirements: [], occupation: '', originatingStateIndia: '',
   dbsStatus: 'pending', firstAidStatus: 'pending',
   dbsRef: '', firstAidRef: '',
@@ -371,7 +376,13 @@ function AddMemberModal({
 
   const setBoolean = (key: 'medicalInfoDeclared' | 'isFirstAider') =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm(prev => ({ ...prev, [key]: e.target.checked }));
+      setForm(prev => ({
+        ...prev,
+        [key]: e.target.checked,
+        ...(key === 'isFirstAider' && !e.target.checked
+          ? { firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '' }
+          : {}),
+      }));
     };
 
   const toggleDietaryRequirement = (value: DietaryRequirement) => {
@@ -472,6 +483,12 @@ function AddMemberModal({
       medicalInfoDeclared: form.medicalInfoDeclared,
       medicalInfoDetails: form.medicalInfoDetails.trim() || undefined,
       isFirstAider: canEditQualifiedFirstAider ? form.isFirstAider : false,
+      firstAidQualificationLevel: canEditQualifiedFirstAider && form.isFirstAider
+        ? form.firstAidQualificationLevel || undefined
+        : undefined,
+      firstAidQualificationExpiryDate: canEditQualifiedFirstAider && form.isFirstAider
+        ? form.firstAidQualificationExpiryDate || undefined
+        : undefined,
       dietaryRequirements: form.dietaryRequirements,
       occupation: form.occupation.trim() || undefined,
       originatingStateIndia: form.originatingStateIndia.trim() || undefined,
@@ -660,10 +677,29 @@ function AddMemberModal({
                 <FormTextarea rows={3} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} placeholder="Allergies or medical details" />
               </FormField>
               {canEditQualifiedFirstAider && (
-                <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                  <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                  Is Qualified First Aider
-                </label>
+                <>
+                  <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
+                    Are you a qualified First Aider
+                  </label>
+                  {form.isFirstAider && (
+                    <>
+                      <FormField>
+                        <FormLabel>Level of qualification</FormLabel>
+                        <FormSelect value={form.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
+                          <option value="">Select qualification</option>
+                          {FIRST_AID_QUALIFICATION_OPTIONS.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </FormSelect>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Qualification expiry date</FormLabel>
+                        <FormInput type="date" value={form.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} />
+                      </FormField>
+                    </>
+                  )}
+                </>
               )}
               <FormField>
                 <FormLabel>Occupation</FormLabel>

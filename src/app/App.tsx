@@ -106,6 +106,7 @@ export default function App() {
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [memberToView, setMemberToView] = useState<string | null>(null);
   const [eventToView, setEventToView] = useState<string | null>(null);
+  const [announcementToView, setAnnouncementToView] = useState<string | null>(null);
 
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -155,6 +156,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("menuOrientation", menuOrientation);
   }, [menuOrientation]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }, [currentPage]);
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -244,6 +251,7 @@ export default function App() {
           <Dashboard
             onNavigate={handleNavigate}
             onNavigateToEvent={(id) => { setEventToView(id); setCurrentPage('event-management'); }}
+            onNavigateToAnnouncement={(id) => { setAnnouncementToView(id); setCurrentPage('announcements'); }}
           />
         ) : currentPage === "members" ? (
           <MemberManagement
@@ -284,7 +292,10 @@ export default function App() {
         ) : currentPage === "system-notifications" ? (
           <SystemNotifications />
         ) : currentPage === "announcements" ? (
-          <Announcements />
+          <Announcements
+            initialAnnouncementId={announcementToView}
+            onConsumeInitialAnnouncement={() => setAnnouncementToView(null)}
+          />
         ) : currentPage === "sessions" ? (
           <Sessions />
         ) : currentPage === "attendance-log" ? (

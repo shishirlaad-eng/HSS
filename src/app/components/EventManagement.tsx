@@ -738,13 +738,23 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary]     = useState(true);
 
+  const scrollToTop = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+  };
+
   useEffect(() => {
     if (initialEventId) {
       const ev = mockEvents.find(e => e.id === initialEventId);
-      if (ev) { setSelectedEvent(ev); setPageState('detail'); }
+      if (ev) { setSelectedEvent(ev); setPageState('detail'); scrollToTop(); }
       onConsumeInitialEvent?.();
     }
   }, [initialEventId]);
+
+  useEffect(() => {
+    if ((pageState === 'detail' || pageState === 'edit') && selectedEvent) scrollToTop();
+  }, [pageState, selectedEvent?.id]);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -867,9 +877,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  const openDetail = (event: Event) => { setSelectedEvent(event); setPageState('detail'); };
-  const openEdit   = (event: Event) => { setSelectedEvent(event); setPageState('edit');   };
-  const backToList = ()              => { setPageState('list'); setSelectedEvent(null);   };
+  const openDetail = (event: Event) => { setSelectedEvent(event); setPageState('detail'); scrollToTop(); };
+  const openEdit   = (event: Event) => { setSelectedEvent(event); setPageState('edit'); scrollToTop();   };
+  const backToList = ()              => { setPageState('list'); setSelectedEvent(null); scrollToTop();   };
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
   const openModal = (type: Exclude<ModalType, null | 'create'>, event: Event) =>

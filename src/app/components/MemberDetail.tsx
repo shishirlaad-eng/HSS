@@ -548,7 +548,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <InfoSection title="Other Information">
                     <InfoItem label="Medical Information Declared?">{valueOrDash(member.medicalInfoDeclared)}</InfoItem>
                     <InfoItem label="Medical Information Details">{valueOrDash(member.medicalInfoDetails)}</InfoItem>
-                    <InfoItem label="First Aider for Shakha / HSS (UK)?">{valueOrDash(member.isFirstAider)}</InfoItem>
+                    <InfoItem label="Are you a qualified First Aider">{valueOrDash(member.isFirstAider)}</InfoItem>
                     <InfoItem label="Special Dietary Requirements">{valueOrDash(member.dietaryRequirements)}</InfoItem>
                     <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
                     <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>

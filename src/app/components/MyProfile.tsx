@@ -3,7 +3,7 @@ import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
-import { getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
+import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
 import {
   createTransferRequest,
@@ -50,6 +50,8 @@ interface MemberProfileForm {
   medicalInfoDeclared: string;
   medicalInfoDetails: string;
   isFirstAider: string;
+  firstAidQualificationLevel: string;
+  firstAidQualificationExpiryDate: string;
   dietaryRequirements: string;
   originatingStateIndia: string;
   country: string;
@@ -116,6 +118,8 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   medicalInfoDeclared: "No",
   medicalInfoDetails: "",
   isFirstAider: "Yes",
+  firstAidQualificationLevel: "1-day First Aid qualification",
+  firstAidQualificationExpiryDate: "2026-09-15",
   dietaryRequirements: "Vegan",
   originatingStateIndia: "Gujarat",
   country: "HSS UK",
@@ -174,6 +178,8 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
       medicalInfoDeclared: "No",
       medicalInfoDetails: "",
       isFirstAider: "No",
+      firstAidQualificationLevel: "",
+      firstAidQualificationExpiryDate: "",
       dietaryRequirements: "",
       originatingStateIndia: "Gujarat",
       country: "HSS UK",
@@ -224,10 +230,13 @@ function valueOrDash(value?: string) {
 
 function InfoSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-        {title}
-      </h4>
+    <div
+      className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden"
+      style={{ borderTop: '3px solid #172E4D' }}
+    >
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
+      </div>
       <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
         {children}
       </div>
@@ -339,7 +348,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 // ── Member profile view ───────────────────────────────────────
 
-type ProfileTab = 'personal' | 'contact' | 'emergency' | 'organisation' | 'compliance' | 'sangh';
+type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh';
 
 function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const loadProfile = () => {
@@ -413,6 +422,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
       if (field === "firstName" || field === "middleName" || field === "surname") {
         next.fullName = [next.firstName, next.middleName, next.surname]
           .map(p => p.trim()).filter(Boolean).join(" ");
+      }
+      if (field === "isFirstAider" && value === "No") {
+        next.firstAidQualificationLevel = "";
+        next.firstAidQualificationExpiryDate = "";
       }
       return next;
     });
@@ -499,8 +512,6 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
   const TABS: { id: ProfileTab; label: string }[] = [
     { id: 'personal',     label: 'Personal Info'                                              },
-    { id: 'contact',      label: 'Contact'                                                    },
-    { id: 'emergency',    label: showGuardian ? 'Emergency & Guardian' : 'Emergency Contact'  },
     { id: 'organisation', label: 'Organisation'                                               },
     { id: 'compliance',   label: 'Compliance Details'                                         },
     { id: 'sangh',        label: 'Sangh Responsibility'                                       },
@@ -584,7 +595,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
           {/* ── Personal Info ── */}
           {activeTab === 'personal' && (
-            <>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <InfoSection title="Personal Information">
                 <EditableInfoItem label="First Name"    value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
@@ -606,15 +617,61 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               <InfoSection title="Other Information">
                 <EditableInfoItem label="Medical Information Declared"     value={profile.medicalInfoDeclared}   isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}   options={["No", "Yes"]} />
                 <EditableInfoItem label="Medical Details"                  value={profile.medicalInfoDetails}    isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}    textarea />
-                <EditableInfoItem label="First Aider for Shakha / HSS UK" value={profile.isFirstAider}          isEditing={isEditing} onChange={v => setField("isFirstAider", v)}          options={["No", "Yes"]} />
+                <EditableInfoItem label="Are you a qualified First Aider" value={profile.isFirstAider}          isEditing={isEditing} onChange={v => setField("isFirstAider", v)}          options={["No", "Yes"]} />
+                {profile.isFirstAider === "Yes" && (
+                  <>
+                    <EditableInfoItem
+                      label="Level of qualification"
+                      value={profile.firstAidQualificationLevel}
+                      isEditing={isEditing}
+                      onChange={v => setField("firstAidQualificationLevel", v)}
+                      options={[...FIRST_AID_QUALIFICATION_OPTIONS]}
+                    />
+                    <EditableInfoItem
+                      label="Qualification expiry date"
+                      value={profile.firstAidQualificationExpiryDate}
+                      isEditing={isEditing}
+                      onChange={v => setField("firstAidQualificationExpiryDate", v)}
+                      type="date"
+                    />
+                  </>
+                )}
                 <EditableInfoItem label="Dietary Requirements"             value={profile.dietaryRequirements}   isEditing={isEditing} onChange={v => setField("dietaryRequirements", v)} />
                 <EditableInfoItem label="Originating State in India"       value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
               </InfoSection>
-            </>
+
+              <InfoSection title="Contact Information">
+                <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}           type="email" />
+                <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
+                <EditableInfoItem label="Primary Contact Number"   value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}           type="tel" />
+                <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
+                <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
+                <EditableInfoItem label="Address Line 1"           value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
+                <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
+                <EditableInfoItem label="Town / City"              value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
+                <EditableInfoItem label="Post Code"                value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
+              </InfoSection>
+
+              <InfoSection title="Emergency Contact">
+                <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+              </InfoSection>
+
+              {showGuardian && (
+                <InfoSection title="Parent / Guardian Approval Information">
+                  <EditableInfoItem label="Parent / Guardian Name" value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
+                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                  <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+                  <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+                </InfoSection>
+              )}
+            </div>
           )}
 
           {/* ── Contact ── */}
-          {activeTab === 'contact' && (
+          {false && activeTab === 'contact' && (
             <InfoSection title="Contact Information">
               <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}           type="email" />
               <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
@@ -629,7 +686,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           )}
 
           {/* ── Emergency & Guardian ── */}
-          {activeTab === 'emergency' && (
+          {false && activeTab === 'emergency' && (
             <>
               <InfoSection title="Emergency Contact">
                 <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
@@ -699,9 +756,25 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </InfoSection>
 
               <InfoSection title="First Aid">
-                <EditableInfoItem label="Status"           value={profile.firstAidStatus} isEditing={isEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
-                <EditableInfoItem label="Reference Number" value={profile.firstAidRef}    isEditing={isEditing} onChange={v => setField("firstAidRef", v)} />
-                <EditableInfoItem label="Expiry Date"      value={profile.firstAidExpiry} isEditing={isEditing} onChange={v => setField("firstAidExpiry", v)} type="date" />
+                <EditableInfoItem label="Are you a qualified First Aider" value={profile.isFirstAider} isEditing={isEditing} onChange={v => setField("isFirstAider", v)} options={["No", "Yes"]} />
+                {profile.isFirstAider === "Yes" && (
+                  <>
+                    <EditableInfoItem
+                      label="Level of qualification"
+                      value={profile.firstAidQualificationLevel}
+                      isEditing={isEditing}
+                      onChange={v => setField("firstAidQualificationLevel", v)}
+                      options={[...FIRST_AID_QUALIFICATION_OPTIONS]}
+                    />
+                    <EditableInfoItem
+                      label="Qualification expiry date"
+                      value={profile.firstAidQualificationExpiryDate}
+                      isEditing={isEditing}
+                      onChange={v => setField("firstAidQualificationExpiryDate", v)}
+                      type="date"
+                    />
+                  </>
+                )}
               </InfoSection>
 
               <InfoSection title="Safeguarding">

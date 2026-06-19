@@ -26,11 +26,14 @@ import {
   Award,
   PoundSterling,
   ShieldCheck,
+  X,
+  Check,
+  ListChecks,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
-import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup } from '../../mockAPI/membersData';
-import { mockEvents } from '../../mockAPI/eventsData';
+import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS } from '../../mockAPI/membersData';
+import { mockEvents, type Event as HSSSEvent } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -194,18 +197,32 @@ const mockCurrentMember = {
   sanghResponsibility2:'Shakha Mukhya Shikshak',
   joinDate:            '2019-06-15',
   ageGroup:            'Tarun',
+  status:              'Active',
 };
 
 // ── Member / Teen Dashboard ────────────────────────────────────
 
-function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page: string) => void; onNavigateToEvent?: (eventId: string) => void }) {
+function MemberDashboard({
+  onNavigate,
+  onNavigateToEvent,
+  onNavigateToAnnouncement,
+}: {
+  onNavigate?: (page: string) => void;
+  onNavigateToEvent?: (eventId: string) => void;
+  onNavigateToAnnouncement?: (announcementId: string) => void;
+}) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const [animated, setAnimated] = useState(false);
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 80); return () => clearTimeout(t); }, []);
 
+  const [registerEvent, setRegisterEvent] = useState<HSSSEvent | null>(null);
+  const [registerAnswers, setRegisterAnswers] = useState<Record<string, string | boolean>>({});
+  const [registered, setRegistered] = useState<Set<string>>(new Set());
+
   const upcomingEvents = useMemo(
     () => mockEvents
+      .filter(e => e.status === 'published' || e.status === 'active')
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
       .slice(0, 10),
     [],
@@ -220,37 +237,17 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
   const highPriority  = mockAnnouncements.filter(a => a.priority === 'high').length;
 
   return (
+    <>
     <div className="px-6 py-6">
 
       {/* Member Identity Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white leading-tight">
+            <h1 className="text-[32px] font-bold text-neutral-900 dark:text-white leading-tight">
               {mockCurrentMember.firstName} {mockCurrentMember.lastName}{' '}
-              <span className="text-base font-medium text-neutral-400 dark:text-neutral-500">[{mockCurrentMember.memberId}]</span>
+              <span className="text-xl font-medium text-neutral-400 dark:text-neutral-500">[{mockCurrentMember.memberId}]</span>
             </h1>
-            <span className="text-neutral-300 dark:text-neutral-600 font-light text-xl leading-tight">|</span>
-            <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-              <Award className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.sanghResponsibility}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-            <span className="flex items-center gap-1">
-              <Building2 className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.shakha}
-            </span>
-            <span className="text-neutral-300 dark:text-neutral-600">|</span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.town}
-            </span>
-            <span className="text-neutral-300 dark:text-neutral-600">|</span>
-            <span className="flex items-center gap-1">
-              <Globe2 className="w-3 h-3 flex-shrink-0" />
-              {mockCurrentMember.vibhaag}
-            </span>
           </div>
         </div>
       </div>
@@ -260,12 +257,22 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
         const totalDakshina = mockMyDonations.reduce((s, d) => s + d.amount, 0);
+        const registeredEvents = 2;
+        const onlineDakshina = 150;
+        const recurringDakshina = 60;
         const donutCards = [
           {
             label:    'My Sankhya',
             arc:      (attendancePct / 100) * C,
             color:    '#172E4D',
             center:   `${attendancePct}%`,
+            centerSub: 'YTD',
+            segments: [
+              { label: 'Present', value: presentCount, color: '#4EAE33' },
+              { label: 'Absent', value: absentCount, color: '#F9B03D' },
+            ],
+            detail:   `${presentAnotherShakha} present in other shakha`,
+            detailRows: [],
             sub:      `${presentCount} present · ${absentCount} absent`,
             bg:       'bg-slate-50 dark:bg-slate-900/40',
             track:    'text-slate-200 dark:text-slate-700',
@@ -275,7 +282,14 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
             label:    'Suchana',
             arc:      (Math.min(mockAnnouncements.length, 10) / 10) * C,
             color:    '#E24B4A',
+            display:  'stat',
             center:   `${mockAnnouncements.length}`,
+            segments: [
+              { label: 'High priority', value: highPriority, color: '#E24B4A' },
+              { label: 'Other Suchana', value: Math.max(mockAnnouncements.length - highPriority, 0), color: '#F9B03D' },
+            ],
+            detail:   '',
+            detailRows: [],
             sub:      `${highPriority} high priority`,
             bg:       'bg-red-50 dark:bg-red-950/30',
             track:    'text-red-100 dark:text-red-900/60',
@@ -286,6 +300,12 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
             arc:      (Math.min(upcomingEvents.length, 10) / 10) * C,
             color:    '#378ADD',
             center:   `${upcomingEvents.length}`,
+            segments: [
+              { label: 'Registered', value: registeredEvents, color: '#4EAE33' },
+              { label: 'Remaining upcoming', value: Math.max(upcomingEvents.length - registeredEvents, 0), color: '#378ADD' },
+            ],
+            detail:   '2 registered',
+            detailRows: [],
             sub:      `${upcomingEvents.length} upcoming`,
             bg:       'bg-sky-50 dark:bg-sky-950/30',
             track:    'text-sky-100 dark:text-sky-900/60',
@@ -293,10 +313,17 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
           },
           {
             label:    'My Dakshina',
+            display:  'split',
             arc:      Math.min(totalDakshina / 500, 1) * C,
             color:    '#1D9E75',
             center:   `£${totalDakshina.toFixed(0)}`,
+            segments: [
+              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: '£' },
+              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: '£' },
+            ],
             sub:      'YTD total',
+            detail:   '',
+            detailRows: ['150 online', '60 Recurring'],
             bg:       'bg-emerald-50 dark:bg-emerald-950/30',
             track:    'text-emerald-100 dark:text-emerald-900/60',
             onClick:  () => onNavigate?.('my-donations'),
@@ -304,46 +331,115 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
         ];
         return (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {donutCards.map(card => (
+            {donutCards.map(card => {
+              const segmentTotal = card.segments.reduce((sum, segment) => sum + segment.value, 0);
+              let segmentCursor = offset;
+
+              return (
               <div
                 key={card.label}
                 role={card.onClick ? 'button' : undefined}
                 tabIndex={card.onClick ? 0 : undefined}
-                className={`flex flex-col items-center py-5 px-4 rounded-lg border border-neutral-200 dark:border-neutral-800 transition-all duration-200 ${card.bg}${card.onClick ? ' cursor-pointer hover:scale-[1.03] hover:shadow-md hover:border-transparent' : ''}`}
+                className={`flex flex-col items-center py-5 px-4 rounded-lg border border-neutral-200 dark:border-neutral-800 transition-all duration-200 hover:scale-[1.03] hover:shadow-md hover:border-transparent ${card.bg}${card.onClick ? ' cursor-pointer' : ''}`}
                 onClick={card.onClick}
                 onKeyDown={card.onClick ? e => e.key === 'Enter' && card.onClick?.() : undefined}
               >
-                <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-400 mb-3 text-center">{card.label}</p>
-                <svg width="84" height="84" viewBox="0 0 60 60" aria-hidden="true">
-                  <circle
-                    cx="30" cy="30" r="24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="7"
-                    className={card.track}
-                  />
-                  <circle
-                    cx="30" cy="30" r="24"
-                    fill="none"
-                    stroke={card.color}
-                    strokeWidth="7"
-                    strokeDasharray={animated ? `${card.arc} ${C - card.arc}` : `0 ${C}`}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    style={{ transition: 'stroke-dasharray 1.1s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                  />
-                  <text
-                    x="30" y="34"
-                    textAnchor="middle"
-                    fontSize="11"
-                    fontWeight="600"
-                    fill="currentColor"
-                    className="text-neutral-900 dark:text-white"
-                  >{card.center}</text>
-                </svg>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
+                <p className="text-[18px] font-bold text-neutral-600 dark:text-neutral-400 mb-3 text-center" style={{ fontFamily: "'Ramilias', serif" }}>{card.label}</p>
+                {(card as any).display === 'stat' ? (
+                  /* ── Big Stat: Suchana ── */
+                  <div className="flex-1 flex flex-col items-center justify-center py-2">
+                    <span className="text-6xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: card.color + '20', color: card.color }}>
+                      {card.sub}
+                    </span>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                      {card.segments[1].value} other
+                    </p>
+                  </div>
+                ) : (card as any).display === 'split' ? (
+                  /* ── Split Metric: My Dakshina ── */
+                  <div className="flex-1 flex flex-col items-center justify-center py-2">
+                    <span className="text-5xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 mb-4">{card.sub}</p>
+                    <div className="flex items-center gap-5">
+                      {card.segments.map((seg, i) => (
+                        <div key={seg.label} className="flex flex-col items-center">
+                          <span className="text-lg font-bold leading-none" style={{ color: seg.color }}>{seg.prefix ?? ''}{seg.value}</span>
+                          <span className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Donut chart (default) ── */
+                  <>
+                  <svg width="120" height="120" viewBox="0 0 60 60" aria-hidden="true">
+                    <circle
+                      cx="30" cy="30" r="24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="7"
+                      className={card.track}
+                    />
+                    {card.segments.map(segment => {
+                      const dash = segmentTotal > 0 ? (segment.value / segmentTotal) * C : 0;
+                      const dashOffset = segmentCursor;
+                      segmentCursor -= dash;
+                      return (
+                        <circle
+                          key={`${card.label}-${segment.color}`}
+                          cx="30" cy="30" r="24"
+                          fill="none"
+                          stroke={segment.color}
+                          strokeWidth="7"
+                          strokeDasharray={animated ? `${dash} ${C - dash}` : `0 ${C}`}
+                          strokeDashoffset={dashOffset}
+                          strokeLinecap="butt"
+                          className="cursor-help transition-opacity hover:opacity-80"
+                          style={{ transition: 'stroke-dasharray 1.1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                        >
+                          <title>{card.label} - {segment.label}: {segment.value}</title>
+                        </circle>
+                      );
+                    })}
+                    <text
+                      x="30" y={card.centerSub ? "29" : "34"}
+                      textAnchor="middle"
+                      fontSize="11"
+                      fontWeight="600"
+                      fill="currentColor"
+                      className="text-neutral-900 dark:text-white"
+                    >{card.center}</text>
+                    {card.centerSub && (
+                      <text
+                        x="30" y="41"
+                        textAnchor="middle"
+                        fontSize="8"
+                        fontWeight="500"
+                        fill="currentColor"
+                        className="text-neutral-500 dark:text-neutral-400"
+                      >{card.centerSub}</text>
+                    )}
+                  </svg>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
+                  {card.detail && (
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 text-center leading-relaxed">{card.detail}</p>
+                  )}
+                  {card.detailRows.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+                      {card.detailRows.map(row => (
+                        <span key={row} className="inline-flex items-center gap-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                          <PoundSterling className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          {row}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  </>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         );
       })()}
@@ -358,50 +454,56 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
               <UserCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
               <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Profile</h3>
             </div>
+            <button onClick={() => onNavigate?.('my-profile')} className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+              View all <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <div className="px-5 py-5 flex items-start gap-5 flex-1">
-            {/* Avatar */}
-            <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center border-2 border-primary-200 dark:border-primary-800">
-              <span className="text-xl font-bold text-primary-700 dark:text-primary-300">
-                {mockCurrentMember.firstName[0]}{mockCurrentMember.lastName[0]}
-              </span>
-            </div>
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-neutral-900 dark:text-white leading-tight">
-                {mockCurrentMember.firstName} {mockCurrentMember.lastName}
-              </p>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-3">{mockCurrentMember.memberId}</p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Shakha</span>
-                  <span className="text-xs font-medium text-neutral-900 dark:text-white truncate">{mockCurrentMember.shakha}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Nagar</span>
-                  <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.town}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Globe2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Vibhag</span>
-                  <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.vibhaag}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Zimmedari</span>
-                  <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
-                    {mockCurrentMember.sanghResponsibility}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 w-16 flex-shrink-0">Zimmedari 2</span>
-                  <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
-                    {mockCurrentMember.sanghResponsibility2}
-                  </span>
-                </div>
+          <div className="px-5 py-5 flex-1">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Shakha</span>
+                <span className="text-xs font-medium text-neutral-900 dark:text-white truncate">{mockCurrentMember.shakha}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Nagar</span>
+                <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.town}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Vibhag</span>
+                <span className="text-xs font-medium text-neutral-900 dark:text-white">{mockCurrentMember.vibhaag}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Age Category</span>
+                <span className="text-xs font-medium text-neutral-900 dark:text-white">
+                  {AGE_GROUP_LABELS[mockCurrentMember.ageGroup.toLowerCase() as keyof typeof AGE_GROUP_LABELS] ?? mockCurrentMember.ageGroup}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">
+                  <span className={`w-2 h-2 rounded-full ${mockCurrentMember.status === 'Active' ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Status</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${mockCurrentMember.status === 'Active' ? 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800' : 'text-neutral-600 bg-neutral-100 dark:text-neutral-300 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'}`}>
+                  {mockCurrentMember.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Responsibility</span>
+                <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
+                  {mockCurrentMember.sanghResponsibility}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 flex-shrink-0">Responsibility 2</span>
+                <span className="text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
+                  {mockCurrentMember.sanghResponsibility2}
+                </span>
               </div>
             </div>
           </div>
@@ -475,8 +577,8 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
                     key={ann.id}
                     role="button" tabIndex={0}
                     className="h-[92px] px-5 py-4 flex items-center overflow-hidden cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
-                    onClick={() => ann.eventId ? onNavigateToEvent?.(ann.eventId) : onNavigate?.('announcements')}
-                    onKeyDown={e => e.key === 'Enter' && (ann.eventId ? onNavigateToEvent?.(ann.eventId) : onNavigate?.('announcements'))}
+                    onClick={() => onNavigateToAnnouncement?.(ann.id)}
+                    onKeyDown={e => e.key === 'Enter' && onNavigateToAnnouncement?.(ann.id)}
                   >
                     <div className="flex items-start gap-3 w-full">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${pcfg.bg}`}>
@@ -484,7 +586,7 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug">{ann.title}</h4>
+                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug" style={{ fontFamily: "'Ramilias', serif" }}>{ann.title}</h4>
                           <span className="text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0 mt-0.5">{timeAgo(ann.postedAt)}</span>
                         </div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed line-clamp-2">{ann.body}</p>
@@ -535,7 +637,7 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
                       <div className="w-px self-stretch bg-neutral-100 dark:bg-neutral-800 my-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">{event.name}</span>
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>{event.name}</span>
                           <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />{cfg.label}
                           </span>
@@ -546,11 +648,23 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
                           <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" />{event.metrics.participantCount} registered</span>
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
                         {event.paymentType === 'paid'
                           ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">£{event.price}</span>
                           : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">Free</span>
                         }
+                        {registered.has(event.id) ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                            <Check className="w-3 h-3" /> Registered
+                          </span>
+                        ) : (
+                          <button
+                            onClick={e => { e.stopPropagation(); setRegisterAnswers({}); setRegisterEvent(event); }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#172E4D] text-white hover:bg-[#172E4D]/80 transition-colors"
+                          >
+                            Register
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -562,6 +676,99 @@ function MemberDashboard({ onNavigate, onNavigateToEvent }: { onNavigate?: (page
       </div>
 
     </div>
+
+      {/* ── Register Modal ── */}
+      {registerEvent && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setRegisterEvent(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200 dark:border-neutral-800" style={{ borderTop: '3px solid #172E4D' }}>
+              <h4 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                <ListChecks className="w-4 h-4 text-primary-600" />
+                Register — <span style={{ fontFamily: "'Ramilias', serif" }}>{registerEvent.name}</span>
+              </h4>
+              <button onClick={() => setRegisterEvent(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              {(!registerEvent.customQuestions || registerEvent.customQuestions.length === 0) ? (
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center py-4">
+                  No additional questions required. Click <strong>Submit</strong> to register.
+                </p>
+              ) : registerEvent.customQuestions.map(q => (
+                <div key={q.id}>
+                  {q.type !== 'checkbox' && (
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                      {q.label} {q.required && <span className="text-red-500">*</span>}
+                    </label>
+                  )}
+                  {q.type === 'text' && (
+                    <input
+                      type="text"
+                      value={(registerAnswers[q.id] as string) ?? ''}
+                      onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  )}
+                  {q.type === 'dropdown' && (
+                    <select
+                      value={(registerAnswers[q.id] as string) ?? ''}
+                      onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">Select…</option>
+                      {(q.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  )}
+                  {q.type === 'checkbox' && (
+                    <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(registerAnswers[q.id] as boolean) ?? false}
+                        onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
+                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span>{q.label} {q.required && <span className="text-red-500">*</span>}</span>
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-200 dark:border-neutral-800">
+              <button
+                onClick={() => setRegisterEvent(null)}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const missing = (registerEvent.customQuestions ?? []).find(q => {
+                    if (!q.required) return false;
+                    const ans = registerAnswers[q.id];
+                    return q.type === 'checkbox' ? ans !== true : !ans || !(ans as string).trim();
+                  });
+                  if (missing) { alert(`Please answer: "${missing.label}"`); return; }
+                  setRegistered(prev => new Set([...prev, registerEvent.id]));
+                  setRegisterEvent(null);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[#172E4D] text-white hover:bg-[#172E4D]/80 transition-colors"
+              >
+                <Check className="w-3.5 h-3.5" /> Submit Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -814,16 +1021,23 @@ function HierarchyKpiSection({
 interface DashboardProps {
   onNavigate?: (page: string) => void;
   onNavigateToEvent?: (eventId: string) => void;
+  onNavigateToAnnouncement?: (announcementId: string) => void;
 }
 
-export default function Dashboard({ onNavigate, onNavigateToEvent }: DashboardProps) {
+export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToAnnouncement }: DashboardProps) {
 
   const { selectedRole, scope } = useRoleScope();
 
   // Member (18+) and Teen get a simplified personal dashboard
   const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
   if (isMemberRole) {
-    return <MemberDashboard onNavigate={onNavigate} onNavigateToEvent={onNavigateToEvent} />;
+    return (
+      <MemberDashboard
+        onNavigate={onNavigate}
+        onNavigateToEvent={onNavigateToEvent}
+        onNavigateToAnnouncement={onNavigateToAnnouncement}
+      />
+    );
   }
 
   // Hierarchy-scoped KPI section shown for these mid-tier admin roles

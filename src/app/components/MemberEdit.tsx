@@ -21,6 +21,8 @@ import {
   ComplianceStatus,
   DIETARY_REQUIREMENTS,
   DietaryRequirement,
+  FIRST_AID_QUALIFICATION_OPTIONS,
+  FirstAidQualification,
   MASTERS_CASCADE,
   Member,
   MemberStatus,
@@ -120,7 +122,7 @@ type MemberForm = {
   medicalInfoDeclared: boolean;
   medicalInfoDetails: string;
   isFirstAider: boolean;
-  firstAidQualificationLevel: '' | 'Level 1' | 'Level 2' | 'Level 3';
+  firstAidQualificationLevel: '' | FirstAidQualification;
   firstAidQualificationExpiryDate: string;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
@@ -524,17 +526,17 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <>
                     <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                       <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                      Is Qualified First Aider
+                      Are you a qualified First Aider
                     </label>
                     {formData.isFirstAider && (
                       <>
                         <FormField>
                           <FormLabel>Level of qualification</FormLabel>
                           <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
-                            <option value="">Select level</option>
-                            <option value="Level 1">Level 1</option>
-                            <option value="Level 2">Level 2</option>
-                            <option value="Level 3">Level 3</option>
+                            <option value="">Select qualification</option>
+                            {FIRST_AID_QUALIFICATION_OPTIONS.map(option => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
                           </FormSelect>
                         </FormField>
                         <FormField>
