@@ -123,9 +123,9 @@ const MASTER_TABS: { id: MasterType; label: string }[] = [
 
 // Tabs hidden per role (role cannot manage higher-level geography than their scope)
 const HIDDEN_TABS_BY_ROLE: Partial<Record<string, MasterType[]>> = {
-  'Regional Head':         ['country', 'region'],
-  'Town Head':             ['country', 'region', 'town'],
-  'Activity Centre Admin': ['country', 'region', 'town', 'centre'],
+  'Vibhaag Admin':  ['country', 'region'],
+  'Nagar Admin':    ['country', 'region', 'town'],
+  'Shakha Admin':   ['country', 'region', 'town', 'centre'],
 };
 
 // ─── Component Props ──────────────────────────────────────────────────────────

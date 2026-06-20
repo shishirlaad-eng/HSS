@@ -43,28 +43,28 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
   },
 
   // Sees all HSS UK data (all regions, towns, centres under UK)
-  'National Head': {
+  'Kendriya Admin': {
     level: 'national', country: 'HSS UK',
     showCountryFilter: false, showRegionFilter: true,
     showTownFilter: true,     showCentreFilter: true,
   },
 
   // Scoped to London & South East region (largest mock data set)
-  'Regional Head': {
+  'Vibhaag Admin': {
     level: 'regional', country: 'HSS UK', region: 'London & South East',
     showCountryFilter: false, showRegionFilter: false,
     showTownFilter: true,     showCentreFilter: true,
   },
 
   // Scoped to Wembley town (within London & South East)
-  'Town Head': {
+  'Nagar Admin': {
     level: 'town', country: 'HSS UK', region: 'London & South East', town: 'Wembley',
     showCountryFilter: false, showRegionFilter: false,
     showTownFilter: false,    showCentreFilter: true,
   },
 
   // Scoped to Wembley Activity Centre
-  'Activity Centre Admin': {
+  'Shakha Admin': {
     level: 'centre', country: 'HSS UK', region: 'London & South East',
     town: 'Wembley', centre: 'Wembley Activity Centre',
     showCountryFilter: false, showRegionFilter: false,
@@ -87,7 +87,7 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
   },
 
   // Ops User — scoped to Wembley Activity Centre
-  'Ops User': {
+  'Shakha Operations': {
     level: 'centre', country: 'HSS UK', region: 'London & South East',
     town: 'Wembley', centre: 'Wembley Activity Centre',
     showCountryFilter: false, showRegionFilter: false,
@@ -95,7 +95,7 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
   },
 
   // Members see only their own attendance log (selfOnly = true)
-  'Member (18+)': {
+  'Adult Member': {
     level: 'centre', country: 'HSS UK', region: 'London & South East',
     town: 'Wembley', centre: 'Wembley Activity Centre',
     showCountryFilter: false, showRegionFilter: false,
@@ -103,7 +103,7 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
     selfOnly: true,  selfMemberId: 'WBL-001',  // mock: Vikram Singh
   },
 
-  'Teen (13–17)': {
+  'Teen Member': {
     level: 'centre', country: 'HSS UK', region: 'London & South East',
     town: 'Wembley', centre: 'Wembley Activity Centre',
     showCountryFilter: false, showRegionFilter: false,

@@ -70,10 +70,10 @@ export const availableModules: ModulePermission[] = [
     name: "Karyakrams",
     actions: [
       { id: "view",    name: "View / List",            code: "events_view" },
-      { id: "add",     name: "Create Event",           code: "events_add" },
-      { id: "edit",    name: "Edit Event",             code: "events_edit" },
-      { id: "delete",  name: "Delete Event",           code: "events_delete" },
-      { id: "cancel",  name: "Cancel Event",           code: "events_cancel" },
+      { id: "add",     name: "Create Karyakram",           code: "events_add" },
+      { id: "edit",    name: "Edit Karyakram",             code: "events_edit" },
+      { id: "delete",  name: "Delete Karyakram",           code: "events_delete" },
+      { id: "cancel",  name: "Cancel Karyakram",           code: "events_cancel" },
       { id: "export",  name: "Export CSV",             code: "events_export" },
     ],
   },
@@ -190,7 +190,7 @@ export const mockRoles: Role[] = [
   //    Attendance: log view only (not session setup or mark/unmark)
   {
     id: "2",
-    name: "National Head",
+    name: "Kendriya Admin",
     code: "national_head",
     description: "National-level admin. Views all regions, towns and centres data. No CRUD on members.",
     status: "active",
@@ -212,7 +212,7 @@ export const mockRoles: Role[] = [
   //    Attendance: full (session setup + mark/unmark + log)
   {
     id: "3",
-    name: "Regional Head",
+    name: "Vibhaag Admin",
     code: "regional_head",
     description: "Regional-level admin. Views own region data and all towns/centres within it. No CRUD on members.",
     status: "active",
@@ -234,7 +234,7 @@ export const mockRoles: Role[] = [
   //    Attendance: full
   {
     id: "4",
-    name: "Town Head",
+    name: "Nagar Admin",
     code: "town_head",
     description: "Town-level admin. Views own town data and all activity centres within it. No CRUD on members.",
     status: "active",
@@ -256,7 +256,7 @@ export const mockRoles: Role[] = [
   //    Attendance: full
   {
     id: "5",
-    name: "Activity Centre Admin",
+    name: "Shakha Admin",
     code: "activity_centre_admin",
     description: "Manages their own activity centre. Views Role Types only in Masters. No CRUD on members.",
     status: "active",
@@ -313,7 +313,7 @@ export const mockRoles: Role[] = [
   //    No Members Management, No Masters, No Reports, No Settings, No RBAC
   {
     id: "8",
-    name: "Ops User",
+    name: "Shakha Operations",
     code: "ops_user",
     description: "Operational staff. Full attendance management (Shakha + mark/unmark + log). View-only events.",
     status: "active",
@@ -331,7 +331,7 @@ export const mockRoles: Role[] = [
   //    No Members Management, No Masters, No Reports, No Settings, No RBAC
   {
     id: "9",
-    name: "Member (18+)",
+    name: "Adult Member",
     code: "member_adult",
     description: "Adult member portal. Can view events and announcements, and mark/unmark own attendance.",
     status: "active",
@@ -349,7 +349,7 @@ export const mockRoles: Role[] = [
   // 10. Teen (13–17) ─ same as Member (18+) but guardian consent required
   {
     id: "10",
-    name: "Teen (13–17)",
+    name: "Teen Member",
     code: "member_teen",
     description: "Teen member portal (13–17). Same access as adult member. Guardian consent required for attendance.",
     status: "active",

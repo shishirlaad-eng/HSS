@@ -52,6 +52,16 @@ import {
   FormSection,
 } from "./hb/common/Form";
 
+const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  'Kendriya Admin':   'Kendriya Admin (National Head)',
+  'Vibhaag Admin':    'Vibhaag Admin (Regional Head)',
+  'Nagar Admin':      'Nagar Admin (Town Head)',
+  'Shakha Admin':     'Shakha Admin (Activity Centre Admin)',
+  'Shakha Operations':'Shakha Operations (Ops User)',
+  'Adult Member':     'Adult Member (18+)',
+  'Teen Member':      'Teen Member (13–17)',
+};
+
 // ── Mock "My Shakha" details (shown via My Profile dropdown) ──
 const MY_SHAKHA_DETAILS = {
   name:          "Wembley Activity Centre",
@@ -244,18 +254,18 @@ export function GlobalHeader({
     events: [
       {
         id: "e1",
-        q: "How do I create an event?",
-        a: "Click 'New Event', provide a title, dates, location, and capacity, then publish. Attendee registration opens immediately after publishing.",
+        q: "How do I create a Karyakram?",
+        a: "Click 'New Karyakram', provide a title, dates, location, and capacity, then publish. Attendee registration opens immediately after publishing.",
       },
       {
         id: "e2",
-        q: "What does 'event expiry' mean?",
-        a: "An expired event has passed its end date. Expired events are read-only; you can duplicate them to reuse the setup for a future date.",
+        q: "What does 'Karyakram expiry' mean?",
+        a: "An expired Karyakram has passed its end date. Expired Karyakrams are read-only; you can duplicate them to reuse the setup for a future date.",
       },
       {
         id: "e3",
         q: "How does attendee tracking work?",
-        a: "Attendees check in via QR code or manual entry. The Attendees tab on each event shows real-time check-in status, timestamps, and attendance rate.",
+        a: "Attendees check in via QR code or manual entry. The Attendees tab on each Karyakram shows real-time check-in status, timestamps, and attendance rate.",
       },
     ],
     attendance: [
@@ -507,11 +517,11 @@ export function GlobalHeader({
     },
     {
       id: "m2",
-      title: "Event Management",
+      title: "Karyakram Management",
       type: "Module",
       category: "System Modules",
       icon: Calendar,
-      description: "Organize and track events",
+      description: "Organize and track Karyakrams",
       status: "Active",
     },
     {
@@ -803,7 +813,7 @@ export function GlobalHeader({
     itemWidthsRef.current = [];
   }, [navItems.length]);
 
-  const isMemberRole = ["Member (18+)", "Teen (13–17)"].includes(selectedRole);
+  const isMemberRole = ["Adult Member", "Teen Member"].includes(selectedRole);
 
   return (
     <header
@@ -814,9 +824,9 @@ export function GlobalHeader({
         {/* Left Side */}
         {menuOrientation === "horizontal" ? (
           /* HORIZONTAL: logos centered, nav items bottom-aligned inline */
-          <div className="flex items-end flex-1 min-w-0 gap-4">
+          <div className="flex items-center flex-1 min-w-0 gap-4">
             {/* Logos — vertically centered in full header height */}
-            <div className="self-center flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <img
                 src={logoUrl}
                 alt="HSS UK Logo"
@@ -832,7 +842,7 @@ export function GlobalHeader({
             {/* Nav items — pinned to bottom */}
             <div
               ref={horizNavRef}
-              className="flex items-center gap-0.5 min-w-0 flex-1 pb-1"
+              className="flex items-center gap-0.5 min-w-0 flex-1 ml-[5px]"
             >
               {navItems.map((item, index) => {
                 const isOverflow = index >= horizVisibleCount;
@@ -860,8 +870,8 @@ export function GlobalHeader({
                       }}
                       className={`flex items-center gap-[7px] px-[14px] h-[38px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap ${
                         isActive
-                          ? "bg-[#F9B03D] text-white font-semibold"
-                          : "text-white/90 hover:bg-[#F9B03D] hover:text-white"
+                          ? "bg-[#F9B03D] text-[#172E4D] font-semibold"
+                          : "text-white/90 hover:bg-[#F9B03D] hover:text-neutral-900"
                       }`}
                     >
                       {Icon && <Icon className="w-[18px] h-[18px] flex-shrink-0" />}
@@ -900,8 +910,8 @@ export function GlobalHeader({
                     onClick={() => setShowMoreMenu(v => !v)}
                     className={`flex items-center gap-[7px] px-[14px] h-[38px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap ${
                       navItems.slice(horizVisibleCount).some(i => i.active || i.subItems?.some(s => s.active))
-                        ? "bg-[#F9B03D] text-white font-semibold"
-                        : "text-white/90 hover:bg-[#F9B03D] hover:text-white"
+                        ? "bg-[#F9B03D] text-neutral-900 font-semibold"
+                        : "text-white/90 hover:bg-[#F9B03D] hover:text-neutral-900"
                     }`}
                   >
                     <span>More</span>
@@ -1174,7 +1184,7 @@ export function GlobalHeader({
                 title="Switch role view"
               >
                 {ADMIN_ROLE_OPTIONS.map(role => (
-                  <option key={role} value={role} className="text-neutral-900 bg-white">{role}</option>
+                  <option key={role} value={role} className="text-neutral-900 bg-white">{ROLE_DISPLAY_LABELS[role] ?? role}</option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/70" />

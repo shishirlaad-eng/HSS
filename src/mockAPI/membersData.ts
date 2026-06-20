@@ -483,7 +483,7 @@ const rawMockMembers: Member[] = [
     dateOfBirth: '1978-09-30',
     gender: 'male',
     jobTitle: 'Karyawaha',
-    orgRole: 'Activity Centre Admin',
+    orgRole: 'Shakha Admin',
     country: 'HSS UK',
     region: 'North West',
     town: 'Manchester',

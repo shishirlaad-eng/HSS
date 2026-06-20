@@ -24,7 +24,6 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
       <PageHeader
         title="My Dakshina"
         subtitle="Your Dakshina history with HSS UK"
-        breadcrumbs={[{ label: "Home", href: "#" }, { label: "My Dakshina", current: true }]}
       >
         <button
           onClick={() => onNavigate?.("donate")}

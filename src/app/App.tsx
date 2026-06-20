@@ -172,7 +172,7 @@ export default function App() {
     setCurrentPage(pageId);
   };
 
-  const MEMBER_ROLES = ["Member (18+)", "Teen (13–17)"];
+  const MEMBER_ROLES = ["Adult Member", "Teen Member"];
 
   const handleRoleChange = (role: string) => {
     setSelectedRole(role);

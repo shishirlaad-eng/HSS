@@ -315,7 +315,7 @@ export default function PendingApprovals() {
     [transferRequests, scope],
   );
 
-  const canReviewTransfers = mp.canApprove || selectedRole === 'Ops User' || selectedRole === 'Activity Centre Admin' || selectedRole === 'Super Admin';
+  const canReviewTransfers = mp.canApprove || selectedRole === 'Shakha Operations' || selectedRole === 'Shakha Admin' || selectedRole === 'Super Admin';
 
   const handleTransferReview = (request: ShakhaTransferRequest, action: 'approved' | 'rejected') => {
     const reason = action === 'rejected' ? 'Transfer request rejected by receiving Shakha.' : '';

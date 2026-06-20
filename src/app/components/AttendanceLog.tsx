@@ -19,7 +19,6 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  ClipboardCheck,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -245,10 +244,6 @@ export default function AttendanceLog() {
   const [pageSize,           setPageSize]           = useState(15);
   const [collapsedYears,     setCollapsedYears]     = useState<Set<string>>(new Set());
   const [collapsedMonths,    setCollapsedMonths]    = useState<Set<string>>(new Set());
-  const [showMarkModal,      setShowMarkModal]      = useState(false);
-  const [markRegion,         setMarkRegion]         = useState(scope.region ?? '');
-  const [markTown,           setMarkTown]           = useState(scope.town   ?? '');
-  const [markCentre,         setMarkCentre]         = useState(scope.centre ?? '');
 
   const activeFilterCount = filters.filter(f => f.values.length > 0).length;
 
@@ -403,21 +398,18 @@ export default function AttendanceLog() {
 
         {/* ── PAGE HEADER ── */}
         <PageHeader
-          title="Sankhya Log"
+          title={scope.selfOnly ? "My Sankhya" : "Sankhya Log"}
           subtitle={scope.selfOnly ? "Your personal Sankhya record." : "Complete record of member Sankhya across all Shakha gatherings."}
-          breadcrumbs={[
-            { label: 'Sankhya' },
-            { label: 'Sankhya Log', current: true },
-          ]}
-        >
-          {/* Search + Advanced Filter panel */}
+          >
+          {/* Search + Advanced Filter panel — admin only */}
+          {!scope.selfOnly && (
           <div className="relative">
             <SearchBar
               value={searchQuery}
               onChange={v => { setSearchQuery(v); setPage(1); }}
-              onAdvancedSearch={scope.selfOnly ? undefined : () => setShowAdvancedSearch(true)}
+              onAdvancedSearch={() => setShowAdvancedSearch(true)}
               activeFilterCount={activeFilterCount}
-              placeholder={scope.selfOnly ? "Search Shakhas…" : "Search member, role, centre, Shakha…"}
+              placeholder="Search member, role, centre, Shakha…"
             />
             <AdvancedSearchPanel
               isOpen={showAdvancedSearch}
@@ -437,6 +429,7 @@ export default function AttendanceLog() {
               title="Filter Attendance Log"
             />
           </div>
+          )}
 
           <div className="relative" ref={dateFilterRef}>
             <button
@@ -492,31 +485,18 @@ export default function AttendanceLog() {
               ]}
             />
           )}
-          {scope.selfOnly && (
-            <button
-              onClick={() => {
-                setMarkRegion(scope.region ?? '');
-                setMarkTown(scope.town   ?? '');
-                setMarkCentre(scope.centre ?? '');
-                setShowMarkModal(true);
-              }}
-              className="h-10 px-4 flex items-center gap-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex-shrink-0"
-            >
-              <ClipboardCheck className="w-4 h-4" />
-              Attendance
-            </button>
-          )}
         </PageHeader>
 
         {/* ── SUMMARY WIDGETS ── */}
         {showSummary && (
           <SummaryWidgets
-            title="Attendance Summary"
+            title={scope.selfOnly ? "My Sankhya Summary" : "Attendance Summary"}
+            colorCards={scope.selfOnly}
             widgets={[
-              { label: 'Total Records',     value: filtered.length,  icon: 'Users'         },
-              { label: 'Present',           value: presentCount,     icon: 'CheckCircle'   },
-              { label: 'Absent',            value: absentCount,      icon: 'XCircle'       },
-              { label: 'Attendance Rate',   value: `${rate}%`,       icon: 'BarChart3'     },
+              { label: 'Total Records',   value: filtered.length,  icon: 'Users',       color: 'slate'   },
+              { label: 'Present',         value: presentCount,     icon: 'CheckCircle', color: 'emerald' },
+              { label: 'Absent',          value: absentCount,      icon: 'XCircle',     color: 'amber'   },
+              { label: 'Attendance Rate', value: `${rate}%`,       icon: 'BarChart3',   color: 'sky'     },
             ]}
           />
         )}
@@ -733,86 +713,6 @@ export default function AttendanceLog() {
 
       </div>
 
-      {/* ── Mark Attendance Modal ── */}
-      {showMarkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-neutral-950 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
-              <div>
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">Mark Attendance</h2>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Select your Shakha and mark today's attendance</p>
-              </div>
-              <button
-                onClick={() => setShowMarkModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {/* Body */}
-            <div className="px-6 py-5 space-y-4">
-              {/* Region */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Vibhaag (Region)</label>
-                <select
-                  value={markRegion}
-                  onChange={e => { setMarkRegion(e.target.value); setMarkTown(''); setMarkCentre(''); }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Select Vibhaag…</option>
-                  {ALL_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              {/* Town */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Nagar (Town)</label>
-                <select
-                  value={markTown}
-                  onChange={e => { setMarkTown(e.target.value); setMarkCentre(''); }}
-                  disabled={!markRegion}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Nagar…</option>
-                  {(MASTERS_CASCADE.towns[markRegion] ?? []).map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              {/* Activity Centre */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Shakha (Activity Centre)</label>
-                <select
-                  value={markCentre}
-                  onChange={e => setMarkCentre(e.target.value)}
-                  disabled={!markTown}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Shakha…</option>
-                  {(MASTERS_CASCADE.centres[markTown] ?? []).map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowMarkModal(false)}
-                className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={!markCentre}
-                onClick={() => {
-                  setShowMarkModal(false);
-                  toast.success(`Attendance marked at ${markCentre}`);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                Mark Attendance
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

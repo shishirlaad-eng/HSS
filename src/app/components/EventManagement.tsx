@@ -281,14 +281,14 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
     if (!f.region)              errs.region        = 'This field is required.';
     if (!f.town)                errs.town          = 'This field is required.';
     if (!f.activityCentre)      errs.activityCentre = 'This field is required.';
-    if (f.locationType === 'physical' && !f.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical events.';
-    if (f.locationType === 'online' && !f.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online events.';
+    if (f.locationType === 'physical' && !f.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical Karyakrams.';
+    if (f.locationType === 'online' && !f.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online Karyakrams.';
     if (!f.startDate)           errs.startDate     = 'This field is required.';
     if (!f.startTime)           errs.startTime     = 'This field is required.';
     if (!f.endDate)             errs.endDate       = 'This field is required.';
     if (!f.endTime)             errs.endTime       = 'This field is required.';
     if (!f.paymentType)         errs.paymentType   = 'This field is required.';
-    if (f.paymentType === 'paid' && f.priceCategories.length === 0) errs.priceCategories = 'Add at least one price category for paid events.';
+    if (f.paymentType === 'paid' && f.priceCategories.length === 0) errs.priceCategories = 'Add at least one price category for paid Karyakrams.';
     if (f.startDate && f.startTime && f.endDate && f.endTime) {
       const start = new Date(`${f.startDate}T${f.startTime}`);
       const end   = new Date(`${f.endDate}T${f.endTime}`);
@@ -343,29 +343,29 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
   };
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} title="Create Event" maxWidth="max-w-3xl">
+    <FormModal isOpen={isOpen} onClose={onClose} title="Create Karyakram" maxWidth="max-w-3xl">
       <div className="overflow-y-auto slim-scroll space-y-6 max-h-[62vh]">
-        {/* Event Basics */}
+        {/* Karyakram Basics */}
         <div>
           <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5" /> Event Basics
+            <Calendar className="w-3.5 h-3.5" /> Karyakram Basics
           </p>
           <FormGrid cols={2}>
             <FormField className="md:col-span-2">
-              <FormLabel required>Event Title</FormLabel>
+              <FormLabel required>Karyakram Title</FormLabel>
               <FormInput
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
-                placeholder="Enter event title"
+                placeholder="Enter Karyakram title"
               />
               {errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
             </FormField>
             <FormField className="md:col-span-2">
-              <FormLabel>Event Description</FormLabel>
+              <FormLabel>Karyakram Description</FormLabel>
               <textarea
                 value={form.description}
                 onChange={e => set('description', e.target.value)}
-                placeholder="Describe the event — purpose, agenda, what to expect…"
+                placeholder="Describe the Karyakram — purpose, agenda, what to expect…"
                 rows={3}
                 className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
@@ -430,7 +430,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
                 <FormInput
                   value={form.onlineUrl}
                   onChange={e => set('onlineUrl', e.target.value)}
-                  placeholder="e.g. https://meet.hssuk.org/your-event"
+                  placeholder="e.g. https://meet.hssuk.org/your-karyakram"
                 />
                 {errors.onlineUrl && <p className="text-xs text-error-600 mt-1">{errors.onlineUrl}</p>}
               </FormField>
@@ -710,7 +710,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const { scope, selectedRole } = useRoleScope();
   const ep = useModulePermissions('events');
   const scopedFilterOptions = getScopedFilterOptions(scope);
-  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const scopedEvents = useMemo(
     () => isMemberRole
       ? mockEvents.filter(e => e.status === 'published' || e.status === 'active')
@@ -768,8 +768,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
   const eventColumns: ColumnConfig[] = [
-    { key: 'id',           label: 'Event ID'           },
-    { key: 'name',         label: 'Event Title'        },
+    { key: 'id',           label: 'Karyakram ID'           },
+    { key: 'name',         label: 'Karyakram Title'        },
     { key: 'location',     label: 'Location'           },
     { key: 'startDate',    label: 'Start Date/Time'    },
     { key: 'endDate',      label: 'End Date/Time'      },
@@ -907,7 +907,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           setSelectedEvent(e => e ? { ...e, status: newStatus } : e);
         }
         toast.success(
-          newStatus === 'active' ? 'Event activated successfully.' : 'Event deactivated successfully.'
+          newStatus === 'active' ? 'Karyakram activated successfully.' : 'Karyakram deactivated successfully.'
         );
         break;
       }
@@ -921,7 +921,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         if (selectedEvent?.id === ev.id) {
           setSelectedEvent(e => e ? { ...e, status: 'cancelled' } : e);
         }
-        toast.success('Event cancelled successfully.');
+        toast.success('Karyakram cancelled successfully.');
         break;
       }
       case 'override': {
@@ -932,14 +932,14 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         if (!canDelete(ev)) {
           toast.error(
             ev.status === 'completed'
-              ? 'Completed events cannot be deleted.'
-              : 'This event can no longer be deleted after it starts.'
+              ? 'Completed Karyakrams cannot be deleted.'
+              : 'This Karyakram can no longer be deleted after it starts.'
           );
           break;
         }
         setEvents(prev => prev.filter(e => e.id !== ev.id));
         if (pageState === 'detail') backToList();
-        toast.success('Event deleted successfully.');
+        toast.success('Karyakram deleted successfully.');
         break;
       }
     }
@@ -950,7 +950,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     const newId = `EVT-${Date.now().toString().slice(-6)}`;
     const newEvent: Event = {
       id: newId,
-      name: data.name ?? 'New Event',
+      name: data.name ?? 'New Karyakram',
       host: 'Sarah Johnson',
       status: 'draft',
       country: data.country ?? '',
@@ -981,7 +981,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     };
     setEvents(prev => [newEvent, ...prev]);
     setShowCreateModal(false);
-    toast.success('Event created successfully.');
+    toast.success('Karyakram created successfully.');
   };
 
   const handleExport = (format: 'excel' | 'pdf') => {
@@ -998,13 +998,13 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     const isCancelledOrCompleted = event.status === 'cancelled' || event.status === 'completed';
     return {
       canModify:   ep.canEdit && !past,
-      modifyTip:   past ? 'Event cannot be edited after it starts.' : 'Modify Event',
+      modifyTip:   past ? 'Karyakram cannot be edited after it starts.' : 'Modify Karyakram',
       canActivate: ep.canEdit && !isCancelledOrCompleted,
       canCancel:   ep.canCancel && !isCancelledOrCompleted,
       canDelete:   ep.canDelete && canDelete(event),
       deleteTip:   !canDelete(event)
-        ? (event.status === 'completed' ? 'Completed events cannot be deleted.' : 'Event cannot be deleted after it starts.')
-        : 'Delete Event',
+        ? (event.status === 'completed' ? 'Completed Karyakrams cannot be deleted.' : 'Karyakram cannot be deleted after it starts.')
+        : 'Delete Karyakram',
     };
   };
 
@@ -1036,7 +1036,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         <ConfirmModal
           isOpen={modal.type === 'cancel' && !!modal.event}
           title="Confirm Cancellation"
-          message="Are you sure you want to cancel this event? This action cannot be undone."
+          message="Are you sure you want to cancel this Karyakram? This action cannot be undone."
           confirmLabel="Confirm Cancellation"
           confirmVariant="warning"
           isLoading={modal.isLoading}
@@ -1056,7 +1056,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         <ConfirmModal
           isOpen={modal.type === 'delete' && !!modal.event}
           title="Confirm Deletion"
-          message="Are you sure you want to delete this event? This action is permanent and cannot be undone."
+          message="Are you sure you want to delete this Karyakram? This action is permanent and cannot be undone."
           confirmLabel="Confirm Deletion"
           confirmVariant="danger"
           isLoading={modal.isLoading}
@@ -1077,7 +1077,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
           setSelectedEvent(updated);
           setPageState('detail');
-          toast.success('Event updated successfully.');
+          toast.success('Karyakram updated successfully.');
         }}
       />
     );
@@ -1091,17 +1091,13 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         {/* PAGE HEADER */}
         <PageHeader
           title="Karyakrams"
-          subtitle="View and govern events across all Masters scopes."
-          breadcrumbs={[
-            { label: 'Karyakrams', href: '#' },
-            { label: 'Karyakrams', current: true },
-          ]}
+          subtitle="View and govern Karyakrams across all Masters scopes."
         >
           {isMemberRole ? (
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search events..."
+              placeholder="Search Karyakrams..."
             />
           ) : (
             <div className="relative" ref={columnAnchorRef}>
@@ -1111,7 +1107,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 onAdvancedSearch={() => setShowAdvancedSearch(true)}
                 onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
                 activeFilterCount={filters.filter(f => f.values.length > 0).length}
-                placeholder="Search events..."
+                placeholder="Search Karyakrams..."
               />
               <AdvancedSearchPanel
                 isOpen={showAdvancedSearch}
@@ -1140,7 +1136,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           <div className="relative" ref={dateFilterRef}>
             <button
               onClick={() => setShowEventDateFilter(p => !p)}
-              title="Filter by Event Dates"
+              title="Filter by Karyakram Dates"
               className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
                 eventDateStart
                   ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
@@ -1148,7 +1144,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {eventDateStart ? (eventDateLabel || `${eventDateStart} - ${eventDateEnd}`) : 'Event dates'}
+              {eventDateStart ? (eventDateLabel || `${eventDateStart} - ${eventDateEnd}`) : 'Karyakram dates'}
               {eventDateStart && (
                 <span
                   role="button"
@@ -1175,13 +1171,13 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 setEventDateLabel(label || '');
                 setCurrentPage(1);
               }}
-              title="Event Date Range"
+              title="Karyakram Date Range"
             />
           </div>
 
           {ep.canAdd && (
             <PrimaryButton icon={Plus} onClick={() => setShowCreateModal(true)}>
-              Create Event
+              Create Karyakram
             </PrimaryButton>
           )}
           {!isMemberRole && (
@@ -1208,9 +1204,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         {/* SUMMARY WIDGETS */}
         {!isMemberRole && showSummary && (
           <SummaryWidgets
-            title="Event Summary"
+            title="Karyakram Summary"
             widgets={[
-              { label: 'Total Events',     value: events.length,                                       icon: 'Activity'   },
+              { label: 'Total Karyakrams',     value: events.length,                                       icon: 'Activity'   },
               { label: 'Active',           value: scopedEvents.filter(e => e.status === 'active').length,    icon: 'CheckCircle'},
               { label: 'Draft/Published',  value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock' },
               { label: 'Completed',        value: scopedEvents.filter(e => e.status === 'completed').length, icon: 'XCircle'   },
@@ -1226,23 +1222,36 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               return (
                 <div
                   key={event.id}
-                  className={`bg-white dark:bg-neutral-950 border rounded-lg p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer relative group shadow-sm ${
+                  className={`bg-white dark:bg-neutral-950 border rounded-lg overflow-hidden hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer relative group shadow-sm ${
                     selectedIds.has(event.id)
                       ? 'border-primary-300 dark:border-primary-600'
                       : 'border-neutral-200 dark:border-neutral-800'
                   }`}
                   onClick={() => openDetail(event)}
                 >
+                  <div className="flex">
+                  {isMemberRole && (
+                    <div className={`w-1 flex-shrink-0 ${{
+                      draft:     'bg-neutral-400',
+                      published: 'bg-blue-500',
+                      active:    'bg-[#4EAE33]',
+                      cancelled: 'bg-red-500',
+                      completed: 'bg-amber-500',
+                    }[event.status] ?? 'bg-neutral-400'}`} />
+                  )}
+                  <div className="flex-1 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(event.id)}
-                          onChange={() => toggleSelection(event.id)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
-                        />
-                      </div>
+                      {!isMemberRole && (
+                        <div onClick={e => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(event.id)}
+                            onChange={() => toggleSelection(event.id)}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
+                          />
+                        </div>
+                      )}
                       <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-950 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400">
                         <Calendar className="w-6 h-6" />
                       </div>
@@ -1274,21 +1283,25 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 ml-4" onClick={e => e.stopPropagation()}>
-                      <IconButton
-                        icon={MoreVertical}
-                        borderless={true}
-                        title="Actions"
-                        menuItems={[
-                          { icon: Eye,        label: 'View Details',                     onClick: () => openDetail(event)                                                   },
-                          { icon: Edit,       label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Event cannot be edited after it starts.') },
-                          { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
-                          { icon: XCircle,    label: 'Cancel Event',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Event is already cancelled or completed.')    },
-                          { icon: ShieldAlert,label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
-                          { icon: Trash2,     label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
-                        ]}
-                      />
-                    </div>
+                    {!isMemberRole && (
+                      <div className="flex items-center gap-1.5 ml-4" onClick={e => e.stopPropagation()}>
+                        <IconButton
+                          icon={MoreVertical}
+                          borderless={true}
+                          title="Actions"
+                          menuItems={[
+                            { icon: Eye,        label: 'View Details',                     onClick: () => openDetail(event)                                                   },
+                            { icon: Edit,       label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Karyakram cannot be edited after it starts.') },
+                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
+                            { icon: XCircle,    label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
+                            { icon: ShieldAlert,label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
+                            { icon: Trash2,     label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
+                          ]}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  </div>
                   </div>
                 </div>
               );
@@ -1319,27 +1332,29 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                     <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                       <Calendar className="w-6 h-6" />
                     </div>
-                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(event.id)}
-                        onChange={() => toggleSelection(event.id)}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
-                      />
-                      <IconButton
-                        icon={MoreVertical}
-                        borderless={true}
-                        title="Actions"
-                        menuItems={[
-                          { icon: Eye,         label: 'View Details',                     onClick: () => openDetail(event)                                                   },
-                          { icon: Edit,        label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Event cannot be edited after it starts.') },
-                          { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
-                          { icon: XCircle,     label: 'Cancel Event',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Event is already cancelled or completed.')    },
-                          { icon: ShieldAlert, label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
-                          { icon: Trash2,      label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
-                        ]}
-                      />
-                    </div>
+                    {!isMemberRole && (
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(event.id)}
+                          onChange={() => toggleSelection(event.id)}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
+                        />
+                        <IconButton
+                          icon={MoreVertical}
+                          borderless={true}
+                          title="Actions"
+                          menuItems={[
+                            { icon: Eye,         label: 'View Details',                     onClick: () => openDetail(event)                                                   },
+                            { icon: Edit,        label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Karyakram cannot be edited after it starts.') },
+                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
+                            { icon: XCircle,     label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
+                            { icon: ShieldAlert, label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
+                            { icon: Trash2,      label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
+                          ]}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1">
@@ -1395,25 +1410,27 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === paginatedEvents.length && paginatedEvents.length > 0}
-                        onChange={e => e.target.checked
-                          ? setSelectedIds(new Set(paginatedEvents.map(ev => ev.id)))
-                          : setSelectedIds(new Set())
-                        }
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                      />
-                    </th>
+                    {!isMemberRole && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.size === paginatedEvents.length && paginatedEvents.length > 0}
+                          onChange={e => e.target.checked
+                            ? setSelectedIds(new Set(paginatedEvents.map(ev => ev.id)))
+                            : setSelectedIds(new Set())
+                          }
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                        />
+                      </th>
+                    )}
                     {visibleColumns.id && (
                       <th onClick={() => handleSort('id')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
-                        Event ID {renderSortArrow('id')}
+                        Karyakram ID {renderSortArrow('id')}
                       </th>
                     )}
                     {visibleColumns.name && (
                       <th onClick={() => handleSort('name')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
-                        Event Title {renderSortArrow('name')}
+                        Karyakram Title {renderSortArrow('name')}
                       </th>
                     )}
                     {visibleColumns.location && (
@@ -1451,9 +1468,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         Last Updated {renderSortArrow('lastUpdated')}
                       </th>
                     )}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
-                      Actions
-                    </th>
+                    {!isMemberRole && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1465,14 +1484,16 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors group cursor-pointer"
                         onClick={() => openDetail(event)}
                       >
-                        <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(event.id)}
-                            onChange={() => toggleSelection(event.id)}
-                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                          />
-                        </td>
+                        {!isMemberRole && (
+                          <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(event.id)}
+                              onChange={() => toggleSelection(event.id)}
+                              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                            />
+                          </td>
+                        )}
                         {visibleColumns.id && (
                           <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
                             {event.id}
@@ -1523,23 +1544,25 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                             {formatDate(event.lastUpdated)}
                           </td>
                         )}
-                        <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
-                            <IconButton icon={Eye}   borderless onClick={() => openDetail(event)} title="View Details" />
-                            <IconButton
-                              icon={Edit}
-                              borderless
-                              onClick={() => actions.canModify ? openEdit(event) : toast.warning('Event cannot be edited after it starts.')}
-                              title={actions.modifyTip}
-                            />
-                            <IconButton
-                              icon={Trash2}
-                              borderless
-                              onClick={() => actions.canDelete ? openModal('delete', event) : toast.error(actions.deleteTip)}
-                              title={actions.deleteTip}
-                            />
-                          </div>
-                        </td>
+                        {!isMemberRole && (
+                          <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              <IconButton icon={Eye}   borderless onClick={() => openDetail(event)} title="View Details" />
+                              <IconButton
+                                icon={Edit}
+                                borderless
+                                onClick={() => actions.canModify ? openEdit(event) : toast.warning('Karyakram cannot be edited after it starts.')}
+                                title={actions.modifyTip}
+                              />
+                              <IconButton
+                                icon={Trash2}
+                                borderless
+                                onClick={() => actions.canDelete ? openModal('delete', event) : toast.error(actions.deleteTip)}
+                                title={actions.deleteTip}
+                              />
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   }) : (
@@ -1611,7 +1634,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       <ConfirmModal
         isOpen={modal.type === 'delete' && pageState === 'list' && !!modal.event}
         title="Confirm Deletion"
-        message="Are you sure you want to delete this event? This action is permanent and cannot be undone."
+        message="Are you sure you want to delete this Karyakram? This action is permanent and cannot be undone."
         confirmLabel="Confirm Deletion"
         confirmVariant="danger"
         isLoading={modal.isLoading}

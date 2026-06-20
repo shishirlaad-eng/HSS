@@ -167,7 +167,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
       <div className="max-w-[100%] mx-auto">
         {/* PAGE HEADER */}
         <PageHeader
-          title="Modify Event"
+          title="Modify Karyakram"
           breadcrumbs={[
             { label: 'Karyakrams', onClick: () => { onBack(); onBack(); } },
             { label: event.name, onClick: onBack },
@@ -201,14 +201,14 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
           {/* MAIN FORM AREA */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Event Basics */}
+            {/* Karyakram Basics */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Calendar className="w-4 h-4 text-primary-600" /> Event Basics
+                <Calendar className="w-4 h-4 text-primary-600" /> Karyakram Basics
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField span={2 as any}>
-                  <FormLabel required>Event Title</FormLabel>
+                  <FormLabel required>Karyakram Title</FormLabel>
                   <FormInput
                     value={formData.name}
                     onChange={e => set('name', e.target.value)}
@@ -218,7 +218,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   {touched && errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
                 </FormField>
                 <FormField span={2 as any}>
-                  <FormLabel>Event Description</FormLabel>
+                  <FormLabel>Karyakram Description</FormLabel>
                   <textarea
                     value={formData.description}
                     onChange={e => set('description', e.target.value)}
@@ -584,7 +584,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Event Reference</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Event ID</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Karyakram ID</label>
                   <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">{event.id}</code>
                 </div>
                 <div>

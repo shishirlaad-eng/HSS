@@ -51,7 +51,7 @@ const LEVEL_OPTIONS = [
   { value: 'Shakha / Activity center', label: 'Shakha' },
 ] as const;
 
-const REQUIRED_MEMBER_ROLE = 'Member (18+)';
+const REQUIRED_MEMBER_ROLE = 'Adult Member';
 
 const STATUS_OPTIONS: MemberStatus[] = ['active', 'pending', 'pending-parental-consent', 'inactive', 'rejected'];
 
@@ -74,15 +74,13 @@ const STATUS_COLOURS: Record<MemberStatus, string> = {
 const QUALIFIED_FIRST_AIDER_ROLES = new Set([
   'Super Admin',
   'Member',
-  'Member (18+)',
+  'Adult Member',
   'Teen',
-  'Teen (13–17)',
+  'Teen Member',
   'Shakha Admin',
-  'Activity Centre Admin',
   'Nagar Admin',
-  'Town Head',
   'Vibhaag Admin',
-  'Regional Head',
+  'Kendriya Admin',
 ]);
 
 function canAccessQualifiedFirstAider(selectedRole: string) {

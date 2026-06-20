@@ -29,9 +29,9 @@ export interface MenuItem {
 
 // Masters sub-items hidden per role (mirrors SuperAdminMasters tab logic)
 const HIDDEN_MASTERS_BY_ROLE: Partial<Record<string, string[]>> = {
-  'Regional Head':         ['country', 'region'],
-  'Town Head':             ['country', 'region', 'town'],
-  'Activity Centre Admin': ['country', 'region', 'town', 'centre'],
+  'Vibhaag Admin':  ['country', 'region'],
+  'Nagar Admin':    ['country', 'region', 'town'],
+  'Shakha Admin':   ['country', 'region', 'town', 'centre'],
 };
 
 export const getNavigationData = (
@@ -40,7 +40,7 @@ export const getNavigationData = (
   selectedRole: string = "Super Admin",
 ): MenuItem[] => {
   const hiddenMasters = new Set<string>(HIDDEN_MASTERS_BY_ROLE[selectedRole] ?? []);
-  const isMemberRole = ['Member (18+)', 'Teen (13–17)', 'Teen (13â€“17)'].includes(selectedRole);
+  const isMemberRole = ['Adult Member', 'Teen Member'].includes(selectedRole);
 
   if (isMemberRole) {
     return [
@@ -178,7 +178,7 @@ export const getNavigationData = (
     },
 
     // ── 6. Sankhya (Attendance) ──────────────────────────────────
-    ...(['Member (18+)', 'Teen (13–17)'].includes(selectedRole) ? [{
+    ...(['Adult Member', 'Teen Member'].includes(selectedRole) ? [{
       id: "attendance-group",
       label: "My Sankhya",
       icon: ClipboardCheck,
@@ -197,7 +197,7 @@ export const getNavigationData = (
         },
         {
           id: "attendance-log",
-          label: "Sankhya Log",
+          label: "My Sankhya",
           onClick: () => onNavigate("attendance-log"),
           active: currentPage === "attendance-log",
         },

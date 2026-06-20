@@ -83,7 +83,7 @@ type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
 
 // Shakha Admin (Activity Centre Admin), Nagar Admin (Town Head), Vibhaag Admin (Regional Head), Shakha Ops (Ops User)
-const TABLE_VIEW_DEFAULT_ROLES = ['Activity Centre Admin', 'Town Head', 'Regional Head', 'Ops User'];
+const TABLE_VIEW_DEFAULT_ROLES = ['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Shakha Operations'];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -113,15 +113,13 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
 const QUALIFIED_FIRST_AIDER_ROLES = new Set([
   'Super Admin',
   'Member',
-  'Member (18+)',
+  'Adult Member',
   'Teen',
-  'Teen (13–17)',
+  'Teen Member',
   'Shakha Admin',
-  'Activity Centre Admin',
   'Nagar Admin',
-  'Town Head',
   'Vibhaag Admin',
-  'Regional Head',
+  'Kendriya Admin',
 ]);
 
 function canAccessQualifiedFirstAider(selectedRole: string) {

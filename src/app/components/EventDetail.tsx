@@ -168,7 +168,7 @@ export default function EventDetail({
 
   // ── Role / current member ───────────────────────────────────────────────────
   const { selectedRole, scope } = useRoleScope();
-  const isMember = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
+  const isMember = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
 
   // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
@@ -429,7 +429,7 @@ export default function EventDetail({
   const btnDisabled = `${btnBase} border border-neutral-200 dark:border-neutral-800 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`;
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview',     label: 'Event Overview'                           },
+    { id: 'overview',     label: 'Karyakram Overview'                       },
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     { id: 'media',        label: `Media (${mediaPosts.length})`             },
   ];
@@ -468,10 +468,10 @@ export default function EventDetail({
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>
+                {!isMember && <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>}
                 <div className="flex items-center gap-1">
                   {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
-                  <span>{event.locationType === 'online' ? 'Online Event' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+                  <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
                 </div>
                 <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
               </div>
@@ -505,7 +505,7 @@ export default function EventDetail({
                     className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
                     onClick={handleRequestToAttendClick}
                   >
-                    <CalendarCheck className="w-3.5 h-3.5" /> Request to Attend
+                    <CalendarCheck className="w-3.5 h-3.5" /> Register for Karyakram
                   </button>
                 ) : myParticipation.rsvp === 'requested' ? (
                   <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
@@ -526,17 +526,17 @@ export default function EventDetail({
                 modifyOk ? (
                   <button className={btnGhost} onClick={onModify}><Edit className="w-3.5 h-3.5" /> Modify</button>
                 ) : (
-                  <button className={btnDisabled} title="This event can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
+                  <button className={btnDisabled} title="This Karyakram can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
                 )
               )}
               {!isMember && !isCancelledOrCompleted && (
-                <button className={btnWarn} onClick={onCancel}><XCircle className="w-3.5 h-3.5" /> Cancel Event</button>
+                <button className={btnWarn} onClick={onCancel}><XCircle className="w-3.5 h-3.5" /> Cancel Karyakram</button>
               )}
               {!isMember && (
                 deleteOk ? (
                   <button className={btnDanger} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Delete</button>
                 ) : (
-                  <button className={btnDisabled} title={event.status === 'completed' ? 'Completed events cannot be deleted.' : 'This event can no longer be deleted after it starts.'} disabled>
+                  <button className={btnDisabled} title={event.status === 'completed' ? 'Completed Karyakrams cannot be deleted.' : 'This Karyakram can no longer be deleted after it starts.'} disabled>
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
                 )
@@ -593,162 +593,221 @@ export default function EventDetail({
 
                   {/* Description */}
                   {event.description && (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                        Event Description
-                      </h4>
-                      <p className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                      {isMember ? (
+                        <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#172E4D' }}>
+                          <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Event Description</h4>
+                        </div>
+                      ) : (
+                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Description</h4>
+                      )}
+                      <p className="px-5 py-4 text-[14px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
                         {event.description}
                       </p>
                     </div>
                   )}
 
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Summary</h4>
-                    <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      {[
-                        { label: 'Event ID',        value: event.id,           mono: true  },
-                        { label: 'Event Title',     value: event.name                      },
-                        { label: 'Country',         value: event.country                   },
-                        { label: 'Vibhaag',         value: event.region                    },
-                        { label: 'Nagar',           value: event.town                      },
-                        { label: 'Shakha',          value: event.activityCentre            },
-                        { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
-                        { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
-                        { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
-                        { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free' },
-                        ...(event.capacity ? [{ label: 'Capacity', value: String(event.capacity) }] : []),
-                      ].map(({ label, value, mono }) => (
-                        <div key={label}>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">{label}</label>
-                          {label === 'Location' && event.locationType === 'online' && value ? (
-                            <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all">
-                              <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
-                            </a>
-                          ) : (
-                            <p className={`text-sm text-neutral-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</p>
-                          )}
+                  {/* Karyakram Details + Additional Questions: 2-col for member, stacked for admin */}
+                  {isMember ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Karyakram Details — member: 4 fields only, dashboard style */}
+                      <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                        <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#009FE3' }}>
+                          <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Karyakram Details</h4>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Target Audience */}
-                  {!isMember && ((event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                        Target Audience
-                      </h4>
-                      <div className="px-6 py-4 space-y-4">
-                        {event.filterAgeCategories && event.filterAgeCategories.length > 0 && (
-                          <div>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Age Category</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {event.filterAgeCategories.map(c => (
-                                <span key={c} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">
-                                  {AUDIENCE_AGE_LABELS[c] ?? c}
-                                </span>
-                              ))}
+                        <div className="px-5 py-4 space-y-4">
+                          {[
+                            { label: 'Karyakram Title', value: event.name },
+                            { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
+                            { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
+                            { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
+                          ].map(({ label, value }) => (
+                            <div key={label}>
+                              <label className="text-[12px] text-neutral-500 dark:text-neutral-400 block mb-0.5">{label}</label>
+                              {label === 'Location' && event.locationType === 'online' && value ? (
+                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-[15px] text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all font-semibold">
+                                  <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
+                                </a>
+                              ) : (
+                                <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">{value}</p>
+                              )}
                             </div>
-                          </div>
-                        )}
-                        {event.filterGenders && event.filterGenders.length > 0 && (
-                          <div>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Gender</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {event.filterGenders.map(g => (
-                                <span key={g} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium capitalize">
-                                  {g}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {event.filterJobTitles && event.filterJobTitles.length > 0 && (
-                          <div>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Role Type / Job Title</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {event.filterJobTitles.map(r => (
-                                <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
-                                  {r}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Additional Registration Questions — member, dashboard style */}
+                      {event.customQuestions && event.customQuestions.length > 0 && (
+                        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                          <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#4EAE33' }}>
+                            <ListChecks className="w-4 h-4 text-white/80" />
+                            <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Registration Questions</h4>
+                          </div>
+                          <div className="px-5 py-4 space-y-3">
+                            {event.customQuestions.map(q => {
+                              const answer = myParticipation?.customAnswers?.[q.id];
+                              return (
+                                <div key={q.id} className="flex items-start justify-between gap-3">
+                                  <span className="text-[13px] text-neutral-600 dark:text-neutral-400">{q.label}</span>
+                                  <span className="text-[14px] font-semibold text-neutral-900 dark:text-white text-right">
+                                    {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : (answer ? String(answer) : '—')}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg px-6 py-4">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        <span className="font-medium text-neutral-700 dark:text-neutral-300">Target Audience:</span> All members (no filters applied)
-                      </p>
-                    </div>
-                  ))}
-
-                  {/* Guest Registration */}
-                  {event.guestRegistrationEnabled && !isMember && (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
-                      </h4>
-                      <div className="px-6 py-4">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
-                            {`https://hssuk.org/events/${event.id}/register`}
-                          </code>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(`https://hssuk.org/events/${event.id}/register`);
-                              toast.success('Registration link copied to clipboard.');
-                            }}
-                            className="p-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
+                    <>
+                      {/* Karyakram Summary — admin: all fields */}
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Karyakram Summary</h4>
+                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                          {[
+                            { label: 'Karyakram ID',    value: event.id,           mono: true  },
+                            { label: 'Karyakram Title', value: event.name                      },
+                            { label: 'Country',         value: event.country                   },
+                            { label: 'Vibhaag',         value: event.region                    },
+                            { label: 'Nagar',           value: event.town                      },
+                            { label: 'Shakha',          value: event.activityCentre            },
+                            { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
+                            { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
+                            { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
+                            { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free' },
+                            ...(event.capacity ? [{ label: 'Capacity', value: String(event.capacity) }] : []),
+                          ].map(({ label, value, mono }) => (
+                            <div key={label}>
+                              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">{label}</label>
+                              {label === 'Location' && event.locationType === 'online' && value ? (
+                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all">
+                                  <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
+                                </a>
+                              ) : (
+                                <p className={`text-sm text-neutral-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</p>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Additional Questions */}
-                  {event.customQuestions && event.customQuestions.length > 0 && (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <ListChecks className="w-4 h-4 text-primary-600" /> Additional Registration Questions
-                      </h4>
-                      <div className="px-6 py-4 space-y-2">
-                        {event.customQuestions.map(q => {
-                          const answer = myParticipation?.customAnswers?.[q.id];
-                          return (
-                            <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
-                              <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
-                              {isMember ? (
-                                <span className="text-neutral-900 dark:text-white font-medium text-right">
-                                  {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : (answer ? String(answer) : '—')}
-                                </span>
-                              ) : (
+                      {/* Target Audience — admin only */}
+                      {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                            Target Audience
+                          </h4>
+                          <div className="px-6 py-4 space-y-4">
+                            {event.filterAgeCategories && event.filterAgeCategories.length > 0 && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Age Category</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.filterAgeCategories.map(c => (
+                                    <span key={c} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">
+                                      {AUDIENCE_AGE_LABELS[c] ?? c}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {event.filterGenders && event.filterGenders.length > 0 && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Gender</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.filterGenders.map(g => (
+                                    <span key={g} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium capitalize">
+                                      {g}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {event.filterJobTitles && event.filterJobTitles.length > 0 && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Role Type / Job Title</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.filterJobTitles.map(r => (
+                                    <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                      {r}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg px-6 py-4">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            <span className="font-medium text-neutral-700 dark:text-neutral-300">Target Audience:</span> All members (no filters applied)
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Guest Registration — admin only */}
+                      {event.guestRegistrationEnabled && (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                            <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+                          </h4>
+                          <div className="px-6 py-4">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
+                                {`https://hssuk.org/events/${event.id}/register`}
+                              </code>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`https://hssuk.org/events/${event.id}/register`);
+                                  toast.success('Registration link copied to clipboard.');
+                                }}
+                                className="p-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Additional Questions — admin */}
+                      {event.customQuestions && event.customQuestions.length > 0 && (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                            <ListChecks className="w-4 h-4 text-primary-600" /> Additional Registration Questions
+                          </h4>
+                          <div className="px-6 py-4 space-y-2">
+                            {event.customQuestions.map(q => (
+                              <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                                <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   <span className="text-xs text-neutral-400 capitalize">{q.type}</span>
                                   {q.required && (
                                     <span className="px-1.5 py-0.5 rounded bg-error-50 dark:bg-error-950/20 text-error-600 dark:text-error-400 text-[10px] font-medium">Required</span>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Terms & Conditions */}
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                      <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
-                    </h4>
-                    <p className="px-6 py-4 text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                    {isMember ? (
+                      <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#F9B03D' }}>
+                        <ScrollText className="w-4 h-4 text-white/80" />
+                        <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Terms &amp; Conditions</h4>
+                      </div>
+                    ) : (
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
+                      </h4>
+                    )}
+                    <p className="px-5 py-4 text-[13px] text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
                       {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
                     </p>
                   </div>
@@ -939,6 +998,7 @@ export default function EventDetail({
                             ))}
                           </div>
                         </div>
+                        {!isMember && (
                         <div>
                           <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Posted by</label>
                           <input
@@ -949,6 +1009,7 @@ export default function EventDetail({
                             className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                         </div>
+                        )}
                       </div>
 
                       {/* Caption */}

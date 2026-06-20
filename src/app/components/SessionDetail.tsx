@@ -212,7 +212,7 @@ export default function SessionDetail({
   const [joinRequested,     setJoinRequested]     = useState(false);
   const [expandedMemberId,  setExpandedMemberId]  = useState<string | null>(null);
   const { scope, selectedRole } = useRoleScope();
-  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
   // A member's "own" Shakha is the one at their home activity centre. Any other
   // Shakha is one they can request to join (via "Attend another Shakha").

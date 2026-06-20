@@ -24,6 +24,7 @@ interface SimpleWidget {
   trendDirection?: 'up' | 'down' | 'neutral';
   icon?: string;
   subtitle?: string;
+  color?: string;
 }
 
 interface SummaryWidgetsProps {
@@ -32,19 +33,28 @@ interface SummaryWidgetsProps {
   onManageWidgets?: () => void;
   title?: string;
   className?: string;
+  colorCards?: boolean;
 }
+
+const CARD_COLOR_MAP: Record<string, { cardBg: string; valueCls: string; iconBg: string; iconText: string }> = {
+  slate:   { cardBg: 'bg-slate-50 dark:bg-slate-900/40',     valueCls: 'text-slate-700 dark:text-slate-200',   iconBg: 'bg-slate-200 dark:bg-slate-700',    iconText: 'text-slate-600 dark:text-slate-300' },
+  emerald: { cardBg: 'bg-emerald-50 dark:bg-emerald-900/20', valueCls: 'text-emerald-700 dark:text-emerald-300', iconBg: 'bg-emerald-200 dark:bg-emerald-800', iconText: 'text-emerald-600 dark:text-emerald-400' },
+  amber:   { cardBg: 'bg-amber-50 dark:bg-amber-900/20',     valueCls: 'text-amber-700 dark:text-amber-300',   iconBg: 'bg-amber-200 dark:bg-amber-800',    iconText: 'text-amber-600 dark:text-amber-400' },
+  sky:     { cardBg: 'bg-sky-50 dark:bg-sky-950/30',         valueCls: 'text-sky-700 dark:text-sky-300',       iconBg: 'bg-sky-200 dark:bg-sky-800',        iconText: 'text-sky-600 dark:text-sky-400' },
+};
 
 // Type guard to check if widget is a WidgetConfig
 function isWidgetConfig(widget: WidgetConfig | SimpleWidget): widget is WidgetConfig {
   return 'id' in widget && 'enabled' in widget;
 }
 
-export function SummaryWidgets({ 
-  widgets, 
-  data = [], 
-  onManageWidgets, 
+export function SummaryWidgets({
+  widgets,
+  data = [],
+  onManageWidgets,
   title = "Summary",
-  className = ""
+  className = "",
+  colorCards = false,
 }: SummaryWidgetsProps) {
   // Filter enabled widgets (for WidgetConfig) or show all (for SimpleWidget)
   const enabledWidgets = widgets.filter(w => isWidgetConfig(w) ? w.enabled : true);
@@ -95,6 +105,35 @@ export function SummaryWidgets({
           // In a real app, we'd make calculateWidgetValue generic
           const value = isWidgetConfig(widget) ? calculateWidgetValue(widget, data) : widget.value;
           
+          const widgetColor = !isWidgetConfig(widget) ? (widget.color ?? 'slate') : (widget.color ?? 'indigo');
+          const cardColors = CARD_COLOR_MAP[widgetColor] ?? CARD_COLOR_MAP['slate'];
+
+          if (colorCards) {
+            return (
+              <div
+                key={isWidgetConfig(widget) ? widget.id : widget.label}
+                className={`${cardColors.cardBg} p-5 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col items-center gap-3 hover:scale-[1.03] hover:shadow-md transition-all duration-200`}
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${cardColors.iconBg}`}>
+                  <Icon className={`w-5 h-5 ${cardColors.iconText}`} />
+                </div>
+                <div className={`text-3xl font-bold ${cardColors.valueCls}`}>
+                  {value}
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
+                    {widget.label}
+                  </div>
+                  {(widget.subtitle || (isWidgetConfig(widget) ? widget.description : undefined)) && (
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {widget.subtitle || (isWidgetConfig(widget) ? widget.description : undefined)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div
               key={isWidgetConfig(widget) ? widget.id : widget.label}
@@ -115,12 +154,12 @@ export function SummaryWidgets({
                     </div>
                   )}
                 </div>
-                
+
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorConfig.bg}`}>
                   <Icon className={`w-5 h-5 ${colorConfig.text}`} />
                 </div>
               </div>
-              
+
               {/* Bottom: Label and subtitle */}
               <div>
                 <div className="text-sm font-medium text-neutral-900 dark:text-white">

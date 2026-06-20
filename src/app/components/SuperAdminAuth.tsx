@@ -185,21 +185,54 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
           </div>
         </div>
       ) : (
+      <>
+      <style>{`
+        @keyframes slideUpSettle {
+          0%   { opacity: 0; transform: translateY(60px); }
+          60%  { opacity: 1; transform: translateY(-5px); }
+          80%  { transform: translateY(2px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .sul-1 { animation: slideUpSettle 1.43s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both; }
+        .sul-2 { animation: slideUpSettle 1.43s cubic-bezier(0.22, 1, 0.36, 1) 0.75s both; }
+        .sul-3 { animation: slideUpSettle 1.43s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both; }
+        @keyframes logoEntrance {
+          0%   { opacity: 0; transform: scale(0.82); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes logoGlow {
+          0%, 100% { filter: drop-shadow(0 0 6px rgba(249,176,61,0.3)); }
+          50%       { filter: drop-shadow(0 0 22px rgba(249,176,61,0.72)); }
+        }
+        .logo-reveal {
+          will-change: transform, opacity, filter;
+          animation:
+            logoEntrance 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0s both,
+            logoGlow 3.2s ease-in-out 1.3s infinite;
+        }
+      `}</style>
       <div className="min-h-screen flex">
-        {/* Left panel — HSS blue with orange logo */}
+        {/* Left panel — 40% — HSS blue with orange logo + Sanskrit text */}
         <div
-          className="hidden lg:flex w-1/2 items-center justify-center"
+          className="hidden lg:flex lg:w-2/5 flex-col items-center justify-center gap-10 px-10 py-12"
           style={{ backgroundColor: "#172E4D" }}
         >
           <img
             src={hssLogoOrange}
             alt="HSS Logo"
-            className="w-4/5 max-w-sm object-contain"
+            className="logo-reveal w-3/5 max-w-xs object-contain"
           />
+          <div className="flex flex-col items-center gap-1 max-w-xs text-center italic">
+            <span className="sul-1 text-white text-sm font-medium">Vishwa Dharma Prakashena</span>
+            <span className="sul-2 text-white text-sm font-medium">Vishwa Shanti Pravartake</span>
+            <span className="sul-3 text-white/70 text-xs leading-relaxed mt-3 block">
+              With enlightenment from the Universal Dharma, in propagating peace through the world, in the task of achieving Hindu Unity worldwide, may our aim and deep faith remain resolute.
+            </span>
+          </div>
         </div>
 
-        {/* Right panel — form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-neutral-950">
+        {/* Right panel — 60% — form */}
+        <div className="w-full lg:w-3/5 flex items-center justify-center p-8 bg-white dark:bg-neutral-950">
           <div className="w-full max-w-md">
           <FormCard className="shadow-lg !p-8">
             {errorMsg && (
@@ -221,8 +254,8 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                       className="h-10 w-auto object-contain"
                     />
                   </div>
-                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Namaste</h1>
-                  <p className="text-neutral-500 dark:text-neutral-400 text-xs">Sign in with your administrator credentials.</p>
+                  <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Namaste</h1>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm">Welcome to the MyHSS member portal. Please sign in with your email and password below.</p>
                 </div>
 
                 <div className="space-y-5">
@@ -509,6 +542,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
           </div>
         </div>
       </div>
+      </>
       )}
         <Toaster
           position="top-right"

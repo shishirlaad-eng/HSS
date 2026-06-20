@@ -90,7 +90,7 @@ export default function Sessions() {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
   const atp = useModulePermissions('attendance');
-  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const canManageShakha = !isMemberRole && atp.canView && atp.canAdd;
 
   // Super Admin defaults to week view; all other roles default to month view

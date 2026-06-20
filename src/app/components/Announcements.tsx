@@ -12,7 +12,6 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Megaphone,
   Plus,
-  Search,
   Eye,
   Trash2,
   ArrowLeft,
@@ -41,7 +40,7 @@ import {
   Pencil,
   Upload,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination } from './hb/listing';
+import { PageHeader, PrimaryButton, Pagination, SearchBar, SecondaryButton } from './hb/listing';
 import {
   StatCard,
   FormModal,
@@ -232,7 +231,7 @@ const blankForm = (): CreateForm => ({
   contentType: 'text',
   mediaUrl: '',
   cooldownHours: 5 / 60,   // fixed at 5 minutes
-  priority: 'medium',
+  priority: 'high',
   scope: 'national',
   targetRegion: '',
   targetTown: '',
@@ -347,7 +346,7 @@ export default function Announcements({
 } = {}) {
   const ap = useModulePermissions('announcements');
   const { selectedRole } = useRoleScope();
-  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole.startsWith('Teen (13');
+  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const canViewAdminSuchanaValues = selectedRole === 'Super Admin' || selectedRole.includes('Admin');
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
@@ -484,7 +483,7 @@ export default function Announcements({
       setEditingId(null);
       setForm(createBlankForm());
       setFormErrors({});
-      toast.success(asDraft ? 'Draft updated.' : isScheduled ? 'Scheduled announcement updated.' : 'Announcement sent successfully.');
+      toast.success(asDraft ? 'Draft updated.' : isScheduled ? 'Scheduled Suchana updated.' : 'Suchana sent successfully.');
     } else {
       // ── Create mode: add new announcement ───────────────────
       const newAnn: Announcement = {
@@ -522,7 +521,7 @@ export default function Announcements({
       setShowCreate(false);
       setForm(createBlankForm());
       setFormErrors({});
-      toast.success(asDraft ? 'Announcement saved as draft.' : isScheduled ? 'Announcement scheduled.' : 'Announcement sent successfully.');
+      toast.success(asDraft ? 'Suchana saved as draft.' : isScheduled ? 'Suchana scheduled.' : 'Suchana sent successfully.');
     }
   };
 
@@ -536,7 +535,7 @@ export default function Announcements({
       setDeleteLoading(false);
       setShowDelete(false);
       setToDelete(null);
-      toast.success('Announcement deleted.');
+      toast.success('Suchana deleted.');
     }, 600);
   };
 
@@ -605,30 +604,36 @@ export default function Announcements({
       <div className="px-6 py-6">
         <PageHeader
           title={selected.title}
-          breadcrumbs={[
+          breadcrumbs={isMemberRole ? undefined : [
             { label: 'Home', href: '#' },
             { label: 'Suchana', onClick: goBack },
             { label: selected.title.length > 50 ? selected.title.slice(0, 50) + '…' : selected.title, current: true },
           ]}
         >
           <div className="flex items-center gap-2">
-            {ap.canEdit && canEditAnnouncement(selected) && (
-              <button className={btnGhost} onClick={() => openEdit(selected)}>
-                <Pencil className="w-4 h-4" /> Edit
-              </button>
-            )}
-            {ap.canDelete && (canDeleteAnnouncement(selected) ? (
-              <button className={btnDanger} onClick={() => { setToDelete(selected); setShowDelete(true); }}>
-                <Trash2 className="w-4 h-4" /> Delete
-              </button>
+            {isMemberRole ? (
+              <SecondaryButton icon={ArrowLeft} onClick={goBack}>Back to Suchanas</SecondaryButton>
             ) : (
-              <span
-                title="Cannot delete — the 5-minute cooldown window has passed"
-                className={`${btnBase} border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`}
-              >
-                <Trash2 className="w-4 h-4" /> Delete
-              </span>
-            ))}
+              <>
+                {ap.canEdit && canEditAnnouncement(selected) && (
+                  <button className={btnGhost} onClick={() => openEdit(selected)}>
+                    <Pencil className="w-4 h-4" /> Edit
+                  </button>
+                )}
+                {ap.canDelete && (canDeleteAnnouncement(selected) ? (
+                  <button className={btnDanger} onClick={() => { setToDelete(selected); setShowDelete(true); }}>
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                ) : (
+                  <span
+                    title="Cannot delete — the 5-minute cooldown window has passed"
+                    className={`${btnBase} border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`}
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </span>
+                ))}
+              </>
+            )}
           </div>
         </PageHeader>
 
@@ -638,12 +643,12 @@ export default function Announcements({
             {/* Media */}
             {selected.mediaUrl && selected.contentType === 'image' && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <img src={selected.mediaUrl} alt={selected.title} className="w-full max-h-72 object-cover" />
+                <img src={selected.mediaUrl} alt={selected.title} className={`w-full object-cover ${isMemberRole ? 'max-h-96' : 'max-h-72'}`} />
               </div>
             )}
             {selected.mediaUrl && selected.contentType === 'video' && (
-              <div className="bg-black rounded-lg overflow-hidden flex items-center justify-center h-48">
-                <video src={selected.mediaUrl} controls className="max-h-48 w-full" />
+              <div className={`bg-black rounded-lg overflow-hidden flex items-center justify-center ${isMemberRole ? 'h-72' : 'h-48'}`}>
+                <video src={selected.mediaUrl} controls className={`w-full ${isMemberRole ? 'max-h-72' : 'max-h-48'}`} />
               </div>
             )}
 
@@ -653,9 +658,9 @@ export default function Announcements({
                 <cc.icon className={`w-4 h-4 ${cc.color}`} />
                 <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">Message</h4>
               </div>
-              <div className="px-6 py-5">
+              <div className={isMemberRole ? 'px-6 py-6' : 'px-6 py-5'}>
                 <div
-                  className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed prose dark:prose-invert max-w-none"
+                  className={`text-neutral-700 dark:text-neutral-300 leading-relaxed prose dark:prose-invert max-w-none ${isMemberRole ? 'text-base' : 'text-sm'}`}
                   dangerouslySetInnerHTML={{ __html: selected.body }}
                 />
               </div>
@@ -710,8 +715,8 @@ export default function Announcements({
             )}
           </div>
 
-          {/* ── Right: metadata ────────────────────────────── */}
-          <div className="lg:w-80 space-y-4">
+          {/* ── Right: metadata — admin only ───────────────── */}
+          {!isMemberRole && <div className="lg:w-80 space-y-4">
             {/* Status & Priority */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -833,7 +838,7 @@ export default function Announcements({
                 <span className="text-neutral-400 dark:text-neutral-500 font-mono">{selected.id}</span>
               </div>
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Delete confirm */}
@@ -856,11 +861,20 @@ export default function Announcements({
       <PageHeader
         title="Suchana"
         subtitle="Create and manage suchanas for members across the network"
-        breadcrumbs={[
-          { label: 'Home', href: '#' },
-          { label: 'Suchana', current: true },
-        ]}
       >
+        {isMemberRole ? (
+          <SearchBar
+            value={searchQuery}
+            onChange={v => { setSearchQuery(v); setPage(1); }}
+            placeholder="Search Suchanas…"
+          />
+        ) : (
+          <SearchBar
+            value={searchQuery}
+            onChange={v => { setSearchQuery(v); setPage(1); }}
+            placeholder="Search Suchanas…"
+          />
+        )}
         {ap.canAdd && (
           <PrimaryButton icon={Plus} onClick={() => { setForm(createBlankForm()); setShowCreate(true); }}>
             New Suchana
@@ -871,82 +885,69 @@ export default function Announcements({
       {/* ── KPI Row ──────────────────────────────────────── */}
       {!isMemberRole && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total"     value={totalCount}     icon={Megaphone}      trend={{ value: 'All announcements',    positive: true }} />
+          <StatCard label="Total"     value={totalCount}     icon={Megaphone}      trend={{ value: 'All Suchanas',         positive: true }} />
           <StatCard label="Sent"      value={sentCount}      icon={Send}           trend={{ value: 'Delivered to members', positive: true }} />
           <StatCard label="Scheduled" value={scheduledCount} icon={CalendarClock}  trend={{ value: 'Awaiting delivery',    positive: true }} />
           <StatCard label="Drafts"    value={draftCount}     icon={BookmarkCheck}  trend={{ value: 'Not yet published',    positive: false }} />
         </div>
       )}
 
-      {/* ── Search + Filters ─────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search announcements…"
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
-            className="w-full h-10 pl-9 pr-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all"
-          />
+      {/* ── Admin Filters ────────────────────────────────── */}
+      {canViewAdminSuchanaValues && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {/* Status filter */}
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={e => { setFilterStatus(e.target.value as AnnouncementStatus | 'all'); setPage(1); }}
+              className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="all">All Status</option>
+              <option value="sent">Sent</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="draft">Draft</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+          </div>
+          {/* Scope filter */}
+          <div className="relative">
+            <select
+              value={filterScope}
+              onChange={e => { setFilterScope(e.target.value as AnnouncementScope | 'all'); setPage(1); }}
+              className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="all">All Scope</option>
+              <option value="national">National</option>
+              <option value="region">Region</option>
+              <option value="town">Town</option>
+              <option value="centre">Activity Centre</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+          </div>
+          {(filterStatus !== 'all' || filterScope !== 'all') && (
+            <button
+              className={btnGhost}
+              onClick={() => { setFilterStatus('all'); setFilterScope('all'); setPage(1); }}
+            >
+              <X className="w-4 h-4" /> Clear
+            </button>
+          )}
         </div>
-        {canViewAdminSuchanaValues && (
-          <>
-            {/* Status filter */}
-            <div className="relative">
-              <select
-                value={filterStatus}
-                onChange={e => { setFilterStatus(e.target.value as AnnouncementStatus | 'all'); setPage(1); }}
-                className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="all">All Status</option>
-                <option value="sent">Sent</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="draft">Draft</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-            </div>
-            {/* Scope filter */}
-            <div className="relative">
-              <select
-                value={filterScope}
-                onChange={e => { setFilterScope(e.target.value as AnnouncementScope | 'all'); setPage(1); }}
-                className="h-10 pl-3 pr-9 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="all">All Scope</option>
-                <option value="national">National</option>
-                <option value="region">Region</option>
-                <option value="town">Town</option>
-                <option value="centre">Activity Centre</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-            </div>
-          </>
-        )}
-        {(searchQuery || (canViewAdminSuchanaValues && (filterStatus !== 'all' || filterScope !== 'all'))) && (
-          <button
-            className={btnGhost}
-            onClick={() => { setSearchQuery(''); setFilterStatus('all'); setFilterScope('all'); setPage(1); }}
-          >
-            <X className="w-4 h-4" /> Clear
-          </button>
-        )}
-      </div>
+      )}
 
       {/* ── Results count ────────────────────────────────── */}
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
         {filtered.length === announcements.length
-          ? `${announcements.length} announcement${announcements.length !== 1 ? 's' : ''}`
-          : `${filtered.length} of ${announcements.length} announcements`}
+          ? `${announcements.length} Suchana${announcements.length !== 1 ? 's' : ''}`
+          : `${filtered.length} of ${announcements.length} Suchanas`}
       </p>
 
       {/* ── Announcement Cards ───────────────────────────── */}
       {paginated.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Megaphone className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mb-3" />
-          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No announcements found</p>
-          <p className="text-xs text-neutral-400 mt-1">Adjust your filters or create a new announcement.</p>
+          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No Suchanas found</p>
+          <p className="text-xs text-neutral-400 mt-1">Adjust your filters or create a new Suchana.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -959,7 +960,8 @@ export default function Announcements({
             return (
               <div
                 key={ann.id}
-                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors group"
+                onClick={isMemberRole ? () => openDetail(ann) : undefined}
+                className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors group${isMemberRole ? ' cursor-pointer' : ''}`}
               >
                 <div className="flex">
                   {/* Priority bar */}
@@ -1034,21 +1036,23 @@ export default function Announcements({
                       <div className="flex-shrink-0 flex flex-col items-end gap-2 ml-2">
                         <div className="text-right">
                           <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatDate(ann.sentAt ?? ann.createdAt)}</p>
-                          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{ann.postedBy}</p>
+                          {!isMemberRole && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{ann.postedBy}</p>}
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openDetail(ann)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                            title="View announcement"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          {!isMemberRole && (
+                            <button
+                              onClick={() => openDetail(ann)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                              title="View Suchana"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
                           {ap.canDelete && (canDeleteAnnouncement(ann) ? (
                             <button
                               onClick={() => { setToDelete(ann); setShowDelete(true); }}
                               className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                              title="Delete announcement"
+                              title="Delete Suchana"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1057,7 +1061,7 @@ export default function Announcements({
                               className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-300 dark:text-neutral-700 cursor-not-allowed"
                               title={
                                 ann.status === 'scheduled'
-                                  ? 'Scheduled announcements cannot be deleted'
+                                  ? 'Scheduled Suchanas cannot be deleted'
                                   : 'Cannot delete — the 5-minute cooldown window has passed'
                               }
                             >
@@ -1104,8 +1108,8 @@ export default function Announcements({
       {showCreate && (
         <FormModal
           isOpen
-          title={editingId ? 'Edit Announcement' : 'New Announcement'}
-          description={editingId ? 'Update the announcement details below' : 'Compose a message, select your audience, and configure notifications'}
+          title={editingId ? 'Edit Suchana' : 'New Suchana'}
+          description={editingId ? 'Update the Suchana details below' : 'Compose a message, select your audience, and configure notifications'}
           onClose={closeCreate}
           maxWidth="max-w-3xl"
         >
@@ -1123,7 +1127,7 @@ export default function Announcements({
                 <FormField>
                   <FormLabel required>Title</FormLabel>
                   <FormInput
-                    placeholder="Enter announcement title"
+                    placeholder="Enter Suchana title"
                     value={form.title}
                     onChange={e => setField('title', e.target.value)}
                   />
@@ -1134,7 +1138,7 @@ export default function Announcements({
                 <FormField>
                   <FormLabel required>Message</FormLabel>
                   <RichTextEditor
-                    placeholder="Write your announcement message…"
+                    placeholder="Write your Suchana message…"
                     value={form.body}
                     onChange={html => {
                       setField('body', html);
@@ -1227,7 +1231,7 @@ export default function Announcements({
                     <span className="text-sm text-neutral-900 dark:text-white font-medium">5 minutes</span>
                     <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">Fixed</span>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-1">How long before the same member sees this announcement again.</p>
+                  <p className="text-xs text-neutral-400 mt-1">How long before the same member sees this Suchana again.</p>
                 </FormField>
               </div>
             </div>
@@ -1455,31 +1459,12 @@ export default function Announcements({
                   <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">In-App Bell Notification</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Members always receive this announcement in their notification bell. This cannot be disabled.</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Members always receive this Suchana in their notification bell. This cannot be disabled.</p>
                   </div>
                 </div>
               </div>
             </div>
             )}
-
-            {canViewAdminSuchanaValues && <div className="border-t border-neutral-200 dark:border-neutral-800" />}
-
-            {/* ── Section 4: Priority ────────────────────── */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold">4</div>
-                <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">Priority</h4>
-              </div>
-              <ToggleGroup
-                value={form.priority}
-                onChange={v => setField('priority', v as 'high' | 'medium' | 'low')}
-                options={[
-                  { value: 'high',   label: '🔴 High'   },
-                  { value: 'medium', label: '🟡 Medium' },
-                  { value: 'low',    label: '⚪ Low'    },
-                ]}
-              />
-            </div>
 
             {/* ── Footer buttons ────────────────────────── */}
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-neutral-200 dark:border-neutral-800">

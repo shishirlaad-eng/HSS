@@ -126,7 +126,7 @@ export function Sidebar({
 
   // Translate nav labels using the language context
   const { t } = useLanguage();
-  const isMemberRole = selectedRole === 'Member (18+)' || selectedRole === 'Teen (13–17)';
+  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const navLabelMap: Record<string, string> = {
     // 1. Dashboard
     "dashboard": t.nav.dashboard,
