@@ -31,6 +31,8 @@ import {
   RESPONSIBILITY_LEVEL_OPTIONS,
   RESPONSIBILITY_TYPE_OPTIONS,
   ROLE_TYPE_OPTIONS,
+  SAFEGUARDING_LEVEL_OPTIONS,
+  SafeguardingLevel,
   getAge,
   getAgeGroupLabel,
   getMemberTypeFromAge,
@@ -87,6 +89,12 @@ function canAccessQualifiedFirstAider(selectedRole: string) {
   return QUALIFIED_FIRST_AIDER_ROLES.has(selectedRole);
 }
 
+const SAFEGUARDING_EDIT_ROLES = new Set(['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Super Admin', 'Kendriya Admin']);
+
+function canEditSafeguarding(selectedRole: string) {
+  return SAFEGUARDING_EDIT_ROLES.has(selectedRole);
+}
+
 interface MemberEditProps {
   member: Member;
   onBack: () => void;
@@ -136,6 +144,9 @@ type MemberForm = {
   firstAidStatus: ComplianceStatus;
   dbsRef: string;
   firstAidRef: string;
+  safeguardingStatus: ComplianceStatus;
+  safeguardingTrainingDate: string;
+  safeguardingTrainingLevel: '' | SafeguardingLevel;
   adminRoles: string[];
 };
 
@@ -169,6 +180,7 @@ function validEmail(value: string) {
 export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) {
   const { selectedRole } = useRoleScope();
   const canEditQualifiedFirstAider = canAccessQualifiedFirstAider(selectedRole);
+  const canEditSafeguardingFields = canEditSafeguarding(selectedRole);
   const [formData, setFormData] = useState<MemberForm>({
     memberType: member.memberType,
     firstName: member.firstName ?? member.name.split(' ')[0] ?? '',
@@ -218,6 +230,9 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     firstAidStatus: member.compliance.firstAid,
     dbsRef: member.dbsRef ?? '',
     firstAidRef: member.firstAidRef ?? '',
+    safeguardingStatus: member.compliance.safeguardingTraining ?? 'pending',
+    safeguardingTrainingDate: member.safeguardingTrainingDate ?? '',
+    safeguardingTrainingLevel: member.safeguardingTrainingLevel ?? '',
     adminRoles: Array.from(new Set([
       REQUIRED_MEMBER_ROLE,
       ...(member.adminRoles?.length ? member.adminRoles : [member.adminRole].filter(Boolean) as string[]),
@@ -394,9 +409,12 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           ...member.compliance,
           dbs: formData.dbsStatus,
           firstAid: formData.firstAidStatus,
+          safeguardingTraining: formData.safeguardingStatus,
         },
         dbsRef: formData.dbsRef.trim() || undefined,
         firstAidRef: formData.firstAidRef.trim() || undefined,
+        safeguardingTrainingDate: formData.safeguardingTrainingDate.trim() || undefined,
+        safeguardingTrainingLevel: (formData.safeguardingTrainingLevel as SafeguardingLevel) || undefined,
         medicalInfoDeclared: formData.medicalInfoDeclared,
         medicalInfoDetails: formData.medicalInfoDetails.trim() || undefined,
         isFirstAider: canEditQualifiedFirstAider ? formData.isFirstAider : member.isFirstAider,
@@ -630,9 +648,41 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
               <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 mb-6 leading-relaxed">
               The profile first-aider flag is separate from the First Aid compliance certificate status.
             </p>
+
+            {canEditSafeguardingFields && (
+              <>
+                <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6 mb-4">
+                  <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5" /> Safeguarding
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField>
+                    <FormLabel>Safeguarding Status</FormLabel>
+                    <FormSelect value={formData.safeguardingStatus} onChange={set('safeguardingStatus')}>
+                      <option value="pending">Pending</option>
+                      <option value="completed">Completed</option>
+                    </FormSelect>
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Date of Safeguarding Training</FormLabel>
+                    <FormInput type="date" value={formData.safeguardingTrainingDate} onChange={set('safeguardingTrainingDate')} />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Level of Training</FormLabel>
+                    <FormSelect value={formData.safeguardingTrainingLevel} onChange={set('safeguardingTrainingLevel')}>
+                      <option value="">Select level…</option>
+                      {SAFEGUARDING_LEVEL_OPTIONS.map(level => (
+                        <option key={level} value={level}>{level}</option>
+                      ))}
+                    </FormSelect>
+                  </FormField>
+                </div>
+              </>
+            )}
           </SectionCard>
 
           <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>

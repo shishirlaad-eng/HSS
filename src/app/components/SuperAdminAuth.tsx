@@ -223,9 +223,9 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
             className="logo-reveal w-3/5 max-w-xs object-contain"
           />
           <div className="flex flex-col items-center gap-1 max-w-xs text-center italic">
-            <span className="sul-1 text-white text-sm font-medium">Vishwa Dharma Prakashena</span>
-            <span className="sul-2 text-white text-sm font-medium">Vishwa Shanti Pravartake</span>
-            <span className="sul-3 text-white/70 text-xs leading-relaxed mt-3 block">
+            <span className="sul-1 text-white text-[16px] font-medium">Vishwa Dharma Prakashena</span>
+            <span className="sul-2 text-white text-[16px] font-medium">Vishwa Shanti Pravartake</span>
+            <span className="sul-3 text-white/70 text-[14px] leading-relaxed mt-3 block">
               With enlightenment from the Universal Dharma, in propagating peace through the world, in the task of achieving Hindu Unity worldwide, may our aim and deep faith remain resolute.
             </span>
           </div>

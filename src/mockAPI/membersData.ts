@@ -43,6 +43,16 @@ export const FIRST_AID_QUALIFICATION_OPTIONS = [
 
 export type FirstAidQualification = typeof FIRST_AID_QUALIFICATION_OPTIONS[number];
 
+export const SAFEGUARDING_LEVEL_OPTIONS = [
+  'Basic Awareness (Level 1)',
+  'Child Protection Intermediate (Level 2)',
+  'Child Protection Advanced (Level 3)',
+  'Lead Practitioner (Level 4)',
+  'Designated Safeguarding Lead (DSL)',
+] as const;
+
+export type SafeguardingLevel = typeof SAFEGUARDING_LEVEL_OPTIONS[number];
+
 // ── Karyakartas — members who hold a sangh responsibility ─────
 // Only the members listed here have a Responsibility (Type + Level)
 // assigned. Everyone else has none — this drives the "Karyakartas"
@@ -176,6 +186,8 @@ export interface Member {
   compliance: MemberCompliance;
   dbsRef?: string;
   firstAidRef?: string;
+  safeguardingTrainingDate?: string;
+  safeguardingTrainingLevel?: SafeguardingLevel;
   medicalInfoDeclared?: boolean;
   medicalInfoDetails?: string;
   isFirstAider?: boolean;

@@ -860,7 +860,7 @@ export default function Announcements({
     <div className="px-6 py-6">
       <PageHeader
         title="Suchana"
-        subtitle="Create and manage suchanas for members across the network"
+        subtitle={isMemberRole ? "Suchanas for your attention" : "Create and manage suchanas for members across the network"}
       >
         {isMemberRole ? (
           <SearchBar

@@ -36,6 +36,7 @@ import {
   getAgeGroup,
   ComplianceStatus,
   ConsentStatus,
+  SafeguardingLevel,
 } from '../../mockAPI/membersData';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -549,6 +550,14 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <InfoItem label="Medical Information Declared?">{valueOrDash(member.medicalInfoDeclared)}</InfoItem>
                     <InfoItem label="Medical Information Details">{valueOrDash(member.medicalInfoDetails)}</InfoItem>
                     <InfoItem label="Are you a qualified First Aider">{valueOrDash(member.isFirstAider)}</InfoItem>
+                    {member.isFirstAider && <>
+                      <InfoItem label="First Aid Level">{valueOrDash(member.firstAidQualificationLevel)}</InfoItem>
+                      <InfoItem label="First Aid Expiry Date">
+                        {member.firstAidQualificationExpiryDate
+                          ? new Date(member.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : '—'}
+                      </InfoItem>
+                    </>}
                     <InfoItem label="Special Dietary Requirements">{valueOrDash(member.dietaryRequirements)}</InfoItem>
                     <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
                     <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
@@ -602,7 +611,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                   )}
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
+                    {/* DBS Check */}
                     <ComplianceCard
                       label="DBS Check"
                       status={member.compliance.dbs}
@@ -613,6 +623,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           : 'DBS check is pending. Please submit or process the DBS application.'
                       }
                     />
+
+                    {/* First Aid */}
                     <ComplianceCard
                       label="First Aid Certificate"
                       status={member.compliance.firstAid}
@@ -623,6 +635,53 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           : 'First aid certificate is pending submission or processing.'
                       }
                     />
+                    {member.isFirstAider !== undefined && (
+                      <div className="ml-9 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualified First Aider</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.isFirstAider ? 'Yes' : 'No'}</p>
+                        </div>
+                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Level</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
+                        </div>
+                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Expiry</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                            {member.firstAidQualificationExpiryDate
+                              ? new Date(member.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                              : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Safeguarding */}
+                    <ComplianceCard
+                      label="Safeguarding Training"
+                      status={member.compliance.safeguardingTraining ?? 'pending'}
+                      description={
+                        member.compliance.safeguardingTraining === 'completed'
+                          ? 'Safeguarding training has been completed and is on record.'
+                          : 'Safeguarding training is pending.'
+                      }
+                    />
+                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Date of Training</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.safeguardingTrainingDate
+                            ? new Date(member.safeguardingTrainingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </p>
+                      </div>
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Level of Training</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
+                      </div>
+                    </div>
+
+                    {/* Parental Consent */}
                     <ComplianceCard
                       label="Parental Consent"
                       status={member.compliance.parentalConsent}
@@ -876,9 +935,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               </h4>
               <div className="px-6 pb-5 pt-4 space-y-3">
                 {[
-                  { label: 'DBS Check',        status: member.compliance.dbs },
-                  { label: 'First Aid',         status: member.compliance.firstAid },
-                  { label: 'Parental Consent',  status: member.compliance.parentalConsent },
+                  { label: 'DBS Check',           status: member.compliance.dbs },
+                  { label: 'First Aid',            status: member.compliance.firstAid },
+                  { label: 'Safeguarding',         status: member.compliance.safeguardingTraining ?? 'pending' },
+                  { label: 'Parental Consent',     status: member.compliance.parentalConsent },
                 ].map(({ label, status }) => {
                   const isClear   = status === 'completed' || status === 'granted';
                   const isPending = status === 'pending';

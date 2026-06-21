@@ -1086,6 +1086,8 @@ export default function MemberManagement({
     { key: 'mastersScope',        label: 'HSS (UK) Setup Scope' },
     { key: 'dbsStatus',           label: 'DBS Status' },
     { key: 'firstAidStatus',      label: 'First Aid' },
+    { key: 'firstAidLevel',       label: 'First Aid Level' },
+    { key: 'firstAidExpiry',      label: 'First Aid Expiry' },
     { key: 'email',               label: 'Email' },
     { key: 'phone',               label: 'Contact Number' },
     { key: 'sanghResponsibility', label: 'Sangh Responsibility' },
@@ -1094,6 +1096,7 @@ export default function MemberManagement({
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     id: true, name: true, memberType: true, status: true,
     mastersScope: true, dbsStatus: true, firstAidStatus: true,
+    firstAidLevel: true, firstAidExpiry: true,
     email: true, phone: true, sanghResponsibility: true,
   });
 
@@ -1755,6 +1758,18 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.firstAidStatus && (
                         <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
+                      )}
+                      {visibleColumns.firstAidLevel && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.firstAidQualificationLevel ?? '—'}
+                        </td>
+                      )}
+                      {visibleColumns.firstAidExpiry && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.firstAidQualificationExpiryDate
+                            ? new Date(m.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </td>
                       )}
                       {visibleColumns.email && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">

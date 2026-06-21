@@ -33,6 +33,9 @@ import {
   ListChecks,
   Ticket,
   ScrollText,
+  ChevronDown,
+  Search,
+  Check,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -205,6 +208,110 @@ const AGE_GROUP_OPTIONS: { value: AgeGroup; label: string }[] = [
   { value: 'yuva',    label: 'Yuva(ti) (30-60)'  },
   { value: 'jyestha', label: 'Jyestha(a) (60+)'  },
 ];
+
+function MultiSelectDropdown<T extends string>({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  selected: T[];
+  onChange: (vals: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = options.filter(o =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+  const allSelected = options.length > 0 && options.every(o => selected.includes(o.value));
+  const someSelected = selected.length > 0 && !allSelected;
+
+  const toggleAll = () => {
+    onChange(allSelected ? [] : options.map(o => o.value));
+  };
+  const toggle = (val: T) => {
+    onChange(selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val]);
+  };
+
+  const displayText = selected.length === 0
+    ? `Select ${label}`
+    : selected.length === options.length
+      ? `All ${label}`
+      : selected.map(v => options.find(o => o.value === v)?.label ?? v).join(', ');
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-3 py-2 text-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-left hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+      >
+        <span className={`truncate text-sm ${selected.length === 0 ? 'text-neutral-400' : 'text-neutral-900 dark:text-white'}`}>
+          {displayText}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 flex-shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden">
+          {/* Search */}
+          <div className="p-2 border-b border-neutral-100 dark:border-neutral-800">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md outline-none focus:border-primary-400 dark:text-white"
+              />
+            </div>
+          </div>
+          {/* Select All */}
+          <div
+            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800"
+            onClick={toggleAll}
+          >
+            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${allSelected ? 'bg-primary-600 border-primary-600' : someSelected ? 'border-neutral-300 dark:border-neutral-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+              {allSelected && <Check className="w-3 h-3 text-white" />}
+              {someSelected && <div className="w-2 h-0.5 bg-primary-600 rounded" />}
+            </div>
+            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Select All</span>
+          </div>
+          {/* Options */}
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-4 text-xs text-neutral-400 text-center">No results</div>
+            ) : filtered.map(opt => (
+              <div
+                key={opt.value}
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                onClick={() => toggle(opt.value)}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(opt.value) ? 'bg-primary-600 border-primary-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                  {selected.includes(opt.value) && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-xs text-neutral-700 dark:text-neutral-300">{opt.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const AUDIENCE_AGE_LABELS: Record<AgeGroup, string> = {
   bal:     'Bal(ika) (0-5)',
@@ -613,53 +720,39 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
               </FormGrid>
             </div>
 
-            {/* Age Category */}
-            <div>
-              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age Category</p>
-              <div className="flex flex-wrap gap-2">
-                {AGE_GROUP_OPTIONS.map(({ value, label }) => (
-                  <CheckChip
-                    key={value}
-                    label={label}
-                    checked={form.filterAgeCategories.includes(value)}
-                    onChange={() => set('filterAgeCategories', toggleArr(form.filterAgeCategories, value) as any)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Gender */}
-            <div>
-              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Gender</p>
-              <div className="flex flex-wrap gap-2">
-                {([
-                  { value: 'male',   label: 'Male'   },
-                  { value: 'female', label: 'Female' },
-                ] as { value: 'male' | 'female'; label: string }[]).map(({ value, label }) => (
-                  <CheckChip
-                    key={value}
-                    label={label}
-                    checked={form.filterGenders.includes(value)}
-                    onChange={() => set('filterGenders', toggleArr(form.filterGenders, value) as any)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Role Type / Job Title */}
-            <div>
-              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Role Type / Job Title</p>
-              <div className="flex flex-wrap gap-2">
-                {ROLE_TYPE_OPTIONS.map(role => (
-                  <CheckChip
-                    key={role}
-                    label={role}
-                    checked={form.filterJobTitles.includes(role)}
-                    onChange={() => set('filterJobTitles', toggleArr(form.filterJobTitles, role) as any)}
-                  />
-                ))}
-              </div>
-            </div>
+            {/* Age Category / Gender / Role Type */}
+            <FormGrid cols={3}>
+              <FormField>
+                <FormLabel>Age Category</FormLabel>
+                <MultiSelectDropdown
+                  label="Age Category"
+                  options={AGE_GROUP_OPTIONS}
+                  selected={form.filterAgeCategories as string[] as AgeGroup[]}
+                  onChange={vals => set('filterAgeCategories', vals as any)}
+                />
+              </FormField>
+              <FormField>
+                <FormLabel>Gender</FormLabel>
+                <MultiSelectDropdown<'male' | 'female'>
+                  label="Gender"
+                  options={[
+                    { value: 'male',   label: 'Male'   },
+                    { value: 'female', label: 'Female' },
+                  ]}
+                  selected={form.filterGenders}
+                  onChange={vals => set('filterGenders', vals as any)}
+                />
+              </FormField>
+              <FormField>
+                <FormLabel>Role Type</FormLabel>
+                <MultiSelectDropdown
+                  label="Role Type"
+                  options={ROLE_TYPE_OPTIONS.map(r => ({ value: r, label: r }))}
+                  selected={form.filterJobTitles}
+                  onChange={vals => set('filterJobTitles', vals as any)}
+                />
+              </FormField>
+            </FormGrid>
           </div>
         </div>
 

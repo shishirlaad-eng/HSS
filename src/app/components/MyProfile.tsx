@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload, History, Clock, ClipboardList, UserCog, UserCircle2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
@@ -348,7 +348,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 // ── Member profile view ───────────────────────────────────────
 
-type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh';
+type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history';
 
 function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const loadProfile = () => {
@@ -511,11 +511,40 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
     new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   const TABS: { id: ProfileTab; label: string }[] = [
-    { id: 'personal',     label: 'Personal Info'                                              },
-    { id: 'organisation', label: 'Organisation'                                               },
-    { id: 'compliance',   label: 'Compliance Details'                                         },
-    { id: 'sangh',        label: 'Sangh Responsibility'                                       },
+    { id: 'personal',     label: 'Personal Info'       },
+    { id: 'organisation', label: 'Organisation'        },
+    { id: 'compliance',   label: 'Compliance Details'  },
+    { id: 'sangh',        label: 'Sangh Responsibility'},
+    { id: 'history',      label: 'History'             },
   ];
+
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", {
+      day: "numeric", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+
+  interface ChangeEntry { id: string; timestamp: string; changedFields: string[]; changedBy: 'Admin' | 'Self'; changedByName: string; note?: string; }
+
+  const changeHistory = useMemo((): ChangeEntry[] => {
+    const base = new Date('2021-01-20T10:00:00Z');
+    const shift = (days: number, hrs = 0, mins = 0) => {
+      const d = new Date(base); d.setDate(d.getDate() + days); d.setHours(hrs, mins, 0, 0); return d.toISOString();
+    };
+    return [
+      { id: 'h-6', timestamp: shift(45, 11, 0),  changedFields: ['Sangh Responsibility (HSS Role)', 'Vibhag (Region)', 'Shakha (Branch)'], changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)' },
+      { id: 'h-5', timestamp: shift(22, 18, 5),  changedFields: ['Primary Contact Number', 'Address Line', 'Post Code'], changedBy: 'Self', changedByName: 'John Doe (self-service)' },
+      { id: 'h-4', timestamp: shift(12, 9, 45),  changedFields: ['First Aid Status', 'First Aid Reference Number'], changedBy: 'Admin', changedByName: 'John Doe (Admin)' },
+      { id: 'h-3', timestamp: shift(7, 14, 15),  changedFields: ['DBS Status', 'DBS Reference Number'], changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)' },
+      { id: 'h-2', timestamp: shift(3, 10, 30),  changedFields: ['Status'], changedBy: 'Admin', changedByName: 'John Doe (Admin)', note: 'Member application approved.' },
+      { id: 'h-1', timestamp: base.toISOString(), changedFields: [], changedBy: 'Self', changedByName: 'Member (self-registration)', note: 'Member account created via online registration form.' },
+    ];
+  }, []);
+
+  const approvalEntry = changeHistory.find(e => e.changedFields.includes('Status') && e.changedBy === 'Admin');
+  const approvedDate  = approvalEntry?.timestamp ?? null;
+  const approvedBy    = approvalEntry?.changedByName ?? '—';
+  const registrationDate = '2021-01-20T10:00:00Z';
 
   return (
     <div className="px-6 py-6">
@@ -902,6 +931,122 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                 </div>
               )}
             </>
+          )}
+
+          {/* ── History Tab ── */}
+          {activeTab === 'history' && (
+            <div className="space-y-6">
+
+              {/* Registration & Approval summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
+                      <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Date</span>
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{formatDate(registrationDate)}</p>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                    {new Date(registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-md bg-[#f1fced] dark:bg-[#4EAE33]/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#4EAE33]" />
+                    </div>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
+                  </div>
+                  {approvedDate ? (
+                    <>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">{formatDate(approvedDate)}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                        {new Date(approvedDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold text-neutral-400 dark:text-neutral-600">Pending</p>
+                  )}
+                </div>
+
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
+                      <UserCog className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved By</span>
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{approvedBy}</p>
+                </div>
+              </div>
+
+              {/* Change History timeline */}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                  <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
+                  <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
+                    {changeHistory.length} event{changeHistory.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                  {changeHistory.map((entry, idx) => {
+                    const isAdmin = entry.changedBy === 'Admin';
+                    const isFirst = idx === changeHistory.length - 1;
+                    return (
+                      <div key={entry.id} className="flex gap-4 px-6 py-4 hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isFirst ? 'bg-primary-50 dark:bg-primary-950'
+                            : isAdmin ? 'bg-amber-50 dark:bg-amber-950/30'
+                            : 'bg-neutral-100 dark:bg-neutral-800'
+                          }`}>
+                            {isFirst ? (
+                              <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                            ) : isAdmin ? (
+                              <UserCog className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            ) : (
+                              <UserCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                              isAdmin
+                                ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
+                                : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
+                            }`}>
+                              {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
+                              {entry.changedBy}
+                            </span>
+                            <span className="text-xs text-neutral-600 dark:text-neutral-400">{entry.changedByName}</span>
+                            <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                              <Clock className="w-3 h-3" />
+                              {formatDateTime(entry.timestamp)}
+                            </span>
+                          </div>
+                          {entry.note && (
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 italic">{entry.note}</p>
+                          )}
+                          {entry.changedFields.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {entry.changedFields.map(field => (
+                                <span key={field} className="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs border border-neutral-200 dark:border-neutral-700">
+                                  {field}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           )}
 
         </div>
