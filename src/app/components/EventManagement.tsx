@@ -59,7 +59,7 @@ import {
   FormGrid,
   FormSelect,
 } from './hb/common';
-import { mockEvents, Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
+import { mockEvents, mockParticipants, Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
@@ -76,6 +76,21 @@ type ModalType = null | 'create' | 'status' | 'cancel' | 'override' | 'delete';
 const isPastStart = (event: Event) => new Date() >= new Date(event.startDate);
 const canModify   = (event: Event) => !isPastStart(event);
 const canDelete   = (event: Event) => !isPastStart(event) && event.status !== 'completed';
+
+// ─── Member view helpers ──────────────────────────────────────────────────────
+const MON_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const utcHHMM = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
+};
+const utcDMY  = (iso: string) => {
+  const d = new Date(iso);
+  return { day: d.getUTCDate(), mon: MON_SHORT[d.getUTCMonth()], year: d.getUTCFullYear() };
+};
+const utcFull = (iso: string) => {
+  const { day, mon, year } = utcDMY(iso);
+  return `${String(day).padStart(2,'0')} ${mon} ${year}, ${utcHHMM(iso)}`;
+};
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Event['status'] }) {
@@ -804,6 +819,37 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const ep = useModulePermissions('events');
   const scopedFilterOptions = getScopedFilterOptions(scope);
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
+
+  // Member data — counts + event arrays for panels and completed table
+  const MEMBER_ID_BY_ROLE: Record<string, string> = { 'Adult Member': 'MBR-001', 'Teen Member': 'MBR-004' };
+  const memberData = useMemo(() => {
+    if (!isMemberRole) return null;
+    const memberId = MEMBER_ID_BY_ROLE[selectedRole] ?? 'MBR-001';
+    const now = new Date();
+    const notRegisteredArr: Event[] = [];
+    const registeredArr: Event[] = [];
+    const attendedArr: Event[] = [];
+    for (const ev of mockEvents) {
+      const isFuture = new Date(ev.startDate) > now;
+      const myRecord = (mockParticipants[ev.id] ?? []).find(p => p.memberId === memberId);
+      if (isFuture && ev.status !== 'cancelled') {
+        if (!myRecord) notRegisteredArr.push(ev);
+        else if (myRecord.rsvp === 'going' || myRecord.rsvp === 'requested') registeredArr.push(ev);
+      } else if (!isFuture && myRecord?.rsvp === 'going') {
+        attendedArr.push(ev);
+      }
+    }
+    notRegisteredArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    registeredArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    attendedArr.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    return {
+      counts: { attended: attendedArr.length, notRegistered: notRegisteredArr.length, registered: registeredArr.length },
+      notRegistered: notRegisteredArr.slice(0, 3),
+      registered:    registeredArr.slice(0, 3),
+      attended:      attendedArr,
+    };
+  }, [isMemberRole, selectedRole]);
+
   const scopedEvents = useMemo(
     () => isMemberRole
       ? mockEvents.filter(e => e.status === 'published' || e.status === 'active')
@@ -1294,21 +1340,182 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           )}
         </PageHeader>
 
-        {/* SUMMARY WIDGETS */}
+        {/* SUMMARY WIDGETS — admin */}
         {!isMemberRole && showSummary && (
           <SummaryWidgets
             title="Karyakram Summary"
+            colorCards={true}
             widgets={[
-              { label: 'Total Karyakrams',     value: events.length,                                       icon: 'Activity'   },
-              { label: 'Active',           value: scopedEvents.filter(e => e.status === 'active').length,    icon: 'CheckCircle'},
-              { label: 'Draft/Published',  value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock' },
-              { label: 'Completed',        value: scopedEvents.filter(e => e.status === 'completed').length, icon: 'XCircle'   },
+              { label: 'Total Karyakrams',    value: events.length,                                                                          icon: 'Activity',     color: 'sky'     },
+              { label: 'Active',              value: scopedEvents.filter(e => e.status === 'active').length,                                  icon: 'CheckCircle',  color: 'emerald' },
+              { label: 'Draft / Published',   value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length,       icon: 'Clock',        color: 'amber'   },
+              { label: 'Completed',           value: scopedEvents.filter(e => e.status === 'completed').length,                               icon: 'XCircle',      color: 'slate'   },
             ]}
           />
         )}
 
+        {/* SUMMARY WIDGETS — member */}
+        {isMemberRole && memberData && (
+          <SummaryWidgets
+            title="My Karyakrams Summary"
+            colorCards={true}
+            centered={true}
+            widgets={[
+              { label: 'Total Karyakrams Attended',               value: memberData.counts.attended,      icon: 'CheckCircle', color: 'emerald' },
+              { label: 'Upcoming Karyakrams (Not Yet Registered)', value: memberData.counts.notRegistered, icon: 'Clock',       color: 'amber'   },
+              { label: 'Upcoming Karyakrams (Registered)',         value: memberData.counts.registered,    icon: 'Activity',    color: 'sky'     },
+            ]}
+          />
+        )}
+
+        {/* ── MEMBER VIEW: upcoming panels + completed table ── */}
+        {isMemberRole && memberData && (
+          <div className="space-y-6">
+
+            {/* Two upcoming panels */}
+            <div className="flex flex-col lg:flex-row gap-4">
+
+              {/* Not Yet Registered */}
+              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
+                  <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+                  <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
+                </div>
+                <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {memberData.notRegistered.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-neutral-400">No upcoming Karyakrams to register for.</p>
+                  ) : memberData.notRegistered.map(ev => {
+                    const { day, mon, year } = utcDMY(ev.startDate);
+                    return (
+                      <div key={ev.id} className="flex items-start gap-4 py-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 -mx-4 px-4 transition-colors" onClick={() => openDetail(ev)}>
+                        <div className="flex-shrink-0 w-12 text-center pt-0.5">
+                          <div className="text-xl font-bold text-neutral-900 dark:text-white leading-none">{day}</div>
+                          <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mt-0.5">{mon}</div>
+                          <div className="text-[10px] text-neutral-400">{year}</div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="font-semibold text-sm text-neutral-900 dark:text-white truncate">{ev.name}</span>
+                              <StatusBadge status={ev.status} />
+                            </div>
+                            <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 whitespace-nowrap">Not Yet Registered</span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                            <span className="flex items-center gap-1"><Clock size={10} />{utcHHMM(ev.startDate)} – {utcHHMM(ev.endDate)}</span>
+                            <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
+                            <span className="flex items-center gap-1"><UsersIcon size={10} />{ev.metrics.participantCount} registered</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Registered */}
+              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
+                  <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+                  <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
+                </div>
+                <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {memberData.registered.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-neutral-400">You have not registered for any upcoming Karyakrams.</p>
+                  ) : memberData.registered.map(ev => {
+                    const { day, mon, year } = utcDMY(ev.startDate);
+                    return (
+                      <div key={ev.id} className="flex items-start gap-4 py-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 -mx-4 px-4 transition-colors" onClick={() => openDetail(ev)}>
+                        <div className="flex-shrink-0 w-12 text-center pt-0.5">
+                          <div className="text-xl font-bold text-neutral-900 dark:text-white leading-none">{day}</div>
+                          <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mt-0.5">{mon}</div>
+                          <div className="text-[10px] text-neutral-400">{year}</div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="font-semibold text-sm text-neutral-900 dark:text-white truncate">{ev.name}</span>
+                              <StatusBadge status={ev.status} />
+                            </div>
+                            <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 whitespace-nowrap">Registered</span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                            <span className="flex items-center gap-1"><Clock size={10} />{utcHHMM(ev.startDate)} – {utcHHMM(ev.endDate)}</span>
+                            <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
+                            <span className="flex items-center gap-1"><UsersIcon size={10} />{ev.metrics.participantCount} registered</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Completed Karyakrams – Attended (full width) */}
+            {memberData.attended.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />
+                  Completed Karyakrams – Attended
+                </h2>
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[640px]">
+                      <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Karyakram ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Karyakram Title</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Location</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Start Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">End Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const groups: Record<number, Event[]> = {};
+                          for (const ev of memberData.attended) {
+                            const yr = new Date(ev.startDate).getUTCFullYear();
+                            if (!groups[yr]) groups[yr] = [];
+                            groups[yr].push(ev);
+                          }
+                          return Object.entries(groups)
+                            .sort(([a], [b]) => Number(b) - Number(a))
+                            .flatMap(([year, evs]) => [
+                              <tr key={`yr-${year}`}>
+                                <td colSpan={6} className="px-4 py-2 text-xs font-bold text-white" style={{ backgroundColor: '#172E4D' }}>{year}</td>
+                              </tr>,
+                              ...evs.map((ev, i) => (
+                                <tr
+                                  key={ev.id}
+                                  className={`border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer transition-colors ${i % 2 === 1 ? 'bg-neutral-50/60 dark:bg-neutral-900/30' : ''}`}
+                                  onClick={() => openDetail(ev)}
+                                >
+                                  <td className="px-4 py-3 font-mono text-xs font-medium text-primary-600 dark:text-primary-400">{ev.id}</td>
+                                  <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white max-w-[200px] truncate">{ev.name}</td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-xs text-neutral-600 dark:text-neutral-300">{ev.activityCentre}</div>
+                                    <div className="text-[11px] text-neutral-400">{ev.region}</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{utcFull(ev.startDate)}</td>
+                                  <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{utcFull(ev.endDate)}</td>
+                                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
+                                </tr>
+                              )),
+                            ]);
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* LIST VIEW */}
-        {viewMode === 'list' && (
+        {!isMemberRole && viewMode === 'list' && (
           <div className="space-y-3">
             {paginatedEvents.length > 0 ? paginatedEvents.map(event => {
               const actions = getRowActions(event);
@@ -1407,7 +1614,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         )}
 
         {/* GRID VIEW */}
-        {viewMode === 'grid' && (
+        {!isMemberRole && viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {paginatedEvents.length > 0 ? paginatedEvents.map(event => {
               const actions = getRowActions(event);
@@ -1497,7 +1704,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         )}
 
         {/* TABLE VIEW */}
-        {viewMode === 'table' && (
+        {!isMemberRole && viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
             <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
               <table className="w-full text-left border-collapse">
@@ -1672,6 +1879,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         )}
 
         {/* PAGINATION */}
+        {!isMemberRole && (
         <div className="mt-6">
           {filteredEvents.length > 0 && (
             <Pagination
@@ -1684,6 +1892,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             />
           )}
         </div>
+        )}
       </div>
 
       {/* CREATE EVENT MODAL */}

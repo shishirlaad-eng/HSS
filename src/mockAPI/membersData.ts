@@ -146,6 +146,7 @@ export interface ResponsibilityAssignment {
   responsibilityLevel: ResponsibilityLevel;
   sanghResponsibility: string;
   responsibilityType: ResponsibilityType;
+  startDate?: string;
 }
 
 export interface Member {
@@ -185,9 +186,21 @@ export interface Member {
   registrationDate: string;   // ISO date string
   compliance: MemberCompliance;
   dbsRef?: string;
+  dbsCertificateNumber?: string;
+  dbsCertificateDate?: string;
+  dbsCertificateFile?: string;
+  dbsCertificateReceivedFrom?: string;
+  dbsCertificateReceivedFromOther?: string;
+  dbsUpdateService?: boolean;
+  dbsUpdateServiceNumber?: string;
+  dbsUpdateServiceCheckDate?: string;
+  dbsAppUnderProcess?: boolean;
+  dbsCheckedBy?: string;
   firstAidRef?: string;
   safeguardingTrainingDate?: string;
   safeguardingTrainingLevel?: SafeguardingLevel;
+  safeguardingRef?: string;
+  safeguardingExpiry?: string;
   medicalInfoDeclared?: boolean;
   medicalInfoDetails?: string;
   isFirstAider?: boolean;
@@ -201,6 +214,7 @@ export interface Member {
   adminRoles?: string[];
   responsibilityType?: ResponsibilityType;
   responsibilityLevel?: ResponsibilityLevel;
+  responsibilityStartDate?: string;
   responsibilities?: ResponsibilityAssignment[];
   previousResponsibilities?: PreviousResponsibility[];
   eventsAttended: number;

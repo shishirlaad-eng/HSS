@@ -314,9 +314,21 @@ interface AddMemberForm {
   occupation: string;
   originatingStateIndia: string;
   dbsStatus: 'pending' | 'completed';
-  firstAidStatus: 'pending' | 'completed';
   dbsRef: string;
+  dbsCertificateNumber: string;
+  dbsCertificateDate: string;
+  dbsCertificateReceivedFrom: string;
+  dbsCertificateReceivedFromOther: string;
+  dbsUpdateService: 'yes' | 'no';
+  dbsUpdateServiceNumber: string;
+  dbsUpdateServiceCheckDate: string;
+  dbsAppUnderProcess: 'yes' | 'no';
+  dbsCheckedBy: string;
+  firstAidStatus: 'pending' | 'completed';
   firstAidRef: string;
+  safeguardingStatus: 'pending' | 'completed';
+  safeguardingRef: string;
+  safeguardingExpiry: string;
 }
 
 const EMPTY_FORM: AddMemberForm = {
@@ -332,8 +344,13 @@ const EMPTY_FORM: AddMemberForm = {
   medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
   firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '',
   dietaryRequirements: [], occupation: '', originatingStateIndia: '',
-  dbsStatus: 'pending', firstAidStatus: 'pending',
-  dbsRef: '', firstAidRef: '',
+  dbsStatus: 'pending',
+  dbsRef: '', dbsCertificateNumber: '', dbsCertificateDate: '',
+  dbsCertificateReceivedFrom: '', dbsCertificateReceivedFromOther: '',
+  dbsUpdateService: 'no', dbsUpdateServiceNumber: '', dbsUpdateServiceCheckDate: '',
+  dbsAppUnderProcess: 'no', dbsCheckedBy: '',
+  firstAidStatus: 'pending', firstAidRef: '',
+  safeguardingStatus: 'pending', safeguardingRef: '', safeguardingExpiry: '',
 };
 
 function AddMemberModal({
@@ -415,15 +432,15 @@ function AddMemberModal({
     if (!form.town)           e.town    = 'This field is required.';
     if (!form.activityCentre) e.activityCentre = 'This field is required.';
     const derivedMemberType = form.dateOfBirth ? getMemberTypeFromAge(form.dateOfBirth) : '';
-    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianName.trim())
+    if (derivedMemberType === 'teen' && !form.guardianName.trim())
       e.guardianName = 'Parent / guardian name is required.';
-    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianPhone.trim())
+    if (derivedMemberType === 'teen' && !form.guardianPhone.trim())
       e.guardianPhone = 'Parent / guardian phone is required.';
-    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianEmail.trim())
+    if (derivedMemberType === 'teen' && !form.guardianEmail.trim())
       e.guardianEmail = 'Parent / guardian email is required.';
     else if (form.guardianEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.guardianEmail))
       e.guardianEmail = 'Enter a valid email address.';
-    if ((derivedMemberType === 'teen' || derivedMemberType === 'child') && !form.guardianRelationship.trim())
+    if (derivedMemberType === 'teen' && !form.guardianRelationship.trim())
       e.guardianRelationship = 'Parent / guardian relationship is required.';
     if (existingMembers.some(m => m.email.toLowerCase() === form.email.toLowerCase()))
       e.email = 'A member with this email already exists.';
@@ -474,10 +491,22 @@ function AddMemberModal({
       compliance: {
         dbs: form.dbsStatus,
         firstAid: form.firstAidStatus,
+        safeguardingTraining: form.safeguardingStatus,
         parentalConsent: derivedMemberType === 'teen' || derivedMemberType === 'child' ? 'pending' : 'n/a',
       },
       dbsRef: form.dbsRef.trim() || undefined,
+      dbsCertificateNumber: form.dbsCertificateNumber.trim() || undefined,
+      dbsCertificateDate: form.dbsCertificateDate || undefined,
+      dbsCertificateReceivedFrom: form.dbsCertificateReceivedFrom.trim() || undefined,
+      dbsCertificateReceivedFromOther: form.dbsCertificateReceivedFromOther.trim() || undefined,
+      dbsUpdateService: form.dbsUpdateService === 'yes',
+      dbsUpdateServiceNumber: form.dbsUpdateServiceNumber.trim() || undefined,
+      dbsUpdateServiceCheckDate: form.dbsUpdateServiceCheckDate || undefined,
+      dbsAppUnderProcess: form.dbsAppUnderProcess === 'yes',
+      dbsCheckedBy: form.dbsCheckedBy.trim() || undefined,
       firstAidRef: form.firstAidRef.trim() || undefined,
+      safeguardingRef: form.safeguardingRef.trim() || undefined,
+      safeguardingExpiry: form.safeguardingExpiry || undefined,
       medicalInfoDeclared: form.medicalInfoDeclared,
       medicalInfoDetails: form.medicalInfoDetails.trim() || undefined,
       isFirstAider: canEditQualifiedFirstAider ? form.isFirstAider : false,
@@ -632,8 +661,8 @@ function AddMemberModal({
           </div>
         </div>
 
-        {/* Guardian Information (Child / Teen only) */}
-        {form.dateOfBirth && getAge(form.dateOfBirth) < 18 && (
+        {/* Guardian Information (Teen only — Child exempt per B3) */}
+        {form.dateOfBirth && getMemberTypeFromAge(form.dateOfBirth) === 'teen' && (
           <div>
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Parent / Guardian Approval Information</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -763,7 +792,7 @@ function AddMemberModal({
 
         {/* Compliance */}
         <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — DBS</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel>DBS Status</FormLabel>
@@ -777,6 +806,58 @@ function AddMemberModal({
               <FormInput value={form.dbsRef} onChange={set('dbsRef')} placeholder="e.g. DBS-2024-001" />
             </FormField>
             <FormField>
+              <FormLabel>DBS Certificate Number</FormLabel>
+              <FormInput value={form.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" />
+            </FormField>
+            <FormField>
+              <FormLabel>DBS Certificate Date</FormLabel>
+              <FormInput type="date" value={form.dbsCertificateDate} onChange={set('dbsCertificateDate')} />
+            </FormField>
+            <FormField>
+              <FormLabel>Certificate Received From</FormLabel>
+              <FormInput value={form.dbsCertificateReceivedFrom} onChange={set('dbsCertificateReceivedFrom')} placeholder="e.g. Disclosure Scotland" />
+            </FormField>
+            <FormField>
+              <FormLabel>Other Source</FormLabel>
+              <FormInput value={form.dbsCertificateReceivedFromOther} onChange={set('dbsCertificateReceivedFromOther')} placeholder="If received from other source" />
+            </FormField>
+            <FormField>
+              <FormLabel>Enrolled in DBS Update Service</FormLabel>
+              <FormSelect value={form.dbsUpdateService} onChange={set('dbsUpdateService')}>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </FormSelect>
+            </FormField>
+            {form.dbsUpdateService === 'yes' && (
+              <>
+                <FormField>
+                  <FormLabel>DBS Update Service Number</FormLabel>
+                  <FormInput value={form.dbsUpdateServiceNumber} onChange={set('dbsUpdateServiceNumber')} placeholder="e.g. US-2024-00456" />
+                </FormField>
+                <FormField>
+                  <FormLabel>Last Update Service Check Date</FormLabel>
+                  <FormInput type="date" value={form.dbsUpdateServiceCheckDate} onChange={set('dbsUpdateServiceCheckDate')} />
+                </FormField>
+              </>
+            )}
+            <FormField>
+              <FormLabel>DBS Application Under Process</FormLabel>
+              <FormSelect value={form.dbsAppUnderProcess} onChange={set('dbsAppUnderProcess')}>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </FormSelect>
+            </FormField>
+            <FormField>
+              <FormLabel>Verified By</FormLabel>
+              <FormInput value={form.dbsCheckedBy} onChange={set('dbsCheckedBy')} placeholder="e.g. Ramesh Patel (Karyawaha)" />
+            </FormField>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — First Aid</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField>
               <FormLabel>First Aid Status</FormLabel>
               <FormSelect value={form.firstAidStatus} onChange={set('firstAidStatus')}>
                 <option value="pending">Pending</option>
@@ -786,6 +867,27 @@ function AddMemberModal({
             <FormField>
               <FormLabel>First Aid Reference Number</FormLabel>
               <FormInput value={form.firstAidRef} onChange={set('firstAidRef')} placeholder="e.g. FA-2024-001" />
+            </FormField>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — Safeguarding</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField>
+              <FormLabel>Safeguarding Status</FormLabel>
+              <FormSelect value={form.safeguardingStatus} onChange={set('safeguardingStatus')}>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+              </FormSelect>
+            </FormField>
+            <FormField>
+              <FormLabel>Safeguarding Reference Number</FormLabel>
+              <FormInput value={form.safeguardingRef} onChange={set('safeguardingRef')} placeholder="e.g. SG-2024-042" />
+            </FormField>
+            <FormField>
+              <FormLabel>Safeguarding Expiry Date</FormLabel>
+              <FormInput type="date" value={form.safeguardingExpiry} onChange={set('safeguardingExpiry')} />
             </FormField>
           </div>
         </div>
@@ -1079,25 +1181,23 @@ export default function MemberManagement({
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   const memberColumns: ColumnConfig[] = [
-    { key: 'id',                  label: 'Member ID' },
-    { key: 'name',                label: 'Name' },
-    { key: 'memberType',          label: 'Age Groups (years old)' },
-    { key: 'status',               label: 'Status' },
-    { key: 'mastersScope',        label: 'HSS (UK) Setup Scope' },
-    { key: 'dbsStatus',           label: 'DBS Status' },
-    { key: 'firstAidStatus',      label: 'First Aid' },
-    { key: 'firstAidLevel',       label: 'First Aid Level' },
-    { key: 'firstAidExpiry',      label: 'First Aid Expiry' },
-    { key: 'email',               label: 'Email' },
-    { key: 'phone',               label: 'Contact Number' },
+    { key: 'id',                  label: 'Member ID'            },
+    { key: 'name',                label: 'Name'                 },
+    { key: 'memberType',          label: 'Age Group'            },
+    { key: 'email',               label: 'Email'                },
+    { key: 'phone',               label: 'Contact Number'       },
+    { key: 'emergencyContact',    label: 'Emergency Contact'    },
     { key: 'sanghResponsibility', label: 'Sangh Responsibility' },
+    { key: 'mastersScope',        label: 'HSS Scope'            },
+    { key: 'firstAidStatus',      label: 'First Aid Status'     },
+    { key: 'dbsStatus',           label: 'DBS Status'           },
+    { key: 'status',              label: 'Status'               },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    id: true, name: true, memberType: true, status: true,
-    mastersScope: true, dbsStatus: true, firstAidStatus: true,
-    firstAidLevel: true, firstAidExpiry: true,
-    email: true, phone: true, sanghResponsibility: true,
+    id: true, name: true, memberType: true, email: true, phone: true,
+    emergencyContact: true, sanghResponsibility: true, mastersScope: true,
+    firstAidStatus: true, dbsStatus: true, status: true,
   });
 
   // Navigate directly to a member detail when arriving from another module
@@ -1337,9 +1437,7 @@ export default function MemberManagement({
         ? { icon: ToggleLeft,  label: 'Deactivate', onClick: () => openStatusModal(m, 'deactivate') }
         : { icon: ToggleRight, label: 'Reactivate',  onClick: () => openStatusModal(m, 'reactivate') });
     }
-    if (mp.canApprove && (m.status === 'pending' || m.status === 'pending-parental-consent')) {
-      items.push({ icon: Ban, label: 'Reject', onClick: () => openStatusModal(m, 'reject') });
-    }
+
     if (mp.canDelete) items.push({ icon: Trash2, label: 'Delete', onClick: () => openDeleteModal(m) });
     return items;
   };
@@ -1726,24 +1824,35 @@ export default function MemberManagement({
                         </td>
                       )}
                       {visibleColumns.name && (
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400 text-xs font-medium flex-shrink-0">
-                              {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
-                                {m.name}
-                              </span>
-                            </div>
-                          </div>
+                        <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
+                          {m.name}
                         </td>
                       )}
                       {visibleColumns.memberType && (
                         <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       )}
-                      {visibleColumns.status && (
-                        <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
+                      {visibleColumns.email && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.email}
+                        </td>
+                      )}
+                      {visibleColumns.phone && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.phone ?? '—'}
+                        </td>
+                      )}
+                      {visibleColumns.emergencyContact && (
+                        <td className="px-4 py-3.5">
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                            <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{m.emergencyContactName ?? '—'}</span>
+                            {m.emergencyContactPhone && <span className="text-neutral-400 block">{m.emergencyContactPhone}</span>}
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.sanghResponsibility && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.sanghResponsibility ?? '—'}
+                        </td>
                       )}
                       {visibleColumns.mastersScope && (
                         <td className="px-4 py-3.5">
@@ -1753,38 +1862,14 @@ export default function MemberManagement({
                           </div>
                         </td>
                       )}
-                      {visibleColumns.dbsStatus && (
-                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
-                      )}
                       {visibleColumns.firstAidStatus && (
                         <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
                       )}
-                      {visibleColumns.firstAidLevel && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.firstAidQualificationLevel ?? '—'}
-                        </td>
+                      {visibleColumns.dbsStatus && (
+                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
                       )}
-                      {visibleColumns.firstAidExpiry && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.firstAidQualificationExpiryDate
-                            ? new Date(m.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
-                        </td>
-                      )}
-                      {visibleColumns.email && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.email}
-                        </td>
-                      )}
-                      {visibleColumns.phone && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.phone}
-                        </td>
-                      )}
-                      {visibleColumns.sanghResponsibility && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.sanghResponsibility}
-                        </td>
+                      {visibleColumns.status && (
+                        <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
                       )}
                       <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">

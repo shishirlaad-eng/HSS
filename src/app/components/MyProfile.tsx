@@ -3,7 +3,7 @@ import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
-import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
+import { DIETARY_REQUIREMENTS, FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
 import {
   createTransferRequest,
@@ -73,7 +73,6 @@ interface MemberProfileForm {
   // Compliance — First Aid
   firstAidStatus: string;
   firstAidRef: string;
-  firstAidExpiry: string;
   // Compliance — Safeguarding
   safeguardingStatus: string;
   safeguardingRef: string;
@@ -141,7 +140,6 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   // Compliance — First Aid
   firstAidStatus: "Completed",
   firstAidRef: "FA-2023-001",
-  firstAidExpiry: "2026-09-15",
   safeguardingStatus: "Completed",
   safeguardingRef: "SG-2024-042",
   safeguardingExpiry: "2027-03-20",
@@ -199,7 +197,6 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
       dbsCheckedBy: "",
       firstAidStatus: "Pending",
       firstAidRef: "",
-      firstAidExpiry: "",
       safeguardingStatus: "Pending",
       safeguardingRef: "",
       safeguardingExpiry: "",
@@ -646,26 +643,32 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               <InfoSection title="Other Information">
                 <EditableInfoItem label="Medical Information Declared"     value={profile.medicalInfoDeclared}   isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}   options={["No", "Yes"]} />
                 <EditableInfoItem label="Medical Details"                  value={profile.medicalInfoDetails}    isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}    textarea />
-                <EditableInfoItem label="Are you a qualified First Aider" value={profile.isFirstAider}          isEditing={isEditing} onChange={v => setField("isFirstAider", v)}          options={["No", "Yes"]} />
-                {profile.isFirstAider === "Yes" && (
-                  <>
-                    <EditableInfoItem
-                      label="Level of qualification"
-                      value={profile.firstAidQualificationLevel}
-                      isEditing={isEditing}
-                      onChange={v => setField("firstAidQualificationLevel", v)}
-                      options={[...FIRST_AID_QUALIFICATION_OPTIONS]}
-                    />
-                    <EditableInfoItem
-                      label="Qualification expiry date"
-                      value={profile.firstAidQualificationExpiryDate}
-                      isEditing={isEditing}
-                      onChange={v => setField("firstAidQualificationExpiryDate", v)}
-                      type="date"
-                    />
-                  </>
-                )}
-                <EditableInfoItem label="Dietary Requirements"             value={profile.dietaryRequirements}   isEditing={isEditing} onChange={v => setField("dietaryRequirements", v)} />
+                <div className="md:col-span-2">
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Dietary Requirements</label>
+                  {isEditing ? (
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {DIETARY_REQUIREMENTS.map(item => (
+                        <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-primary-600"
+                            checked={profile.dietaryRequirements ? profile.dietaryRequirements.split(',').map(s => s.trim()).filter(Boolean).includes(item) : false}
+                            onChange={() => {
+                              const current = profile.dietaryRequirements
+                                ? profile.dietaryRequirements.split(',').map(s => s.trim()).filter(Boolean)
+                                : [];
+                              const updated = current.includes(item) ? current.filter(x => x !== item) : [...current, item];
+                              setField("dietaryRequirements", updated.join(', '));
+                            }}
+                          />
+                          {item}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dietaryRequirements || '—'}</p>
+                  )}
+                </div>
                 <EditableInfoItem label="Originating State in India"       value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
               </InfoSection>
 
@@ -785,7 +788,9 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </InfoSection>
 
               <InfoSection title="First Aid">
-                <EditableInfoItem label="Are you a qualified First Aider" value={profile.isFirstAider} isEditing={isEditing} onChange={v => setField("isFirstAider", v)} options={["No", "Yes"]} />
+                <EditableInfoItem label="Status"                           value={profile.firstAidStatus}         isEditing={isEditing} onChange={v => setField("firstAidStatus", v)}         options={["Pending", "Completed"]} />
+                <EditableInfoItem label="Certificate Reference"            value={profile.firstAidRef}            isEditing={isEditing} onChange={v => setField("firstAidRef", v)} />
+                <EditableInfoItem label="Are you a qualified First Aider"  value={profile.isFirstAider}           isEditing={isEditing} onChange={v => setField("isFirstAider", v)}           options={["No", "Yes"]} />
                 {profile.isFirstAider === "Yes" && (
                   <>
                     <EditableInfoItem

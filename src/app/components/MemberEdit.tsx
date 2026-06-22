@@ -141,12 +141,23 @@ type MemberForm = {
   orgRole: string;
   status: MemberStatus;
   dbsStatus: ComplianceStatus;
-  firstAidStatus: ComplianceStatus;
   dbsRef: string;
+  dbsCertificateNumber: string;
+  dbsCertificateDate: string;
+  dbsCertificateReceivedFrom: string;
+  dbsCertificateReceivedFromOther: string;
+  dbsUpdateService: boolean;
+  dbsUpdateServiceNumber: string;
+  dbsUpdateServiceCheckDate: string;
+  dbsAppUnderProcess: boolean;
+  dbsCheckedBy: string;
+  firstAidStatus: ComplianceStatus;
   firstAidRef: string;
   safeguardingStatus: ComplianceStatus;
   safeguardingTrainingDate: string;
   safeguardingTrainingLevel: '' | SafeguardingLevel;
+  safeguardingRef: string;
+  safeguardingExpiry: string;
   adminRoles: string[];
 };
 
@@ -223,16 +234,28 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           responsibilityLevel: member.responsibilityLevel ?? RESPONSIBILITY_LEVEL_OPTIONS[3],
           sanghResponsibility: member.jobTitle,
           responsibilityType: member.responsibilityType ?? RESPONSIBILITY_TYPE_OPTIONS[0],
+          startDate: member.responsibilityStartDate,
         }],
     orgRole: member.orgRole,
     status: member.status,
     dbsStatus: member.compliance.dbs,
-    firstAidStatus: member.compliance.firstAid,
     dbsRef: member.dbsRef ?? '',
+    dbsCertificateNumber: member.dbsCertificateNumber ?? '',
+    dbsCertificateDate: member.dbsCertificateDate ?? '',
+    dbsCertificateReceivedFrom: member.dbsCertificateReceivedFrom ?? '',
+    dbsCertificateReceivedFromOther: member.dbsCertificateReceivedFromOther ?? '',
+    dbsUpdateService: member.dbsUpdateService ?? false,
+    dbsUpdateServiceNumber: member.dbsUpdateServiceNumber ?? '',
+    dbsUpdateServiceCheckDate: member.dbsUpdateServiceCheckDate ?? '',
+    dbsAppUnderProcess: member.dbsAppUnderProcess ?? false,
+    dbsCheckedBy: member.dbsCheckedBy ?? '',
+    firstAidStatus: member.compliance.firstAid,
     firstAidRef: member.firstAidRef ?? '',
     safeguardingStatus: member.compliance.safeguardingTraining ?? 'pending',
     safeguardingTrainingDate: member.safeguardingTrainingDate ?? '',
     safeguardingTrainingLevel: member.safeguardingTrainingLevel ?? '',
+    safeguardingRef: member.safeguardingRef ?? '',
+    safeguardingExpiry: member.safeguardingExpiry ?? '',
     adminRoles: Array.from(new Set([
       REQUIRED_MEMBER_ROLE,
       ...(member.adminRoles?.length ? member.adminRoles : [member.adminRole].filter(Boolean) as string[]),
@@ -308,6 +331,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           responsibilityLevel: '' as ResponsibilityAssignment['responsibilityLevel'],
           sanghResponsibility: '',
           responsibilityType: '' as ResponsibilityAssignment['responsibilityType'],
+          startDate: '',
         },
       ],
     }));
@@ -412,9 +436,20 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           safeguardingTraining: formData.safeguardingStatus,
         },
         dbsRef: formData.dbsRef.trim() || undefined,
+        dbsCertificateNumber: formData.dbsCertificateNumber.trim() || undefined,
+        dbsCertificateDate: formData.dbsCertificateDate || undefined,
+        dbsCertificateReceivedFrom: formData.dbsCertificateReceivedFrom.trim() || undefined,
+        dbsCertificateReceivedFromOther: formData.dbsCertificateReceivedFromOther.trim() || undefined,
+        dbsUpdateService: formData.dbsUpdateService,
+        dbsUpdateServiceNumber: formData.dbsUpdateServiceNumber.trim() || undefined,
+        dbsUpdateServiceCheckDate: formData.dbsUpdateServiceCheckDate || undefined,
+        dbsAppUnderProcess: formData.dbsAppUnderProcess,
+        dbsCheckedBy: formData.dbsCheckedBy.trim() || undefined,
         firstAidRef: formData.firstAidRef.trim() || undefined,
         safeguardingTrainingDate: formData.safeguardingTrainingDate.trim() || undefined,
         safeguardingTrainingLevel: (formData.safeguardingTrainingLevel as SafeguardingLevel) || undefined,
+        safeguardingRef: formData.safeguardingRef.trim() || undefined,
+        safeguardingExpiry: formData.safeguardingExpiry || undefined,
         medicalInfoDeclared: formData.medicalInfoDeclared,
         medicalInfoDetails: formData.medicalInfoDetails.trim() || undefined,
         isFirstAider: canEditQualifiedFirstAider ? formData.isFirstAider : member.isFirstAider,
@@ -431,6 +466,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         adminRoles: formData.adminRoles,
         responsibilityType: primaryResponsibility?.responsibilityType || undefined,
         responsibilityLevel: primaryResponsibility?.responsibilityLevel || undefined,
+        responsibilityStartDate: primaryResponsibility?.startDate || undefined,
         responsibilities: completedResponsibilities,
       };
       onSave(updated);
@@ -601,7 +637,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               </div>
               <div className="space-y-4">
                 {formData.responsibilities.map((responsibility, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-end rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
                     <FormField>
                       <FormLabel>Level</FormLabel>
                       <FormSelect value={responsibility.responsibilityLevel} onChange={event => updateResponsibility(index, 'responsibilityLevel', event.target.value)}>
@@ -623,6 +659,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                         {RESPONSIBILITY_TYPE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
                       </FormSelect>
                     </FormField>
+                    <FormField>
+                      <FormLabel>Since (Start Date)</FormLabel>
+                      <FormInput type="date" value={responsibility.startDate ?? ''} onChange={event => updateResponsibility(index, 'startDate', event.target.value)} />
+                    </FormField>
                     {formData.responsibilities.length > 1 && (
                       <button
                         type="button"
@@ -641,20 +681,51 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           </SectionCard>
 
           <SectionCard className={activeTab === 'compliance' ? '' : 'hidden'}>
-            <SectionHeader icon={Shield} title="Compliance" />
+            <SectionHeader icon={Shield} title="Compliance — DBS" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
               <FormField><FormLabel>DBS Reference Number</FormLabel><FormInput value={formData.dbsRef} onChange={set('dbsRef')} /></FormField>
-              <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
-              <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
+              <FormField><FormLabel>DBS Certificate Number</FormLabel><FormInput value={formData.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" /></FormField>
+              <FormField><FormLabel>DBS Certificate Date</FormLabel><FormInput type="date" value={formData.dbsCertificateDate} onChange={set('dbsCertificateDate')} /></FormField>
+              <FormField><FormLabel>Certificate Received From</FormLabel><FormInput value={formData.dbsCertificateReceivedFrom} onChange={set('dbsCertificateReceivedFrom')} /></FormField>
+              <FormField><FormLabel>Other Source</FormLabel><FormInput value={formData.dbsCertificateReceivedFromOther} onChange={set('dbsCertificateReceivedFromOther')} /></FormField>
+              <FormField>
+                <FormLabel>Enrolled in DBS Update Service</FormLabel>
+                <FormSelect value={formData.dbsUpdateService ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsUpdateService: e.target.value === 'yes' }))}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </FormSelect>
+              </FormField>
+              {formData.dbsUpdateService && (
+                <>
+                  <FormField><FormLabel>Update Service Number</FormLabel><FormInput value={formData.dbsUpdateServiceNumber} onChange={set('dbsUpdateServiceNumber')} /></FormField>
+                  <FormField><FormLabel>Last Service Check Date</FormLabel><FormInput type="date" value={formData.dbsUpdateServiceCheckDate} onChange={set('dbsUpdateServiceCheckDate')} /></FormField>
+                </>
+              )}
+              <FormField>
+                <FormLabel>DBS Application Under Process</FormLabel>
+                <FormSelect value={formData.dbsAppUnderProcess ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsAppUnderProcess: e.target.value === 'yes' }))}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </FormSelect>
+              </FormField>
+              <FormField><FormLabel>Verified By</FormLabel><FormInput value={formData.dbsCheckedBy} onChange={set('dbsCheckedBy')} placeholder="e.g. Ramesh Patel (Karyawaha)" /></FormField>
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 mb-6 leading-relaxed">
-              The profile first-aider flag is separate from the First Aid compliance certificate status.
-            </p>
+
+            <div className="border-t border-neutral-200 dark:border-neutral-800 mt-6 pt-6">
+              <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">First Aid</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
+                <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
+                The profile first-aider flag and qualification level are separate from the First Aid compliance certificate status.
+              </p>
+            </div>
 
             {canEditSafeguardingFields && (
               <>
-                <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6 mb-4">
+                <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6 mt-6 mb-4">
                   <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Shield className="w-3.5 h-3.5" /> Safeguarding
                   </p>
@@ -680,31 +751,13 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                       ))}
                     </FormSelect>
                   </FormField>
+                  <FormField><FormLabel>Safeguarding Reference Number</FormLabel><FormInput value={formData.safeguardingRef} onChange={set('safeguardingRef')} placeholder="e.g. SG-2024-042" /></FormField>
+                  <FormField><FormLabel>Safeguarding Expiry Date</FormLabel><FormInput type="date" value={formData.safeguardingExpiry} onChange={set('safeguardingExpiry')} /></FormField>
                 </div>
               </>
             )}
           </SectionCard>
 
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={Shield} title="Membership Status" />
-            <div className="flex flex-wrap gap-3">
-              {STATUS_OPTIONS.map(status => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, status }))}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    formData.status === status
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300 shadow-sm'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${STATUS_COLOURS[status]}`} />
-                  {STATUS_LABELS[status]}
-                </button>
-              ))}
-            </div>
-          </SectionCard>
 
           {activeTab === 'activity' && (
             <SectionCard>

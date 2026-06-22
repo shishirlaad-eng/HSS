@@ -106,7 +106,7 @@ function ApproveGuardianModal({
               Approve on Behalf of Guardian
             </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              You are approving parental consent on behalf of the guardian. The member will be granted active membership.
+              You are approving parental consent on behalf of the guardian. The member will move to Pending Approval and must be approved in the Pending Approvals screen to become active.
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-2">
               Member: <span className="font-medium text-neutral-700 dark:text-neutral-300">{member.name}</span>
@@ -366,13 +366,13 @@ export default function PendingGuardianApprovals() {
     await new Promise(r => setTimeout(r, 600));
 
     if (modal.action === 'approve') {
-      // Grant parental consent and activate the member
+      // Grant parental consent → move to Pending Approval (two-step: Sub-module C → Sub-module B → Active)
       setMembers(prev => prev.map(m =>
         m.id === modal.member!.id
-          ? { ...m, status: 'active' as MemberStatus, compliance: { ...m.compliance, parentalConsent: 'granted' } }
+          ? { ...m, status: 'pending' as MemberStatus, compliance: { ...m.compliance, parentalConsent: 'granted' } }
           : m
       ));
-      toast.success('Guardian consent approved. Member is now active.');
+      toast.success('Guardian consent approved. Member moved to Pending Approval.');
     } else {
       setMembers(prev => prev.map(m =>
         m.id === modal.member!.id ? { ...m, status: 'rejected' as MemberStatus } : m

@@ -34,6 +34,7 @@ interface SummaryWidgetsProps {
   title?: string;
   className?: string;
   colorCards?: boolean;
+  centered?: boolean;
 }
 
 const CARD_COLOR_MAP: Record<string, { cardBg: string; valueCls: string; iconBg: string; iconText: string }> = {
@@ -55,6 +56,7 @@ export function SummaryWidgets({
   title = "Summary",
   className = "",
   colorCards = false,
+  centered = false,
 }: SummaryWidgetsProps) {
   // Filter enabled widgets (for WidgetConfig) or show all (for SimpleWidget)
   const enabledWidgets = widgets.filter(w => isWidgetConfig(w) ? w.enabled : true);
@@ -80,7 +82,7 @@ export function SummaryWidgets({
       </div>
       
       {/* Widgets Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={centered ? "grid grid-cols-1 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"}>
         {enabledWidgets.map((widget) => {
           const Icon = widget.icon ? (
             {

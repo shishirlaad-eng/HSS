@@ -24,6 +24,9 @@ npm-debug.log*
 # Local Codex skills
 caveman/
 
-# Local FRD/agents (not pushed)
-frd/
+# Local agents (not pushed)
 .claude/agents/
+
+# FRD generated outputs (not pushed)
+frd/_formatted/
+frd/exports/

@@ -152,12 +152,15 @@ function valueOrDash(value?: string | string[] | boolean) {
   return value && value.trim() ? value : '—';
 }
 
-function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoSection({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-      <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-        {title}
-      </h4>
+    <div
+      className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden ${className}`}
+      style={{ borderTop: '3px solid #172E4D' }}
+    >
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
+      </div>
       <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
         {children}
       </div>
@@ -503,9 +506,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
               {/* ── PROFILE TAB ────────────────────────────────── */}
               {activeTab === 'profile' && (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                  <InfoSection title="Personal Information">
+                  <InfoSection title="Personal Information" className="lg:col-span-2">
                     <InfoItem label="First Name">{valueOrDash(member.firstName)}</InfoItem>
                     <InfoItem label="Middle Name">{valueOrDash(member.middleName)}</InfoItem>
                     <InfoItem label="Surname">{valueOrDash(member.surname)}</InfoItem>
@@ -516,6 +519,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
                     </InfoItem>
                     <InfoItem label="Age Groups (years old)"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
+                    <InfoItem label="Role">{valueOrDash(member.adminRoles?.length ? member.adminRoles : member.adminRole)}</InfoItem>
+                    <InfoItem label="Responsibility Type">{valueOrDash(member.responsibilityType)}</InfoItem>
+                    <InfoItem label="Level">{valueOrDash(member.responsibilityLevel)}</InfoItem>
                   </InfoSection>
 
                   <InfoSection title="Contact Information">
@@ -563,33 +569,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
                   </InfoSection>
 
-                  <InfoSection title="Organisational Details">
-                    <InfoItem label="Responsibility">
-                      {(member.responsibilities?.length
-                        ? member.responsibilities
-                        : [{
-                            responsibilityLevel: member.responsibilityLevel,
-                            sanghResponsibility: member.jobTitle,
-                            responsibilityType: member.responsibilityType,
-                          }]
-                      ).map((item, index) => (
-                        <span key={index} className="block">
-                          {[item.responsibilityLevel, item.sanghResponsibility, item.responsibilityType].filter(Boolean).join(' · ')}
-                        </span>
-                      ))}
-                    </InfoItem>
-                    <InfoItem label="Organisational Role">{member.orgRole}</InfoItem>
-                    <InfoItem label="Country / Organisation">{member.country}</InfoItem>
-                    <InfoItem label="Vibhag (Region)">{member.region}</InfoItem>
-                    <InfoItem label="Nagar (Town)">{member.town}</InfoItem>
-                    <InfoItem label="Shakha (Branch)">{member.activityCentre}</InfoItem>
-                    <InfoItem label="Member ID">
-                      <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">
-                        {member.id}
-                      </code>
-                    </InfoItem>
-                    <InfoItem label="Registration Date">{formatDateTime(member.registrationDate)}</InfoItem>
-                  </InfoSection>
                 </div>
               )}
 
@@ -623,6 +602,24 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           : 'DBS check is pending. Please submit or process the DBS application.'
                       }
                     />
+                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[
+                        { label: 'Certificate Number',        value: member.dbsCertificateNumber },
+                        { label: 'Certificate Date',          value: member.dbsCertificateDate ? new Date(member.dbsCertificateDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined },
+                        { label: 'Certificate Received From', value: member.dbsCertificateReceivedFrom },
+                        { label: 'Other Source',              value: member.dbsCertificateReceivedFromOther },
+                        { label: 'DBS Update Service',        value: member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : undefined },
+                        { label: 'Update Service Number',     value: member.dbsUpdateServiceNumber },
+                        { label: 'Last Service Check',        value: member.dbsUpdateServiceCheckDate ? new Date(member.dbsUpdateServiceCheckDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined },
+                        { label: 'App Under Process',         value: member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : undefined },
+                        { label: 'Verified By',               value: member.dbsCheckedBy },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">{label}</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{value ?? '—'}</p>
+                        </div>
+                      ))}
+                    </div>
 
                     {/* First Aid */}
                     <ComplianceCard
@@ -678,6 +675,18 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Level of Training</p>
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
+                      </div>
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Reference Number</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
+                      </div>
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Expiry Date</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.safeguardingExpiry
+                            ? new Date(member.safeguardingExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </p>
                       </div>
                     </div>
 
@@ -739,7 +748,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
               {/* ── HISTORY TAB ─────────────────────────────────── */}
               {activeTab === 'history' && (
-                <div className="space-y-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+
+                  {/* Left — Registration cards + Change History */}
+                  <div className="flex-1 min-w-0 space-y-6">
 
                   {/* ── Registration & Approval summary ── */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -873,113 +885,35 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       })}
                     </div>
                   </div>
+
+                  </div>{/* end left column */}
+
+                  {/* Right — Previous Responsibilities */}
+                  {member.previousResponsibilities && member.previousResponsibilities.length > 0 && (
+                    <div className="lg:w-72 flex-shrink-0">
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                          <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Previous Responsibilities</h4>
+                        </div>
+                        <div className="px-6 pb-5 pt-4 space-y-3">
+                          {member.previousResponsibilities.map((item, idx) => (
+                            <div key={idx} className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-4 py-3">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                {item.responsibilityType} · {item.responsibilityLevel}
+                              </p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                {formatDate(item.startDate)} – {formatDate(item.endDate)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* RIGHT COLUMN — Sidebar (30%) */}
-          <div className="lg:w-[30%] space-y-6">
-
-            {/* Status Warning */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                Membership Status
-              </h4>
-              <div className="px-6 pb-5 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <StatusBadge status={member.status} />
-                </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                  <p className="text-[10px] text-amber-800 dark:text-amber-200 leading-normal italic">
-                    Changing the member status will immediately affect their access to HSS events, Shakhas, and the member portal.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Responsibility Assignment */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <div className="px-6 pb-5 pt-4 space-y-4">
-                <div>
-                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
-                    Role
-                  </span>
-                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                    {valueOrDash(member.adminRoles?.length ? member.adminRoles : member.adminRole)}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
-                    Responsibility Type
-                  </span>
-                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                    {valueOrDash(member.responsibilityType)}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
-                    Level
-                  </span>
-                  <p className="min-h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                    {valueOrDash(member.responsibilityLevel)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Compliance Summary (sidebar quick view) */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-              <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                Compliance Summary
-              </h4>
-              <div className="px-6 pb-5 pt-4 space-y-3">
-                {[
-                  { label: 'DBS Check',           status: member.compliance.dbs },
-                  { label: 'First Aid',            status: member.compliance.firstAid },
-                  { label: 'Safeguarding',         status: member.compliance.safeguardingTraining ?? 'pending' },
-                  { label: 'Parental Consent',     status: member.compliance.parentalConsent },
-                ].map(({ label, status }) => {
-                  const isClear   = status === 'completed' || status === 'granted';
-                  const isPending = status === 'pending';
-                  const isNA      = status === 'n/a';
-                  const dot       = isClear ? 'bg-[#4EAE33]' : isPending ? 'bg-[#F9B03D]' : 'bg-neutral-300';
-                  const statusText = isClear ? (status === 'granted' ? 'Granted' : 'Completed') : isPending ? 'Pending' : 'N/A';
-                  return (
-                    <div key={label} className="flex items-center justify-between text-sm">
-                      <span className="text-neutral-600 dark:text-neutral-400 text-xs">{label}</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                        <span className={`text-xs font-medium ${isClear ? 'text-[#3d8928]' : isPending ? 'text-[#d97706]' : 'text-neutral-400'}`}>
-                          {statusText}
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Old Responsibilities */}
-            {member.previousResponsibilities && member.previousResponsibilities.length > 0 && (
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                  Old Responsibilities
-                </h4>
-                <div className="px-6 pb-5 pt-4 space-y-3">
-                  {member.previousResponsibilities.map((item, idx) => (
-                    <div key={idx} className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-3 py-2">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {item.responsibilityType} · {item.responsibilityLevel}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                        {formatDate(item.startDate)} – {formatDate(item.endDate)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
