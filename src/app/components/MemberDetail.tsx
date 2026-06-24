@@ -341,15 +341,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               {/* Text block */}
               <div className="flex-1 min-w-0">
 
-              {/* Row 1 — Name · Job Title · Member ID */}
+              {/* Row 1 — Name · Member ID */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                   {member.name}
                 </h1>
-                <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                  {[member.jobTitle, ...(member.additionalJobTitles ?? [])].join(', ')}
-                </span>
                 <span className="text-neutral-400 dark:text-neutral-600">·</span>
                 <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">
                   {member.id}
