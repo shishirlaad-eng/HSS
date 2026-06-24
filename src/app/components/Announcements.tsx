@@ -8,7 +8,7 @@
 // Bell icon: In-app notification receipt
 // ─────────────────────────────────────────────────────────────
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Megaphone,
   Plus,
@@ -39,8 +39,9 @@ import {
   Loader2,
   Pencil,
   Upload,
+  CalendarDays,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination, SearchBar, SecondaryButton } from './hb/listing';
+import { PageHeader, PrimaryButton, Pagination, SearchBar, SecondaryButton, DateRangeFilter } from './hb/listing';
 import {
   StatCard,
   FormModal,
@@ -361,6 +362,11 @@ export default function Announcements({
   const [searchQuery, setSearchQuery]     = useState('');
   const [filterStatus, setFilterStatus]   = useState<AnnouncementStatus | 'all'>('all');
   const [filterScope, setFilterScope]     = useState<AnnouncementScope | 'all'>('all');
+  const [dateStart, setDateStart]         = useState('');
+  const [dateEnd, setDateEnd]             = useState('');
+  const [dateLabel, setDateLabel]         = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const dateFilterRef                     = useRef<HTMLDivElement>(null);
   const [page, setPage]                   = useState(1);
   const [PER_PAGE, setPER_PAGE]           = useState(10);
 
@@ -396,9 +402,11 @@ export default function Announcements({
       const matchSearch = !q || a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q) || a.postedBy.toLowerCase().includes(q);
       const matchStatus = filterStatus === 'all' || a.status === filterStatus;
       const matchScope  = filterScope  === 'all' || a.scope  === filterScope;
-      return matchSearch && matchStatus && matchScope;
+      const annDate = (a.sentAt ?? a.createdAt ?? '').slice(0, 10);
+      const matchDate = (!dateStart || annDate >= dateStart) && (!dateEnd || annDate <= dateEnd);
+      return matchSearch && matchStatus && matchScope && matchDate;
     });
-  }, [announcements, searchQuery, filterStatus, filterScope]);
+  }, [announcements, searchQuery, filterStatus, filterScope, dateStart, dateEnd]);
 
   const totalPages = PER_PAGE === 0 ? 1 : Math.ceil(filtered.length / PER_PAGE);
   const paginated  = PER_PAGE === 0 ? filtered : filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -895,11 +903,44 @@ export default function Announcements({
         subtitle={isMemberRole ? "Below is the list of all Suchanas for your attention" : "Create and manage suchanas for members across the network"}
       >
         {isMemberRole ? (
-          <SearchBar
-            value={searchQuery}
-            onChange={v => { setSearchQuery(v); setPage(1); }}
-            placeholder="Search Suchanas…"
-          />
+          <>
+            <SearchBar
+              value={searchQuery}
+              onChange={v => { setSearchQuery(v); setPage(1); }}
+              placeholder="Search Suchanas…"
+            />
+            <div className="relative" ref={dateFilterRef}>
+              <button
+                onClick={() => setShowDateFilter(p => !p)}
+                title="Filter by date"
+                className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  dateStart
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                    : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+                }`}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                {dateStart ? (dateLabel || `${dateStart} – ${dateEnd}`) : 'Date range'}
+                {dateStart && (
+                  <span
+                    role="button"
+                    onClick={e => { e.stopPropagation(); setDateStart(''); setDateEnd(''); setDateLabel(''); }}
+                    className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                  >
+                    <X className="w-3 h-3" />
+                  </span>
+                )}
+              </button>
+              <DateRangeFilter
+                isOpen={showDateFilter}
+                onClose={() => setShowDateFilter(false)}
+                startDate={dateStart}
+                endDate={dateEnd}
+                onApply={(start, end, label) => { setDateStart(start); setDateEnd(end); setDateLabel(label || ''); setPage(1); }}
+                title="Suchana Date Range"
+              />
+            </div>
+          </>
         ) : (
           <SearchBar
             value={searchQuery}
