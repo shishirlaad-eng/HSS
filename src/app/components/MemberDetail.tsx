@@ -191,6 +191,7 @@ interface MemberDetailProps {
   mode?: 'approval';
   onApprove?: () => void;
   onReject?: () => void;
+  hideComplianceTab?: boolean;
 }
 
 type Tab = 'profile' | 'compliance' | 'activity' | 'history';
@@ -289,7 +290,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject }: MemberDetailProps) {
+export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab }: MemberDetailProps) {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
   const age = getAge(member.dateOfBirth);
@@ -314,7 +315,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: 'profile',    label: 'Profile' },
-    { id: 'compliance', label: 'Compliance', badge: complianceAlerts },
+    ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance', badge: complianceAlerts }] : []),
     ...(mode !== 'approval' ? [
       { id: 'activity' as Tab, label: 'Activity' },
       { id: 'history'  as Tab, label: 'History'  },

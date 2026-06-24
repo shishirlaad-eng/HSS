@@ -425,9 +425,9 @@ function CommonDonationAction({
             <Lock className="w-4 h-4" />
             {amount > 0
               ? mode === 'one-off'
-                ? `Donate £${amount.toFixed(2)}`
-                : `Donate £${amount.toFixed(2)} ${frequency}`
-              : 'Donate'}
+                ? `Give Dakshina £${amount.toFixed(2)}`
+                : `Give Dakshina £${amount.toFixed(2)} ${frequency}`
+              : 'Give Dakshina'}
             <ChevronRight className="w-4 h-4" />
           </>
         )}

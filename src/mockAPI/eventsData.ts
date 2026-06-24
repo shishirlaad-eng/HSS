@@ -264,6 +264,11 @@ export const mockEvents: Event[] = [
   {
     id: 'EVT-102',
     name: 'Tech Workshop Series',
+    customQuestions: [
+      { id: 'CQ-102-1', label: 'What is your current experience level?', type: 'dropdown', options: ['Beginner', 'Intermediate', 'Advanced'], required: true },
+      { id: 'CQ-102-2', label: 'Will you bring your own laptop?', type: 'dropdown', options: ['Yes', 'No — please arrange one'], required: true },
+      { id: 'CQ-102-3', label: 'Any specific topics you would like covered?', type: 'text', required: false },
+    ],
     host: 'Sarah Johnson',
     status: 'published',
     country: 'HSS UK',
@@ -369,6 +374,11 @@ export const mockEvents: Event[] = [
     ],
     capacity: 100,
     description: 'An elegant black-tie fundraising gala to support HSS community welfare and youth programmes. Includes a three-course dinner, live entertainment, and a charity auction. Smart dress required.',
+    customQuestions: [
+      { id: 'CQ-105-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Jain', 'Gluten-free', 'Other'], required: true },
+      { id: 'CQ-105-2', label: 'Do you require a table with wheelchair access?', type: 'dropdown', options: ['No', 'Yes'], required: true },
+      { id: 'CQ-105-3', label: 'Any special requests or accessibility needs?', type: 'text', required: false },
+    ],
     metrics: {
       going: 92,
       maybe: 18,
@@ -424,6 +434,10 @@ export const mockEvents: Event[] = [
     paymentType: 'free',
     capacity: 80,
     description: 'A community Iftar gathering to foster interfaith friendships and celebrate shared values. All are welcome to break bread together in a spirit of unity, respect, and community.',
+    customQuestions: [
+      { id: 'CQ-107-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Halal only', 'Other'], required: true },
+      { id: 'CQ-107-2', label: 'How many guests are you bringing?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
+    ],
     metrics: {
       going: 0,
       maybe: 0,
@@ -457,6 +471,11 @@ export const mockEvents: Event[] = [
     ],
     capacity: 300,
     description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
+    customQuestions: [
+      { id: 'CQ-108-1', label: 'How many children (under 12) are attending with you?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
+      { id: 'CQ-108-2', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Jain', 'Nut allergy', 'Other'], required: true },
+      { id: 'CQ-108-3', label: 'I give permission for my children to participate in all carnival activities', type: 'checkbox', required: false },
+    ],
     metrics: {
       going: 12,
       maybe: 5,
@@ -543,6 +562,11 @@ export const mockEvents: Event[] = [
     paymentType: 'free',
     capacity: 60,
     description: 'Planning meeting for the upcoming Sangh Shiksha Varg, covering schedule, logistics, and volunteer assignments.',
+    customQuestions: [
+      { id: 'CQ-111-1', label: 'Your role / responsibility in the Sangh', type: 'text', required: true },
+      { id: 'CQ-111-2', label: 'Are you available for the full duration of the Shiksha Varg?', type: 'dropdown', options: ['Yes — full duration', 'Partial — please specify below', 'Not yet confirmed'], required: true },
+      { id: 'CQ-111-3', label: 'Any constraints or notes for the planning team', type: 'text', required: false },
+    ],
     metrics: {
       going: 0,
       maybe: 0,
@@ -570,6 +594,11 @@ export const mockEvents: Event[] = [
     paymentType: 'free',
     capacity: 150,
     description: 'A relaxed outdoor picnic for HSS families — games, food stalls, and activities for children and adults.',
+    customQuestions: [
+      { id: 'CQ-112-1', label: 'Number of adults attending', type: 'dropdown', options: ['1', '2', '3', '4+'], required: true },
+      { id: 'CQ-112-2', label: 'Number of children attending', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
+      { id: 'CQ-112-3', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Jain', 'Other'], required: false },
+    ],
     metrics: {
       going: 64,
       maybe: 18,

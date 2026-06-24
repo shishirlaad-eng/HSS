@@ -30,7 +30,7 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm transition-all"
         >
           <Heart className="w-4 h-4" />
-          Donate
+          Give Dakshina
         </button>
       </PageHeader>
 

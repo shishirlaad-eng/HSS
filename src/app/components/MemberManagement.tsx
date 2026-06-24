@@ -1124,9 +1124,11 @@ function BulkUploadModal({
 export default function MemberManagement({
   initialMemberId,
   onConsumeInitialMember,
+  karyakartasOnly = false,
 }: {
   initialMemberId?: string | null;
   onConsumeInitialMember?: () => void;
+  karyakartasOnly?: boolean;
 } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
@@ -1149,7 +1151,7 @@ export default function MemberManagement({
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
-  const [showKaryakartasOnly, setShowKaryakartasOnly] = useState(false);
+  const [showKaryakartasOnly, setShowKaryakartasOnly] = useState(karyakartasOnly);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -1299,7 +1301,7 @@ export default function MemberManagement({
         return true;
       })();
 
-      const matchesKaryakarta = !showKaryakartasOnly || hasResponsibility(m);
+      const matchesKaryakarta = !(showKaryakartasOnly || karyakartasOnly) || hasResponsibility(m);
 
       return matchesSearch && matchesFilters && matchesRegDate && matchesKaryakarta;
     });
@@ -1592,28 +1594,6 @@ export default function MemberManagement({
             />
           </div>
 
-          {/* Karyakartas — members with a Responsibility assigned (all roles) */}
-          <button
-            onClick={() => setShowKaryakartasOnly(p => !p)}
-            title="Show only Karyakartas (members with a sangh responsibility assigned)"
-            className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
-              showKaryakartasOnly
-                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
-                : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            Karyakartas
-            {showKaryakartasOnly && (
-              <span
-                role="button"
-                onClick={e => { e.stopPropagation(); setShowKaryakartasOnly(false); }}
-                className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
-              >
-                <X className="w-3 h-3" />
-              </span>
-            )}
-          </button>
 
           {mp.canAdd && (
             <PrimaryButton icon={Plus} onClick={() => setShowAddModal(true)}>
@@ -1850,8 +1830,17 @@ export default function MemberManagement({
                         </td>
                       )}
                       {visibleColumns.sanghResponsibility && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.sanghResponsibility ?? '—'}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {m.responsibilityType ? (
+                            <div className="text-xs">
+                              <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{m.responsibilityType}</span>
+                              {m.responsibilityLevel && (
+                                <span className="text-neutral-400 block">{m.responsibilityLevel}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-neutral-400">—</span>
+                          )}
                         </td>
                       )}
                       {visibleColumns.mastersScope && (

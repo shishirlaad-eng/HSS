@@ -516,7 +516,7 @@ export function AdvancedSearchPanel({
                 <div className="flex-1 relative">
                   {index === 0 && (
                     <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                      What
+                      Is
                     </label>
                   )}
                   <button

@@ -890,7 +890,7 @@ export function GlobalHeader({
                               className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                 subItem.active
                                   ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
                               }`}
                             >
                               <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
@@ -940,7 +940,7 @@ export function GlobalHeader({
                                     className={`w-full pl-8 pr-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                       subItem.active
                                         ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                                        : "text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
                                     }`}
                                   >
                                     <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0" />
@@ -957,7 +957,7 @@ export function GlobalHeader({
                               className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                 isActive
                                   ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                                  : "text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
                               }`}
                             >
                               {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}

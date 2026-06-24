@@ -373,21 +373,15 @@ export default function PendingApprovals() {
 
   // ── Summary counts ──────────────────────────────────────────
 
-  const now = Date.now();
-  const todayStart  = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const weekStart   = new Date(now - 7 * 86_400_000);
+  const now       = Date.now();
+  const weekStart = new Date(now - 7 * 86_400_000);
 
-  const pendingToday = pendingMembers.filter(
-    m => new Date(m.registrationDate) >= todayStart
-  ).length;
-
-  const pendingThisWeek = pendingMembers.filter(
+  const registeredThisWeek = pendingMembers.filter(
     m => new Date(m.registrationDate) >= weekStart
   ).length;
 
-  const complianceIssues = pendingMembers.filter(
-    m => m.compliance.dbs !== 'completed' || m.compliance.firstAid !== 'completed'
-  ).length;
+  const waitingOver7  = pendingMembers.filter(m => waitingDays(m.registrationDate) >= 7).length;
+  const waitingOver14 = pendingMembers.filter(m => waitingDays(m.registrationDate) >= 14).length;
 
   // ── Handlers ───────────────────────────────────────────────
 
@@ -482,6 +476,7 @@ export default function PendingApprovals() {
           mode="approval"
           onApprove={mp.canApprove ? () => openModal(liveMember, 'approve') : undefined}
           onReject={mp.canApprove  ? () => openModal(liveMember, 'reject')  : undefined}
+          hideComplianceTab={selectedRole === 'Shakha Admin'}
         />
         <ApproveConfirmModal
           isOpen={modal.isOpen && modal.action === 'approve'}
@@ -534,11 +529,11 @@ export default function PendingApprovals() {
 
         {/* PAGE HEADER */}
         <PageHeader
-          title="Pending Approvals"
+          title="Pending Karyawaha Approvals"
           subtitle="Review and action member registration requests awaiting approval."
           breadcrumbs={[
             { label: 'Members Management', href: '#' },
-            { label: 'Pending Approvals', current: true },
+            { label: 'Pending Karyawaha Approvals', current: true },
           ]}
         >
           <div className="relative">
@@ -642,12 +637,12 @@ export default function PendingApprovals() {
         {/* SUMMARY WIDGETS */}
         {showSummary && (
           <SummaryWidgets
-            title="Pending Approval Summary"
+            title="Pending Karyawaha Approval Summary"
             widgets={[
-              { label: 'Total Pending',      value: pendingMembers.length,  icon: 'Clock' },
-              { label: 'Registered Today',   value: pendingToday,           icon: 'CheckCircle' },
-              { label: 'This Week',          value: pendingThisWeek,        icon: 'Users' },
-              { label: 'Compliance Issues',  value: complianceIssues,       icon: 'AlertTriangle' },
+              { label: 'Total Pending',        value: pendingMembers.length, icon: 'Clock'         },
+              { label: 'Registered This Week', value: registeredThisWeek,    icon: 'CheckCircle'   },
+              { label: 'Waiting > 7 Days',     value: waitingOver7,          icon: 'Users'         },
+              { label: 'Waiting > 14 Days',    value: waitingOver14,         icon: 'AlertTriangle' },
             ]}
           />
         )}
@@ -766,14 +761,6 @@ export default function PendingApprovals() {
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                       <WaitingBadge days={days} />
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                      <span className="flex items-center gap-1 text-neutral-500">
-                        DBS: <ComplianceBadge status={m.compliance.dbs} />
-                      </span>
-                      <span className="flex items-center gap-1 text-neutral-500">
-                        FA: <ComplianceBadge status={m.compliance.firstAid} />
-                      </span>
                     </div>
                   </div>
 

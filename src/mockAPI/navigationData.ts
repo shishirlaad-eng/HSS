@@ -145,17 +145,23 @@ export const getNavigationData = (
           active: currentPage === "members",
         },
         {
+          id: "karyakartas",
+          label: "Karyakartas",
+          onClick: () => onNavigate("karyakartas"),
+          active: currentPage === "karyakartas",
+        },
+        {
           id: "pending-approvals",
-          label: "Pending Approvals",
+          label: "Pending Karyawaha Approvals",
           onClick: () => onNavigate("pending-approvals"),
           active: currentPage === "pending-approvals",
         },
-        {
+        ...(selectedRole === 'Super Admin' ? [{
           id: "pending-guardian-approvals",
           label: "Pending Guardian Approvals",
           onClick: () => onNavigate("pending-guardian-approvals"),
           active: currentPage === "pending-guardian-approvals",
-        },
+        }] : []),
       ],
     },
 

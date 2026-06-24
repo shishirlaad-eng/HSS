@@ -134,7 +134,8 @@ export function Sidebar({
     // 2. Members Management
     "members-management-group":      "Members",
     "members":                        "Members",
-    "pending-approvals":              "Pending Approvals",
+    "karyakartas":                    "Karyakartas",
+    "pending-approvals":              "Pending Karyawaha Approvals",
     "pending-guardian-approvals":     "Pending Guardian Approvals",
 
     // 3. Karyakrams
@@ -304,7 +305,7 @@ export function Sidebar({
                           onClick={subItem.onClick}
                           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${subItem.active
                             ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                            : "text-neutral-600 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
                             }`}
                         >
                           <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
@@ -482,8 +483,8 @@ export function Sidebar({
                   }}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                     sub.active 
-                      ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30" 
-                      : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                      ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30"
+                      : "text-neutral-600 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
                   }`}
                 >
                   {getLabel(sub.id, sub.label)}

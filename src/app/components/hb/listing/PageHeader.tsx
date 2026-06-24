@@ -77,7 +77,6 @@ import {
   FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
 import { IconButton } from './IconButton';
 import { FlyoutMenu, FlyoutMenuItem, FlyoutMenuDivider } from './FlyoutMenu';
 import { cn } from '../../ui/utils';
@@ -170,20 +169,6 @@ export function PageHeader({
             </p>
           )}
 
-          {breadcrumbs && breadcrumbs.length > 0 && (
-            <Breadcrumb>
-              {breadcrumbs.map((item, index) => (
-                <BreadcrumbItem
-                  key={index}
-                  href={item.href}
-                  current={item.current}
-                  onClick={item.onClick}
-                >
-                  {item.label}
-                </BreadcrumbItem>
-              ))}
-            </Breadcrumb>
-          )}
         </div>
 
         {(children || hasMoreMenu) && (

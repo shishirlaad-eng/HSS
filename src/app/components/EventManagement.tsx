@@ -1344,12 +1344,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         {!isMemberRole && showSummary && (
           <SummaryWidgets
             title="Karyakram Summary"
-            colorCards={true}
             widgets={[
-              { label: 'Total Karyakrams',    value: events.length,                                                                          icon: 'Activity',     color: 'sky'     },
-              { label: 'Active',              value: scopedEvents.filter(e => e.status === 'active').length,                                  icon: 'CheckCircle',  color: 'emerald' },
-              { label: 'Draft / Published',   value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length,       icon: 'Clock',        color: 'amber'   },
-              { label: 'Completed',           value: scopedEvents.filter(e => e.status === 'completed').length,                               icon: 'XCircle',      color: 'slate'   },
+              { label: 'Total Karyakrams',  value: events.length,                                                                    icon: 'Activity'    },
+              { label: 'Active',            value: scopedEvents.filter(e => e.status === 'active').length,                            icon: 'CheckCircle' },
+              { label: 'Draft / Published', value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock'       },
+              { label: 'Completed',         value: scopedEvents.filter(e => e.status === 'completed').length,                         icon: 'XCircle'     },
             ]}
           />
         )}
@@ -1379,7 +1378,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
                   <Calendar size={15} className="text-blue-500 flex-shrink-0" />
-                  <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
+                  <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {memberData.notRegistered.length === 0 ? (
@@ -1417,7 +1416,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
                   <Calendar size={15} className="text-blue-500 flex-shrink-0" />
-                  <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
+                  <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {memberData.registered.length === 0 ? (
@@ -1455,7 +1454,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             {/* Completed Karyakrams – Attended (full width) */}
             {memberData.attended.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
+                <h2 className="text-[16px] font-semibold text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />
                   Completed Karyakrams – Attended
                 </h2>

@@ -255,9 +255,12 @@ export default function App() {
           />
         ) : currentPage === "members" ? (
           <MemberManagement
+            key="members"
             initialMemberId={memberToView}
             onConsumeInitialMember={() => setMemberToView(null)}
           />
+        ) : currentPage === "karyakartas" ? (
+          <MemberManagement key="karyakartas" karyakartasOnly={true} />
         ) : currentPage === "pending-approvals" ? (
           <PendingApprovals />
         ) : currentPage === "pending-guardian-approvals" ? (
