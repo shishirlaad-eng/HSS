@@ -458,12 +458,6 @@ export default function EventDetail({
                     <span className="text-sm text-neutral-500">
                       {event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free'}
                     </span>
-                    {event.capacity && (
-                      <>
-                        <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                        <span className="text-sm text-neutral-500">Cap: {event.capacity}</span>
-                      </>
-                    )}
                   </>
                 )}
               </div>
@@ -596,10 +590,10 @@ export default function EventDetail({
                     <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                       {isMember ? (
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                          <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Event Description</h4>
+                          <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Karyakram Description</h4>
                         </div>
                       ) : (
-                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Description</h4>
+                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Karyakram Description</h4>
                       )}
                       <p className="px-5 py-4 text-[14px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
                         {event.description}
@@ -617,7 +611,6 @@ export default function EventDetail({
                         </div>
                         <div className="px-5 py-4 space-y-4">
                           {[
-                            { label: 'Karyakram Title', value: event.name },
                             { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
                             { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
                             { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
