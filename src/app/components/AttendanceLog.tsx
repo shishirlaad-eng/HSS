@@ -399,7 +399,7 @@ export default function AttendanceLog() {
         {/* ── PAGE HEADER ── */}
         <PageHeader
           title={scope.selfOnly ? "My Sankhya" : "Sankhya Log"}
-          subtitle={scope.selfOnly ? "Your personal Sankhya record." : "Complete record of member Sankhya across all Shakha gatherings."}
+          subtitle={scope.selfOnly ? "Your Personal Attendance Record" : "Complete record of member Sankhya across all Shakha gatherings."}
           >
           {/* Search + Advanced Filter panel — admin only */}
           {!scope.selfOnly && (
@@ -490,10 +490,10 @@ export default function AttendanceLog() {
         {/* ── SUMMARY WIDGETS ── */}
         {showSummary && (
           <SummaryWidgets
-            title={scope.selfOnly ? "My Sankhya Summary" : "Attendance Summary"}
+            title={scope.selfOnly ? "My Attendance Summary (YTD)" : "Attendance Summary"}
             colorCards={scope.selfOnly}
             widgets={[
-              { label: 'Total Records',   value: filtered.length,  icon: 'Users',       color: 'slate'   },
+              { label: 'Shakhas Held (YTD)', value: filtered.length,  icon: 'Users',       color: 'slate'   },
               { label: 'Present',         value: presentCount,     icon: 'CheckCircle', color: 'emerald' },
               { label: 'Absent',          value: absentCount,      icon: 'XCircle',     color: 'amber'   },
               { label: 'Attendance Rate', value: `${rate}%`,       icon: 'BarChart3',   color: 'sky'     },

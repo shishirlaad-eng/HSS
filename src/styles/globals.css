@@ -299,30 +299,42 @@ body {
 }
 
 /* Global Hand Cursor for Clickable Elements */
-a, 
-button, 
+a,
+button,
 [role="button"],
+[role="tab"],
+[role="menuitem"],
+[role="menuitemcheckbox"],
+[role="menuitemradio"],
+[role="option"],
+[role="link"],
+[role="checkbox"],
+[role="radio"],
+[role="switch"],
+[role="combobox"],
+[role="listbox"],
+[role="treeitem"],
 select,
+label[for],
 input[type="checkbox"],
 input[type="radio"],
-.cursor-pointer,
-.hover\:bg-neutral-50,
-.dark .hover\:bg-neutral-900,
-.group:hover {
+input[type="file"],
+input[type="submit"],
+input[type="reset"],
+summary,
+[tabindex]:not([tabindex="-1"]),
+.cursor-pointer {
   cursor: pointer;
 }
 
-/* Ensure disabled elements don't show hand cursor */
+/* Disabled elements */
 button:disabled,
 input:disabled,
+select:disabled,
 [disabled],
+[aria-disabled="true"],
 .cursor-not-allowed {
   cursor: not-allowed !important;
-}
-
-/* Static text elements should remain default cursor */
-p, span, h1, h2, h3, h4, h5, h6, label:not([for]) {
-  cursor: default;
 }
 
 @layer base {

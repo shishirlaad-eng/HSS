@@ -116,9 +116,9 @@ function timeAgo(iso: string): string {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7)  return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return `${Math.floor(diffDays / 30)} months ago`;
+  if (diffDays < 7)  { const d = diffDays; return `${d} ${d === 1 ? 'day' : 'days'} ago`; }
+  if (diffDays < 30) { const w = Math.floor(diffDays / 7); return `${w} ${w === 1 ? 'week' : 'weeks'} ago`; }
+  const m = Math.floor(diffDays / 30); return `${m} ${m === 1 ? 'month' : 'months'} ago`;
 }
 
 function getInitials(name: string) {
@@ -659,7 +659,6 @@ function MemberDashboard({
                         <div className="flex items-center gap-3 text-[12px] text-neutral-500 dark:text-neutral-400 flex-wrap">
                           <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} – {formatEventTime(event.endDate)}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.activityCentre}</span>
-                          <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" />{event.metrics.participantCount} registered</span>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
