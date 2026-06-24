@@ -17,6 +17,11 @@ import {
 const PROFILE_STORAGE_KEY = "myProfile";
 const MEMBER_PROFILE_STORAGE_KEY = "myMemberProfile";
 
+const MOCK_PREVIOUS_RESPONSIBILITIES = [
+  { level: "Shakha / Activity centre", responsibility: "Karyawaha", type: "Seva", from: "2019-04-01", to: "2021-03-31" },
+  { level: "Nagar / Town",             responsibility: "Shikshak",  type: "Toli", from: "2021-04-01", to: "2023-03-31" },
+];
+
 interface ProfileForm {
   email: string;
   mobile: string;
@@ -47,13 +52,18 @@ interface MemberProfileForm {
   guardianPhone: string;
   guardianEmail: string;
   guardianRelationship: string;
+  membershipId: string;
   medicalInfoDeclared: string;
   medicalInfoDetails: string;
+  epiPen: string;
+  allergies: string;
   isFirstAider: string;
   firstAidQualificationLevel: string;
   firstAidQualificationExpiryDate: string;
   dietaryRequirements: string;
   originatingStateIndia: string;
+  spokenLanguages: string;
+  additionalNotes: string;
   country: string;
   region: string;
   town: string;
@@ -73,6 +83,7 @@ interface MemberProfileForm {
   // Compliance — First Aid
   firstAidStatus: string;
   firstAidRef: string;
+  firstAidCertFile: string;
   // Compliance — Safeguarding
   safeguardingStatus: string;
   safeguardingRef: string;
@@ -114,13 +125,18 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   guardianPhone: "",
   guardianEmail: "",
   guardianRelationship: "",
+  membershipId: "MEM-00142",
   medicalInfoDeclared: "No",
   medicalInfoDetails: "",
+  epiPen: "No",
+  allergies: "",
   isFirstAider: "Yes",
   firstAidQualificationLevel: "1-day First Aid qualification",
   firstAidQualificationExpiryDate: "2026-09-15",
   dietaryRequirements: "Vegan",
   originatingStateIndia: "Gujarat",
+  spokenLanguages: "English, Gujarati, Hindi",
+  additionalNotes: "",
   country: "HSS UK",
   region: "London & South East",
   town: "Harrow",
@@ -140,6 +156,7 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   // Compliance — First Aid
   firstAidStatus: "Completed",
   firstAidRef: "FA-2023-001",
+  firstAidCertFile: "first_aid_cert_2023.pdf",
   safeguardingStatus: "Completed",
   safeguardingRef: "SG-2024-042",
   safeguardingExpiry: "2027-03-20",
@@ -173,8 +190,11 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
       guardianPhone: "+44 7700 900126",
       guardianEmail: "meena.joshi@example.com",
       guardianRelationship: "Mother",
+      membershipId: "MEM-00287",
       medicalInfoDeclared: "No",
       medicalInfoDetails: "",
+      epiPen: "No",
+      allergies: "",
       isFirstAider: "No",
       firstAidQualificationLevel: "",
       firstAidQualificationExpiryDate: "",
@@ -345,7 +365,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 // ── Member profile view ───────────────────────────────────────
 
-type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history';
+type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other';
 
 function MemberProfileView({ selectedRole }: { selectedRole: string }) {
   const loadProfile = () => {
@@ -411,7 +431,8 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
   const initials = fullName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase() || "JD";
   const isTeenRole = selectedRole.toLowerCase().includes("teen");
-  const showGuardian = isTeenRole || Boolean(profile.guardianName || profile.guardianEmail || profile.guardianPhone);
+  const isMemberRole = isTeenRole || selectedRole === 'Adult Member';
+  const showGuardian = isMemberRole;
 
   const setField = (field: keyof MemberProfileForm, value: string) => {
     setProfile(cur => {
@@ -509,9 +530,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
   const TABS: { id: ProfileTab; label: string }[] = [
     { id: 'personal',     label: 'Personal Info'       },
+    ...(showGuardian ? [{ id: 'guardian' as ProfileTab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation', label: 'Organisation'        },
     { id: 'compliance',   label: 'Compliance Details'  },
-    { id: 'sangh',        label: 'Sangh Responsibility'},
+    { id: 'other',        label: 'Other Information'   },
     { id: 'history',      label: 'History'             },
   ];
 
@@ -622,12 +644,12 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {/* ── Personal Info ── */}
           {activeTab === 'personal' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <InfoSection title="Personal Information">
+              <InfoSection title="Personal Details">
                 <EditableInfoItem label="First Name"    value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
+                <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
-                <EditableInfoItem label="Surname"       value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
-                <InfoItem label="Full Name">{valueOrDash(fullName)}</InfoItem>
                 <EditableInfoItem label="Gender"        value={profile.gender}      isEditing={isEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
+                <EditableInfoItem label="Surname"       value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
                 {isEditing ? (
                   <EditableInfoItem label="Date of Birth" value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
                 ) : (
@@ -636,15 +658,29 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
                   </InfoItem>
                 )}
-                <InfoItem label="Age Group">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
-                <EditableInfoItem label="Occupation"    value={profile.occupation}  isEditing={isEditing} onChange={v => setField("occupation", v)} />
               </InfoSection>
 
-              <InfoSection title="Other Information">
-                <EditableInfoItem label="Medical Information Declared"     value={profile.medicalInfoDeclared}   isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)}   options={["No", "Yes"]} />
-                <EditableInfoItem label="Medical Details"                  value={profile.medicalInfoDetails}    isEditing={isEditing} onChange={v => setField("medicalInfoDetails", v)}    textarea />
-                <div className="md:col-span-2">
-                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Dietary Requirements</label>
+              <InfoSection title="Contact Details">
+                <EditableInfoItem label="Contact Number"  value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}  type="tel" />
+                <EditableInfoItem label="Email Address"   value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}  type="email" />
+                <EditableInfoItem label="Building Name"   value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
+                <EditableInfoItem label="Town / City"     value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
+                <EditableInfoItem label="Address Line 1"  value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
+                <EditableInfoItem label="Post Code"       value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
+                <EditableInfoItem label="Address Line 2"  value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
+              </InfoSection>
+
+              <InfoSection title="Emergency Contact Details">
+                <EditableInfoItem label="Contact Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Contact Phone Number" value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Contact Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Contact Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+              </InfoSection>
+
+              <InfoSection title="Medical Details">
+                <EditableInfoItem label="Do you have any medical condition?" value={profile.medicalInfoDeclared} isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)} options={["No", "Yes"]} />
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
                   {isEditing ? (
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       {DIETARY_REQUIREMENTS.map(item => (
@@ -669,36 +705,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dietaryRequirements || '—'}</p>
                   )}
                 </div>
-                <EditableInfoItem label="Originating State in India"       value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
+                <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={profile.epiPen}    isEditing={isEditing} onChange={v => setField("epiPen", v)}    options={["No", "Yes"]} />
+                <EditableInfoItem label="Any Allergies"           value={profile.allergies} isEditing={isEditing} onChange={v => setField("allergies", v)} />
               </InfoSection>
 
-              <InfoSection title="Contact Information">
-                <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}           type="email" />
-                <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
-                <EditableInfoItem label="Primary Contact Number"   value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}           type="tel" />
-                <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
-                <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
-                <EditableInfoItem label="Address Line 1"           value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
-                <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
-                <EditableInfoItem label="Town / City"              value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
-                <EditableInfoItem label="Post Code"                value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
-              </InfoSection>
-
-              <InfoSection title="Emergency Contact">
-                <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
-                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
-                <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
-                <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
-              </InfoSection>
-
-              {showGuardian && (
-                <InfoSection title="Parent / Guardian Approval Information">
-                  <EditableInfoItem label="Parent / Guardian Name" value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
-                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
-                  <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
-                  <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
-                </InfoSection>
-              )}
             </div>
           )}
 
@@ -741,135 +751,139 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {/* ── Compliance Details ── */}
           {activeTab === 'compliance' && (
             <>
-              <InfoSection title="DBS Check">
-                <EditableInfoItem label="Status"                          value={profile.dbsStatus}                      isEditing={isEditing} onChange={v => setField("dbsStatus", v)}                      options={["Pending", "Completed"]} />
-                <EditableInfoItem label="DBS Certificate Number"          value={profile.dbsCertificateNumber}            isEditing={isEditing} onChange={v => setField("dbsCertificateNumber", v)} />
-                <EditableInfoItem label="Certificate Date"                value={profile.dbsCertificateDate}              isEditing={isEditing} onChange={v => setField("dbsCertificateDate", v)}              type="date" />
-                {/* Certificate File — file upload in edit mode */}
-                <div>
-                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Certificate File</label>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
-                        <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                        <span className="text-sm text-neutral-500 dark:text-neutral-400 flex-1 truncate">
-                          {profile.dbsCertificateFile || "Click to upload certificate…"}
-                        </span>
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          className="sr-only"
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file) setField("dbsCertificateFile", file.name);
-                          }}
-                        />
-                      </label>
-                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Accepted: PDF, JPG, PNG</p>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-neutral-900 dark:text-white font-medium">
-                      {profile.dbsCertificateFile
-                        ? <span className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400">
-                            <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
-                            {profile.dbsCertificateFile}
+              {/* First Aid + Safeguarding — side by side */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                <InfoSection title="First Aid">
+                  <EditableInfoItem label="Are you a first aider for HSS?" value={profile.isFirstAider}                   isEditing={isEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
+                  <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={isEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
+                  <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={isEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
+                  <div>
+                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Cert Upload</label>
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
+                          <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                          <span className="text-sm text-neutral-500 dark:text-neutral-400 flex-1 truncate">
+                            {profile.firstAidCertFile || "Click to upload certificate…"}
                           </span>
-                        : "—"}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only"
+                            onChange={e => { const f = e.target.files?.[0]; if (f) setField("firstAidCertFile", f.name); }} />
+                        </label>
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Accepted: PDF, JPG, PNG</p>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-neutral-900 dark:text-white font-medium">
+                        {profile.firstAidCertFile
+                          ? <span className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400"><Paperclip className="w-3.5 h-3.5 flex-shrink-0" />{profile.firstAidCertFile}</span>
+                          : "—"}
+                      </div>
+                    )}
+                  </div>
+                  <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={isEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
+                </InfoSection>
+
+                <InfoSection title="Safeguarding">
+                  <EditableInfoItem label="Level of Training"  value={profile.safeguardingRef}    isEditing={isEditing} onChange={v => setField("safeguardingRef", v)} />
+                  <EditableInfoItem label="Date Completed"     value={profile.safeguardingExpiry} isEditing={isEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
+                  <EditableInfoItem label="Safeguarding Status" value={profile.safeguardingStatus} isEditing={isEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
+                </InfoSection>
+              </div>
+
+              {/* Disclosure Barring Service — full width, 4-col rows */}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
+                  Disclosure Barring Service
+                </h4>
+                <div className="px-4 py-4 space-y-4">
+                  {/* Row 1 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Status</p>
+                      {isEditing
+                        ? <select value={profile.dbsStatus} onChange={e => setField("dbsStatus", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
+                            {["Pending","Completed"].map(o => <option key={o}>{o}</option>)}
+                          </select>
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsStatus || "—"}</p>}
                     </div>
-                  )}
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Number</p>
+                      {isEditing
+                        ? <input type="text" value={profile.dbsCertificateNumber} onChange={e => setField("dbsCertificateNumber", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateNumber || "—"}</p>}
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Date</p>
+                      {isEditing
+                        ? <input type="date" value={profile.dbsCertificateDate} onChange={e => setField("dbsCertificateDate", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateDate ? new Date(profile.dbsCertificateDate).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—"}</p>}
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert File</p>
+                      {isEditing ? (
+                        <label className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 transition-colors">
+                          <Upload className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-1 truncate">{profile.dbsCertificateFile || "Upload…"}</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only"
+                            onChange={e => { const f = e.target.files?.[0]; if (f) setField("dbsCertificateFile", f.name); }} />
+                        </label>
+                      ) : (
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {profile.dbsCertificateFile
+                            ? <span className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400"><Paperclip className="w-3.5 h-3.5" />{profile.dbsCertificateFile}</span>
+                            : "—"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {/* Row 2 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service</p>
+                      {isEditing
+                        ? <select value={profile.dbsUpdateService} onChange={e => setField("dbsUpdateService", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
+                            {["No","Yes"].map(o => <option key={o}>{o}</option>)}
+                          </select>
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsUpdateService || "—"}</p>}
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service No.</p>
+                      {isEditing
+                        ? <input type="text" value={profile.dbsUpdateServiceNumber} onChange={e => setField("dbsUpdateServiceNumber", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsUpdateServiceNumber || "—"}</p>}
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Application Under Process</p>
+                      {isEditing
+                        ? <select value={profile.dbsAppUnderProcess} onChange={e => setField("dbsAppUnderProcess", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
+                            {["No","Yes"].map(o => <option key={o}>{o}</option>)}
+                          </select>
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsAppUnderProcess || "—"}</p>}
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Received From</p>
+                      {isEditing
+                        ? <input type="text" value={profile.dbsCertificateReceivedFrom} onChange={e => setField("dbsCertificateReceivedFrom", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateReceivedFrom || "—"}</p>}
+                    </div>
+                  </div>
+                  {/* Row 3 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Verified By</p>
+                      {isEditing
+                        ? <input type="text" value={profile.dbsCheckedBy} onChange={e => setField("dbsCheckedBy", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
+                        : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCheckedBy || "—"}</p>}
+                    </div>
+                  </div>
                 </div>
-                <EditableInfoItem label="Certificate Received From"       value={profile.dbsCertificateReceivedFrom}      isEditing={isEditing} onChange={v => setField("dbsCertificateReceivedFrom", v)} />
-                <EditableInfoItem label="Other Source"                    value={profile.dbsCertificateReceivedFromOther} isEditing={isEditing} onChange={v => setField("dbsCertificateReceivedFromOther", v)} />
-                <EditableInfoItem label="Enrolled in DBS Update Service"  value={profile.dbsUpdateService}                isEditing={isEditing} onChange={v => setField("dbsUpdateService", v)}                options={["No", "Yes"]} />
-                <EditableInfoItem label="DBS Update Service Number"       value={profile.dbsUpdateServiceNumber}          isEditing={isEditing} onChange={v => setField("dbsUpdateServiceNumber", v)} />
-                <EditableInfoItem label="Last Update Service Check"       value={profile.dbsUpdateServiceCheckDate}       isEditing={isEditing} onChange={v => setField("dbsUpdateServiceCheckDate", v)}       type="date" />
-                <EditableInfoItem label="DBS Application Under Process"   value={profile.dbsAppUnderProcess}              isEditing={isEditing} onChange={v => setField("dbsAppUnderProcess", v)}              options={["No", "Yes"]} />
-                <EditableInfoItem label="Verified By"                     value={profile.dbsCheckedBy}                    isEditing={isEditing} onChange={v => setField("dbsCheckedBy", v)} />
-              </InfoSection>
-
-              <InfoSection title="First Aid">
-                <EditableInfoItem label="Status"                           value={profile.firstAidStatus}         isEditing={isEditing} onChange={v => setField("firstAidStatus", v)}         options={["Pending", "Completed"]} />
-                <EditableInfoItem label="Certificate Reference"            value={profile.firstAidRef}            isEditing={isEditing} onChange={v => setField("firstAidRef", v)} />
-                <EditableInfoItem label="Are you a qualified First Aider"  value={profile.isFirstAider}           isEditing={isEditing} onChange={v => setField("isFirstAider", v)}           options={["No", "Yes"]} />
-                {profile.isFirstAider === "Yes" && (
-                  <>
-                    <EditableInfoItem
-                      label="Level of qualification"
-                      value={profile.firstAidQualificationLevel}
-                      isEditing={isEditing}
-                      onChange={v => setField("firstAidQualificationLevel", v)}
-                      options={[...FIRST_AID_QUALIFICATION_OPTIONS]}
-                    />
-                    <EditableInfoItem
-                      label="Qualification expiry date"
-                      value={profile.firstAidQualificationExpiryDate}
-                      isEditing={isEditing}
-                      onChange={v => setField("firstAidQualificationExpiryDate", v)}
-                      type="date"
-                    />
-                  </>
-                )}
-              </InfoSection>
-
-              <InfoSection title="Safeguarding">
-                <EditableInfoItem label="Status"           value={profile.safeguardingStatus} isEditing={isEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
-                <EditableInfoItem label="Reference Number" value={profile.safeguardingRef}    isEditing={isEditing} onChange={v => setField("safeguardingRef", v)} />
-                <EditableInfoItem label="Expiry Date"      value={profile.safeguardingExpiry} isEditing={isEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
-              </InfoSection>
+              </div>
             </>
           )}
 
           {/* ── Sangh Responsibility ── */}
-          {activeTab === 'sangh' && (
-            <InfoSection title="Sangh Responsibility">
-              <InfoItem label="Title / Designation">{valueOrDash(profile.sanghTitle)}</InfoItem>
-              <InfoItem label="Responsibility Type">{valueOrDash(profile.responsibilityType)}</InfoItem>
-              <InfoItem label="Responsibility Level">{valueOrDash(profile.responsibilityLevel)}</InfoItem>
-              <InfoItem label="Since">
-                {profile.responsibilityStartDate
-                  ? new Date(profile.responsibilityStartDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-                  : "—"}
-              </InfoItem>
-            </InfoSection>
-          )}
-
           {/* ── Organisation ── */}
           {activeTab === 'organisation' && (
             <>
-              {/* Membership Status */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                  Membership Status
-                </h4>
-                <div className="px-6 pb-5 pt-4">
-                  <div className="mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                      <span className="text-[#3d8928]">Active &amp; Approved</span>
-                    </span>
-                    {pendingTransfer && (
-                      <span className="ml-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                        <span className="text-[#d97706]">Shakha Transfer Pending</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className={`p-3 border rounded-lg ${
-                    pendingTransfer
-                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30'
-                      : 'bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30'
-                  }`}>
-                    <p className={`text-[10px] leading-normal italic ${
-                      pendingTransfer ? 'text-amber-800 dark:text-amber-200' : 'text-green-800 dark:text-green-200'
-                    }`}>
-                      {pendingTransfer
-                        ? `Your transfer to ${pendingTransfer.toCentre} is awaiting approval. Your current Shakha remains active until reviewed.`
-                        : 'Your membership is active at your current Shakha.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Organisation Details */}
               <InfoSection title="Organisation Details">
                 <EditableInfoItem
@@ -903,39 +917,86 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                 <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
               </InfoSection>
 
-              {transferHistory.length > 0 && (
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                    Shakha Transfer History
-                  </h4>
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {transferHistory.map(request => (
-                      <div key={request.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                            {request.fromCentre} <span className="text-neutral-400 mx-1">to</span> {request.toCentre}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            Requested {new Date(request.requestedAt).toLocaleString("en-GB")}
-                            {request.reviewedAt ? ` · Reviewed ${new Date(request.reviewedAt).toLocaleString("en-GB")}` : ''}
-                          </p>
-                          {request.rejectionReason && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{request.rejectionReason}</p>}
-                        </div>
-                        <span className={`self-start md:self-auto px-2 py-1 rounded-full border text-xs font-medium ${
-                          request.status === 'approved'
-                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-900'
-                            : request.status === 'rejected'
-                              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-900'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900'
-                        }`}>
-                          {request.status === 'approved' ? 'Approved' : request.status === 'rejected' ? 'Rejected' : 'Pending Approval'}
-                        </span>
-                      </div>
-                    ))}
+              {/* Current Sangh Responsibility */}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
+                  Current Sangh Responsibility
+                </h4>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Since</span>
                   </div>
+                  {profile.responsibilityLevel || profile.sanghTitle || profile.responsibilityType ? (
+                    <div className="grid grid-cols-4 gap-4 px-4 py-3">
+                      <span className="text-sm text-neutral-900 dark:text-white">{profile.responsibilityLevel || '—'}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{profile.sanghTitle || '—'}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{profile.responsibilityType || '—'}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">
+                        {profile.responsibilityStartDate
+                          ? new Date(profile.responsibilityStartDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                          : '—'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No current responsibility assigned.</div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Previous Sangh Responsibility */}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
+                  Previous Sangh Responsibility
+                </h4>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">From – To</span>
+                  </div>
+                  {MOCK_PREVIOUS_RESPONSIBILITIES.map((r, i) => (
+                    <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3">
+                      <span className="text-sm text-neutral-900 dark:text-white">{r.level}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{r.responsibility}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{r.type}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">
+                        {new Date(r.from).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                        {' – '}
+                        {new Date(r.to).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
+          )}
+
+          {/* ── Parent / Guardian Tab ── */}
+          {activeTab === 'guardian' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <InfoSection title="Approval Details">
+                <EditableInfoItem label="Parent / Guardian Name"         value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
+                <EditableInfoItem label="Parent / Guardian Phone Number" value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                <EditableInfoItem label="Parent / Guardian Email"        value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+                <EditableInfoItem label="Parent / Guardian Relationship" value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+              </InfoSection>
+            </div>
+          )}
+
+          {/* ── Other Information Tab ── */}
+          {activeTab === 'other' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <InfoSection title="Other Information">
+                <EditableInfoItem label="Occupation (Select Other if not listed)" value={profile.occupation}           isEditing={isEditing} onChange={v => setField("occupation", v)} />
+                <EditableInfoItem label="Spoken Language(s)"                       value={profile.spokenLanguages}      isEditing={isEditing} onChange={v => setField("spokenLanguages", v)} />
+                <EditableInfoItem label="Originating State in India"               value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
+                <EditableInfoItem label="Additional Notes / Comments"              value={profile.additionalNotes}      isEditing={isEditing} onChange={v => setField("additionalNotes", v)} textarea />
+              </InfoSection>
+            </div>
           )}
 
           {/* ── History Tab ── */}

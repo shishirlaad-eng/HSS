@@ -1095,8 +1095,22 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
 
       {/* ── Page Header ──────────────────────────────────── */}
       <PageHeader
-        title={scope.centre ? `${scope.centre} - Dashboard` : "Dashboard"}
-        subtitle={showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`}
+        title={
+          scope.centre  ? `${scope.centre} - Dashboard`  :
+          scope.town    ? `${scope.town} - Dashboard`    :
+          scope.region  ? `${scope.region} - Dashboard`  :
+          scope.country ? `${scope.country} - Dashboard` :
+          "Dashboard"
+        }
+        subtitle={
+          scope.town && !scope.centre
+            ? `Shakhas: ${(MASTERS_CASCADE.centres[scope.town] ?? []).join(' · ')}`
+            : scope.region && !scope.town
+              ? `Nagars: ${(MASTERS_CASCADE.towns[scope.region] ?? []).join(' · ')}`
+              : scope.country && !scope.region
+                ? `Vibhaags: ${(MASTERS_CASCADE.regions[scope.country] ?? []).join(' · ')}`
+                : showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`
+        }
         breadcrumbs={[
           { label: 'Home', href: '#' },
           { label: 'Dashboard', current: true },
