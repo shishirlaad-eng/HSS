@@ -245,7 +245,7 @@ function valueOrDash(value?: string) {
 
 // ── HB template detail-page building blocks ───────────────────
 
-function InfoSection({ title, children }: { title: string; children: ReactNode }) {
+function InfoSection({ title, children, cols = 2 }: { title: string; children: ReactNode; cols?: 2 | 4 }) {
   return (
     <div
       className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden"
@@ -254,7 +254,7 @@ function InfoSection({ title, children }: { title: string; children: ReactNode }
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
       </div>
-      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`px-6 pb-6 pt-4 grid gap-6 ${cols === 4 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
         {children}
       </div>
     </div>
@@ -431,8 +431,8 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
   const initials = fullName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase() || "JD";
   const isTeenRole = selectedRole.toLowerCase().includes("teen");
-  const isMemberRole = isTeenRole || selectedRole === 'Adult Member';
-  const showGuardian = isMemberRole;
+  const isMemberRole = true;
+  const showGuardian = isTeenRole || selectedRole === 'Adult Member';
 
   const setField = (field: keyof MemberProfileForm, value: string) => {
     setProfile(cur => {
@@ -571,11 +571,8 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
       {/* ── Profile header ───────────────────────────────────── */}
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
 
-        {/* Left: avatar + info */}
+        {/* Left: info */}
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
-            {initials}
-          </div>
           <div className="flex-1 min-w-0">
             {/* Row 1 — Name | Role | Age badge | Status badge — all inline */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -790,10 +787,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </div>
 
               {/* Disclosure Barring Service — full width, 4-col rows */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
-                  Disclosure Barring Service
-                </h4>
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Disclosure Barring Service</h4>
+                </div>
                 <div className="px-4 py-4 space-y-4">
                   {/* Row 1 */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -885,14 +882,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {activeTab === 'organisation' && (
             <>
               {/* Organisation Details */}
-              <InfoSection title="Organisation Details">
-                <EditableInfoItem
-                  label="Country / Organisation"
-                  value={profile.country}
-                  isEditing={isEditing}
-                  onChange={value => setOrganisationField('country', value)}
-                  options={MASTERS_CASCADE.countries}
-                />
+              <InfoSection title="Shakha Details" cols={4}>
                 <EditableInfoItem
                   label="Vibhaag"
                   value={profile.region}
@@ -918,10 +908,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </InfoSection>
 
               {/* Current Sangh Responsibility */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
-                  Current Sangh Responsibility
-                </h4>
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                </div>
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
                     <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
@@ -947,10 +937,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </div>
 
               {/* Previous Sangh Responsibility */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
-                  Previous Sangh Responsibility
-                </h4>
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                </div>
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
                     <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
@@ -977,20 +967,18 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
           {/* ── Parent / Guardian Tab ── */}
           {activeTab === 'guardian' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <InfoSection title="Approval Details">
-                <EditableInfoItem label="Parent / Guardian Name"         value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
-                <EditableInfoItem label="Parent / Guardian Phone Number" value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
-                <EditableInfoItem label="Parent / Guardian Email"        value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
-                <EditableInfoItem label="Parent / Guardian Relationship" value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
-              </InfoSection>
-            </div>
+            <InfoSection title="Approval Details" cols={4}>
+              <EditableInfoItem label="Parent / Guardian Name"         value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
+              <EditableInfoItem label="Parent / Guardian Phone Number" value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+              <EditableInfoItem label="Parent / Guardian Email"        value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+              <EditableInfoItem label="Parent / Guardian Relationship" value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+            </InfoSection>
           )}
 
           {/* ── Other Information Tab ── */}
           {activeTab === 'other' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <InfoSection title="Other Information">
+            <div className="space-y-5">
+              <InfoSection title="Other Information" cols={4}>
                 <EditableInfoItem label="Occupation (Select Other if not listed)" value={profile.occupation}           isEditing={isEditing} onChange={v => setField("occupation", v)} />
                 <EditableInfoItem label="Spoken Language(s)"                       value={profile.spokenLanguages}      isEditing={isEditing} onChange={v => setField("spokenLanguages", v)} />
                 <EditableInfoItem label="Originating State in India"               value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />

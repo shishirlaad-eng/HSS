@@ -82,8 +82,11 @@ import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
 
-// Shakha Admin (Activity Centre Admin), Nagar Admin (Town Head), Vibhaag Admin (Regional Head), Shakha Ops (Ops User)
-const TABLE_VIEW_DEFAULT_ROLES = ['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Shakha Operations'];
+// All admin roles with members listing access default to table view
+const TABLE_VIEW_DEFAULT_ROLES = [
+  'Super Admin', 'Kendriya Admin', 'Vibhaag Admin', 'Nagar Admin',
+  'Shakha Admin', 'Event Admin', 'Reporting User', 'Shakha Operations',
+];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -1132,6 +1135,7 @@ export default function MemberManagement({
 } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
+  const isSuperAdmin = selectedRole === 'Super Admin';
   const mp = useModulePermissions('members');
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
@@ -1183,23 +1187,18 @@ export default function MemberManagement({
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   const memberColumns: ColumnConfig[] = [
-    { key: 'id',                  label: 'Member ID'            },
-    { key: 'name',                label: 'Name'                 },
-    { key: 'memberType',          label: 'Age Group'            },
-    { key: 'email',               label: 'Email'                },
-    { key: 'phone',               label: 'Contact Number'       },
-    { key: 'emergencyContact',    label: 'Emergency Contact'    },
-    { key: 'sanghResponsibility', label: 'Sangh Responsibility' },
-    { key: 'mastersScope',        label: 'HSS Scope'            },
-    { key: 'firstAidStatus',      label: 'First Aid Status'     },
-    { key: 'dbsStatus',           label: 'DBS Status'           },
-    { key: 'status',              label: 'Status'               },
+    { key: 'id',                  label: 'Member ID'           },
+    { key: 'name',                label: 'Name'                },
+    { key: 'memberType',          label: 'Age Category'        },
+    { key: 'sanghResponsibility', label: 'Sangh Responsibility'},
+    { key: 'registrationDate',    label: 'Since'               },
+    { key: 'hssRoles',            label: 'My HSS Role(s)'      },
+    { key: 'status',              label: 'Member Status'       },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    id: true, name: true, memberType: true, email: true, phone: true,
-    emergencyContact: true, sanghResponsibility: true, mastersScope: true,
-    firstAidStatus: true, dbsStatus: true, status: true,
+    id: true, name: true, memberType: true, sanghResponsibility: true,
+    registrationDate: true, hssRoles: true, status: true,
   });
 
   // Navigate directly to a member detail when arriving from another module
@@ -1641,12 +1640,14 @@ export default function MemberManagement({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" checked={selectedIds.has(m.id)}
-                        onChange={() => toggleSelection(m.id)}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
-                      />
-                    </div>
+                    {!isSuperAdmin && (
+                      <div onClick={e => e.stopPropagation()}>
+                        <input type="checkbox" checked={selectedIds.has(m.id)}
+                          onChange={() => toggleSelection(m.id)}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
+                        />
+                      </div>
+                    )}
                     <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 font-bold text-lg">
                       {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
@@ -1708,10 +1709,12 @@ export default function MemberManagement({
                     {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={selectedIds.has(m.id)}
-                      onChange={() => toggleSelection(m.id)}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                    />
+                    {!isSuperAdmin && (
+                      <input type="checkbox" checked={selectedIds.has(m.id)}
+                        onChange={() => toggleSelection(m.id)}
+                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                      />
+                    )}
                     <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getRowMenuItems(m)} />
                   </div>
                 </div>
@@ -1766,13 +1769,15 @@ export default function MemberManagement({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
-                      <input type="checkbox"
-                        checked={selectedIds.size === paginatedMembers.length && paginatedMembers.length > 0}
-                        onChange={e => setSelectedIds(e.target.checked ? new Set(paginatedMembers.map(m => m.id)) : new Set())}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                      />
-                    </th>
+                    {!isSuperAdmin && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                        <input type="checkbox"
+                          checked={selectedIds.size === paginatedMembers.length && paginatedMembers.length > 0}
+                          onChange={e => setSelectedIds(e.target.checked ? new Set(paginatedMembers.map(m => m.id)) : new Set())}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                        />
+                      </th>
+                    )}
                     {memberColumns.filter(col => visibleColumns[col.key]).map(col => (
                       <th
                         key={col.key}
@@ -1792,12 +1797,14 @@ export default function MemberManagement({
                     <tr key={m.id} onClick={() => handleViewDetails(m)}
                       className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                     >
-                      <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
-                        <input type="checkbox" checked={selectedIds.has(m.id)}
-                          onChange={() => toggleSelection(m.id)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                        />
-                      </td>
+                      {!isSuperAdmin && (
+                        <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedIds.has(m.id)}
+                            onChange={() => toggleSelection(m.id)}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                          />
+                        </td>
+                      )}
                       {visibleColumns.id && (
                         <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
                           {m.id}
@@ -1811,51 +1818,45 @@ export default function MemberManagement({
                       {visibleColumns.memberType && (
                         <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       )}
-                      {visibleColumns.email && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.email}
-                        </td>
-                      )}
-                      {visibleColumns.phone && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.phone ?? '—'}
-                        </td>
-                      )}
-                      {visibleColumns.emergencyContact && (
-                        <td className="px-4 py-3.5">
-                          <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                            <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{m.emergencyContactName ?? '—'}</span>
-                            {m.emergencyContactPhone && <span className="text-neutral-400 block">{m.emergencyContactPhone}</span>}
-                          </div>
-                        </td>
-                      )}
                       {visibleColumns.sanghResponsibility && (
-                        <td className="px-4 py-3.5 whitespace-nowrap">
-                          {m.responsibilityType ? (
+                        <td className="px-4 py-3.5">
+                          {(m.responsibilities && m.responsibilities.length > 0) ? (
+                            <div className="text-xs space-y-1">
+                              {m.responsibilities.map((r, i) => (
+                                <div key={i}>
+                                  <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{r.responsibilityType}</span>
+                                  <span className="text-neutral-400 block">{r.responsibilityLevel}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : m.responsibilityType ? (
                             <div className="text-xs">
                               <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{m.responsibilityType}</span>
-                              {m.responsibilityLevel && (
-                                <span className="text-neutral-400 block">{m.responsibilityLevel}</span>
-                              )}
+                              {m.responsibilityLevel && <span className="text-neutral-400 block">{m.responsibilityLevel}</span>}
                             </div>
                           ) : (
                             <span className="text-sm text-neutral-400">—</span>
                           )}
                         </td>
                       )}
-                      {visibleColumns.mastersScope && (
-                        <td className="px-4 py-3.5">
-                          <div className="text-xs text-neutral-600 dark:text-neutral-400 max-w-[200px]">
-                            <span className="font-medium text-neutral-700 dark:text-neutral-300 block truncate">{m.activityCentre}</span>
-                            <span className="text-neutral-400 block truncate">{m.town} · {m.region}</span>
-                          </div>
+                      {visibleColumns.registrationDate && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {new Date(m.registrationDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
                       )}
-                      {visibleColumns.firstAidStatus && (
-                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
-                      )}
-                      {visibleColumns.dbsStatus && (
-                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
+                      {visibleColumns.hssRoles && (
+                        <td className="px-4 py-3.5">
+                          {(() => {
+                            const roles = [m.jobTitle, ...(m.additionalJobTitles ?? [])].filter(Boolean);
+                            return roles.length > 0 ? (
+                              <div className="text-xs space-y-0.5">
+                                {roles.map((r, i) => (
+                                  <span key={i} className="block text-neutral-700 dark:text-neutral-300">{r}</span>
+                                ))}
+                              </div>
+                            ) : <span className="text-sm text-neutral-400">—</span>;
+                          })()}
+                        </td>
                       )}
                       {visibleColumns.status && (
                         <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>

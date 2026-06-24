@@ -60,6 +60,7 @@ import {
   EmailLog
 } from '../../mockAPI/logsData';
 import { toast } from 'sonner';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 export type LogModuleType = 'login' | 'audit' | 'api' | 'email';
 
@@ -127,6 +128,8 @@ interface LogsManagementProps {
 }
 
 export default function LogsManagement({ type }: LogsManagementProps) {
+  const { selectedRole } = useRoleScope();
+  const isSuperAdmin = selectedRole === 'Super Admin';
   const [viewMode, setViewMode] = useState<'table' | 'timeline'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -772,20 +775,22 @@ export default function LogsManagement({ type }: LogsManagementProps) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds(new Set(paginatedData.map(u => u.id)));
-                          } else {
-                            setSelectedIds(new Set());
-                          }
-                        }}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                      />
-                    </th>
+                    {!isSuperAdmin && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(new Set(paginatedData.map(u => u.id)));
+                            } else {
+                              setSelectedIds(new Set());
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                        />
+                      </th>
+                    )}
                     {config.columns.map(col => visibleColumns[col.key] && (
                       <th 
                         key={col.key}
@@ -811,14 +816,16 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors group cursor-pointer"
                         onClick={() => handleViewDetails(log)}
                       >
-                        <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(log.id)}
-                            onChange={() => toggleSelection(log.id)}
-                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                          />
-                        </td>
+                        {!isSuperAdmin && (
+                          <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(log.id)}
+                              onChange={() => toggleSelection(log.id)}
+                              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                            />
+                          </td>
+                        )}
                         
                         {type === 'login' && (
                           <>

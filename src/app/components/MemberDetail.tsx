@@ -25,7 +25,7 @@ import {
   UserCircle2,
   ClipboardList,
 } from 'lucide-react';
-import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
+import { SecondaryButton, PrimaryButton } from './hb/listing';
 import {
   Member,
   getAge,
@@ -36,7 +36,6 @@ import {
   getAgeGroup,
   ComplianceStatus,
   ConsentStatus,
-  SafeguardingLevel,
 } from '../../mockAPI/membersData';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -146,10 +145,10 @@ function StatMini({ label, value, icon: Icon }: { label: string; value: number; 
   );
 }
 
-function valueOrDash(value?: string | string[] | boolean) {
+function valueOrDash(value?: string | string[] | boolean | null) {
   if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  return value && value.trim() ? value : '—';
+  return value && String(value).trim() ? String(value) : '—';
 }
 
 function InfoSection({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
@@ -194,10 +193,9 @@ interface MemberDetailProps {
   hideComplianceTab?: boolean;
 }
 
-type Tab = 'profile' | 'compliance' | 'activity' | 'history';
+type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'other' | 'activity' | 'history';
 
 // ── Mock change-history generator ────────────────────────────
-// Produces deterministic mock history entries keyed by member ID.
 
 interface ChangeEntry {
   id: string;
@@ -209,7 +207,6 @@ interface ChangeEntry {
 }
 
 function buildMockHistory(member: { id: string; registrationDate: string; status: string }): ChangeEntry[] {
-  // Seed with member ID to keep entries deterministic per member
   const seed = member.id.charCodeAt(member.id.length - 1);
   const base  = new Date(member.registrationDate);
 
@@ -231,7 +228,6 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     },
   ];
 
-  // Approval entry — only for active/inactive/rejected
   if (member.status !== 'pending' && member.status !== 'pending-parental-consent') {
     entries.push({
       id: 'h-2',
@@ -243,7 +239,6 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     });
   }
 
-  // Compliance update
   entries.push({
     id: 'h-3',
     timestamp: shift(seed % 5 + 5, 14, 15),
@@ -262,7 +257,6 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     });
   }
 
-  // Profile self-update
   if (seed % 3 !== 0) {
     entries.push({
       id: 'h-5',
@@ -273,7 +267,6 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     });
   }
 
-  // Organisational update
   if (seed % 4 !== 1) {
     entries.push({
       id: 'h-6',
@@ -284,20 +277,19 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     });
   }
 
-  // Sort newest first
   return entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 // ── Component ─────────────────────────────────────────────────
 
 export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab }: MemberDetailProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const [activeTab, setActiveTab] = useState<Tab>('personal');
 
   const age = getAge(member.dateOfBirth);
   const ageCategory = getAgeCategory(member.dateOfBirth);
   const isMinor = ageCategory === 'child' || ageCategory === 'teen';
   const ageGroup = getAgeGroup(member.dateOfBirth);
-  const showGuardianApprovalInfo = ageGroup === 'kishor';
+  const showGuardian = isMinor;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -314,8 +306,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     (member.compliance.parentalConsent === 'pending' ? 1 : 0);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'profile',    label: 'Profile' },
-    ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance', badge: complianceAlerts }] : []),
+    { id: 'personal',      label: 'Personal Info'      },
+    ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
+    { id: 'organisation',  label: 'Organisation'       },
+    ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
+    { id: 'other',         label: 'Other Information'  },
     ...(mode !== 'approval' ? [
       { id: 'activity' as Tab, label: 'Activity' },
       { id: 'history'  as Tab, label: 'History'  },
@@ -324,7 +319,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
   const changeHistory = useMemo(() => buildMockHistory(member), [member]);
 
-  // Approval info derived from history
   const approvalEntry = changeHistory.find(e => e.changedFields.includes('Status') && e.changedBy === 'Admin');
   const approvedDate  = approvalEntry?.timestamp ?? null;
   const approvedBy    = approvalEntry?.changedByName ?? '—';
@@ -424,26 +418,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 {mode === 'approval' ? 'Back to Pending Approvals' : 'Back to Members'}
               </SecondaryButton>
 
-              {mode === 'approval' ? (
-                /* ── Approval mode: Approve + Reject only ── */
-                <>
-                  <button
-                    onClick={onApprove}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#b8efa0] text-[#3d8928] bg-[#f1fced] hover:bg-[#e2fad1] dark:bg-[#f1fced]/10 dark:border-[#b8efa0]/30 transition-colors"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve
-                  </button>
-                  <button
-                    onClick={onReject}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[#ffaaab] text-[#9a0c17] bg-[#fff0f0] hover:bg-[#ffe0e0] dark:bg-[#fff0f0]/10 dark:border-[#ffaaab]/30 transition-colors"
-                  >
-                    <Ban className="w-4 h-4" />
-                    Reject
-                  </button>
-                </>
-              ) : (
-                /* ── Normal mode: Edit + Deactivate/Reactivate + Delete ── */
+              {mode === 'approval' ? null : (
                 <>
                   <PrimaryButton icon={Edit} onClick={onEdit}>
                     Edit Member
@@ -472,451 +447,490 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
           </div>
         </div>
 
-        {/* ── TWO-COLUMN LAYOUT ────────────────────────────────── */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        {/* ── TABBED CONTENT ──────────────────────────────────── */}
+        <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
 
-          {/* LEFT COLUMN — Tabs + Content (70%) */}
-          <div className="flex-1 lg:w-[70%] border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden flex flex-col">
-
-            {/* Tab bar */}
-            <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/30">
-              <div className="flex px-2">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-3 text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5 ${
-                      activeTab === tab.id
-                        ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
-                        : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {tab.label}
-                    {tab.badge != null && tab.badge > 0 && (
-                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#BC0F1C] text-white text-[9px] font-bold leading-none">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+          {/* Tab bar */}
+          <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+            <div className="flex overflow-x-auto">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative px-5 py-3 text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5 ${
+                    activeTab === tab.id
+                      ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                      : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                  {tab.badge != null && tab.badge > 0 && (
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#BC0F1C] text-white text-[9px] font-bold leading-none">
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Tab content */}
-            <div className="p-6 bg-white dark:bg-neutral-950 flex-1">
+          {/* Tab content */}
+          <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
 
-              {/* ── PROFILE TAB ────────────────────────────────── */}
-              {activeTab === 'profile' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* ── PERSONAL INFO TAB ──────────────────────────── */}
+            {activeTab === 'personal' && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
-                  <InfoSection title="Personal Information" className="lg:col-span-2">
-                    <InfoItem label="First Name">{valueOrDash(member.firstName)}</InfoItem>
-                    <InfoItem label="Middle Name">{valueOrDash(member.middleName)}</InfoItem>
-                    <InfoItem label="Surname">{valueOrDash(member.surname)}</InfoItem>
-                    <InfoItem label="Full Name">{member.name}</InfoItem>
-                    <InfoItem label="Gender"><span className="capitalize">{member.gender}</span></InfoItem>
-                    <InfoItem label="Date of Birth">
-                      {formatDate(member.dateOfBirth)}
-                      <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
-                    </InfoItem>
-                    <InfoItem label="Age Groups (years old)"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
-                    <InfoItem label="Role">{valueOrDash(member.adminRoles?.length ? member.adminRoles : member.adminRole)}</InfoItem>
-                    <InfoItem label="Responsibility Type">{valueOrDash(member.responsibilityType)}</InfoItem>
-                    <InfoItem label="Level">{valueOrDash(member.responsibilityLevel)}</InfoItem>
-                  </InfoSection>
+                <InfoSection title="Personal Details">
+                  <InfoItem label="First Name">{valueOrDash(member.firstName)}</InfoItem>
+                  <InfoItem label="Membership ID">{member.id}</InfoItem>
+                  <InfoItem label="Middle Name">{valueOrDash(member.middleName)}</InfoItem>
+                  <InfoItem label="Gender"><span className="capitalize">{valueOrDash(member.gender)}</span></InfoItem>
+                  <InfoItem label="Surname">{valueOrDash(member.surname)}</InfoItem>
+                  <InfoItem label="Date of Birth">
+                    {formatDate(member.dateOfBirth)}
+                    <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
+                  </InfoItem>
+                  <InfoItem label="Full Name">{member.name}</InfoItem>
+                  <InfoItem label="Age Group"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
+                </InfoSection>
 
-                  <InfoSection title="Contact Information">
-                    <InfoItem label="Primary Contact Number">{valueOrDash(member.phone)}</InfoItem>
-                    <InfoItem label="Secondary Contact Number">{valueOrDash(member.secondaryPhone)}</InfoItem>
-                    <InfoItem label="Primary Email Address">{member.email}</InfoItem>
-                    <InfoItem label="Secondary Email Address">{valueOrDash(member.secondaryEmail)}</InfoItem>
-                    <InfoItem label="Building Name">{valueOrDash(member.buildingName)}</InfoItem>
-                    <InfoItem label="Address Line">{valueOrDash(member.addressLine1)}</InfoItem>
-                    <InfoItem label="Address Line 2">{valueOrDash(member.addressLine2)}</InfoItem>
-                    <InfoItem label="Town / City">{valueOrDash(member.contactTownCity)}</InfoItem>
-                    <InfoItem label="Post Code">{valueOrDash(member.postCode)}</InfoItem>
-                  </InfoSection>
+                <InfoSection title="Contact Details">
+                  <InfoItem label="Primary Contact Number">{valueOrDash(member.phone)}</InfoItem>
+                  <InfoItem label="Primary Email Address">{member.email}</InfoItem>
+                  <InfoItem label="Secondary Contact Number">{valueOrDash(member.secondaryPhone)}</InfoItem>
+                  <InfoItem label="Secondary Email Address">{valueOrDash(member.secondaryEmail)}</InfoItem>
+                  <InfoItem label="Building Name">{valueOrDash(member.buildingName)}</InfoItem>
+                  <InfoItem label="Town / City">{valueOrDash(member.contactTownCity)}</InfoItem>
+                  <InfoItem label="Address Line 1">{valueOrDash(member.addressLine1)}</InfoItem>
+                  <InfoItem label="Post Code">{valueOrDash(member.postCode)}</InfoItem>
+                  <InfoItem label="Address Line 2">{valueOrDash(member.addressLine2)}</InfoItem>
+                </InfoSection>
 
-                  <InfoSection title="Emergency Contact">
-                    <InfoItem label="Contact Name">{valueOrDash(member.emergencyContactName)}</InfoItem>
-                    <InfoItem label="Contact Phone Number">{valueOrDash(member.emergencyContactPhone)}</InfoItem>
-                    <InfoItem label="Contact Email">{valueOrDash(member.emergencyContactEmail)}</InfoItem>
-                    <InfoItem label="Contact Relationship">{valueOrDash(member.emergencyContactRelationship)}</InfoItem>
-                  </InfoSection>
+                <InfoSection title="Emergency Contact Details">
+                  <InfoItem label="Contact Name">{valueOrDash(member.emergencyContactName)}</InfoItem>
+                  <InfoItem label="Contact Phone Number">{valueOrDash(member.emergencyContactPhone)}</InfoItem>
+                  <InfoItem label="Contact Email">{valueOrDash(member.emergencyContactEmail)}</InfoItem>
+                  <InfoItem label="Contact Relationship">{valueOrDash(member.emergencyContactRelationship)}</InfoItem>
+                </InfoSection>
 
-                  {showGuardianApprovalInfo && (
-                    <InfoSection title="Parent / Guardian Approval Information">
-                      <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
-                      <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
-                      <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
-                      <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
-                    </InfoSection>
-                  )}
+                <InfoSection title="Medical Details">
+                  <InfoItem label="Do you have any medical condition?">
+                    {member.medicalInfoDeclared ? 'Yes' : 'No'}
+                  </InfoItem>
+                  <InfoItem label="Special Dietary Requirements">
+                    {valueOrDash(member.dietaryRequirements)}
+                  </InfoItem>
+                  <InfoItem label="Medical Information Details">
+                    {valueOrDash(member.medicalInfoDetails)}
+                  </InfoItem>
+                  <InfoItem label="Do you carry an EpiPen/Jext/Emerade?">—</InfoItem>
+                </InfoSection>
 
-                  <InfoSection title="Other Information">
-                    <InfoItem label="Medical Information Declared?">{valueOrDash(member.medicalInfoDeclared)}</InfoItem>
-                    <InfoItem label="Medical Information Details">{valueOrDash(member.medicalInfoDetails)}</InfoItem>
-                    <InfoItem label="Are you a qualified First Aider">{valueOrDash(member.isFirstAider)}</InfoItem>
-                    {member.isFirstAider && <>
-                      <InfoItem label="First Aid Level">{valueOrDash(member.firstAidQualificationLevel)}</InfoItem>
-                      <InfoItem label="First Aid Expiry Date">
-                        {member.firstAidQualificationExpiryDate
-                          ? new Date(member.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : '—'}
-                      </InfoItem>
-                    </>}
-                    <InfoItem label="Special Dietary Requirements">{valueOrDash(member.dietaryRequirements)}</InfoItem>
-                    <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
-                    <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
-                  </InfoSection>
+              </div>
+            )}
 
-                </div>
-              )}
+            {/* ── PARENT / GUARDIAN TAB ──────────────────────── */}
+            {activeTab === 'guardian' && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                <InfoSection title="Approval Details">
+                  <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
+                  <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
+                  <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
+                  <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
+                </InfoSection>
+              </div>
+            )}
 
-              {/* ── COMPLIANCE TAB ─────────────────────────────── */}
-              {activeTab === 'compliance' && (
-                <div className="space-y-6">
-                  {complianceAlerts > 0 && (
-                    <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
-                        This member has <strong>{complianceAlerts}</strong> compliance item{complianceAlerts > 1 ? 's' : ''} requiring attention.
-                      </p>
+            {/* ── ORGANISATION TAB ───────────────────────────── */}
+            {activeTab === 'organisation' && (
+              <>
+                <InfoSection title="Organisation Details">
+                  <InfoItem label="Country / Organisation">{valueOrDash(member.country)}</InfoItem>
+                  <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
+                  <InfoItem label="Vibhaag">{valueOrDash(member.region)}</InfoItem>
+                  <InfoItem label="Nagar">{valueOrDash(member.town)}</InfoItem>
+                  <InfoItem label="Shakha">{valueOrDash(member.activityCentre)}</InfoItem>
+                </InfoSection>
+
+                {/* Current Sangh Responsibility */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
+                    Current Sangh Responsibility
+                  </h4>
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Since</span>
                     </div>
-                  )}
-                  {complianceAlerts === 0 && (
-                    <div className="flex items-center gap-3 p-4 bg-[#f1fced] border border-[#b8efa0] rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-[#4EAE33] flex-shrink-0" />
-                      <p className="text-sm text-[#3d8928]">All compliance checks are up to date.</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    {/* DBS Check */}
-                    <ComplianceCard
-                      label="DBS Check"
-                      status={member.compliance.dbs}
-                      refNumber={member.dbsRef}
-                      description={
-                        member.compliance.dbs === 'completed'
-                          ? 'Disclosure and Barring Service check is valid and on record.'
-                          : 'DBS check is pending. Please submit or process the DBS application.'
-                      }
-                    />
-                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {[
-                        { label: 'Certificate Number',        value: member.dbsCertificateNumber },
-                        { label: 'Certificate Date',          value: member.dbsCertificateDate ? new Date(member.dbsCertificateDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined },
-                        { label: 'Certificate Received From', value: member.dbsCertificateReceivedFrom },
-                        { label: 'Other Source',              value: member.dbsCertificateReceivedFromOther },
-                        { label: 'DBS Update Service',        value: member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : undefined },
-                        { label: 'Update Service Number',     value: member.dbsUpdateServiceNumber },
-                        { label: 'Last Service Check',        value: member.dbsUpdateServiceCheckDate ? new Date(member.dbsUpdateServiceCheckDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined },
-                        { label: 'App Under Process',         value: member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : undefined },
-                        { label: 'Verified By',               value: member.dbsCheckedBy },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">{label}</p>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{value ?? '—'}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* First Aid */}
-                    <ComplianceCard
-                      label="First Aid Certificate"
-                      status={member.compliance.firstAid}
-                      refNumber={member.firstAidRef}
-                      description={
-                        member.compliance.firstAid === 'completed'
-                          ? 'Valid first aid certificate on record.'
-                          : 'First aid certificate is pending submission or processing.'
-                      }
-                    />
-                    {member.isFirstAider !== undefined && (
-                      <div className="ml-9 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualified First Aider</p>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.isFirstAider ? 'Yes' : 'No'}</p>
-                        </div>
-                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Level</p>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
-                        </div>
-                        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Expiry</p>
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                            {member.firstAidQualificationExpiryDate
-                              ? new Date(member.firstAidQualificationExpiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                              : '—'}
-                          </p>
-                        </div>
+                    {member.responsibilityLevel || member.jobTitle || member.responsibilityType ? (
+                      <div className="grid grid-cols-4 gap-4 px-4 py-3">
+                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.responsibilityLevel)}</span>
+                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.jobTitle)}</span>
+                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.responsibilityType)}</span>
+                        <span className="text-sm text-neutral-900 dark:text-white">
+                          {member.responsibilityStartDate
+                            ? formatDate(member.responsibilityStartDate)
+                            : '—'}
+                        </span>
                       </div>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No current responsibility assigned.</div>
                     )}
-
-                    {/* Safeguarding */}
-                    <ComplianceCard
-                      label="Safeguarding Training"
-                      status={member.compliance.safeguardingTraining ?? 'pending'}
-                      description={
-                        member.compliance.safeguardingTraining === 'completed'
-                          ? 'Safeguarding training has been completed and is on record.'
-                          : 'Safeguarding training is pending.'
-                      }
-                    />
-                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Date of Training</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.safeguardingTrainingDate
-                            ? new Date(member.safeguardingTrainingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
-                        </p>
-                      </div>
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Level of Training</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
-                      </div>
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Reference Number</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
-                      </div>
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Expiry Date</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.safeguardingExpiry
-                            ? new Date(member.safeguardingExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Parental Consent */}
-                    <ComplianceCard
-                      label="Parental Consent"
-                      status={member.compliance.parentalConsent}
-                      description={
-                        member.compliance.parentalConsent === 'granted'
-                          ? 'Parental / guardian consent form has been received and approved.'
-                          : member.compliance.parentalConsent === 'pending'
-                            ? 'Consent form has been sent to the guardian and is awaiting response.'
-                            : 'Not applicable — member is 18 or over.'
-                      }
-                    />
                   </div>
                 </div>
-              )}
 
-              {/* ── ACTIVITY TAB ────────────────────────────────── */}
-              {activeTab === 'activity' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <StatMini label="Events Attended"           value={member.eventsAttended}           icon={CalendarDays} />
-                    <StatMini label="Shakhas Attended"          value={member.shakhaSessionsAttended}   icon={UserCheck} />
-                  </div>
-
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      Attendance History
-                    </h4>
-                    <div className="overflow-x-auto slim-scroll">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Type</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event / Shakha</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Centre</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td colSpan={4} className="px-6 py-12 text-center">
-                              <div className="flex flex-col items-center gap-2">
-                                <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
-                                <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                                  Detailed attendance history will be available once the Attendance module is implemented.
-                                </p>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                {/* Previous Sangh Responsibility */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
+                    Previous Sangh Responsibility
+                  </h4>
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">From – To</span>
                     </div>
+                    {member.previousResponsibilities && member.previousResponsibilities.length > 0 ? (
+                      member.previousResponsibilities.map((r, i) => (
+                        <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3">
+                          <span className="text-sm text-neutral-900 dark:text-white">{r.responsibilityLevel}</span>
+                          <span className="text-sm text-neutral-900 dark:text-white">—</span>
+                          <span className="text-sm text-neutral-900 dark:text-white">{r.responsibilityType}</span>
+                          <span className="text-sm text-neutral-900 dark:text-white">
+                            {new Date(r.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                            {' – '}
+                            {new Date(r.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No previous responsibilities on record.</div>
+                    )}
                   </div>
                 </div>
-              )}
+              </>
+            )}
 
-              {/* ── HISTORY TAB ─────────────────────────────────── */}
-              {activeTab === 'history' && (
-                <div className="flex flex-col lg:flex-row gap-6">
+            {/* ── COMPLIANCE DETAILS TAB ─────────────────────── */}
+            {activeTab === 'compliance' && (
+              <div className="space-y-6">
+                {complianceAlerts > 0 && (
+                  <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      This member has <strong>{complianceAlerts}</strong> compliance item{complianceAlerts > 1 ? 's' : ''} requiring attention.
+                    </p>
+                  </div>
+                )}
+                {complianceAlerts === 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-[#f1fced] border border-[#b8efa0] rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-[#4EAE33] flex-shrink-0" />
+                    <p className="text-sm text-[#3d8928]">All compliance checks are up to date.</p>
+                  </div>
+                )}
 
-                  {/* Left — Registration cards + Change History */}
-                  <div className="flex-1 min-w-0 space-y-6">
-
-                  {/* ── Registration & Approval summary ── */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-                    {/* Registration Date */}
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
-                          <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                        </div>
-                        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Date</span>
+                <div className="space-y-4">
+                  {/* DBS Check */}
+                  <ComplianceCard
+                    label="DBS Check"
+                    status={member.compliance.dbs}
+                    refNumber={member.dbsRef}
+                    description={
+                      member.compliance.dbs === 'completed'
+                        ? 'Disclosure and Barring Service check is valid and on record.'
+                        : 'DBS check is pending. Please submit or process the DBS application.'
+                    }
+                  />
+                  <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      { label: 'Certificate Number',        value: member.dbsCertificateNumber },
+                      { label: 'Certificate Date',          value: member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : undefined },
+                      { label: 'Certificate Received From', value: member.dbsCertificateReceivedFrom },
+                      { label: 'Other Source',              value: member.dbsCertificateReceivedFromOther },
+                      { label: 'DBS Update Service',        value: member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : undefined },
+                      { label: 'Update Service Number',     value: member.dbsUpdateServiceNumber },
+                      { label: 'Last Service Check',        value: member.dbsUpdateServiceCheckDate ? formatDate(member.dbsUpdateServiceCheckDate) : undefined },
+                      { label: 'App Under Process',         value: member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : undefined },
+                      { label: 'Verified By',               value: member.dbsCheckedBy },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">{label}</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{value ?? '—'}</p>
                       </div>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                        {formatDate(member.registrationDate)}
-                      </p>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                        {new Date(member.registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    ))}
+                  </div>
+
+                  {/* First Aid */}
+                  <ComplianceCard
+                    label="First Aid Certificate"
+                    status={member.compliance.firstAid}
+                    refNumber={member.firstAidRef}
+                    description={
+                      member.compliance.firstAid === 'completed'
+                        ? 'Valid first aid certificate on record.'
+                        : 'First aid certificate is pending submission or processing.'
+                    }
+                  />
+                  {member.isFirstAider !== undefined && (
+                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualified First Aider</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.isFirstAider ? 'Yes' : 'No'}</p>
+                      </div>
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Level</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
+                      </div>
+                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Expiry</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Safeguarding */}
+                  <ComplianceCard
+                    label="Safeguarding Training"
+                    status={member.compliance.safeguardingTraining ?? 'pending'}
+                    description={
+                      member.compliance.safeguardingTraining === 'completed'
+                        ? 'Safeguarding training has been completed and is on record.'
+                        : 'Safeguarding training is pending.'
+                    }
+                  />
+                  <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Date of Training</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                        {member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
                       </p>
                     </div>
-
-                    {/* Approved Date */}
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-md bg-[#f1fced] dark:bg-[#4EAE33]/10 flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#4EAE33]" />
-                        </div>
-                        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
-                      </div>
-                      {approvedDate ? (
-                        <>
-                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                            {formatDate(approvedDate)}
-                          </p>
-                          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                            {new Date(approvedDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm font-semibold text-neutral-400 dark:text-neutral-600">Pending</p>
-                      )}
+                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Level of Training</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
                     </div>
-
-                    {/* Approved By */}
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
-                          <UserCog className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                        </div>
-                        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved By</span>
-                      </div>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">{approvedBy}</p>
+                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Reference Number</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
+                    </div>
+                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Expiry Date</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                        {member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* ── Change History timeline ── */}
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
-                      <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-                        {changeHistory.length} event{changeHistory.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
+                  {/* Parental Consent */}
+                  <ComplianceCard
+                    label="Parental Consent"
+                    status={member.compliance.parentalConsent}
+                    description={
+                      member.compliance.parentalConsent === 'granted'
+                        ? 'Parental / guardian consent form has been received and approved.'
+                        : member.compliance.parentalConsent === 'pending'
+                          ? 'Consent form has been sent to the guardian and is awaiting response.'
+                          : 'Not applicable — member is 18 or over.'
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
-                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                      {changeHistory.map((entry, idx) => {
-                        const isAdmin = entry.changedBy === 'Admin';
-                        const isFirst = idx === changeHistory.length - 1; // oldest = registration
-                        return (
-                          <div key={entry.id} className="flex gap-4 px-6 py-4 hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+            {/* ── OTHER INFORMATION TAB ──────────────────────── */}
+            {activeTab === 'other' && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                <InfoSection title="Other Information">
+                  <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
+                  <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
+                  <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
+                  <InfoItem label="Additional Notes / Comments">—</InfoItem>
+                </InfoSection>
+              </div>
+            )}
 
-                            {/* Icon */}
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                isFirst
-                                  ? 'bg-primary-50 dark:bg-primary-950'
-                                  : isAdmin
-                                    ? 'bg-amber-50 dark:bg-amber-950/30'
-                                    : 'bg-neutral-100 dark:bg-neutral-800'
-                              }`}>
-                                {isFirst ? (
-                                  <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                                ) : isAdmin ? (
-                                  <UserCog className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                ) : (
-                                  <UserCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
-                                )}
-                              </div>
+            {/* ── ACTIVITY TAB ────────────────────────────────── */}
+            {activeTab === 'activity' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <StatMini label="Events Attended"  value={member.eventsAttended}         icon={CalendarDays} />
+                  <StatMini label="Shakhas Attended" value={member.shakhaSessionsAttended} icon={UserCheck} />
+                </div>
+
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                    Attendance History
+                  </h4>
+                  <div className="overflow-x-auto slim-scroll">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
+                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event / Shakha</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Centre</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colSpan={4} className="px-6 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                              <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                                Detailed attendance history will be available once the Attendance module is implemented.
+                              </p>
                             </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-1">
-                                {/* Who */}
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                                  isAdmin
-                                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
-                                    : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
-                                }`}>
-                                  {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
-                                  {entry.changedBy}
-                                </span>
-                                <span className="text-xs text-neutral-600 dark:text-neutral-400">{entry.changedByName}</span>
-                                <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-                                  <Clock className="w-3 h-3" />
-                                  {formatDateTime(entry.timestamp)}
-                                </span>
-                              </div>
+            {/* ── HISTORY TAB ─────────────────────────────────── */}
+            {activeTab === 'history' && (
+              <div className="space-y-6">
 
-                              {/* Note (for registration / approval events) */}
-                              {entry.note && (
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 italic">{entry.note}</p>
-                              )}
+                {/* Registration & Approval summary */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
+                        <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Date</span>
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {formatDate(member.registrationDate)}
+                    </p>
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                      {new Date(member.registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
 
-                              {/* Changed fields */}
-                              {entry.changedFields.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                  {entry.changedFields.map(field => (
-                                    <span
-                                      key={field}
-                                      className="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs border border-neutral-200 dark:border-neutral-700"
-                                    >
-                                      {field}
-                                    </span>
-                                  ))}
-                                </div>
+                  <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-md bg-[#f1fced] dark:bg-[#4EAE33]/10 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4EAE33]" />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
+                    </div>
+                    {approvedDate ? (
+                      <>
+                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          {formatDate(approvedDate)}
+                        </p>
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                          {new Date(approvedDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-semibold text-neutral-400 dark:text-neutral-600">Pending</p>
+                    )}
+                  </div>
+
+                  <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-md bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0">
+                        <UserCog className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved By</span>
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">{approvedBy}</p>
+                  </div>
+                </div>
+
+                {/* Change History timeline */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                    <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
+                    <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
+                      {changeHistory.length} event{changeHistory.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                    {changeHistory.map((entry, idx) => {
+                      const isAdmin = entry.changedBy === 'Admin';
+                      const isFirst = idx === changeHistory.length - 1;
+                      return (
+                        <div key={entry.id} className="flex gap-4 px-6 py-4 hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+
+                          {/* Icon */}
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              isFirst
+                                ? 'bg-primary-50 dark:bg-primary-950'
+                                : isAdmin
+                                  ? 'bg-amber-50 dark:bg-amber-950/30'
+                                  : 'bg-neutral-100 dark:bg-neutral-800'
+                            }`}>
+                              {isFirst ? (
+                                <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                              ) : isAdmin ? (
+                                <UserCog className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                              ) : (
+                                <UserCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
                               )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  </div>{/* end left column */}
-
-                  {/* Right — Previous Responsibilities */}
-                  {member.previousResponsibilities && member.previousResponsibilities.length > 0 && (
-                    <div className="lg:w-72 flex-shrink-0">
-                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                        <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                          <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                          <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Previous Responsibilities</h4>
-                        </div>
-                        <div className="px-6 pb-5 pt-4 space-y-3">
-                          {member.previousResponsibilities.map((item, idx) => (
-                            <div key={idx} className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-4 py-3">
-                              <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                {item.responsibilityType} · {item.responsibilityLevel}
-                              </p>
-                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                {formatDate(item.startDate)} – {formatDate(item.endDate)}
-                              </p>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                                isAdmin
+                                  ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
+                                  : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
+                              }`}>
+                                {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
+                                {entry.changedBy}
+                              </span>
+                              <span className="text-xs text-neutral-600 dark:text-neutral-400">{entry.changedByName}</span>
+                              <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                                <Clock className="w-3 h-3" />
+                                {formatDateTime(entry.timestamp)}
+                              </span>
                             </div>
-                          ))}
+
+                            {entry.note && (
+                              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 italic">{entry.note}</p>
+                            )}
+
+                            {entry.changedFields.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {entry.changedFields.map(field => (
+                                  <span
+                                    key={field}
+                                    className="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs border border-neutral-200 dark:border-neutral-700"
+                                  >
+                                    {field}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
+
+              </div>
+            )}
+
           </div>
         </div>
+
       </div>
     </div>
   );

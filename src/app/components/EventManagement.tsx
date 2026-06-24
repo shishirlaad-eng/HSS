@@ -819,6 +819,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const ep = useModulePermissions('events');
   const scopedFilterOptions = getScopedFilterOptions(scope);
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
+  const isSuperAdmin = selectedRole === 'Super Admin';
 
   // Member data — counts + event arrays for panels and completed table
   const MEMBER_ID_BY_ROLE: Record<string, string> = { 'Adult Member': 'MBR-001', 'Teen Member': 'MBR-004' };
@@ -1375,9 +1376,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             <div className="flex flex-col lg:flex-row gap-4">
 
               {/* Not Yet Registered */}
-              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
-                  <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+                  <Calendar size={15} className="text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
                   <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1413,9 +1414,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               </div>
 
               {/* Registered */}
-              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3.5 border-b-2 border-blue-500">
-                  <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+              <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+                  <Calendar size={15} className="text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
                   <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1541,7 +1542,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                   <div className="flex-1 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {!isMemberRole && (
+                      {!isMemberRole && !isSuperAdmin && (
                         <div onClick={e => e.stopPropagation()}>
                           <input
                             type="checkbox"
@@ -1633,12 +1634,14 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                     </div>
                     {!isMemberRole && (
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(event.id)}
-                          onChange={() => toggleSelection(event.id)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
-                        />
+                        {!isSuperAdmin && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(event.id)}
+                            onChange={() => toggleSelection(event.id)}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer flex-shrink-0"
+                          />
+                        )}
                         <IconButton
                           icon={MoreVertical}
                           borderless={true}
@@ -1709,7 +1712,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                    {!isMemberRole && (
+                    {!isMemberRole && !isSuperAdmin && (
                       <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input
                           type="checkbox"
@@ -1783,7 +1786,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors group cursor-pointer"
                         onClick={() => openDetail(event)}
                       >
-                        {!isMemberRole && (
+                        {!isMemberRole && !isSuperAdmin && (
                           <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
                             <input
                               type="checkbox"

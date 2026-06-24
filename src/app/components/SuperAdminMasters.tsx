@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Eye, Edit, Trash2, Plus, RefreshCw, MoreVertical,
   Globe, MapPin, Map, Building2, Tags, AlertTriangle,
@@ -8,9 +8,9 @@ import {
 } from 'lucide-react';
 import {
   PageHeader, SearchBar, Pagination, IconButton,
-  ViewModeSwitcher, PrimaryButton, ColumnVisibilityPanel,
-  SummaryWidgets, StatusFilter,
-  type ColumnConfig
+  ViewModeSwitcher, PrimaryButton, AdvancedSearchPanel,
+  SummaryWidgets,
+  type ColumnConfig, type FilterCondition
 } from './hb/listing';
 import {
   FormModal, FormSection, FormField, FormLabel,
@@ -163,11 +163,9 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   const [roleTypes,  setRoleTypes]  = useState<MasterItem[]>(initialRoleTypes);
 
   // ── Filters ────────────────────────────────────────────────────────────────
-  const [searchQuery,    setSearchQuery]    = useState('');
-  const [filterStatus,   setFilterStatus]   = useState('all');
-  const [filterCountry,  setFilterCountry]  = useState('');
-  const [filterRegion,   setFilterRegion]   = useState('');
-  const [filterTown,     setFilterTown]     = useState('');
+  const [searchQuery,       setSearchQuery]       = useState('');
+  const [filters,           setFilters]           = useState<FilterCondition[]>([]);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   // ── Sorting ────────────────────────────────────────────────────────────────
   const [sortField,     setSortField]     = useState<string>('name');
@@ -177,9 +175,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
   const [showSummary,  setShowSummary]  = useState(true);
 
-  // ── Column visibility ──────────────────────────────────────────────────────
-  const [showColumnPanel, setShowColumnPanel] = useState(false);
-  const columnAnchorRef = useRef<HTMLDivElement>(null);
+  // ── Column visibility (table view only) ───────────────────────────────────
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     id: true, name: true, code: true,
     countryName: true, regionName: true, townName: true,
@@ -200,17 +196,10 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   // ── Reset filters & page when section changes ──────────────────────────────
   useEffect(() => {
     setSearchQuery('');
-    setFilterStatus('all');
-    setFilterCountry('');
-    setFilterRegion('');
-    setFilterTown('');
+    setFilters([]);
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [masterType]);
-
-  useEffect(() => {
-    if (viewMode !== 'table') setShowColumnPanel(false);
-  }, [viewMode]);
 
   // ── Tab visibility per role ────────────────────────────────────────────────
   const hiddenTabIds = useMemo(
@@ -371,11 +360,17 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         (item.contactEmail && item.contactEmail.toLowerCase().includes(q)) ||
         (item.city         && item.city.toLowerCase().includes(q)) ||
         (item.postCode     && item.postCode.toLowerCase().includes(q));
-      const matchesStatus  = filterStatus  === 'all' || item.status === filterStatus;
-      const matchesCountry = !filterCountry || item.countryName === filterCountry;
-      const matchesRegion  = !filterRegion  || item.regionName  === filterRegion;
-      const matchesTown    = !filterTown    || item.townName     === filterTown;
-      return matchesSearch && matchesStatus && matchesCountry && matchesRegion && matchesTown;
+      const matchesFilters = filters.every(f => {
+        if (!f.values.length) return true;
+        switch (f.field) {
+          case 'Status':  return f.values.some(v => v.toLowerCase() === item.status);
+          case 'Country': return f.values.includes(item.countryName ?? '');
+          case 'Vibhaag': return f.values.includes(item.regionName  ?? '');
+          case 'Nagar':   return f.values.includes(item.townName    ?? '');
+          default: return true;
+        }
+      });
+      return matchesSearch && matchesFilters;
     });
 
     result = [...result].sort((a, b) => {
@@ -387,7 +382,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     });
 
     return result;
-  }, [currentDataArray, searchQuery, filterStatus, filterCountry, filterRegion, filterTown, sortField, sortDirection]);
+  }, [currentDataArray, searchQuery, filters, sortField, sortDirection]);
 
   const totalPages   = itemsPerPage === 0 ? 1 : Math.ceil(processedData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
@@ -397,18 +392,9 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   }, [processedData, currentPage, itemsPerPage]);
 
   // ─── Derived dropdown options ──────────────────────────────────────────────
-  const countryOptions   = useMemo(() => countries.map(c => c.name), [countries]);
-  const regionOptions    = useMemo(() => {
-    const base = regions.filter(r => !filterCountry || r.countryName === filterCountry);
-    return [...new Set(base.map(r => r.name))];
-  }, [regions, filterCountry]);
-  const townOptions      = useMemo(() => {
-    const base = towns.filter(t =>
-      (!filterCountry || t.countryName === filterCountry) &&
-      (!filterRegion  || t.regionName  === filterRegion)
-    );
-    return [...new Set(base.map(t => t.name))];
-  }, [towns, filterCountry, filterRegion]);
+  const countryOptions = useMemo(() => countries.map(c => c.name), [countries]);
+  const regionOptions  = useMemo(() => [...new Set(regions.map(r => r.name))], [regions]);
+  const townOptions    = useMemo(() => [...new Set(towns.map(t => t.name))],   [towns]);
 
   // Form-specific cascading options (based on activeItem's parents, not filter)
   const formRegionOptions = useMemo(() =>
@@ -586,12 +572,13 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     catch { return d; }
   };
 
-  // ─── Status filter options ─────────────────────────────────────────────────
-  const statusOptions = useMemo(() => [
-    { value: 'all',      label: 'All',      count: currentDataArray.length },
-    { value: 'active',   label: 'Active',   count: currentDataArray.filter(i => i.status === 'active').length },
-    { value: 'inactive', label: 'Inactive', count: currentDataArray.filter(i => i.status === 'inactive').length },
-  ], [currentDataArray]);
+  // ─── Advanced filter options per tab ──────────────────────────────────────
+  const filterOptions = useMemo<Record<string, string[]>>(() => ({
+    'Status': ['Active', 'Inactive'],
+    ...(masterType !== 'country' && !isStandaloneMaster ? { 'Country': countryOptions } : {}),
+    ...((masterType === 'town' || masterType === 'centre') ? { 'Vibhaag': regionOptions } : {}),
+    ...(masterType === 'centre' ? { 'Nagar': townOptions } : {}),
+  }), [masterType, isStandaloneMaster, countryOptions, regionOptions, townOptions]);
 
   // ─── Row action menu items ─────────────────────────────────────────────────
   const getRowMenuItems = (item: MasterItem) => {
@@ -616,9 +603,6 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     return items;
   };
 
-  // ─── Filter select shared style ────────────────────────────────────────────
-  const filterSelectClass = `h-10 px-3 text-xs border border-neutral-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-primary-400 dark:focus:border-primary-600`;
-
   // ═══════════════════════════════════════════════════════════════════════════
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
@@ -629,87 +613,51 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
           title={config.title}
           subtitle={config.subtitle}
           breadcrumbs={[
-            { label: 'Masters', href: '#' },
+            { label: 'HSS (UK) Setup', href: '#' },
             { label: config.title, current: true },
           ]}
         >
-          <div className="flex items-center gap-2 flex-wrap" ref={columnAnchorRef}>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
-              placeholder={`Search ${config.title.toLowerCase()}s...`}
-            />
+          {/* Two-group layout: left = search/filters (variable), right = fixed actions */}
+          <div className="flex items-center justify-between gap-4 w-full">
 
-            <StatusFilter
-              currentStatus={filterStatus}
-              statuses={statusOptions}
-              onChange={setFilterStatus}
-            />
+            {/* Left — search + advanced filters */}
+            <div className="relative flex items-center gap-2 min-w-0">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onAdvancedSearch={() => setShowAdvancedSearch(true)}
+                activeFilterCount={filters.filter(f => f.values.length > 0).length}
+                placeholder={`Search ${config.title.toLowerCase()}s...`}
+              />
+              <AdvancedSearchPanel
+                isOpen={showAdvancedSearch}
+                onClose={() => setShowAdvancedSearch(false)}
+                filters={filters}
+                onFiltersChange={setFilters}
+                filterOptions={filterOptions}
+                title={`Filter ${config.title}`}
+              />
+            </div>
 
-            {/* Parent filters for Region / Town / Centre */}
-            {(masterType === 'region' || masterType === 'town' || masterType === 'centre') && (
-              <select
-                className={filterSelectClass}
-                value={filterCountry}
-                onChange={e => { setFilterCountry(e.target.value); setFilterRegion(''); setFilterTown(''); }}
-              >
-                <option value="">All Countries</option>
-                {countryOptions.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            )}
-
-            {(masterType === 'town' || masterType === 'centre') && (
-              <select
-                className={filterSelectClass}
-                value={filterRegion}
-                onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); }}
-              >
-                <option value="">All Vibhaag</option>
-                {regionOptions.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            )}
-
-            {masterType === 'centre' && (
-              <select
-                className={filterSelectClass}
-                value={filterTown}
-                onChange={e => setFilterTown(e.target.value)}
-                disabled={!filterRegion}
-              >
-                <option value="">All Nagar</option>
-                {townOptions.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            )}
-
-            {mastersPerms.canAdd && (
-              <PrimaryButton icon={Plus} onClick={handleCreateNew}>
-                {config.addLabel}
-              </PrimaryButton>
-            )}
-
-            <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
-            <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
-
-            <IconButton
-              icon={MoreVertical}
-              title="More options"
-              menuItems={[
-                { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
-                { icon: FileText,        label: 'Export as PDF',   onClick: () => handleExport('pdf')   },
-              ]}
-            />
-
-            <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
-
-            <ColumnVisibilityPanel
-              isOpen={showColumnPanel}
-              onClose={() => setShowColumnPanel(false)}
-              columns={masterColumns}
-              visibleColumns={visibleColumns}
-              onToggleColumn={key => setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }))}
-              anchorRef={columnAnchorRef}
-            />
+            {/* Right — fixed action buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {mastersPerms.canAdd && (
+                <PrimaryButton icon={Plus} onClick={handleCreateNew}>
+                  {config.addLabel}
+                </PrimaryButton>
+              )}
+              <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+              <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
+              <IconButton
+                icon={MoreVertical}
+                title="More options"
+                menuItems={[
+                  { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
+                  { icon: FileText,        label: 'Export as PDF',   onClick: () => handleExport('pdf')   },
+                ]}
+              />
+              <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
+            </div>
           </div>
         </PageHeader>
 
@@ -719,10 +667,10 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
             <button
               key={tab.id}
               onClick={() => onNavigate?.(tab.id)}
-              className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+              className={`px-4 py-2.5 text-xs whitespace-nowrap transition-colors border-b-2 -mb-px ${
                 masterType === tab.id
-                  ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                  : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600'
+                  ? 'border-primary-600 dark:border-primary-400 text-primary-700 dark:text-primary-300 font-semibold bg-primary-50 dark:bg-primary-950/50'
+                  : 'border-transparent text-neutral-500 dark:text-neutral-400 font-medium hover:text-neutral-800 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
               {tab.label}

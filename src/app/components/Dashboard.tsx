@@ -423,7 +423,7 @@ function MemberDashboard({
                   </svg>
                   <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
                   {card.detail && (
-                    <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1 text-center leading-relaxed">{card.detail}</p>
+                    <p className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1 text-center leading-relaxed">{card.detail}</p>
                   )}
                   {card.detailRows.length > 0 && (
                     <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
@@ -448,13 +448,13 @@ function MemberDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
 
         {/* My Profile card */}
-        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#172E4D' }}>
+        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-white/80" />
-              <h3 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Profile</h3>
+              <UserCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+              <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Profile</h3>
             </div>
-            <button onClick={() => onNavigate?.('my-profile')} className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white">
+            <button onClick={() => onNavigate?.('my-profile')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -507,7 +507,7 @@ function MemberDashboard({
 
               {/* Right column: responsibilities */}
               <div className="flex flex-col">
-                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-4">Responsibilities</p>
+                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 mb-4">Responsibilities</p>
                 <div className="flex flex-col gap-5">
                   <div className="flex items-start gap-2">
                     <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
@@ -525,16 +525,16 @@ function MemberDashboard({
 
         {/* My Sankhya attendance list */}
         <div className="flex flex-col">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#4EAE33' }}>
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
-                <CheckCheck className="w-4 h-4 text-white/80" />
-                <h3 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Sankhya</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 text-neutral-900 border border-white/40">
+                <CheckCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Sankhya</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {attendancePct}%
                 </span>
               </div>
-              <button onClick={() => onNavigate?.('attendance-log')} className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white">
+              <button onClick={() => onNavigate?.('attendance-log')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                 View all <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -569,16 +569,16 @@ function MemberDashboard({
 
         {/* Suchana */}
         <div>
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#F9B03D' }}>
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
-                <Megaphone className="w-4 h-4 text-white/80" />
-                <h3 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Suchana</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 text-neutral-900 border border-white/40">
+                <Megaphone className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Suchana</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {mockAnnouncements.length}
                 </span>
               </div>
-              <button onClick={() => onNavigate?.('announcements')} className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white">
+              <button onClick={() => onNavigate?.('announcements')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                 View all <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -616,16 +616,16 @@ function MemberDashboard({
 
         {/* Upcoming Karyakrams */}
         <div className="flex flex-col">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#009FE3' }}>
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-white/80" />
-                <h3 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Upcoming Karyakrams</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 text-neutral-900 border border-white/40">
+                <CalendarDays className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Upcoming Karyakrams</h3>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {upcomingEvents.length}
                 </span>
               </div>
-              <button onClick={() => onNavigate?.('event-management')} className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white">
+              <button onClick={() => onNavigate?.('event-management')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                 View all <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1103,13 +1103,15 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           "Dashboard"
         }
         subtitle={
-          scope.town && !scope.centre
-            ? `Shakhas: ${(MASTERS_CASCADE.centres[scope.town] ?? []).join(' · ')}`
-            : scope.region && !scope.town
-              ? `Nagars: ${(MASTERS_CASCADE.towns[scope.region] ?? []).join(' · ')}`
-              : scope.country && !scope.region
-                ? `Vibhaags: ${(MASTERS_CASCADE.regions[scope.country] ?? []).join(' · ')}`
-                : showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`
+          scope.centre
+            ? `Nagar: ${scope.town}`
+            : scope.town && !scope.centre
+              ? `Vibhaag: ${scope.region}`
+              : scope.region && !scope.town
+                ? `Country: ${scope.country}`
+                : scope.country && !scope.region
+                  ? undefined
+                  : showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`
         }
         breadcrumbs={[
           { label: 'Home', href: '#' },

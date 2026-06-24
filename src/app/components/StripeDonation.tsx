@@ -171,20 +171,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
         </div>
       </div>
 
-      <div className="px-4 pt-8">
-        <div className="w-full max-w-4xl mx-auto">
-          <SlidingSwitch
-            value={donationMode}
-            onChange={(value) => setDonationMode(value as 'one-off' | 'standing-order')}
-            options={[
-              { value: 'one-off', label: 'One-off online Dakshina', color: 'bg-primary-600' },
-              { value: 'standing-order', label: 'Recurring Dakshina', color: 'bg-primary-600' },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-start justify-center px-4 py-6">
+      <div className="flex-1 flex items-start justify-center px-4 py-8">
         <div className="w-full max-w-4xl flex flex-col lg:flex-row gap-6">
 
           {/* ── Left panel: Organisation summary ── */}

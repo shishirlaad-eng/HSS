@@ -38,6 +38,7 @@ import {
   StatusSlider
 } from './hb/common';
 import { toast } from 'sonner';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 type ViewMode = 'grid' | 'list' | 'table';
 
@@ -81,6 +82,8 @@ interface MasterManagementProps {
 }
 
 export default function MasterManagement({ masterType }: MasterManagementProps) {
+  const { selectedRole } = useRoleScope();
+  const isSuperAdmin = selectedRole === 'Super Admin';
   // Enforce Default Card View as per standards
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   
@@ -573,13 +576,15 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
 
                       {/* TOP-RIGHT ACTION AREA */}
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={() => toggleSelection(item.id)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                          title="Select Record"
-                        />
+                        {!isSuperAdmin && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => toggleSelection(item.id)}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                            title="Select Record"
+                          />
+                        )}
                         <IconButton
                           icon={MoreVertical}
                           borderless={true}
@@ -661,15 +666,17 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {/* Checkbox placed at extreme LEFT position */}
-                    <div onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(item.id)}
-                        onChange={() => toggleSelection(item.id)}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                        title="Select Record"
-                      />
-                    </div>
+                    {!isSuperAdmin && (
+                      <div onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelection(item.id)}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                          title="Select Record"
+                        />
+                      </div>
+                    )}
 
                     <div className="w-8 h-8 rounded bg-primary-50 dark:bg-primary-950 flex items-center justify-center text-primary-600 flex-shrink-0">
                       <IconComponent className="w-4 h-4" />
@@ -747,21 +754,23 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {/* Standardized Checkbox inside FIRST column */}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds(new Set(paginatedData.map(i => i.id)));
-                          } else {
-                            setSelectedIds(new Set());
-                          }
-                        }}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                        title="Select All on Page"
-                      />
-                    </th>
+                    {!isSuperAdmin && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(new Set(paginatedData.map(i => i.id)));
+                            } else {
+                              setSelectedIds(new Set());
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                          title="Select All on Page"
+                        />
+                      </th>
+                    )}
                     
                     {/* Standardized Title Case Headers with Inline Sorting */}
                     {visibleColumns.id && (
@@ -849,15 +858,17 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                           setModalMode('view');
                         }}
                       >
-                        <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(item.id)}
-                            onChange={() => toggleSelection(item.id)}
-                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                            title="Select Record"
-                          />
-                        </td>
+                        {!isSuperAdmin && (
+                          <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(item.id)}
+                              onChange={() => toggleSelection(item.id)}
+                              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                              title="Select Record"
+                            />
+                          </td>
+                        )}
                         {visibleColumns.id && (
                           <td className="px-6 py-3.5 text-sm font-mono text-primary-600 dark:text-primary-400 font-medium">
                             {item.id}

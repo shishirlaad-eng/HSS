@@ -134,7 +134,8 @@ export function Sidebar({
     // 2. Members Management
     "members-management-group":      "Members",
     "members":                        "Members",
-    "karyakartas":                    "Karyakartas",
+    "karyakartas":                    "Roles and Responsibilities",
+    "compliance":                     "Compliance",
     "pending-approvals":              "Pending Karyawaha Approvals",
     "pending-guardian-approvals":     "Pending Guardian Approvals",
 
@@ -255,13 +256,11 @@ export function Sidebar({
                 {/* Main Menu Item */}
                 <button
                   onClick={() => {
-                    if (
-                      menuItem.subItems &&
-                      menuItem.subItems.length > 0
-                    ) {
-                      toggleMenu(menuItem.id);
-                    } else if (menuItem.onClick) {
+                    if (menuItem.onClick) {
                       menuItem.onClick();
+                    }
+                    if (menuItem.subItems && menuItem.subItems.length > 0) {
+                      toggleMenu(menuItem.id);
                     }
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors focus:outline-none ${hasActiveSubItem || menuItem.active

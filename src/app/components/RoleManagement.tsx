@@ -51,12 +51,14 @@ import {
 } from './hb/common';
 import { mockRoles, availableModules, Role, ModulePermission } from '../../mockAPI/rolesData';
 import { toast } from 'sonner';
-import { useModulePermissions } from '../contexts/RoleScopeContext';
+import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 
 type ViewMode = 'grid' | 'table';
 
 export default function RoleManagement() {
   const rp = useModulePermissions('rbac');
+  const { selectedRole: currentSystemRole } = useRoleScope();
+  const isSuperAdmin = currentSystemRole === 'Super Admin';
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isEditing, setIsEditing] = useState(false);
@@ -418,12 +420,14 @@ export default function RoleManagement() {
                   <Shield className="w-6 h-6" />
                 </div>
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(role.id)}
-                    onChange={() => toggleSelection(role.id)}
-                    className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                  />
+                  {!isSuperAdmin && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(role.id)}
+                      onChange={() => toggleSelection(role.id)}
+                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                    />
+                  )}
                   <IconButton
                     icon={MoreVertical}
                     borderless={true}
@@ -476,17 +480,19 @@ export default function RoleManagement() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                  <th className="p-4 w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.size === paginatedRoles.length && paginatedRoles.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedIds(new Set(paginatedRoles.map(r => r.id)));
-                        else setSelectedIds(new Set());
-                      }}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                    />
-                  </th>
+                  {!isSuperAdmin && (
+                    <th className="p-4 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === paginatedRoles.length && paginatedRoles.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedIds(new Set(paginatedRoles.map(r => r.id)));
+                          else setSelectedIds(new Set());
+                        }}
+                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                      />
+                    </th>
+                  )}
                   {visibleColumns.name && (
                     <th onClick={() => handleSort('name')} className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer uppercase tracking-wider">
                       Role Name {renderSortArrow('name')}
@@ -520,14 +526,16 @@ export default function RoleManagement() {
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paginatedRoles.map((role) => (
                   <tr key={role.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer" onClick={() => handleEdit(role)}>
-                    <td className="p-4" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(role.id)}
-                        onChange={() => toggleSelection(role.id)}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                      />
-                    </td>
+                    {!isSuperAdmin && (
+                      <td className="p-4" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(role.id)}
+                          onChange={() => toggleSelection(role.id)}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
+                        />
+                      </td>
+                    )}
                     {visibleColumns.name && (
                       <td className="px-6 py-4 text-sm font-medium text-neutral-900 dark:text-white">
                         {role.name}

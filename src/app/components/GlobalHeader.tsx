@@ -53,13 +53,13 @@ import {
 } from "./hb/common/Form";
 
 const ROLE_DISPLAY_LABELS: Record<string, string> = {
-  'Kendriya Admin':   'Kendriya Admin (National Head)',
-  'Vibhaag Admin':    'Vibhaag Admin (Regional Head)',
-  'Nagar Admin':      'Nagar Admin (Town Head)',
-  'Shakha Admin':     'Shakha Admin (Activity Centre Admin)',
-  'Shakha Operations':'Shakha Operations (Ops User)',
-  'Adult Member':     'Adult Member (18+)',
-  'Teen Member':      'Teen Member (13–17)',
+  'Kendriya Admin':   'Kendriya Admin',
+  'Vibhaag Admin':    'Vibhaag Admin',
+  'Nagar Admin':      'Nagar Admin',
+  'Shakha Admin':     'Shakha Admin',
+  'Shakha Operations':'Shakha Operations',
+  'Adult Member':     'Adult Member',
+  'Teen Member':      'Teen Member',
 };
 
 // ── Mock "My Shakha" details (shown via My Profile dropdown) ──
@@ -861,10 +861,10 @@ export function GlobalHeader({
                     <button
                       onClick={() => {
                         if (isOverflow) return;
+                        if (item.onClick) item.onClick();
                         if (hasSubItems) {
                           setOpenHorizSubmenu(isOpen ? null : item.id);
                         } else {
-                          item.onClick?.();
                           setOpenHorizSubmenu(null);
                         }
                       }}
@@ -927,7 +927,10 @@ export function GlobalHeader({
                           if (hasSubItems) {
                             return (
                               <div key={item.id}>
-                                <div className="px-3 py-2 flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-100 dark:border-neutral-800">
+                                <div
+                                  className={`px-3 py-2 flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-100 dark:border-neutral-800 ${item.onClick ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800' : ''}`}
+                                  onClick={() => { if (item.onClick) { item.onClick(); setShowMoreMenu(false); } }}
+                                >
                                   {Icon && <Icon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />}
                                   <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                                     {getNavLabel(item.id, item.label)}

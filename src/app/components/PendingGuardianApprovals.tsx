@@ -244,7 +244,7 @@ function RejectReasonModal({
 
 export default function PendingGuardianApprovals() {
   const mp = useModulePermissions('members');
-  const { scope } = useRoleScope();
+  const { scope, selectedRole } = useRoleScope();
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
   const [members, setMembers] = useState<Member[]>(mockMembers);
@@ -415,10 +415,6 @@ export default function PendingGuardianApprovals() {
 
   const getRowMenuItems = (m: Member) => [
     { icon: Eye, label: 'View', onClick: () => { setSelectedMember(m); setPageState('detail'); } },
-    ...(mp.canApproveGuardian ? [
-      { icon: CheckCircle, label: 'Approve (Guardian)', onClick: () => openModal(m, 'approve') },
-      { icon: Ban,         label: 'Reject',             onClick: () => openModal(m, 'reject')  },
-    ] : []),
   ];
 
   // ── Detail sub-page ─────────────────────────────────────────
@@ -440,8 +436,7 @@ export default function PendingGuardianApprovals() {
           onStatusChange={() => {}}
           onDelete={() => {}}
           mode="approval"
-          onApprove={() => openModal(liveMember, 'approve')}
-          onReject={() => openModal(liveMember, 'reject')}
+          hideComplianceTab={selectedRole === 'Shakha Admin'}
         />
         <ApproveGuardianModal
           isOpen={modal.isOpen && modal.action === 'approve'}
@@ -607,24 +602,6 @@ export default function PendingGuardianApprovals() {
                     </div>
                     {/* Row actions */}
                     <div className="flex items-center gap-2 ml-4 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      {mp.canApproveGuardian && (
-                        <button
-                          onClick={() => openModal(m, 'approve')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Approve (Guardian)
-                        </button>
-                      )}
-                      {mp.canApproveGuardian && (
-                        <button
-                          onClick={() => openModal(m, 'reject')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
-                        >
-                          <Ban className="w-3.5 h-3.5" />
-                          Reject
-                        </button>
-                      )}
                       <IconButton icon={MoreVertical} borderless title="More" menuItems={getRowMenuItems(m)} />
                     </div>
                   </div>
@@ -697,26 +674,6 @@ export default function PendingGuardianApprovals() {
                     </div>
                   </div>
 
-                  {/* Footer buttons */}
-                  <div
-                    className="pt-3 mt-3 border-t border-neutral-100 dark:border-neutral-800 flex gap-2"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => openModal(m, 'approve')}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => openModal(m, 'reject')}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
-                    >
-                      <Ban className="w-3.5 h-3.5" />
-                      Reject
-                    </button>
-                  </div>
                 </div>
               );
             }) : (
@@ -819,20 +776,6 @@ export default function PendingGuardianApprovals() {
                         {/* Actions */}
                         <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => openModal(m, 'approve')}
-                              title="Approve (Guardian)"
-                              className="p-1.5 rounded-lg text-[#3d8928] hover:bg-[#f1fced] transition-colors"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openModal(m, 'reject')}
-                              title="Reject"
-                              className="p-1.5 rounded-lg text-[#9a0c17] hover:bg-[#fff0f0] transition-colors"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
                             <IconButton
                               icon={Eye}
                               borderless

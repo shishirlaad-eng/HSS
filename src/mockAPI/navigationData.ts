@@ -94,61 +94,37 @@ export const getNavigationData = (
     },
 
     // ── 2. HSS (UK) Setup ────────────────────────────────────────
-    {
+    ...(selectedRole === 'Super Admin' ? [{
       id: "masters-group",
       label: "HSS (UK) Setup",
       icon: Database,
-      subItems: [
-        {
-          id: "country",
-          label: "Countries",
-          onClick: () => onNavigate("country"),
-          active: currentPage === "country",
-        },
-        {
-          id: "region",
-          label: "Vibhaag",
-          onClick: () => onNavigate("region"),
-          active: currentPage === "region",
-        },
-        {
-          id: "town",
-          label: "Nagar",
-          onClick: () => onNavigate("town"),
-          active: currentPage === "town",
-        },
-        {
-          id: "centre",
-          label: "Shakha",
-          onClick: () => onNavigate("centre"),
-          active: currentPage === "centre",
-        },
-        {
-          id: "role-types",
-          label: "Responsibility",
-          onClick: () => onNavigate("role-types"),
-          active: currentPage === "role-types",
-        },
-      ].filter(item => !hiddenMasters.has(item.id)),
-    },
+      onClick: () => {
+        const TAB_ORDER = ['country', 'region', 'town', 'centre', 'role-types'];
+        const first = TAB_ORDER.find(t => !hiddenMasters.has(t)) ?? 'country';
+        onNavigate(first);
+      },
+      active: ['country', 'region', 'town', 'centre', 'role-types'].includes(currentPage),
+    }] : []),
 
     // ── 3. Members Management ────────────────────────────────────
     {
       id: "members-management-group",
       label: "Members",
       icon: UserCheck,
+      onClick: () => onNavigate("members"),
+      active: ['members', 'karyakartas', 'compliance', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
       subItems: [
         {
-          id: "members",
-          label: "Members",
-          onClick: () => onNavigate("members"),
-          active: currentPage === "members",
-        },
-        {
           id: "karyakartas",
-          label: "Karyakartas",
+          label: "Roles and Responsibilities",
           onClick: () => onNavigate("karyakartas"),
           active: currentPage === "karyakartas",
+        },
+        {
+          id: "compliance",
+          label: "Compliance",
+          onClick: () => onNavigate("compliance"),
+          active: currentPage === "compliance",
         },
         {
           id: "pending-approvals",
@@ -156,7 +132,7 @@ export const getNavigationData = (
           onClick: () => onNavigate("pending-approvals"),
           active: currentPage === "pending-approvals",
         },
-        ...(selectedRole === 'Super Admin' ? [{
+        ...(['Super Admin', 'Shakha Admin'].includes(selectedRole) ? [{
           id: "pending-guardian-approvals",
           label: "Pending Guardian Approvals",
           onClick: () => onNavigate("pending-guardian-approvals"),

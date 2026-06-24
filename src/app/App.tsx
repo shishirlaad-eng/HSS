@@ -35,6 +35,7 @@ import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
 import StripeDonation from "./components/StripeDonation";
 import MyDonations from "./components/MyDonations";
+import ComplianceManagement from "./components/ComplianceManagement";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
@@ -261,6 +262,8 @@ export default function App() {
           />
         ) : currentPage === "karyakartas" ? (
           <MemberManagement key="karyakartas" karyakartasOnly={true} />
+        ) : currentPage === "compliance" ? (
+          <ComplianceManagement />
         ) : currentPage === "pending-approvals" ? (
           <PendingApprovals />
         ) : currentPage === "pending-guardian-approvals" ? (

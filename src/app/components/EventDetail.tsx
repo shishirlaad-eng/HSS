@@ -593,10 +593,10 @@ export default function EventDetail({
 
                   {/* Description */}
                   {event.description && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                       {isMember ? (
-                        <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#172E4D' }}>
-                          <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Event Description</h4>
+                        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                          <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Event Description</h4>
                         </div>
                       ) : (
                         <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Event Description</h4>
@@ -611,9 +611,9 @@ export default function EventDetail({
                   {isMember ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Karyakram Details — member: 4 fields only, dashboard style */}
-                      <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-                        <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#009FE3' }}>
-                          <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Karyakram Details</h4>
+                      <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                          <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Karyakram Details</h4>
                         </div>
                         <div className="px-5 py-4 space-y-4">
                           {[
@@ -638,10 +638,10 @@ export default function EventDetail({
 
                       {/* Additional Registration Questions — member, dashboard style */}
                       {event.customQuestions && event.customQuestions.length > 0 && (
-                        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-                          <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#4EAE33' }}>
-                            <ListChecks className="w-4 h-4 text-white/80" />
-                            <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Registration Questions</h4>
+                        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                          <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                            <ListChecks className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                            <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Registration Questions</h4>
                           </div>
                           <div className="px-5 py-4 space-y-3">
                             {event.customQuestions.map(q => {
@@ -796,11 +796,11 @@ export default function EventDetail({
                   )}
 
                   {/* Terms & Conditions */}
-                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                     {isMember ? (
-                      <div className="flex items-center gap-2 px-5 py-4" style={{ backgroundColor: '#F9B03D' }}>
-                        <ScrollText className="w-4 h-4 text-white/80" />
-                        <h4 className="text-[19px] font-medium text-white" style={{ fontFamily: "'Ramilias', serif" }}>Terms &amp; Conditions</h4>
+                      <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <ScrollText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                        <h4 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Terms &amp; Conditions</h4>
                       </div>
                     ) : (
                       <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
