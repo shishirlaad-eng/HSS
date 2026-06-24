@@ -99,8 +99,7 @@ export default function ComplianceManagement() {
                   <th className={TH}>Name</th>
                   <th className={TH}>Age Category</th>
                   <th className={TH}>DBS Status</th>
-                  <th className={TH}>DBS Cert</th>
-                  <th className={TH}>Date</th>
+                  <th className={TH}>DBS Cert Date</th>
                   <th className={TH}>DBS Update Service</th>
                 </tr>
               )}
@@ -137,8 +136,11 @@ export default function ComplianceManagement() {
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
-                      <td className={TD}>{m.dbsCertificateNumber ?? '—'}</td>
-                      <td className={TD}>{fmtDate(m.dbsCertificateDate)}</td>
+                      <td className={TD}>
+                        {m.dbsCertificateNumber
+                          ? <><span className="font-medium">{m.dbsCertificateNumber}</span>{m.dbsCertificateDate && <span className="block text-neutral-400">{fmtDate(m.dbsCertificateDate)}</span>}</>
+                          : fmtDate(m.dbsCertificateDate)}
+                      </td>
                       <td className={TD}>
                         {m.dbsUpdateService === true ? (
                           <span className="inline-flex items-center gap-1.5">

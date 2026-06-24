@@ -1186,7 +1186,7 @@ export default function MemberManagement({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
 
-  const memberColumns: ColumnConfig[] = [
+  const memberColumns: ColumnConfig[] = karyakartasOnly ? [
     { key: 'id',                  label: 'Member ID'           },
     { key: 'name',                label: 'Name'                },
     { key: 'memberType',          label: 'Age Category'        },
@@ -1194,12 +1194,20 @@ export default function MemberManagement({
     { key: 'registrationDate',    label: 'Since'               },
     { key: 'hssRoles',            label: 'My HSS Role(s)'      },
     { key: 'status',              label: 'Member Status'       },
+  ] : [
+    { key: 'id',         label: 'Member ID'      },
+    { key: 'name',       label: 'Name'           },
+    { key: 'memberType', label: 'Age Category'   },
+    { key: 'email',      label: 'Email Address'  },
+    { key: 'phone',      label: 'Contact Number' },
+    { key: 'status',     label: 'Member Status'  },
   ];
 
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    id: true, name: true, memberType: true, sanghResponsibility: true,
-    registrationDate: true, hssRoles: true, status: true,
-  });
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    karyakartasOnly
+      ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
+      : { id: true, name: true, memberType: true, email: true, phone: true, status: true }
+  );
 
   // Navigate directly to a member detail when arriving from another module
   useEffect(() => {
@@ -1817,6 +1825,16 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.memberType && (
                         <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
+                      )}
+                      {visibleColumns.email && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.email || <span className="text-neutral-400">—</span>}
+                        </td>
+                      )}
+                      {visibleColumns.phone && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.phone || <span className="text-neutral-400">—</span>}
+                        </td>
                       )}
                       {visibleColumns.sanghResponsibility && (
                         <td className="px-4 py-3.5">
