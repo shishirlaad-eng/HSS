@@ -1207,6 +1207,20 @@ export default function Announcements({
                   {formErrors.title && <p className="text-xs text-red-600 mt-1">{formErrors.title}</p>}
                 </FormField>
 
+                {/* High priority */}
+                <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                  <input
+                    type="checkbox"
+                    checked={form.priority === 'high'}
+                    onChange={e => setField('priority', e.target.checked ? 'high' : 'medium')}
+                    className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-red-600"
+                  />
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    Mark as High Priority
+                  </span>
+                </label>
+
                 {/* Body */}
                 <FormField>
                   <FormLabel required>Message</FormLabel>
