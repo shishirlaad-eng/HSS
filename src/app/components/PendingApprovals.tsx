@@ -660,10 +660,6 @@ export default function PendingApprovals() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 font-bold text-lg">
-                        {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -732,9 +728,6 @@ export default function PendingApprovals() {
                 >
                   {/* Top row */}
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500 dark:text-neutral-400 font-bold text-xl shadow-inner">
-                      {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
                     <div onClick={e => e.stopPropagation()}>
                       <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getRowMenuItems(m)} />
                     </div>

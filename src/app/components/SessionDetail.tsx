@@ -19,6 +19,8 @@ import {
   Ban,
   AlertTriangle,
   UserPlus,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton } from './hb/listing';
 import { ShakhaSession, AttendanceRecord, getSessionShakhaType } from '../../mockAPI/attendanceData';
@@ -197,18 +199,24 @@ export default function SessionDetail({
   onBack,
   onMarkAttendance,
   onCancelSession,
+  onDeleteSession,
+  onEditSession,
 }: {
   session: ShakhaSession;
   allSessions: ShakhaSession[];
   onBack: () => void;
   onMarkAttendance: (sessionId: string, memberId: string, status: AttendanceRecord['status']) => void;
   onCancelSession?: (sessionId: string) => void;
+  onDeleteSession?: (sessionId: string) => void;
+  onEditSession?: (sessionId: string) => void;
 }) {
   const [searchQuery,       setSearchQuery]       = useState('');
   const [filterAgeCategory, setFilterAgeCategory] = useState('');
   const [filterJobTitle,    setFilterJobTitle]    = useState('');
   const [showCancelModal,   setShowCancelModal]   = useState(false);
   const [isCancelling,      setIsCancelling]      = useState(false);
+  const [showDeleteModal,   setShowDeleteModal]   = useState(false);
+  const [isDeleting,        setIsDeleting]        = useState(false);
   const [joinRequested,     setJoinRequested]     = useState(false);
   const [expandedMemberId,  setExpandedMemberId]  = useState<string | null>(null);
   const { scope, selectedRole } = useRoleScope();
@@ -228,7 +236,15 @@ export default function SessionDetail({
   // Future session = date is strictly after today (midnight)
   const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
   const isFutureSession = dateObj > todayMidnight;
-  const canCancel = !isMemberRole && isFutureSession && session.status !== 'cancelled' && !!onCancelSession;
+  const isPastSession   = dateObj < todayMidnight;
+  const isShakhaAdmin   = selectedRole === 'Shakha Admin';
+  // Shakha Admin can cancel all sessions (past + future); other admins only future
+  const canCancel = !isMemberRole && session.status !== 'cancelled' && !!onCancelSession
+    && (isShakhaAdmin || isFutureSession);
+  // Shakha Admin can delete any session (past + future)
+  const canDelete = isShakhaAdmin && !!onDeleteSession;
+  // Editing blocked for past sessions
+  const canEdit   = !isMemberRole && !isPastSession;
 
   const handleConfirmCancel = async () => {
     if (!onCancelSession) return;
@@ -237,6 +253,16 @@ export default function SessionDetail({
     onCancelSession(session.id);
     setIsCancelling(false);
     setShowCancelModal(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!onDeleteSession) return;
+    setIsDeleting(true);
+    await new Promise(r => setTimeout(r, 500));
+    toast.success(`${session.title} deleted.`);
+    onDeleteSession(session.id);
+    setIsDeleting(false);
+    setShowDeleteModal(false);
   };
 
   // ── Computed: home centre map (memberId → activityCentre) ──
@@ -354,6 +380,15 @@ export default function SessionDetail({
               {joinRequested ? 'Request Sent' : 'Request to Join'}
             </button>
           )}
+          {canEdit && onEditSession && (
+            <button
+              onClick={() => onEditSession(session.id)}
+              className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit Shakha
+            </button>
+          )}
           {canCancel && (
             <button
               onClick={() => setShowCancelModal(true)}
@@ -361,6 +396,15 @@ export default function SessionDetail({
             >
               <Ban className="w-3.5 h-3.5" />
               Cancel Shakha
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-950 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Shakha
             </button>
           )}
         </PageHeader>
@@ -710,6 +754,47 @@ export default function SessionDetail({
           </div>
         </div>
       </div>
+
+      {/* ── Delete Shakha Confirmation Modal ──────── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-error-600 dark:text-error-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">Delete Shakha</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Are you sure you want to permanently delete{' '}
+                  <span className="font-medium text-neutral-900 dark:text-white">{session.title}</span>?
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">{dateLabel}</p>
+                <p className="text-xs text-error-600 dark:text-error-400 font-medium mt-2">
+                  This action cannot be undone. All attendance records will be lost.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
+              >
+                Keep Shakha
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm rounded-lg font-medium bg-error-600 hover:bg-error-700 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {isDeleting ? 'Deleting…' : 'Confirm Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Cancel Shakha Confirmation Modal ──────── */}
       {showCancelModal && (

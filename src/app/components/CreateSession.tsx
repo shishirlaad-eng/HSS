@@ -107,14 +107,34 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 
 export default function CreateSession({
   initialDate,
+  sessionToEdit,
   onCancel,
   onCreate,
+  onUpdate,
 }: {
   initialDate: string;
+  sessionToEdit?: ShakhaSession;
   onCancel: () => void;
   onCreate: (sessions: ShakhaSession[]) => void;
+  onUpdate?: (id: string, updates: Partial<ShakhaSession>) => void;
 }) {
-  const [form, setForm]     = useState<CreateForm>(EMPTY_FORM(initialDate));
+  const isEditMode = !!sessionToEdit;
+  const [form, setForm]     = useState<CreateForm>(
+    sessionToEdit
+      ? {
+          date:           sessionToEdit.date,
+          startTime:      sessionToEdit.startTime,
+          endTime:        sessionToEdit.endTime,
+          region:         sessionToEdit.region,
+          town:           sessionToEdit.town,
+          activityCentre: sessionToEdit.activityCentre,
+          shakhaType:     sessionToEdit.shakhaType ?? '',
+          utsav:          sessionToEdit.utsav ?? 'None',
+          recurDays:      [],
+          repeatUntil:    '',
+        }
+      : EMPTY_FORM(initialDate)
+  );
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
@@ -157,9 +177,9 @@ export default function CreateSession({
     if (!form.town)           e.town           = 'This field is required.';
     if (!form.activityCentre) e.activityCentre = 'This field is required.';
     if (!form.shakhaType)     e.shakhaType     = 'This field is required.';
-    if (isRecurring && !form.repeatUntil)
+    if (!isEditMode && isRecurring && !form.repeatUntil)
                               e.repeatUntil    = 'Repeat until date is required for recurring Shakhas.';
-    if (isRecurring && form.repeatUntil && form.repeatUntil < form.date)
+    if (!isEditMode && isRecurring && form.repeatUntil && form.repeatUntil < form.date)
                               e.repeatUntil    = 'Repeat until must be on or after the start date.';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -234,13 +254,32 @@ export default function CreateSession({
     if (!validate()) return;
     setSaving(true);
     setTimeout(() => {
-      const newSessions = buildSessions();
-      onCreate(newSessions);
-      toast.success(
-        newSessions.length === 1
-          ? 'Shakha created successfully'
-          : `${newSessions.length} recurring Shakhas created successfully`,
-      );
+      if (isEditMode && sessionToEdit && onUpdate) {
+        const title = `${form.activityCentre.replace(' Activity Centre', '')} — ${form.shakhaType}`;
+        onUpdate(sessionToEdit.id, {
+          date:           form.date,
+          startTime:      form.startTime,
+          endTime:        form.endTime,
+          region:         form.region,
+          town:           form.town,
+          activityCentre: form.activityCentre,
+          shakhaType:     form.shakhaType as ShakhaSession['shakhaType'],
+          utsav:          form.utsav as ShakhaSession['utsav'],
+          title,
+          dayOfWeek:      new Date(form.date + 'T12:00:00').getDay(),
+          attendanceRecords: buildAttendanceRecordsForCentre(form.activityCentre).map(r => ({ ...r })),
+          totalExpected:  buildAttendanceRecordsForCentre(form.activityCentre).length,
+        });
+        toast.success('Shakha updated successfully');
+      } else {
+        const newSessions = buildSessions();
+        onCreate(newSessions);
+        toast.success(
+          newSessions.length === 1
+            ? 'Shakha created successfully'
+            : `${newSessions.length} recurring Shakhas created successfully`,
+        );
+      }
       setSaving(false);
     }, 600);
   };
@@ -254,10 +293,12 @@ export default function CreateSession({
     : '—';
 
   const createBtnLabel = saving
-    ? 'Creating…'
-    : isRecurring && recurringPreviewCount > 0
-      ? `Create ${recurringPreviewCount} Shakhas`
-      : 'Create Shakha';
+    ? (isEditMode ? 'Saving…' : 'Creating…')
+    : isEditMode
+      ? 'Save Changes'
+      : isRecurring && recurringPreviewCount > 0
+        ? `Create ${recurringPreviewCount} Shakhas`
+        : 'Create Shakha';
 
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
@@ -265,12 +306,12 @@ export default function CreateSession({
 
         {/* ── Page Header ──────────────────────────────────── */}
         <PageHeader
-          title="Create Shakha"
-          subtitle="Schedule a new Shakha gathering"
+          title={isEditMode ? 'Edit Shakha' : 'Create Shakha'}
+          subtitle={isEditMode ? 'Update Shakha details' : 'Schedule a new Shakha gathering'}
           breadcrumbs={[
             { label: 'Sankhya' },
             { label: 'Shakha', onClick: onCancel },
-            { label: 'Create Shakha', current: true },
+            { label: isEditMode ? 'Edit Shakha' : 'Create Shakha', current: true },
           ]}
         >
           <div className="flex items-center gap-3">
@@ -412,7 +453,7 @@ export default function CreateSession({
             </div>
 
             {/* ── Card: Recurrence ─────────────────────────── */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+            {!isEditMode && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <SectionHeader icon={RefreshCw} title="Recurrence" />
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
@@ -476,7 +517,7 @@ export default function CreateSession({
                   </div>
                 </div>
               )}
-            </div>
+            </div>}
 
           </div>
 

@@ -149,6 +149,34 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
               {/* Recurring options */}
               {donationType === 'recurring' && (
                 <div className="space-y-4 pt-1">
+                  {/* Standing order info */}
+                  <div className="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 p-4 space-y-3">
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                      You can setup a regular standing order from your personal bank account by including the donation amount and the frequency (Monthly, Quarterly or Annually). This is the easiest and most convenient way to make a regular donation to HSS (UK). Please see details below:
+                    </p>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Bank Name:</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Sort Code:</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Account Number:</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+                      </div>
+                      <div className="flex gap-2 items-start">
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Reference Number:</span>
+                        <span className="font-mono font-semibold text-primary-700 dark:text-primary-300">{scope.selfMemberId ?? '[Your Membership ID]'}</span>
+                      </div>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-0 pt-0.5">
+                        This is your MyHSS membership ID.
+                      </p>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">Frequency</label>
                     <div className="grid grid-cols-3 gap-2">

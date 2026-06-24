@@ -167,6 +167,8 @@ function InfoSection({ title, children, className = '' }: { title: string; child
   );
 }
 
+
+
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -334,11 +336,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
           <div className="flex items-start justify-between gap-4 flex-wrap">
             {/* Left: Avatar + Name, role, ID + meta rows */}
             <div className="flex items-start gap-4 flex-1 min-w-0">
-
-              {/* Avatar */}
-              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
-                {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </div>
 
               {/* Text block */}
               <div className="flex-1 min-w-0">

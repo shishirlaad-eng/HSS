@@ -91,6 +91,7 @@ export default function Sessions() {
   const { scope, selectedRole } = useRoleScope();
   const atp = useModulePermissions('attendance');
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
+  const isShakhaAdmin = selectedRole === 'Shakha Admin';
   const canManageShakha = !isMemberRole && atp.canView && atp.canAdd;
 
   // Super Admin defaults to week view; all other roles default to month view
@@ -110,6 +111,7 @@ export default function Sessions() {
   const [filterCentre, setFilterCentre]   = useState('');
   const [selectedSession, setSelectedSession] = useState<ShakhaSession | null>(null);
   const [createDate,      setCreateDate]      = useState<string | null>(null);
+  const [editSession,     setEditSession]     = useState<ShakhaSession | null>(null);
 
   // Members can browse Shakhas outside their own centre to request to join
   const [browseOtherShakha, setBrowseOtherShakha] = useState(false);
@@ -133,8 +135,18 @@ export default function Sessions() {
     setSessions(prev =>
       prev.map(s => s.id === sessionId ? { ...s, status: 'cancelled' as const } : s)
     );
-    // Keep the detail page open so the user can see the updated status
     setSelectedSession(prev => prev?.id === sessionId ? { ...prev, status: 'cancelled' as const } : prev);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    setSelectedSession(null);
+  };
+
+  const handleUpdateSession = (sessionId: string, updates: Partial<ShakhaSession>) => {
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, ...updates } : s));
+    setSelectedSession(prev => prev?.id === sessionId ? { ...prev, ...updates } : prev);
+    setEditSession(null);
   };
 
   const handleMarkAttendance = (sessionId: string, memberId: string, status: AttendanceRecord['status']) => {
@@ -278,6 +290,21 @@ export default function Sessions() {
         onBack={() => setSelectedSession(null)}
         onMarkAttendance={handleMarkAttendance}
         onCancelSession={canManageShakha ? handleCancelSession : undefined}
+        onDeleteSession={isShakhaAdmin ? handleDeleteSession : undefined}
+        onEditSession={canManageShakha ? (id) => { const s = sessions.find(ss => ss.id === id); if (s) setEditSession(s); } : undefined}
+      />
+    );
+  }
+
+  // ── Show Edit Session page ─────────────────────────────────
+  if (editSession && canManageShakha) {
+    return (
+      <CreateSession
+        initialDate={editSession.date}
+        sessionToEdit={editSession}
+        onCancel={() => setEditSession(null)}
+        onCreate={handleCreateSession}
+        onUpdate={handleUpdateSession}
       />
     );
   }

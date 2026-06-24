@@ -1150,9 +1150,6 @@ function SuperAdminProfileView() {
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-950 border-2 border-white dark:border-neutral-800 shadow flex items-center justify-center text-primary-600 dark:text-primary-400 text-base font-bold flex-shrink-0 mt-0.5">
-                JD
-              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">John Doe</h1>
