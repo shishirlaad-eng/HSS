@@ -69,7 +69,7 @@ export const mockAnnouncements: Announcement[] = [
     email: { enabled: true,  schedule: 'instant' },
     createdAt: '2026-05-20T09:00:00Z',
     sentAt:    '2026-05-20T09:00:00Z',
-    postedBy: 'National Office',
+    postedBy: 'National Head',
     estimatedReach: 847,
   },
   {
@@ -107,7 +107,7 @@ export const mockAnnouncements: Announcement[] = [
     email: { enabled: false, schedule: 'instant' },
     createdAt: '2026-05-10T14:00:00Z',
     sentAt:    '2026-05-10T14:00:00Z',
-    postedBy: 'National Office',
+    postedBy: 'National Head',
     estimatedReach: 847,
   },
   {

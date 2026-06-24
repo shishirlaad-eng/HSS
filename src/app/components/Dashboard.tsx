@@ -58,7 +58,7 @@ const mockAnnouncements: Announcement[] = [
     body: 'The annual Sangh Shiksha Varg 2026 is scheduled for August. All shakha leaders and members are encouraged to register their participants before 15 July 2026.',
     postedAt: '2026-05-20T09:00:00Z',
     priority: 'high',
-    postedBy: 'HSS UK National Office',
+    postedBy: 'National Head',
     eventId: 'EVT-111',
   },
   {
@@ -75,7 +75,7 @@ const mockAnnouncements: Announcement[] = [
     body: 'Nominations are open for the annual Volunteer Recognition Awards. Submit your nominations for outstanding seva contributors by 10 June 2026.',
     postedAt: '2026-05-10T14:00:00Z',
     priority: 'medium',
-    postedBy: 'HSS UK National Office',
+    postedBy: 'National Head',
   },
   {
     id: 'ANN-004',
@@ -352,7 +352,7 @@ function MemberDashboard({
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: card.color + '20', color: card.color }}>
                       {card.sub}
                     </span>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                    <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
                       {card.segments[1].value} other
                     </p>
                   </div>
@@ -360,12 +360,12 @@ function MemberDashboard({
                   /* ── Split Metric: My Dakshina ── */
                   <div className="flex-1 flex flex-col items-center justify-center py-2">
                     <span className="text-5xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 mb-4">{card.sub}</p>
+                    <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1.5 mb-4">{card.sub}</p>
                     <div className="flex items-center gap-5">
                       {card.segments.map((seg, i) => (
                         <div key={seg.label} className="flex flex-col items-center">
                           <span className="text-lg font-bold leading-none" style={{ color: seg.color }}>{seg.prefix ?? ''}{seg.value}</span>
-                          <span className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
+                          <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
                         </div>
                       ))}
                     </div>
@@ -421,9 +421,9 @@ function MemberDashboard({
                       >{card.centerSub}</text>
                     )}
                   </svg>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
+                  <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-3 text-center leading-relaxed">{card.sub}</p>
                   {card.detail && (
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 text-center leading-relaxed">{card.detail}</p>
+                    <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1 text-center leading-relaxed">{card.detail}</p>
                   )}
                   {card.detailRows.length > 0 && (
                     <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">

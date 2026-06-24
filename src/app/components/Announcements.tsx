@@ -666,8 +666,40 @@ export default function Announcements({
               </div>
             </div>
 
+            {/* Audience Scope + Meta — member role only */}
+            {isMemberRole && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Audience Scope */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">Audience Scope</p>
+                  <div className={`flex items-center gap-2 ${scpc.color}`}>
+                    <ScopeIcon className="w-4 h-4" />
+                    <span className="text-sm font-semibold">{scopeLabel(selected)}</span>
+                  </div>
+                  {selected.scope !== 'national' && (
+                    <div className="mt-3 space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      {selected.targetRegion && <p>Region: {selected.targetRegion}</p>}
+                      {selected.targetTown   && <p>Town: {selected.targetTown}</p>}
+                      {selected.targetCentre && <p>Centre: {selected.targetCentre}</p>}
+                    </div>
+                  )}
+                </div>
+                {/* Posted by & Date */}
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-neutral-500 dark:text-neutral-400">Posted by</span>
+                    <span className="text-neutral-900 dark:text-white font-medium">{selected.postedBy}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-neutral-500 dark:text-neutral-400">Date</span>
+                    <span className="text-neutral-700 dark:text-neutral-300">{selected.sentAt ? formatDateTime(selected.sentAt) : formatDate(selected.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Demographic filters (if any) */}
-            {(selected.filterAgeCategories.length > 0 || selected.filterGenders.length > 0 || selected.filterJobTitles.length > 0) && (
+            {!isMemberRole && (selected.filterAgeCategories.length > 0 || selected.filterGenders.length > 0 || selected.filterJobTitles.length > 0) && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
                 <div className="px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                   <Users className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
@@ -860,7 +892,7 @@ export default function Announcements({
     <div className="px-6 py-6">
       <PageHeader
         title="Suchana"
-        subtitle={isMemberRole ? "Suchanas for your attention" : "Create and manage suchanas for members across the network"}
+        subtitle={isMemberRole ? "Below is the list of all Suchanas for your attention" : "Create and manage suchanas for members across the network"}
       >
         {isMemberRole ? (
           <SearchBar
