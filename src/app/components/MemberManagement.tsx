@@ -1128,10 +1128,12 @@ export default function MemberManagement({
   initialMemberId,
   onConsumeInitialMember,
   karyakartasOnly = false,
+  initialMemberTab,
 }: {
   initialMemberId?: string | null;
   onConsumeInitialMember?: () => void;
   karyakartasOnly?: boolean;
+  initialMemberTab?: string;
 } = {}) {
   // ── Role scope & permissions ─────────────────────────────────
   const { scope, selectedRole } = useRoleScope();
@@ -1462,6 +1464,7 @@ export default function MemberManagement({
           onEdit={() => handleEdit(selectedMember)}
           onStatusChange={(action) => openStatusModal(selectedMember, action)}
           onDelete={() => openDeleteModal(selectedMember)}
+          initialTab={initialMemberTab as any}
         />
         <StatusConfirmModal
           isOpen={statusModal.isOpen}

@@ -151,7 +151,7 @@ function valueOrDash(value?: string | string[] | boolean | null) {
   return value && String(value).trim() ? String(value) : '—';
 }
 
-function InfoSection({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+function InfoSection({ title, children, className = '', cols = 2 }: { title: string; children: React.ReactNode; className?: string; cols?: 2 | 4 }) {
   return (
     <div
       className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden ${className}`}
@@ -160,7 +160,7 @@ function InfoSection({ title, children, className = '' }: { title: string; child
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
       </div>
-      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`px-6 pb-6 pt-4 grid gap-6 ${cols === 4 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
         {children}
       </div>
     </div>
@@ -193,6 +193,7 @@ interface MemberDetailProps {
   onApprove?: () => void;
   onReject?: () => void;
   hideComplianceTab?: boolean;
+  initialTab?: Tab;
 }
 
 type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'other' | 'activity' | 'history';
@@ -284,8 +285,8 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab }: MemberDetailProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('personal');
+export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab }: MemberDetailProps) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
 
   const age = getAge(member.dateOfBirth);
   const ageCategory = getAgeCategory(member.dateOfBirth);
@@ -529,20 +530,18 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
             {/* ── PARENT / GUARDIAN TAB ──────────────────────── */}
             {activeTab === 'guardian' && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                <InfoSection title="Approval Details">
-                  <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
-                  <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
-                  <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
-                  <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
-                </InfoSection>
-              </div>
+              <InfoSection title="Approval Details" cols={4}>
+                <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
+                <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
+                <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
+                <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
+              </InfoSection>
             )}
 
             {/* ── ORGANISATION TAB ───────────────────────────── */}
             {activeTab === 'organisation' && (
               <>
-                <InfoSection title="Organisation Details">
+                <InfoSection title="Organisation Details" cols={4}>
                   <InfoItem label="Country / Organisation">{valueOrDash(member.country)}</InfoItem>
                   <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                   <InfoItem label="Vibhaag">{valueOrDash(member.region)}</InfoItem>
@@ -551,10 +550,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </InfoSection>
 
                 {/* Current Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
-                    Current Sangh Responsibility
-                  </h4>
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                  </div>
                   <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                     <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
                       <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
@@ -580,10 +579,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </div>
 
                 {/* Previous Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <h4 className="text-sm font-semibold text-white bg-primary-600 dark:bg-primary-700 px-4 py-2.5">
-                    Previous Sangh Responsibility
-                  </h4>
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                  </div>
                   <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                     <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
                       <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
@@ -742,14 +741,12 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
             {/* ── OTHER INFORMATION TAB ──────────────────────── */}
             {activeTab === 'other' && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                <InfoSection title="Other Information">
-                  <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
-                  <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
-                  <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
-                  <InfoItem label="Additional Notes / Comments">—</InfoItem>
-                </InfoSection>
-              </div>
+              <InfoSection title="Other Information" cols={4}>
+                <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
+                <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
+                <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
+                <InfoItem label="Additional Notes / Comments">—</InfoItem>
+              </InfoSection>
             )}
 
             {/* ── ACTIVITY TAB ────────────────────────────────── */}

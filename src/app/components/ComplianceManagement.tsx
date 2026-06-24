@@ -51,7 +51,7 @@ function fmtDate(date?: string) {
 const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
-export default function ComplianceManagement() {
+export default function ComplianceManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
   const { scope } = useRoleScope();
   const [activeTab, setActiveTab] = useState<ComplianceTab>('dbs');
 
@@ -125,7 +125,11 @@ export default function ComplianceManagement() {
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {members.map(m => (
-                <tr key={m.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                <tr
+                  key={m.id}
+                  className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                  onClick={() => onNavigateToMember?.(m.id)}
+                >
                   {activeTab === 'dbs' && (
                     <>
                       <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">

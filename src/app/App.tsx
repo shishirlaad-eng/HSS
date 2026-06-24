@@ -106,6 +106,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [memberToView, setMemberToView] = useState<string | null>(null);
+  const [memberToViewTab, setMemberToViewTab] = useState<string | undefined>(undefined);
   const [eventToView, setEventToView] = useState<string | null>(null);
   const [announcementToView, setAnnouncementToView] = useState<string | null>(null);
 
@@ -258,12 +259,19 @@ export default function App() {
           <MemberManagement
             key="members"
             initialMemberId={memberToView}
-            onConsumeInitialMember={() => setMemberToView(null)}
+            onConsumeInitialMember={() => { setMemberToView(null); setMemberToViewTab(undefined); }}
+            initialMemberTab={memberToViewTab}
           />
         ) : currentPage === "karyakartas" ? (
           <MemberManagement key="karyakartas" karyakartasOnly={true} />
         ) : currentPage === "compliance" ? (
-          <ComplianceManagement />
+          <ComplianceManagement
+            onNavigateToMember={(id) => {
+              setMemberToView(id);
+              setMemberToViewTab('compliance');
+              setCurrentPage('members');
+            }}
+          />
         ) : currentPage === "pending-approvals" ? (
           <PendingApprovals />
         ) : currentPage === "pending-guardian-approvals" ? (
