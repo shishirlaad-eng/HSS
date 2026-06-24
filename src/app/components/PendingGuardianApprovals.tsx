@@ -15,8 +15,6 @@ import {
   Mail,
   CheckCircle,
   Ban,
-  ShieldCheck,
-  ShieldAlert,
   Users,
   CalendarClock,
   UserCheck,
@@ -585,14 +583,6 @@ export default function PendingGuardianApprovals() {
                               <Mail className="w-3.5 h-3.5 text-neutral-400" />{m.guardianEmail}
                             </span>
                           )}
-                          <span className="flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
-                            DBS: <ComplianceBadge status={m.compliance.dbs} />
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <ShieldAlert className="w-3.5 h-3.5 text-neutral-400" />
-                            FA: <ComplianceBadge status={m.compliance.firstAid} />
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -657,14 +647,6 @@ export default function PendingGuardianApprovals() {
                     <div className="flex items-center gap-2 mb-1">
                       <WaitingBadge days={days} />
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                      <span className="flex items-center gap-1 text-neutral-500">
-                        DBS: <ComplianceBadge status={m.compliance.dbs} />
-                      </span>
-                      <span className="flex items-center gap-1 text-neutral-500">
-                        FA: <ComplianceBadge status={m.compliance.firstAid} />
-                      </span>
-                    </div>
                   </div>
 
                 </div>
@@ -687,8 +669,6 @@ export default function PendingGuardianApprovals() {
                       { key: 'name',             label: 'Name'         },
                       { key: 'guardianName',     label: 'Guardian'     },
                       { key: 'mastersScope',     label: 'HSS (UK) Setup Scope'},
-                      { key: 'dbsStatus',        label: 'DBS Status'   },
-                      { key: 'firstAidStatus',   label: 'First Aid'    },
                       { key: 'registrationDate', label: 'Waiting Since'},
                     ].map(col => (
                       <th
@@ -746,14 +726,6 @@ export default function PendingGuardianApprovals() {
                             <span className="text-neutral-400 block truncate">{m.town} · {m.region}</span>
                           </div>
                         </td>
-                        {/* DBS */}
-                        <td className="px-4 py-3.5">
-                          <ComplianceBadge status={m.compliance.dbs} />
-                        </td>
-                        {/* First Aid */}
-                        <td className="px-4 py-3.5">
-                          <ComplianceBadge status={m.compliance.firstAid} />
-                        </td>
                         {/* Waiting Since */}
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
@@ -778,7 +750,7 @@ export default function PendingGuardianApprovals() {
                     );
                   }) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-20 text-center">
+                      <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">

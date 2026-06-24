@@ -281,6 +281,19 @@ export default function Sessions() {
   const todayIso = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
   const activeFilters = [filterRegion, filterTown, filterCentre].filter(Boolean).length;
 
+  // ── Show Edit Session page ─────────────────────────────────
+  if (editSession && canManageShakha) {
+    return (
+      <CreateSession
+        initialDate={editSession.date}
+        sessionToEdit={editSession}
+        onCancel={() => setEditSession(null)}
+        onCreate={handleCreateSession}
+        onUpdate={handleUpdateSession}
+      />
+    );
+  }
+
   // ── Show Session Detail page ───────────────────────────────
   if (selectedSession) {
     return (
@@ -292,19 +305,6 @@ export default function Sessions() {
         onCancelSession={canManageShakha ? handleCancelSession : undefined}
         onDeleteSession={isShakhaAdmin ? handleDeleteSession : undefined}
         onEditSession={canManageShakha ? (id) => { const s = sessions.find(ss => ss.id === id); if (s) setEditSession(s); } : undefined}
-      />
-    );
-  }
-
-  // ── Show Edit Session page ─────────────────────────────────
-  if (editSession && canManageShakha) {
-    return (
-      <CreateSession
-        initialDate={editSession.date}
-        sessionToEdit={editSession}
-        onCancel={() => setEditSession(null)}
-        onCreate={handleCreateSession}
-        onUpdate={handleUpdateSession}
       />
     );
   }
