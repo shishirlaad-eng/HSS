@@ -137,7 +137,7 @@ export function Sidebar({
     "karyakartas":                    "Roles and Responsibilities",
     "compliance":                     "Compliance",
     "pending-approvals":              "Pending Karyawaha Approvals",
-    "pending-guardian-approvals":     "Pending Guardian Approvals",
+    "pending-guardian-approvals":     "Pending Parent/Guardian Approvals",
 
     // 3. Karyakrams
     "event-management":               "Karyakrams",

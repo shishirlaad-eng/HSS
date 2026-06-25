@@ -487,11 +487,11 @@ export default function PendingGuardianApprovals() {
 
         {/* PAGE HEADER */}
         <PageHeader
-          title="Pending Guardian Approvals"
+          title="Pending Parent/Guardian Approvals"
           subtitle="Teen member registrations awaiting parental / guardian consent. Super admin can approve on behalf of the guardian."
           breadcrumbs={[
             { label: 'Members Management', href: '#' },
-            { label: 'Pending Guardian Approvals', current: true },
+            { label: 'Pending Parent/Guardian Approvals', current: true },
           ]}
         >
           <div className="relative">

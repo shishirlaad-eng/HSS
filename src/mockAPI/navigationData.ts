@@ -103,7 +103,7 @@ export const getNavigationData = (
         const first = TAB_ORDER.find(t => !hiddenMasters.has(t)) ?? 'country';
         onNavigate(first);
       },
-      active: ['country', 'region', 'town', 'centre', 'role-types'].includes(currentPage),
+      active: ['country', 'region', 'town', 'centre', 'role-types', 'configurable-lists'].includes(currentPage),
     }] : []),
 
     // ── 3. Members Management ────────────────────────────────────
@@ -134,7 +134,7 @@ export const getNavigationData = (
         },
         ...(['Super Admin', 'Shakha Admin'].includes(selectedRole) ? [{
           id: "pending-guardian-approvals",
-          label: "Pending Guardian Approvals",
+          label: "Pending Parent/Guardian Approvals",
           onClick: () => onNavigate("pending-guardian-approvals"),
           active: currentPage === "pending-guardian-approvals",
         }] : []),
@@ -170,6 +170,7 @@ export const getNavigationData = (
       id: "attendance-group",
       label: "Sankhya",
       icon: ClipboardCheck,
+      active: ['sessions', 'attendance-log', 'first-aid-incidents'].includes(currentPage),
       subItems: [
         {
           id: "sessions",
@@ -183,6 +184,12 @@ export const getNavigationData = (
           onClick: () => onNavigate("attendance-log"),
           active: currentPage === "attendance-log",
         },
+        ...(['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
+          id: "first-aid-incidents",
+          label: "First Aid Incidents",
+          onClick: () => onNavigate("first-aid-incidents"),
+          active: currentPage === "first-aid-incidents",
+        }] : []),
       ],
     }]),
 

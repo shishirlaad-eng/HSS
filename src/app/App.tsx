@@ -36,6 +36,7 @@ import SuperAdminAuth from "./components/SuperAdminAuth";
 import StripeDonation from "./components/StripeDonation";
 import MyDonations from "./components/MyDonations";
 import ComplianceManagement from "./components/ComplianceManagement";
+import IncidentManagement from "./components/IncidentManagement";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
@@ -287,6 +288,8 @@ export default function App() {
             initialEventId={eventToView}
             onConsumeInitialEvent={() => setEventToView(null)}
           />
+        ) : currentPage === "configurable-lists" ? (
+          <SuperAdminMasters masterType="configurable-lists" onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "country" ? (
           <SuperAdminMasters masterType="country"    onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "region" ? (
@@ -310,6 +313,8 @@ export default function App() {
             initialAnnouncementId={announcementToView}
             onConsumeInitialAnnouncement={() => setAnnouncementToView(null)}
           />
+        ) : currentPage === "first-aid-incidents" ? (
+          <IncidentManagement />
         ) : currentPage === "sessions" ? (
           <Sessions />
         ) : currentPage === "attendance-log" ? (

@@ -4,8 +4,9 @@ import {
   Globe, MapPin, Map, Building2, Tags, AlertTriangle,
   ArrowUpDown, ArrowUp, ArrowDown,
   FileSpreadsheet, FileText, BarChart3,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, Sliders,
 } from 'lucide-react';
+import ConfigurableListsMaster from './ConfigurableListsMaster';
 import {
   PageHeader, SearchBar, Pagination, IconButton,
   ViewModeSwitcher, PrimaryButton, AdvancedSearchPanel,
@@ -22,7 +23,7 @@ import { mockRoles } from '../../mockAPI/rolesData';
 import { getRoleScope } from '../../mockAPI/roleScope';
 
 type ViewMode = 'grid' | 'list' | 'table';
-export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types';
+export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types' | 'configurable-lists';
 
 export interface MasterItem {
   id: string;
@@ -114,11 +115,12 @@ const initialRoleTypes: MasterItem[] = ROLE_TYPE_OPTIONS.map((name, index) => ({
 // ─── Sub-section Tab Config ───────────────────────────────────────────────────
 
 const MASTER_TABS: { id: MasterType; label: string }[] = [
-  { id: 'country',    label: 'Country' },
-  { id: 'region',     label: 'Vibhaag' },
-  { id: 'town',       label: 'Nagar' },
-  { id: 'centre',     label: 'Shakha' },
-  { id: 'role-types', label: 'Responsibility' },
+  { id: 'country',            label: 'Country' },
+  { id: 'region',             label: 'Vibhaag' },
+  { id: 'town',               label: 'Nagar' },
+  { id: 'centre',             label: 'Shakha' },
+  { id: 'role-types',         label: 'Responsibility' },
+  { id: 'configurable-lists', label: 'Lists & Options' },
 ];
 
 // Tabs hidden per role (role cannot manage higher-level geography than their scope)
@@ -260,10 +262,18 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         nameLabel: 'Responsibility Name',
         idPrefix: 'ROL',
       };
+      case 'configurable-lists': return {
+        title: 'Lists & Options',
+        subtitle: 'Manage configurable dropdown values used across the system.',
+        icon: Sliders,
+        addLabel: 'Add Item',
+        nameLabel: 'Item Name',
+        idPrefix: 'LST',
+      };
     }
   }, [masterType]);
 
-  const isStandaloneMaster = masterType === 'role-types';
+  const isStandaloneMaster = masterType === 'role-types' || masterType === 'configurable-lists';
 
   // ─── Column config ─────────────────────────────────────────────────────────
   const masterColumns = useMemo<ColumnConfig[]>(() => {
@@ -293,7 +303,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       case 'region':     data = regions;     break;
       case 'town':       data = towns;       break;
       case 'centre':     data = centres;     break;
-      case 'role-types': return roleTypes;   // no geo-scope on role types
+      case 'role-types':         return roleTypes;
+      case 'configurable-lists': return [];    // handled by ConfigurableListsMaster
     }
     // Apply scope filtering on master items
     if (scope.level === 'all') return data;
@@ -342,7 +353,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       case 'region':     setRegions(updater);      break;
       case 'town':       setTowns(updater);        break;
       case 'centre':     setCentres(updater);      break;
-      case 'role-types': setRoleTypes(updater);    break;
+      case 'role-types':         setRoleTypes(updater); break;
+      case 'configurable-lists':                        break;
     }
   };
 
@@ -618,7 +630,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
           ]}
         >
           {/* Two-group layout: left = search/filters (variable), right = fixed actions */}
-          <div className="flex items-center justify-between gap-4 w-full">
+          {masterType !== 'configurable-lists' && <div className="flex items-center justify-between gap-4 w-full">
 
             {/* Left — search + advanced filters */}
             <div className="relative flex items-center gap-2 min-w-0">
@@ -658,7 +670,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               />
               <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
             </div>
-          </div>
+          </div>}
         </PageHeader>
 
         {/* ── SUB-SECTION TABS ────────────────────────────────────────────── */}
@@ -678,8 +690,13 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
           ))}
         </div>
 
+        {/* ── CONFIGURABLE LISTS (replaces standard CRUD for this tab) ──── */}
+        {masterType === 'configurable-lists' && (
+          <ConfigurableListsMaster selectedRole={selectedRole} />
+        )}
+
         {/* ── SUMMARY WIDGETS ─────────────────────────────────────────────── */}
-        {showSummary && (
+        {masterType !== 'configurable-lists' && showSummary && (
           <div className="mt-4">
             {masterType === 'country' && (
               <SummaryWidgets title="Country Summary" widgets={[
@@ -720,7 +737,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         {/* ══════════════════════════════════════════════════════════════════
             CARD VIEW
         ══════════════════════════════════════════════════════════════════ */}
-        {viewMode === 'grid' && (
+        {masterType !== 'configurable-lists' && viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             {paginatedData.length > 0 ? paginatedData.map(item => (
               <div
@@ -831,7 +848,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         {/* ══════════════════════════════════════════════════════════════════
             LIST VIEW
         ══════════════════════════════════════════════════════════════════ */}
-        {viewMode === 'list' && (
+        {masterType !== 'configurable-lists' && viewMode === 'list' && (
           <div className="space-y-2 mt-4">
             {paginatedData.length > 0 ? paginatedData.map(item => (
               <div
@@ -888,7 +905,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         {/* ══════════════════════════════════════════════════════════════════
             TABLE VIEW
         ══════════════════════════════════════════════════════════════════ */}
-        {viewMode === 'table' && (
+        {masterType !== 'configurable-lists' && viewMode === 'table' && (
           <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
             <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-340px)]">
               <table className="w-full text-left border-collapse">
@@ -1051,23 +1068,25 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         )}
 
         {/* ── PAGINATION ───────────────────────────────────────────────────── */}
-        <div className="mt-6">
-          {processedData.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalItems={processedData.length}
-              itemsPerPage={itemsPerPage}
-              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
-            />
-          )}
-        </div>
+        {masterType !== 'configurable-lists' && (
+          <div className="mt-6">
+            {processedData.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={processedData.length}
+                itemsPerPage={itemsPerPage}
+                onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
+              />
+            )}
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════
-            CRUD FORM MODAL
+            CRUD FORM MODAL (geo / role-types only)
         ══════════════════════════════════════════════════════════════════ */}
-        <FormModal
+        {masterType !== 'configurable-lists' && <FormModal
           isOpen={modalMode !== null}
           onClose={() => { setModalMode(null); setActiveItem(null); }}
           title={
@@ -1278,12 +1297,12 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               </div>
             </div>
           )}
-        </FormModal>
+        </FormModal>}
 
         {/* ══════════════════════════════════════════════════════════════════
             STATUS CONFIRMATION MODAL
         ══════════════════════════════════════════════════════════════════ */}
-        <FormModal
+        {masterType !== 'configurable-lists' && <FormModal
           isOpen={statusTarget !== null}
           onClose={() => { if (!isSubmitting) setStatusTarget(null); }}
           title="Confirm Status Change"
@@ -1308,12 +1327,12 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               </PrimaryButton>
             </div>
           </div>
-        </FormModal>
+        </FormModal>}
 
         {/* ══════════════════════════════════════════════════════════════════
             DELETE CONFIRMATION MODAL
         ══════════════════════════════════════════════════════════════════ */}
-        <FormModal
+        {masterType !== 'configurable-lists' && <FormModal
           isOpen={deleteTarget !== null}
           onClose={() => { if (!isSubmitting) setDeleteTarget(null); }}
           title="Confirm Deletion"
@@ -1348,7 +1367,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               </button>
             </div>
           </div>
-        </FormModal>
+        </FormModal>}
 
       </div>
     </div>

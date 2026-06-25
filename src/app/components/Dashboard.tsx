@@ -22,7 +22,6 @@ import {
   Heart,
   CheckCheck,
   XCircle,
-  Percent,
   Award,
   PoundSterling,
   ShieldCheck,
@@ -276,7 +275,7 @@ function MemberDashboard({
             sub:      `${presentCount} Present · ${absentCount} Absent`,
             bg:       'bg-slate-50 dark:bg-slate-900/40',
             track:    'text-slate-200 dark:text-slate-700',
-            onClick:  undefined as (() => void) | undefined,
+            onClick:  () => onNavigate?.('attendance-log'),
           },
           {
             label:    'Suchana',
@@ -353,7 +352,7 @@ function MemberDashboard({
                       {card.sub}
                     </span>
                     <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
-                      {card.segments[1].value} other
+                      {card.segments[1].value} Other
                     </p>
                   </div>
                 ) : (card as any).display === 'split' ? (
@@ -524,8 +523,8 @@ function MemberDashboard({
         </div>
 
         {/* My Sankhya attendance list */}
-        <div className="flex flex-col">
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+        <div className="flex flex-col cursor-pointer" onClick={() => onNavigate?.('attendance-log')}>
+          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden hover:border-primary-300 dark:hover:border-primary-700 transition-colors" style={{ borderTop: '3px solid #172E4D' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -534,7 +533,7 @@ function MemberDashboard({
                   {attendancePct}%
                 </span>
               </div>
-              <button onClick={() => onNavigate?.('attendance-log')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+              <button onClick={e => { e.stopPropagation(); onNavigate?.('attendance-log'); }} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                 View all <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -827,7 +826,7 @@ function KpiCard({
       <div className="mt-3 space-y-1">
         {subMetrics.map((s) => (
           <div key={s.label} className="flex items-center justify-between gap-2 text-xs">
-            <span className="text-neutral-500 dark:text-neutral-400 truncate">{s.label}</span>
+            <span className="text-neutral-500 dark:text-neutral-400 truncate font-semibold">{s.label}</span>
             <span className={`font-medium flex-shrink-0 ${SUB_TONE[s.tone ?? 'default']}`}>{s.value}</span>
           </div>
         ))}
@@ -930,12 +929,12 @@ function HierarchyKpiSection({
         <KpiCard
           title="Sankhya"
           value={kpis.sessionsHeldYTD}
-          icon={Percent}
+          icon={CheckCheck}
           onClick={() => onNavigate?.('attendance-log')}
           subMetrics={[
             { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD, tone: 'primary' },
-            { label: 'Avg — last 4 Shakhas', value: `${kpis.avgLast4}%` },
-            { label: 'Avg — YTD', value: `${kpis.avgYTD}%` },
+            { label: 'Avg — last 4 Shakhas', value: kpis.avgLast4 },
+            { label: 'Avg — YTD', value: kpis.avgYTD },
           ]}
         />
 
@@ -1129,7 +1128,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
             { label: 'Active', value: activeMembers, tone: 'emerald' },
             { label: 'Inactive', value: inactiveMembers },
             { label: 'Pending Approval', value: pendingStatusApprovals, tone: 'amber' },
-            { label: 'Pending Guardian Approval', value: pendingGuardianApprovals, tone: 'amber' },
+            { label: 'Pending Parent/Guardian Approval', value: pendingGuardianApprovals, tone: 'amber' },
           ]}
         />
         {!hideRegions && (
