@@ -351,7 +351,7 @@ function MemberDashboard({
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: card.color + '20', color: card.color }}>
                       {card.sub}
                     </span>
-                    <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                    <p className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
                       {card.segments[1].value} Other
                     </p>
                   </div>
@@ -364,7 +364,7 @@ function MemberDashboard({
                       {card.segments.map((seg, i) => (
                         <div key={seg.label} className="flex flex-col items-center">
                           <span className="text-lg font-bold leading-none" style={{ color: seg.color }}>{seg.prefix ?? ''}{seg.value}</span>
-                          <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
+                          <span className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
                         </div>
                       ))}
                     </div>

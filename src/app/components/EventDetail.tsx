@@ -95,7 +95,7 @@ function StatusBadge({ status }: { status: Event['status'] }) {
   const map: Record<Event['status'], { bg: string; text: string; dot: string; label: string }> = {
     draft:     { bg: 'bg-neutral-50 dark:bg-neutral-900',    text: 'text-neutral-600 dark:text-neutral-400',  dot: 'bg-neutral-400',  label: 'Draft'     },
     published: { bg: 'bg-blue-50 dark:bg-blue-950/20',       text: 'text-blue-700 dark:text-blue-400',        dot: 'bg-blue-500',     label: 'Published' },
-    active:    { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400',  dot: 'bg-success-500',  label: 'Active'    },
+    active:    { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400',  dot: 'bg-success-500',  label: 'In Progress' },
     cancelled: { bg: 'bg-error-50 dark:bg-error-950/20',     text: 'text-error-700 dark:text-error-400',      dot: 'bg-error-500',    label: 'Cancelled' },
     completed: { bg: 'bg-amber-50 dark:bg-amber-950/20',     text: 'text-amber-700 dark:text-amber-400',      dot: 'bg-amber-500',    label: 'Completed' },
   };

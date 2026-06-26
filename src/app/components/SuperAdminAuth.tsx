@@ -32,9 +32,10 @@ type Screen = "login" | "otp" | "forgot" | "reset" | "register";
 
 interface SuperAdminAuthProps {
   onLoginSuccess: () => void;
+  onRegisterSuccess?: (role: 'Adult Member' | 'Teen Member') => void;
 }
 
-export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) {
+export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: SuperAdminAuthProps) {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -181,6 +182,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                 setCurrentScreen("login");
                 setErrorMsg("");
               }}
+              onRegistrationComplete={onRegisterSuccess}
             />
           </div>
         </div>
@@ -403,7 +405,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
               <form onSubmit={handleSendResetOTP} className="space-y-6">
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Forgot Password</h1>
-                  <p className="text-neutral-500 dark:text-neutral-400 text-sm">Enter your email address to request a password reset OTP.</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm">Enter your email address to request for password reset.</p>
                 </div>
 
                 <FormField>
@@ -428,7 +430,7 @@ export default function SuperAdminAuth({ onLoginSuccess }: SuperAdminAuthProps) 
                     className="w-full justify-center py-2.5 font-medium" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Sending..." : "Send OTP"}
+                    {isLoading ? "Sending..." : "Reset Password"}
                   </PrimaryButton>
                 </div>
 

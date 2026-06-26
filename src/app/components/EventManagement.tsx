@@ -63,13 +63,14 @@ import { mockEvents, mockParticipants, Event, EventPriceCategory, EventCustomQue
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
+import EventCreate from './EventCreate';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { PriceCategoriesEditor, CustomQuestionsEditor, EventImageField } from './EventFormFields';
 
 type ViewMode = 'grid' | 'list' | 'table';
-type PageState = 'list' | 'detail' | 'edit';
+type PageState = 'list' | 'detail' | 'edit' | 'create';
 type ModalType = null | 'create' | 'status' | 'cancel' | 'override' | 'delete';
 
 // ─── Cutoff helpers ───────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ function StatusBadge({ status }: { status: Event['status'] }) {
   const map: Record<Event['status'], { bg: string; text: string; dot: string; label: string }> = {
     draft:     { bg: 'bg-neutral-50 dark:bg-neutral-900',         text: 'text-neutral-600 dark:text-neutral-400',   dot: 'bg-neutral-400',   label: 'Draft'     },
     published: { bg: 'bg-blue-50 dark:bg-blue-950/20',            text: 'text-blue-700 dark:text-blue-400',         dot: 'bg-blue-500',      label: 'Published' },
-    active:    { bg: 'bg-success-50 dark:bg-success-950/20',      text: 'text-success-700 dark:text-success-400',   dot: 'bg-success-500',   label: 'Active'    },
+    active:    { bg: 'bg-success-50 dark:bg-success-950/20',      text: 'text-success-700 dark:text-success-400',   dot: 'bg-success-500',   label: 'In Progress' },
     cancelled: { bg: 'bg-error-50 dark:bg-error-950/20',          text: 'text-error-700 dark:text-error-400',       dot: 'bg-error-500',     label: 'Cancelled' },
     completed: { bg: 'bg-amber-50 dark:bg-amber-950/20',          text: 'text-amber-700 dark:text-amber-400',       dot: 'bg-amber-500',     label: 'Completed' },
   };
@@ -808,7 +809,7 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
 
 // ─── FILTER OPTIONS ───────────────────────────────────────────────────────────
 const EVENT_FILTER_BASE = {
-  'Status': ['Draft', 'Published', 'Active', 'Cancelled', 'Completed'],
+  'Status': ['Draft', 'Published', 'In Progress', 'Cancelled', 'Completed'],
   'Payment Type': ['Paid', 'Free'],
 };
 
@@ -902,7 +903,6 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     event?: Event;
     isLoading: boolean;
   }>({ type: null, isLoading: false });
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Column visibility
   const [showColumnPanel, setShowColumnPanel] = useState(false);
@@ -1086,42 +1086,48 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     closeModal();
   };
 
+  const buildNewEvent = (data: Partial<Event>): Event => ({
+    id: `EVT-${Date.now().toString().slice(-6)}`,
+    name: data.name ?? 'New Karyakram',
+    host: 'Sarah Johnson',
+    status: data.status ?? 'draft',
+    country: data.country ?? '',
+    region: data.region ?? '',
+    town: data.town ?? '',
+    activityCentre: data.activityCentre ?? '',
+    locationType: data.locationType ?? 'physical',
+    venueAddress: data.venueAddress,
+    onlineUrl: data.onlineUrl,
+    startDate: data.startDate ?? new Date().toISOString(),
+    endDate: data.endDate ?? new Date().toISOString(),
+    createdDate: data.createdDate ?? new Date().toISOString(),
+    lastUpdated: data.lastUpdated ?? new Date().toISOString(),
+    paymentType: data.paymentType ?? 'free',
+    price: data.price,
+    priceCategories: data.priceCategories,
+    capacity: data.capacity,
+    description: data.description,
+    imageUrl: data.imageUrl,
+    guestRegistrationEnabled: data.guestRegistrationEnabled,
+    customQuestions: data.customQuestions,
+    termsAndConditions: data.termsAndConditions,
+    filterAgeCategories: data.filterAgeCategories,
+    filterGenders: data.filterGenders,
+    filterJobTitles: data.filterJobTitles,
+    metrics: data.metrics ?? { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
+    chatState: 'archived',
+  });
+
   const handleCreateSave = (data: Partial<Event>) => {
-    const newId = `EVT-${Date.now().toString().slice(-6)}`;
-    const newEvent: Event = {
-      id: newId,
-      name: data.name ?? 'New Karyakram',
-      host: 'Sarah Johnson',
-      status: 'draft',
-      country: data.country ?? '',
-      region: data.region ?? '',
-      town: data.town ?? '',
-      activityCentre: data.activityCentre ?? '',
-      locationType: data.locationType ?? 'physical',
-      venueAddress: data.venueAddress,
-      onlineUrl: data.onlineUrl,
-      startDate: data.startDate ?? new Date().toISOString(),
-      endDate: data.endDate ?? new Date().toISOString(),
-      createdDate: data.createdDate ?? new Date().toISOString(),
-      lastUpdated: data.lastUpdated ?? new Date().toISOString(),
-      paymentType: data.paymentType ?? 'free',
-      price: data.price,
-      priceCategories: data.priceCategories,
-      capacity: data.capacity,
-      description: data.description,
-      imageUrl: data.imageUrl,
-      guestRegistrationEnabled: data.guestRegistrationEnabled,
-      customQuestions: data.customQuestions,
-      termsAndConditions: data.termsAndConditions,
-      filterAgeCategories: data.filterAgeCategories,
-      filterGenders: data.filterGenders,
-      filterJobTitles: data.filterJobTitles,
-      metrics: data.metrics ?? { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
-      chatState: 'archived',
-    };
-    setEvents(prev => [newEvent, ...prev]);
-    setShowCreateModal(false);
-    toast.success('Karyakram created successfully.');
+    setEvents(prev => [buildNewEvent(data), ...prev]);
+    toast.success('Karyakram saved as draft.');
+  };
+
+  const handleCreatePublish = (data: Partial<Event>) => {
+    setEvents(prev => [buildNewEvent(data), ...prev]);
+    setPageState('list');
+    scrollToTop();
+    toast.success('Karyakram published successfully.');
   };
 
   const handleExport = (format: 'excel' | 'pdf') => {
@@ -1204,6 +1210,16 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           onClose={closeModal}
         />
       </>
+    );
+  }
+
+  if (pageState === 'create') {
+    return (
+      <EventCreate
+        onBack={() => { setPageState('list'); scrollToTop(); }}
+        onSave={handleCreateSave}
+        onPublish={handleCreatePublish}
+      />
     );
   }
 
@@ -1316,7 +1332,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           </div>
 
           {ep.canAdd && (
-            <PrimaryButton icon={Plus} onClick={() => setShowCreateModal(true)}>
+            <PrimaryButton icon={Plus} onClick={() => { setPageState('create'); scrollToTop(); }}>
               Create Karyakram
             </PrimaryButton>
           )}
@@ -1347,7 +1363,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             title="Karyakram Summary"
             widgets={[
               { label: 'Total Karyakrams',  value: events.length,                                                                    icon: 'Activity'    },
-              { label: 'Active',            value: scopedEvents.filter(e => e.status === 'active').length,                            icon: 'CheckCircle' },
+              { label: 'In Progress',       value: scopedEvents.filter(e => e.status === 'active').length,                            icon: 'CheckCircle' },
               { label: 'Draft / Published', value: scopedEvents.filter(e => e.status === 'draft' || e.status === 'published').length, icon: 'Clock'       },
               { label: 'Completed',         value: scopedEvents.filter(e => e.status === 'completed').length,                         icon: 'XCircle'     },
             ]}
@@ -1895,13 +1911,6 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         </div>
         )}
       </div>
-
-      {/* CREATE EVENT MODAL */}
-      <CreateEventModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSave={handleCreateSave}
-      />
 
       {/* CONFIRMATION MODALS (listing context) */}
       <ConfirmModal

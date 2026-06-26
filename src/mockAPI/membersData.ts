@@ -434,6 +434,11 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2023-001',
     eventsAttended: 14,
     shakhaSessionsAttended: 52,
+    adminRoles: ['Shakha Admin', 'Shakha Operations'],
+    responsibilities: [
+      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Ghatnayak', responsibilityType: 'Pramukh', startDate: '2023-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Bauddhik', responsibilityType: 'Toli', startDate: '2022-04-01' },
+    ],
   },
   {
     id: 'MBR-002',
@@ -477,6 +482,12 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2022-003',
     eventsAttended: 22,
     shakhaSessionsAttended: 104,
+    adminRoles: ['Shakha Admin', 'Reporting User', 'Shakha Operations'],
+    responsibilities: [
+      { responsibilityLevel: 'Vibhaag / Region', sanghResponsibility: 'Shikshak',       responsibilityType: 'Pramukh',      startDate: '2024-04-01' },
+      { responsibilityLevel: 'Nagar / Town',     sanghResponsibility: 'Mukhya Shikshak', responsibilityType: 'Pramukh (Saha)', startDate: '2023-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Bauddhik', responsibilityType: 'Toli',         startDate: '2022-04-01' },
+    ],
   },
   {
     id: 'MBR-004',
@@ -521,6 +532,11 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2021-005',
     eventsAttended: 35,
     shakhaSessionsAttended: 156,
+    adminRoles: ['Shakha Admin', 'Activity Centre Admin'],
+    responsibilities: [
+      { responsibilityLevel: 'Nagar / Town',     sanghResponsibility: 'Karyawaha',  responsibilityType: 'Pramukh',      startDate: '2024-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Vyavestha', responsibilityType: 'Pramukh (Saha)', startDate: '2023-04-01' },
+    ],
   },
   {
     id: 'MBR-006',
@@ -629,13 +645,13 @@ const rawMockMembers: Member[] = [
   // ── Wembley Activity Centre — 200 members (WBL-001 to WBL-200) ───────────
   // Matches the attendance record IDs used in SES-001
 
-  { id:'WBL-001', memberType:'adult',  name:'Vikram Singh',       email:'vikram.singh@hssuk.org',       dateOfBirth:'1966-02-14', gender:'male',   jobTitle:'Ghatnayak',              orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:8,  shakhaSessionsAttended:35 },
+  { id:'WBL-001', memberType:'adult',  name:'Vikram Singh',       email:'vikram.singh@hssuk.org',       dateOfBirth:'1966-02-14', gender:'male',   jobTitle:'Ghatnayak',              orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:8,  shakhaSessionsAttended:35, adminRoles:['Shakha Admin','Shakha Operations'], responsibilities:[{responsibilityLevel:'Nagar / Town',sanghResponsibility:'Ghatnayak',responsibilityType:'Pramukh',startDate:'2023-04-01'},{responsibilityLevel:'Shakha / Activity center',sanghResponsibility:'Sankhya',responsibilityType:'Toli',startDate:'2022-04-01'}] },
   { id:'WBL-002', memberType:'adult',  name:'Priya Patel',        email:'priya.patel@hssuk.org',        dateOfBirth:'1995-01-15', gender:'female', jobTitle:'Shikshak',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-01-20T10:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:5,  shakhaSessionsAttended:22 },
   { id:'WBL-003', memberType:'adult',  name:'Rahul Mehta',        email:'rahul.mehta@hssuk.org',        dateOfBirth:'1996-05-20', gender:'male',   jobTitle:'Bauddhik',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:11, shakhaSessionsAttended:41 },
   { id:'WBL-004', memberType:'youth',  name:'Kavya Reddy',        email:'kavya.reddy@hssuk.org',        dateOfBirth:'2010-03-15', gender:'female', jobTitle:'Kishor(i)',              orgRole:'Youth Member',   country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2023-03-10T09:00:00Z', compliance:{dbs:'completed',firstAid:'pending', parentalConsent:'granted'}, eventsAttended:2,  shakhaSessionsAttended:15 },
   { id:'WBL-005', memberType:'adult',  name:'Nikhil Joshi',       email:'nikhil.joshi@hssuk.org',       dateOfBirth:'1997-08-10', gender:'male',   jobTitle:'Sampark',                orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-07-08T11:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:7,  shakhaSessionsAttended:29 },
   { id:'WBL-006', memberType:'adult',  name:'Sneha Gupta',        email:'sneha.gupta@hssuk.org',        dateOfBirth:'1998-03-25', gender:'female', jobTitle:'Sewa',                   orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-02-14T09:30:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:4,  shakhaSessionsAttended:18 },
-  { id:'WBL-007', memberType:'adult',  name:'Amit Kumar',         email:'amit.kumar@hssuk.org',         dateOfBirth:'1968-07-22', gender:'male',   jobTitle:'Sanghchalak',            orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:12, shakhaSessionsAttended:48 },
+  { id:'WBL-007', memberType:'adult',  name:'Amit Kumar',         email:'amit.kumar@hssuk.org',         dateOfBirth:'1968-07-22', gender:'male',   jobTitle:'Sanghchalak',            orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:12, shakhaSessionsAttended:48, adminRoles:['Regional Admin','Shakha Admin','Event Admin'], responsibilities:[{responsibilityLevel:'Vibhaag / Region',sanghResponsibility:'Sanghchalak',responsibilityType:'Pramukh',startDate:'2024-04-01'},{responsibilityLevel:'Nagar / Town',sanghResponsibility:'Karyawaha',responsibilityType:'Pramukh (Saha)',startDate:'2023-04-01'}] },
   { id:'WBL-008', memberType:'adult',  name:'Nisha Kapoor',       email:'nisha.kapoor@hssuk.org',       dateOfBirth:'1999-11-05', gender:'female', jobTitle:'Tarun(i)',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-08-25T10:30:00Z', compliance:{dbs:'pending', firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:3,  shakhaSessionsAttended:12 },
   { id:'WBL-009', memberType:'adult',  name:'Rajesh Verma',       email:'rajesh.verma@hssuk.org',       dateOfBirth:'1970-04-09', gender:'male',   jobTitle:'Mukhya Shikshak',        orgRole:'Shakha Teacher', country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-01-20T10:00:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:15, shakhaSessionsAttended:52 },
   { id:'WBL-010', memberType:'adult',  name:'Pooja Shah',         email:'pooja.shah@hssuk.org',         dateOfBirth:'2000-07-14', gender:'female', jobTitle:'Sewa',                   orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-02-14T09:30:00Z', compliance:{dbs:'completed',firstAid:'completed',parentalConsent:'n/a'}, eventsAttended:6,  shakhaSessionsAttended:24 },

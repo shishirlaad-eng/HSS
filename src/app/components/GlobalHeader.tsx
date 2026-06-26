@@ -58,7 +58,7 @@ const ROLE_DISPLAY_LABELS: Record<string, string> = {
   'Nagar Admin':      'Nagar Admin',
   'Shakha Admin':     'Shakha Admin',
   'Shakha Operations':'Shakha Operations',
-  'Adult Member':     'Adult Member',
+  'Adult Member':     'Member',
   'Teen Member':      'Teen Member',
 };
 

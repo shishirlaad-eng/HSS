@@ -14,9 +14,6 @@ import {
   MapPin,
   User,
   HeartPulse,
-  Info,
-  Tag,
-  ClipboardCheck,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -250,19 +247,21 @@ function IncidentForm({
 
   const activeSessions = scopeSessions.filter(s => s.status !== 'cancelled');
 
-  const SummaryRow = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) => (
-    <div className="flex items-start justify-between gap-3">
-      <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
-        <Icon className="w-3.5 h-3.5" /> {label}
-      </dt>
-      <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">{value || '—'}</dd>
+  const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+        <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h3>
+      </div>
+      <div className="px-5 py-5">
+        {children}
+      </div>
     </div>
   );
 
   return (
-    <div className="p-6 pb-12">
+    <div className="p-6 pb-12 space-y-6">
       {/* Page header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
           className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
@@ -276,229 +275,185 @@ function IncidentForm({
         </h2>
       </div>
 
-      {/* Two-box grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 1: Incident Details + Casualty */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
-        {/* ── Left: main form (col-span-2) ── */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Incident Details */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Incident Details</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Date & Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  value={form.dateTime}
-                  onChange={e => set('dateTime', e.target.value)}
-                  className={fieldCls(errors.dateTime)}
-                />
-              </div>
-
-              {scopeCentre && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Shakha</label>
-                  <input
-                    type="text"
-                    value={scopeCentre}
-                    readOnly
-                    className="w-full text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 cursor-not-allowed"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Incident Type <span className="text-red-500">*</span>
-                </label>
-                <select value={form.incidentType} onChange={e => set('incidentType', e.target.value as IncidentType)} className={fieldCls(errors.incidentType)}>
-                  <option value="">Select type…</option>
-                  {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Linked Shakha Session <span className="text-neutral-400 text-xs font-normal">(optional)</span>
-                </label>
-                <select value={form.sessionId} onChange={e => set('sessionId', e.target.value)} className={fieldCls(false)}>
-                  <option value="">— None —</option>
-                  {activeSessions.map(s => (
-                    <option key={s.id} value={s.id}>{s.title} · {fmtDate(s.date)}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Incident Description <span className="text-red-500">*</span>
-                </label>
-                <textarea rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened…" className={fieldCls(errors.incidentDescription)} />
-              </div>
-
-            </div>
+      {/* Incident Details */}
+      <Card title="Incident Details">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Date & Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={form.dateTime}
+              onChange={e => set('dateTime', e.target.value)}
+              className={fieldCls(errors.dateTime)}
+            />
           </div>
 
-          {/* Casualty */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Casualty</h3>
-            </div>
-            <div className="px-5 py-5 space-y-4">
-
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => { set('isShakhaMember', !form.isShakhaMember); set('memberId', ''); }}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.isShakhaMember ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
-                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.isShakhaMember ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Shakha Member</span>
-              </div>
-
-              {form.isShakhaMember ? (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Select Member <span className="text-red-500">*</span>
-                  </label>
-                  <select value={form.memberId} onChange={e => { const m = scopeMembers.find(m => m.id === e.target.value); set('memberId', e.target.value); if (m) set('casualtyName', m.name); }} className={fieldCls(!form.memberId && touched)}>
-                    <option value="">Select member…</option>
-                    {scopeMembers.filter(m => m.status === 'active').map(m => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Casualty Name <span className="text-red-500">*</span>
-                  </label>
-                  <input type="text" value={form.casualtyName} onChange={e => set('casualtyName', e.target.value)} placeholder="Full name of casualty…" className={fieldCls(errors.casualtyName)} />
-                </div>
-              )}
-
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Incident Type <span className="text-red-500">*</span>
+            </label>
+            <select value={form.incidentType} onChange={e => set('incidentType', e.target.value as IncidentType)} className={fieldCls(errors.incidentType)}>
+              <option value="">Select type…</option>
+              {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
 
-          {/* Treatment & Outcome */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Treatment & Outcome</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  First Aid Given <span className="text-red-500">*</span>
-                </label>
-                <textarea rows={3} value={form.firstAidGiven} onChange={e => set('firstAidGiven', e.target.value)} placeholder="Describe treatment administered…" className={fieldCls(errors.firstAidGiven)} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  First Aider Name <span className="text-red-500">*</span>
-                </label>
-                <input type="text" value={form.firstAiderName} onChange={e => set('firstAiderName', e.target.value)} placeholder="Name of first aider…" className={fieldCls(errors.firstAiderName)} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Outcome <span className="text-red-500">*</span>
-                </label>
-                <select value={form.outcome} onChange={e => set('outcome', e.target.value as IncidentOutcome)} className={fieldCls(errors.outcome)}>
-                  <option value="">Select outcome…</option>
-                  {INCIDENT_OUTCOMES.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Linked Shakha Session
+            </label>
+            <select value={form.sessionId} onChange={e => set('sessionId', e.target.value)} className={fieldCls(false)}>
+              <option value="">— None —</option>
+              {activeSessions.map(s => (
+                <option key={s.id} value={s.id}>{s.title} · {fmtDate(s.date)}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Reporting & Follow-up */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Reporting & Follow-up</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Reported By <span className="text-red-500">*</span>
-                </label>
-                <input type="text" value={form.reportedBy} onChange={e => set('reportedBy', e.target.value)} placeholder="Name of person reporting…" className={fieldCls(errors.reportedBy)} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Witnesses <span className="text-neutral-400 text-xs font-normal">(optional)</span>
-                </label>
-                <input type="text" value={form.witnesses} onChange={e => set('witnesses', e.target.value)} placeholder="Names of any witnesses…" className={fieldCls(false)} />
-              </div>
-
-              <div className="md:col-span-2 flex items-center gap-3">
-                <button type="button" onClick={() => set('followUpRequired', !form.followUpRequired)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.followUpRequired ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
-                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.followUpRequired ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Follow-up Required</span>
-              </div>
-
-              {form.followUpRequired && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Follow-up Notes</label>
-                  <textarea rows={2} value={form.followUpNotes} onChange={e => set('followUpNotes', e.target.value)} placeholder="What follow-up is needed…" className={fieldCls(false)} />
-                </div>
-              )}
-
-            </div>
-          </div>
-
-          {touched && hasErrors && (
-            <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              Please fill in all required fields.
+          {scopeCentre && (
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Shakha</label>
+              <input
+                type="text"
+                value={scopeCentre}
+                readOnly
+                className="w-full text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 cursor-not-allowed"
+              />
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-              Cancel
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Incident Description <span className="text-red-500">*</span>
+            </label>
+            <textarea rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened…" className={fieldCls(errors.incidentDescription)} />
+          </div>
+        </div>
+      </Card>
+
+      {/* Casualty */}
+      <Card title="Casualty">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="sm:col-span-2 md:col-span-4 flex items-center gap-3">
+            <button type="button" onClick={() => { set('isShakhaMember', !form.isShakhaMember); set('memberId', ''); }}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.isShakhaMember ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.isShakhaMember ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
-            <button onClick={handleSubmit} className="px-4 py-2 text-sm rounded-lg font-semibold bg-[#172E4D] hover:bg-[#172E4D]/80 text-white transition-colors">
-              {isEdit ? 'Save Changes' : 'Record Incident'}
-            </button>
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Shakha Member</span>
           </div>
 
-        </div>
-
-        {/* ── Right: summary sidebar ── */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-5 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-              <Info className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-              Incident Summary
+          {form.isShakhaMember ? (
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Select Member <span className="text-red-500">*</span>
+              </label>
+              <select value={form.memberId} onChange={e => { const m = scopeMembers.find(m => m.id === e.target.value); set('memberId', e.target.value); if (m) set('casualtyName', m.name); }} className={fieldCls(!form.memberId && touched)}>
+                <option value="">Select member…</option>
+                {scopeMembers.filter(m => m.status === 'active').map(m => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
+                ))}
+              </select>
             </div>
-            <dl className="space-y-3.5">
-              <SummaryRow icon={Calendar}      label="Date"       value={form.dateTime ? new Date(form.dateTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''} />
-              <SummaryRow icon={MapPin}        label="Shakha"     value={scopeCentre ?? '—'} />
-              <SummaryRow icon={Tag}           label="Type"       value={form.incidentType} />
-              <SummaryRow icon={User}          label="Casualty"   value={form.casualtyName} />
-              <SummaryRow icon={HeartPulse}    label="First Aider" value={form.firstAiderName} />
-              <SummaryRow icon={ClipboardCheck} label="Outcome"   value={form.outcome} />
-              {form.followUpRequired && (
-                <div className="pt-3 mt-1 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Follow-up Required</span>
-                </div>
-              )}
-            </dl>
+          ) : (
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Casualty Name <span className="text-red-500">*</span>
+              </label>
+              <input type="text" value={form.casualtyName} onChange={e => set('casualtyName', e.target.value)} placeholder="Full name of casualty…" className={fieldCls(errors.casualtyName)} />
+            </div>
+          )}
+        </div>
+      </Card>
+
+      </div>{/* end row 1 */}
+
+      {/* Row 2: Treatment & Outcome + Reporting & Follow-up */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+
+      {/* Treatment & Outcome */}
+      <Card title="Treatment & Outcome">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              First Aider Name <span className="text-red-500">*</span>
+            </label>
+            <input type="text" value={form.firstAiderName} onChange={e => set('firstAiderName', e.target.value)} placeholder="Name of first aider…" className={fieldCls(errors.firstAiderName)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Outcome <span className="text-red-500">*</span>
+            </label>
+            <select value={form.outcome} onChange={e => set('outcome', e.target.value as IncidentOutcome)} className={fieldCls(errors.outcome)}>
+              <option value="">Select outcome…</option>
+              {INCIDENT_OUTCOMES.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-4">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              First Aid Given <span className="text-red-500">*</span>
+            </label>
+            <textarea rows={3} value={form.firstAidGiven} onChange={e => set('firstAidGiven', e.target.value)} placeholder="Describe treatment administered…" className={fieldCls(errors.firstAidGiven)} />
           </div>
         </div>
+      </Card>
 
+      {/* Reporting & Follow-up */}
+      <Card title="Reporting & Follow-up">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Reported By <span className="text-red-500">*</span>
+            </label>
+            <input type="text" value={form.reportedBy} onChange={e => set('reportedBy', e.target.value)} placeholder="Name of person reporting…" className={fieldCls(errors.reportedBy)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Witnesses <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.witnesses} onChange={e => set('witnesses', e.target.value)} placeholder="Names of any witnesses…" className={fieldCls(false)} />
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-4 flex items-center gap-3">
+            <button type="button" onClick={() => set('followUpRequired', !form.followUpRequired)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.followUpRequired ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.followUpRequired ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </button>
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Follow-up Required</span>
+          </div>
+
+          {form.followUpRequired && (
+            <div className="sm:col-span-2 md:col-span-4">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Follow-up Notes</label>
+              <textarea rows={2} value={form.followUpNotes} onChange={e => set('followUpNotes', e.target.value)} placeholder="What follow-up is needed…" className={fieldCls(false)} />
+            </div>
+          )}
+        </div>
+      </Card>
+
+      </div>{/* end row 2 */}
+
+      {touched && hasErrors && (
+        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Please fill in all required fields.
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+          Cancel
+        </button>
+        <button onClick={handleSubmit} className="px-4 py-2 text-sm rounded-lg font-semibold bg-[#172E4D] hover:bg-[#172E4D]/80 text-white transition-colors">
+          {isEdit ? 'Save Changes' : 'Record Incident'}
+        </button>
       </div>
     </div>
   );

@@ -106,6 +106,8 @@ export default function App() {
 
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedRole, setSelectedRole] = useState("Super Admin");
+  const [isPostRegistration, setIsPostRegistration] = useState(false);
+  const [isUnderReview, setIsUnderReview] = useState(false);
   const [memberToView, setMemberToView] = useState<string | null>(null);
   const [memberToViewTab, setMemberToViewTab] = useState<string | undefined>(undefined);
   const [eventToView, setEventToView] = useState<string | null>(null);
@@ -168,10 +170,20 @@ export default function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setIsPostRegistration(false);
+    setIsUnderReview(false);
     toast.success("You have been logged out.");
   };
 
   const handleNavigate = (pageId: string) => {
+    if (isUnderReview && pageId !== 'my-profile') {
+      toast.info('Profile is still under review. You will get access once approved.');
+      return;
+    }
+    if (isPostRegistration && pageId !== 'my-profile') {
+      toast.info('Complete your profile and submit for approval to access this section.');
+      return;
+    }
     setCurrentPage(pageId);
   };
 
@@ -192,8 +204,18 @@ export default function App() {
         onLoginSuccess={() => {
           setIsAuthenticated(true);
           setSelectedRole("Super Admin");
+          setCurrentPage("dashboard");
           setMenuOrientation("vertical");
           localStorage.setItem("menuOrientation", "vertical");
+        }}
+        onRegisterSuccess={(role) => {
+          setIsAuthenticated(true);
+          setSelectedRole(role);
+          setIsPostRegistration(true);
+          setCurrentPage('my-profile');
+          const orientation = "horizontal";
+          setMenuOrientation(orientation);
+          localStorage.setItem("menuOrientation", orientation);
         }}
       />
     );
@@ -332,7 +354,12 @@ export default function App() {
         ) : currentPage === "report-karyakarta" ? (
           <KaryakartaReport />
         ) : currentPage === "my-profile" ? (
-          <MyProfile selectedRole={selectedRole} />
+          <MyProfile
+            selectedRole={selectedRole}
+            isPostRegistration={isPostRegistration}
+            isUnderReview={isUnderReview}
+            onSubmitForApproval={() => { setIsPostRegistration(false); setIsUnderReview(true); }}
+          />
         ) : currentPage === "logs" ? (
           <LogsPage />
 

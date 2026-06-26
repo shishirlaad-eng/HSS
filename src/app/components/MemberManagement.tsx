@@ -113,6 +113,17 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
   jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
+const ORG_ROLE_TO_HSS_ROLE: Record<string, string> = {
+  'Volunteer':      'Shakha Operations',
+  'Member':         'Adult Member',
+  'Teen Member':    'Teen Member',
+  'Youth Member':   'Teen Member',
+  'Shakha Teacher': 'Shakha Operations',
+  'Shakha Admin':   'Shakha Admin',
+  'Child Member':   'Adult Member',
+  'Senior Member':  'Adult Member',
+};
+
 const QUALIFIED_FIRST_AIDER_ROLES = new Set([
   'Super Admin',
   'Member',
@@ -1194,7 +1205,7 @@ export default function MemberManagement({
     { key: 'memberType',          label: 'Age Category'        },
     { key: 'sanghResponsibility', label: 'Sangh Responsibility'},
     { key: 'registrationDate',    label: 'Since'               },
-    { key: 'hssRoles',            label: 'My HSS Role(s)'      },
+    { key: 'hssRoles',            label: 'My HSS Role'         },
     { key: 'status',              label: 'Member Status'       },
   ] : [
     { key: 'id',         label: 'Member ID'      },
@@ -1792,9 +1803,6 @@ export default function MemberManagement({
                         {col.label}{renderSortArrow(col.key)}
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1811,7 +1819,7 @@ export default function MemberManagement({
                         </td>
                       )}
                       {visibleColumns.id && (
-                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                           {m.id}
                         </td>
                       )}
@@ -1835,23 +1843,28 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.sanghResponsibility && (
                         <td className="px-4 py-3.5">
-                          {(m.responsibilities && m.responsibilities.length > 0) ? (
-                            <div className="text-xs space-y-1">
-                              {m.responsibilities.map((r, i) => (
-                                <div key={i}>
-                                  <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{r.responsibilityType}</span>
-                                  <span className="text-neutral-400 block">{r.responsibilityLevel}</span>
+                          {(() => {
+                            const shortLevel = (level: string) => level.split('/')[0].trim();
+                            if (m.responsibilities && m.responsibilities.length > 0) {
+                              return (
+                                <div className="text-xs space-y-1">
+                                  {m.responsibilities.map((r, i) => (
+                                    <div key={i} className="text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                                      {shortLevel(r.responsibilityLevel)} · {r.sanghResponsibility || m.jobTitle} · {r.responsibilityType}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          ) : m.responsibilityType ? (
-                            <div className="text-xs">
-                              <span className="font-medium text-neutral-700 dark:text-neutral-300 block">{m.responsibilityType}</span>
-                              {m.responsibilityLevel && <span className="text-neutral-400 block">{m.responsibilityLevel}</span>}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-neutral-400">—</span>
-                          )}
+                              );
+                            }
+                            if (m.responsibilityType && m.responsibilityLevel) {
+                              return (
+                                <div className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                                  {shortLevel(m.responsibilityLevel)} · {m.jobTitle} · {m.responsibilityType}
+                                </div>
+                              );
+                            }
+                            return <span className="text-sm text-neutral-400">—</span>;
+                          })()}
                         </td>
                       )}
                       {visibleColumns.registrationDate && (
@@ -1862,7 +1875,13 @@ export default function MemberManagement({
                       {visibleColumns.hssRoles && (
                         <td className="px-4 py-3.5">
                           {(() => {
-                            const roles = [m.jobTitle, ...(m.additionalJobTitles ?? [])].filter(Boolean);
+                            const roles = (m.adminRoles && m.adminRoles.length > 0)
+                              ? m.adminRoles
+                              : m.adminRole
+                                ? [m.adminRole]
+                                : m.orgRole
+                                  ? [ORG_ROLE_TO_HSS_ROLE[m.orgRole] ?? m.orgRole]
+                                  : [];
                             return roles.length > 0 ? (
                               <div className="text-xs space-y-0.5">
                                 {roles.map((r, i) => (
@@ -1876,32 +1895,10 @@ export default function MemberManagement({
                       {visibleColumns.status && (
                         <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
                       )}
-                      <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <IconButton icon={Eye}   borderless onClick={() => handleViewDetails(m)} title="View" />
-                          {mp.canEdit && <IconButton icon={Edit} borderless onClick={() => handleEdit(m)} title="Edit" />}
-                          {mp.canEdit && (
-                            <IconButton
-                              icon={m.status === 'active' ? ToggleLeft : ToggleRight}
-                              borderless
-                              onClick={() => openStatusModal(m, m.status === 'active' ? 'deactivate' : 'reactivate')}
-                              title={m.status === 'active' ? 'Deactivate' : 'Reactivate'}
-                              className={m.status === 'active' ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}
-                            />
-                          )}
-                          {mp.canDelete && <IconButton
-                            icon={Trash2}
-                            borderless
-                            onClick={() => openDeleteModal(m)}
-                            title="Delete"
-                            className="text-neutral-400 hover:text-[#BC0F1C] dark:hover:text-[#f87171]"
-                          />}
-                        </div>
-                      </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 2} className="px-6 py-20 text-center">
+                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                             <Search className="w-6 h-6 text-neutral-400" />

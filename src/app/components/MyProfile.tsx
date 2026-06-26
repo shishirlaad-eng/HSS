@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Edit, Save, X, Mail, Phone, RotateCcw, Trash2, AlertTriangle, Paperclip, Upload, History, Clock, ClipboardList, UserCog, UserCircle2, CheckCircle2 } from "lucide-react";
+import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { SecondaryButton, PrimaryButton } from "./hb/listing";
+import { SecondaryButton, PrimaryButton, Pagination } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
 import { DIETARY_REQUIREMENTS, FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
@@ -16,6 +16,31 @@ import {
 
 const PROFILE_STORAGE_KEY = "myProfile";
 const MEMBER_PROFILE_STORAGE_KEY = "myMemberProfile";
+const SHARED_PROFILE_KEY = "hss_shared_profile";
+
+// Fields that are personal to the user and must stay consistent across all roles
+const SHARED_FIELDS = [
+  'firstName', 'middleName', 'surname', 'gender', 'dateOfBirth',
+  'email', 'phone',
+  'buildingName', 'addressLine1', 'addressLine2', 'contactTownCity', 'postCode',
+  'emergencyContactName', 'emergencyContactPhone', 'emergencyContactEmail', 'emergencyContactRelationship',
+  'occupation', 'spokenLanguages', 'originatingStateIndia', 'additionalNotes',
+  'dietaryRequirements', 'epiPen', 'allergies', 'medicalInfoDeclared', 'medicalInfoDetails',
+] as const;
+
+function loadSharedProfile(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(SHARED_PROFILE_KEY) || "{}"); }
+  catch { return {}; }
+}
+
+function saveSharedProfile(profile: Record<string, string>) {
+  const shared: Record<string, string> = {};
+  for (const key of SHARED_FIELDS) {
+    if (key in profile) shared[key] = profile[key as keyof typeof profile];
+  }
+  localStorage.setItem(SHARED_PROFILE_KEY, JSON.stringify(shared));
+}
 
 const MOCK_PREVIOUS_RESPONSIBILITIES = [
   { level: "Shakha / Activity centre", responsibility: "Karyawaha", type: "Seva", from: "2019-04-01", to: "2021-03-31" },
@@ -23,8 +48,22 @@ const MOCK_PREVIOUS_RESPONSIBILITIES = [
 ];
 
 interface ProfileForm {
+  firstName: string;
+  middleName: string;
+  surname: string;
+  gender: string;
+  dateOfBirth: string;
   email: string;
-  mobile: string;
+  phone: string;
+  buildingName: string;
+  addressLine1: string;
+  addressLine2: string;
+  contactTownCity: string;
+  postCode: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactEmail: string;
+  emergencyContactRelationship: string;
 }
 
 interface MemberProfileForm {
@@ -96,8 +135,22 @@ interface MemberProfileForm {
 }
 
 const DEFAULT_PROFILE: ProfileForm = {
-  email: "john.doe@company.com",
-  mobile: "+44 7700 900123",
+  firstName: "John",
+  middleName: "",
+  surname: "Doe",
+  gender: "Male",
+  dateOfBirth: "1980-06-15",
+  email: "john.doe@hss.org.uk",
+  phone: "+44 7700 900123",
+  buildingName: "",
+  addressLine1: "42 Admin Lane",
+  addressLine2: "",
+  contactTownCity: "London",
+  postCode: "EC1A 1BB",
+  emergencyContactName: "",
+  emergencyContactPhone: "",
+  emergencyContactEmail: "",
+  emergencyContactRelationship: "",
 };
 
 const ADULT_MEMBER_PROFILE: MemberProfileForm = {
@@ -367,7 +420,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other';
 
-function MemberProfileView({ selectedRole }: { selectedRole: string }) {
+function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void }) {
   const loadProfile = () => {
     const defaultProfile = getDefaultMemberProfile(selectedRole);
     const scope = getRoleScope(selectedRole);
@@ -377,21 +430,25 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
       town: scope.town || defaultProfile.town,
       activityCentre: scope.centre || defaultProfile.activityCentre,
     };
-    if (typeof window === "undefined") return { ...defaultProfile, ...approvedLocation };
+    const shared = loadSharedProfile();
+    if (typeof window === "undefined") return { ...defaultProfile, ...shared, ...approvedLocation };
     const saved = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
-    if (!saved) return { ...defaultProfile, ...approvedLocation };
+    if (!saved) return { ...defaultProfile, ...shared, ...approvedLocation };
     try {
-      return { ...defaultProfile, ...JSON.parse(saved), ...approvedLocation };
+      return { ...defaultProfile, ...JSON.parse(saved), ...shared, ...approvedLocation };
     } catch {
-      return { ...defaultProfile, ...approvedLocation };
+      return { ...defaultProfile, ...shared, ...approvedLocation };
     }
   };
 
   const [profile, setProfile] = useState<MemberProfileForm>(loadProfile);
   const [savedProfile, setSavedProfile] = useState<MemberProfileForm>(profile);
   const [isEditing, setIsEditing] = useState(false);
+  const effectiveEditing = !isUnderReview && (isEditing || isPostRegistration);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(20);
   const memberId = getRoleScope(selectedRole).selfMemberId || selectedRole;
   const [pendingTransfer, setPendingTransfer] = useState<ShakhaTransferRequest | undefined>(
     () => getPendingTransferForMember(memberId),
@@ -506,6 +563,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
       } : {}),
     };
     localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`, JSON.stringify(next));
+    saveSharedProfile(next as unknown as Record<string, string>);
     setProfile(next);
     setSavedProfile(next);
     setIsEditing(false);
@@ -543,26 +601,40 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
       hour: "2-digit", minute: "2-digit",
     });
 
-  interface ChangeEntry { id: string; timestamp: string; changedFields: string[]; changedBy: 'Admin' | 'Self'; changedByName: string; note?: string; }
+  interface ChangeRow {
+    id: string;
+    timestamp: string;
+    user: string;
+    role: string;
+    field: string;
+    oldValue: string;
+    newValue: string;
+  }
 
-  const changeHistory = useMemo((): ChangeEntry[] => {
+  const changeHistory = useMemo((): ChangeRow[] => {
     const base = new Date('2021-01-20T10:00:00Z');
     const shift = (days: number, hrs = 0, mins = 0) => {
       const d = new Date(base); d.setDate(d.getDate() + days); d.setHours(hrs, mins, 0, 0); return d.toISOString();
     };
     return [
-      { id: 'h-6', timestamp: shift(45, 11, 0),  changedFields: ['Sangh Responsibility (HSS Role)', 'Vibhag (Region)', 'Shakha (Branch)'], changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)' },
-      { id: 'h-5', timestamp: shift(22, 18, 5),  changedFields: ['Primary Contact Number', 'Address Line', 'Post Code'], changedBy: 'Self', changedByName: 'John Doe (self-service)' },
-      { id: 'h-4', timestamp: shift(12, 9, 45),  changedFields: ['First Aid Status', 'First Aid Reference Number'], changedBy: 'Admin', changedByName: 'John Doe (Admin)' },
-      { id: 'h-3', timestamp: shift(7, 14, 15),  changedFields: ['DBS Status', 'DBS Reference Number'], changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)' },
-      { id: 'h-2', timestamp: shift(3, 10, 30),  changedFields: ['Status'], changedBy: 'Admin', changedByName: 'John Doe (Admin)', note: 'Member application approved.' },
-      { id: 'h-1', timestamp: base.toISOString(), changedFields: [], changedBy: 'Self', changedByName: 'Member (self-registration)', note: 'Member account created via online registration form.' },
+      { id: 'h-6a', timestamp: shift(45, 11, 0),  user: 'Priya Sharma', role: 'Admin',           field: 'Sangh Responsibility', oldValue: 'Shikshak',           newValue: 'Ghatnayak' },
+      { id: 'h-6b', timestamp: shift(45, 11, 0),  user: 'Priya Sharma', role: 'Admin',           field: 'Vibhag (Region)',       oldValue: 'North West',         newValue: 'London & South East' },
+      { id: 'h-6c', timestamp: shift(45, 11, 0),  user: 'Priya Sharma', role: 'Admin',           field: 'Shakha (Branch)',       oldValue: 'Manchester Central', newValue: 'Harrow Activity Centre' },
+      { id: 'h-5a', timestamp: shift(22, 18, 5),  user: 'John Doe',     role: 'Member (Self)',   field: 'Primary Contact Number', oldValue: '+44 7700 900100',   newValue: '+44 7700 900123' },
+      { id: 'h-5b', timestamp: shift(22, 18, 5),  user: 'John Doe',     role: 'Member (Self)',   field: 'Address Line',          oldValue: '10 Queens Road',     newValue: '18 Kings Road' },
+      { id: 'h-5c', timestamp: shift(22, 18, 5),  user: 'John Doe',     role: 'Member (Self)',   field: 'Post Code',             oldValue: 'HA2 0AA',            newValue: 'HA1 2AB' },
+      { id: 'h-4a', timestamp: shift(12, 9, 45),  user: 'John Doe',     role: 'Admin',           field: 'First Aid Status',      oldValue: 'Pending',            newValue: 'Completed' },
+      { id: 'h-4b', timestamp: shift(12, 9, 45),  user: 'John Doe',     role: 'Admin',           field: 'First Aid Reference',   oldValue: '—',                  newValue: 'FA-2023-001' },
+      { id: 'h-3a', timestamp: shift(7, 14, 15),  user: 'Sarah Patel',  role: 'Admin',           field: 'DBS Status',            oldValue: 'Pending',            newValue: 'Completed' },
+      { id: 'h-3b', timestamp: shift(7, 14, 15),  user: 'Sarah Patel',  role: 'Admin',           field: 'DBS Certificate Number', oldValue: '—',                 newValue: '001234567890' },
+      { id: 'h-2a', timestamp: shift(3, 10, 30),  user: 'John Doe',     role: 'Admin',           field: 'Status',                oldValue: 'Pending',            newValue: 'Active & Approved' },
+      { id: 'h-1a', timestamp: base.toISOString(), user: 'John Doe',    role: 'Member (Self)',   field: 'Account Created',       oldValue: '—',                  newValue: 'Registration submitted' },
     ];
   }, []);
 
-  const approvalEntry = changeHistory.find(e => e.changedFields.includes('Status') && e.changedBy === 'Admin');
+  const approvalEntry = changeHistory.find(e => e.field === 'Status' && e.role === 'Admin');
   const approvedDate  = approvalEntry?.timestamp ?? null;
-  const approvedBy    = approvalEntry?.changedByName ?? '—';
+  const approvedBy    = approvalEntry ? `${approvalEntry.user} (Admin)` : '—';
   const registrationDate = '2021-01-20T10:00:00Z';
 
   return (
@@ -576,9 +648,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           <div className="flex-1 min-w-0">
             {/* Row 1 — Name | Role | Age badge | Status badge — all inline */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
-              <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-              <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">{selectedRole}</span>
+              <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
               <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
                 {getAgeGroupLabel(profile.dateOfBirth)}
@@ -600,7 +670,12 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
         {/* Right: action buttons */}
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {isEditing ? (
+          {isUnderReview ? null : isPostRegistration ? (
+            <>
+              <SecondaryButton icon={Save} onClick={handleSave}>Save as Draft</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={() => { handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+            </>
+          ) : isEditing ? (
             <>
               <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
               <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
@@ -612,6 +687,20 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           )}
         </div>
       </div>
+
+      {/* ── Banners ───────────────────────────────────────────── */}
+      {isUnderReview && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-4 py-3">
+          <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" /></svg>
+          <p className="text-sm text-blue-800 dark:text-blue-300">Your profile is under review. You will be able to access the application once an admin approves your profile.</p>
+        </div>
+      )}
+      {isPostRegistration && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+          <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" /></svg>
+          <p className="text-sm text-amber-800 dark:text-amber-300">Submit all the details and share it for the admin approval. After approval, you will be able to access the application.</p>
+        </div>
+      )}
 
       {/* ── Tabbed content ───────────────────────────────────── */}
       <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -642,12 +731,12 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {activeTab === 'personal' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <InfoSection title="Personal Details">
-                <EditableInfoItem label="First Name"    value={profile.firstName}   isEditing={isEditing} onChange={v => setField("firstName", v)} />
+                <EditableInfoItem label="First Name"    value={profile.firstName}   isEditing={effectiveEditing} onChange={v => setField("firstName", v)} />
                 <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>
-                <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={isEditing} onChange={v => setField("middleName", v)} />
-                <EditableInfoItem label="Gender"        value={profile.gender}      isEditing={isEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
-                <EditableInfoItem label="Surname"       value={profile.surname}     isEditing={isEditing} onChange={v => setField("surname", v)} />
-                {isEditing ? (
+                <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
+                <EditableInfoItem label="Gender"        value={profile.gender}      isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
+                <EditableInfoItem label="Surname"       value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} />
+                {effectiveEditing ? (
                   <EditableInfoItem label="Date of Birth" value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
                 ) : (
                   <InfoItem label="Date of Birth">
@@ -658,27 +747,27 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               </InfoSection>
 
               <InfoSection title="Contact Details">
-                <EditableInfoItem label="Contact Number"  value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}  type="tel" />
-                <EditableInfoItem label="Email Address"   value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}  type="email" />
-                <EditableInfoItem label="Building Name"   value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
-                <EditableInfoItem label="Town / City"     value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
-                <EditableInfoItem label="Address Line 1"  value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
-                <EditableInfoItem label="Post Code"       value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
-                <EditableInfoItem label="Address Line 2"  value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
+                <EditableInfoItem label="Contact Number"  value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}  type="tel" />
+                <EditableInfoItem label="Email Address"   value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}  type="email" />
+                <EditableInfoItem label="Building Name"   value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
+                <EditableInfoItem label="Town / City"     value={profile.contactTownCity} isEditing={effectiveEditing} onChange={v => setField("contactTownCity", v)} />
+                <EditableInfoItem label="Address Line 1"  value={profile.addressLine1}    isEditing={effectiveEditing} onChange={v => setField("addressLine1", v)} />
+                <EditableInfoItem label="Post Code"       value={profile.postCode}        isEditing={effectiveEditing} onChange={v => setField("postCode", v)} />
+                <EditableInfoItem label="Address Line 2"  value={profile.addressLine2}    isEditing={effectiveEditing} onChange={v => setField("addressLine2", v)} />
               </InfoSection>
 
               <InfoSection title="Emergency Contact Details">
-                <EditableInfoItem label="Contact Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
-                <EditableInfoItem label="Contact Phone Number" value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
-                <EditableInfoItem label="Contact Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
-                <EditableInfoItem label="Contact Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+                <EditableInfoItem label="Contact Name"         value={profile.emergencyContactName}         isEditing={effectiveEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Contact Phone Number" value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Contact Email"        value={profile.emergencyContactEmail}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Contact Relationship" value={profile.emergencyContactRelationship} isEditing={effectiveEditing} onChange={v => setField("emergencyContactRelationship", v)} />
               </InfoSection>
 
               <InfoSection title="Medical Details">
-                <EditableInfoItem label="Do you have any medical condition?" value={profile.medicalInfoDeclared} isEditing={isEditing} onChange={v => setField("medicalInfoDeclared", v)} options={["No", "Yes"]} />
+                <EditableInfoItem label="Do you have any medical condition?" value={profile.medicalInfoDeclared} isEditing={effectiveEditing} onChange={v => setField("medicalInfoDeclared", v)} options={["No", "Yes"]} />
                 <div>
                   <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
-                  {isEditing ? (
+                  {effectiveEditing ? (
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       {DIETARY_REQUIREMENTS.map(item => (
                         <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
@@ -702,8 +791,8 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dietaryRequirements || '—'}</p>
                   )}
                 </div>
-                <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={profile.epiPen}    isEditing={isEditing} onChange={v => setField("epiPen", v)}    options={["No", "Yes"]} />
-                <EditableInfoItem label="Any Allergies"           value={profile.allergies} isEditing={isEditing} onChange={v => setField("allergies", v)} />
+                <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={profile.epiPen}    isEditing={effectiveEditing} onChange={v => setField("epiPen", v)}    options={["No", "Yes"]} />
+                <EditableInfoItem label="Any Allergies"           value={profile.allergies} isEditing={effectiveEditing} onChange={v => setField("allergies", v)} />
               </InfoSection>
 
             </div>
@@ -712,15 +801,15 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {/* ── Contact ── */}
           {false && activeTab === 'contact' && (
             <InfoSection title="Contact Information">
-              <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={isEditing} onChange={v => setField("email", v)}           type="email" />
-              <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={isEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
-              <EditableInfoItem label="Primary Contact Number"   value={profile.phone}           isEditing={isEditing} onChange={v => setField("phone", v)}           type="tel" />
-              <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={isEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
-              <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={isEditing} onChange={v => setField("buildingName", v)} />
-              <EditableInfoItem label="Address Line 1"           value={profile.addressLine1}    isEditing={isEditing} onChange={v => setField("addressLine1", v)} />
-              <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={isEditing} onChange={v => setField("addressLine2", v)} />
-              <EditableInfoItem label="Town / City"              value={profile.contactTownCity} isEditing={isEditing} onChange={v => setField("contactTownCity", v)} />
-              <EditableInfoItem label="Post Code"                value={profile.postCode}        isEditing={isEditing} onChange={v => setField("postCode", v)} />
+              <EditableInfoItem label="Primary Email Address"    value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}           type="email" />
+              <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={effectiveEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
+              <EditableInfoItem label="Primary Contact Number"   value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}           type="tel" />
+              <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={effectiveEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
+              <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
+              <EditableInfoItem label="Address Line 1"           value={profile.addressLine1}    isEditing={effectiveEditing} onChange={v => setField("addressLine1", v)} />
+              <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={effectiveEditing} onChange={v => setField("addressLine2", v)} />
+              <EditableInfoItem label="Town / City"              value={profile.contactTownCity} isEditing={effectiveEditing} onChange={v => setField("contactTownCity", v)} />
+              <EditableInfoItem label="Post Code"                value={profile.postCode}        isEditing={effectiveEditing} onChange={v => setField("postCode", v)} />
             </InfoSection>
           )}
 
@@ -728,18 +817,18 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {false && activeTab === 'emergency' && (
             <>
               <InfoSection title="Emergency Contact">
-                <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={isEditing} onChange={v => setField("emergencyContactName", v)} />
-                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={isEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
-                <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={isEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
-                <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={isEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+                <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={effectiveEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={effectiveEditing} onChange={v => setField("emergencyContactRelationship", v)} />
               </InfoSection>
 
               {showGuardian && (
                 <InfoSection title="Parent / Guardian Approval Information">
-                  <EditableInfoItem label="Parent / Guardian Name" value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
-                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
-                  <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
-                  <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+                  <EditableInfoItem label="Parent / Guardian Name" value={profile.guardianName}         isEditing={effectiveEditing} onChange={v => setField("guardianName", v)} />
+                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                  <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={effectiveEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+                  <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={effectiveEditing} onChange={v => setField("guardianRelationship", v)} />
                 </InfoSection>
               )}
             </>
@@ -751,12 +840,12 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               {/* First Aid + Safeguarding — side by side */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 <InfoSection title="First Aid">
-                  <EditableInfoItem label="Are you a first aider for HSS?" value={profile.isFirstAider}                   isEditing={isEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
-                  <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={isEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
-                  <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={isEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
+                  <EditableInfoItem label="Are you a first aider for HSS?" value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
+                  <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
+                  <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
                   <div>
                     <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Cert Upload</label>
-                    {isEditing ? (
+                    {effectiveEditing ? (
                       <div className="space-y-2">
                         <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
                           <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
@@ -776,13 +865,13 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                       </div>
                     )}
                   </div>
-                  <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={isEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
+                  <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={effectiveEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
                 </InfoSection>
 
                 <InfoSection title="Safeguarding">
-                  <EditableInfoItem label="Level of Training"  value={profile.safeguardingRef}    isEditing={isEditing} onChange={v => setField("safeguardingRef", v)} />
-                  <EditableInfoItem label="Date Completed"     value={profile.safeguardingExpiry} isEditing={isEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
-                  <EditableInfoItem label="Safeguarding Status" value={profile.safeguardingStatus} isEditing={isEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
+                  <EditableInfoItem label="Level of Training"  value={profile.safeguardingRef}    isEditing={effectiveEditing} onChange={v => setField("safeguardingRef", v)} />
+                  <EditableInfoItem label="Date Completed"     value={profile.safeguardingExpiry} isEditing={effectiveEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
+                  <EditableInfoItem label="Safeguarding Status" value={profile.safeguardingStatus} isEditing={effectiveEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
                 </InfoSection>
               </div>
 
@@ -796,7 +885,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Status</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <select value={profile.dbsStatus} onChange={e => setField("dbsStatus", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
                             {["Pending","Completed"].map(o => <option key={o}>{o}</option>)}
                           </select>
@@ -804,19 +893,19 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Number</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <input type="text" value={profile.dbsCertificateNumber} onChange={e => setField("dbsCertificateNumber", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
                         : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateNumber || "—"}</p>}
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Date</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <input type="date" value={profile.dbsCertificateDate} onChange={e => setField("dbsCertificateDate", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
                         : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateDate ? new Date(profile.dbsCertificateDate).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—"}</p>}
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert File</p>
-                      {isEditing ? (
+                      {effectiveEditing ? (
                         <label className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 transition-colors">
                           <Upload className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
                           <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-1 truncate">{profile.dbsCertificateFile || "Upload…"}</span>
@@ -836,7 +925,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <select value={profile.dbsUpdateService} onChange={e => setField("dbsUpdateService", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
                             {["No","Yes"].map(o => <option key={o}>{o}</option>)}
                           </select>
@@ -844,13 +933,13 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service No.</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <input type="text" value={profile.dbsUpdateServiceNumber} onChange={e => setField("dbsUpdateServiceNumber", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
                         : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsUpdateServiceNumber || "—"}</p>}
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Application Under Process</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <select value={profile.dbsAppUnderProcess} onChange={e => setField("dbsAppUnderProcess", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
                             {["No","Yes"].map(o => <option key={o}>{o}</option>)}
                           </select>
@@ -858,7 +947,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Received From</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <input type="text" value={profile.dbsCertificateReceivedFrom} onChange={e => setField("dbsCertificateReceivedFrom", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
                         : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateReceivedFrom || "—"}</p>}
                     </div>
@@ -867,7 +956,7 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Verified By</p>
-                      {isEditing
+                      {effectiveEditing
                         ? <input type="text" value={profile.dbsCheckedBy} onChange={e => setField("dbsCheckedBy", e.target.value)} className="w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" />
                         : <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCheckedBy || "—"}</p>}
                     </div>
@@ -884,23 +973,30 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
               {/* Organisation Details */}
               <InfoSection title="Shakha Details" cols={4}>
                 <EditableInfoItem
+                  label="Country"
+                  value={profile.country}
+                  isEditing={effectiveEditing}
+                  onChange={value => setOrganisationField('country', value)}
+                  options={MASTERS_CASCADE.countries}
+                />
+                <EditableInfoItem
                   label="Vibhaag"
                   value={profile.region}
-                  isEditing={isEditing}
+                  isEditing={effectiveEditing}
                   onChange={value => setOrganisationField('region', value)}
                   options={profile.country ? (MASTERS_CASCADE.regions[profile.country] ?? []) : []}
                 />
                 <EditableInfoItem
                   label="Nagar"
                   value={profile.town}
-                  isEditing={isEditing}
+                  isEditing={effectiveEditing}
                   onChange={value => setOrganisationField('town', value)}
                   options={profile.region ? (MASTERS_CASCADE.towns[profile.region] ?? []) : []}
                 />
                 <EditableInfoItem
                   label="Shakha"
                   value={profile.activityCentre}
-                  isEditing={isEditing}
+                  isEditing={effectiveEditing}
                   onChange={value => setOrganisationField('activityCentre', value)}
                   options={profile.town ? (MASTERS_CASCADE.centres[profile.town] ?? []) : []}
                 />
@@ -968,10 +1064,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {/* ── Parent / Guardian Tab ── */}
           {activeTab === 'guardian' && (
             <InfoSection title="Approval Details" cols={4}>
-              <EditableInfoItem label="Parent / Guardian Name"         value={profile.guardianName}         isEditing={isEditing} onChange={v => setField("guardianName", v)} />
-              <EditableInfoItem label="Parent / Guardian Phone Number" value={profile.guardianPhone}        isEditing={isEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
-              <EditableInfoItem label="Parent / Guardian Email"        value={profile.guardianEmail}        isEditing={isEditing} onChange={v => setField("guardianEmail", v)} type="email" />
-              <EditableInfoItem label="Parent / Guardian Relationship" value={profile.guardianRelationship} isEditing={isEditing} onChange={v => setField("guardianRelationship", v)} />
+              <EditableInfoItem label="Parent / Guardian Name"         value={profile.guardianName}         isEditing={effectiveEditing} onChange={v => setField("guardianName", v)} />
+              <EditableInfoItem label="Parent / Guardian Phone Number" value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+              <EditableInfoItem label="Parent / Guardian Email"        value={profile.guardianEmail}        isEditing={effectiveEditing} onChange={v => setField("guardianEmail", v)} type="email" />
+              <EditableInfoItem label="Parent / Guardian Relationship" value={profile.guardianRelationship} isEditing={effectiveEditing} onChange={v => setField("guardianRelationship", v)} />
             </InfoSection>
           )}
 
@@ -979,10 +1075,10 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
           {activeTab === 'other' && (
             <div className="space-y-5">
               <InfoSection title="Other Information" cols={4}>
-                <EditableInfoItem label="Occupation (Select Other if not listed)" value={profile.occupation}           isEditing={isEditing} onChange={v => setField("occupation", v)} />
-                <EditableInfoItem label="Spoken Language(s)"                       value={profile.spokenLanguages}      isEditing={isEditing} onChange={v => setField("spokenLanguages", v)} />
-                <EditableInfoItem label="Originating State in India"               value={profile.originatingStateIndia} isEditing={isEditing} onChange={v => setField("originatingStateIndia", v)} />
-                <EditableInfoItem label="Additional Notes / Comments"              value={profile.additionalNotes}      isEditing={isEditing} onChange={v => setField("additionalNotes", v)} textarea />
+                <EditableInfoItem label="Occupation (Select Other if not listed)" value={profile.occupation}           isEditing={effectiveEditing} onChange={v => setField("occupation", v)} />
+                <EditableInfoItem label="Spoken Language(s)"                       value={profile.spokenLanguages}      isEditing={effectiveEditing} onChange={v => setField("spokenLanguages", v)} />
+                <EditableInfoItem label="Originating State in India"               value={profile.originatingStateIndia} isEditing={effectiveEditing} onChange={v => setField("originatingStateIndia", v)} />
+                <EditableInfoItem label="Additional Notes / Comments"              value={profile.additionalNotes}      isEditing={effectiveEditing} onChange={v => setField("additionalNotes", v)} textarea />
               </InfoSection>
             </div>
           )}
@@ -1036,70 +1132,71 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
                 </div>
               </div>
 
-              {/* Change History timeline */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                  <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
-                  <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-                    {changeHistory.length} event{changeHistory.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                  {changeHistory.map((entry, idx) => {
-                    const isAdmin = entry.changedBy === 'Admin';
-                    const isFirst = idx === changeHistory.length - 1;
-                    return (
-                      <div key={entry.id} className="flex gap-4 px-6 py-4 hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
-                        <div className="flex-shrink-0 mt-0.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            isFirst ? 'bg-primary-50 dark:bg-primary-950'
-                            : isAdmin ? 'bg-amber-50 dark:bg-amber-950/30'
-                            : 'bg-neutral-100 dark:bg-neutral-800'
-                          }`}>
-                            {isFirst ? (
-                              <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                            ) : isAdmin ? (
-                              <UserCog className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            ) : (
-                              <UserCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                              isAdmin
-                                ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
-                                : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
-                            }`}>
-                              {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
-                              {entry.changedBy}
-                            </span>
-                            <span className="text-xs text-neutral-600 dark:text-neutral-400">{entry.changedByName}</span>
-                            <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-                              <Clock className="w-3 h-3" />
-                              {formatDateTime(entry.timestamp)}
-                            </span>
-                          </div>
-                          {entry.note && (
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 italic">{entry.note}</p>
-                          )}
-                          {entry.changedFields.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-1">
-                              {entry.changedFields.map(field => (
-                                <span key={field} className="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs border border-neutral-200 dark:border-neutral-700">
-                                  {field}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Change History table */}
+              {(() => {
+                const totalPages = Math.ceil(changeHistory.length / historyPageSize);
+                const pageRows = changeHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
+                return (
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                      <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
+                      <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
+                        {changeHistory.length} record{changeHistory.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800">
+                            {['Date', 'Time', 'User', 'Role', 'Field Changed', 'Old Value', 'New Value'].map(col => (
+                              <th key={col} className="px-4 py-2.5 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                          {pageRows.map(row => {
+                            const d = new Date(row.timestamp);
+                            const isAdmin = row.role === 'Admin';
+                            return (
+                              <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+                                <td className="px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                                  {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.user}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                                    isAdmin
+                                      ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
+                                      : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
+                                  }`}>
+                                    {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
+                                    {row.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300">{row.field}</td>
+                                <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
+                                <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Pagination
+                      currentPage={historyPage}
+                      totalPages={totalPages}
+                      totalItems={changeHistory.length}
+                      itemsPerPage={historyPageSize}
+                      onPageChange={setHistoryPage}
+                      onItemsPerPageChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1119,99 +1216,162 @@ function MemberProfileView({ selectedRole }: { selectedRole: string }) {
 
 function SuperAdminProfileView() {
   const [profile, setProfile] = useState<ProfileForm>(() => {
-    if (typeof window === "undefined") return DEFAULT_PROFILE;
+    const shared = loadSharedProfile();
+    if (typeof window === "undefined") return { ...DEFAULT_PROFILE, ...shared };
     const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (!saved) return DEFAULT_PROFILE;
-    try { return { ...DEFAULT_PROFILE, ...JSON.parse(saved) }; }
-    catch { return DEFAULT_PROFILE; }
+    if (!saved) return { ...DEFAULT_PROFILE, ...shared };
+    try { return { ...DEFAULT_PROFILE, ...JSON.parse(saved), ...shared }; }
+    catch { return { ...DEFAULT_PROFILE, ...shared }; }
   });
-  const [initialProfile, setInitialProfile] = useState(profile);
+  const [savedProfile, setSavedProfile] = useState(profile);
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'personal' | 'account'>('personal');
 
-  useEffect(() => { setInitialProfile(profile); }, []);
-
-  const hasChanges = profile.email !== initialProfile.email || profile.mobile !== initialProfile.mobile;
+  const fullName = [profile.firstName, profile.middleName, profile.surname]
+    .map(p => p.trim()).filter(Boolean).join(" ");
 
   const setField = <K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) =>
     setProfile(cur => ({ ...cur, [field]: value }));
 
   const handleSave = () => {
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-    setInitialProfile(profile);
+    saveSharedProfile(profile as unknown as Record<string, string>);
+    setSavedProfile(profile);
+    setIsEditing(false);
     toast.success("Profile updated successfully.");
   };
 
-  const handleReset = () => setProfile(initialProfile);
+  const handleCancel = () => {
+    setProfile(savedProfile);
+    setIsEditing(false);
+  };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  const TABS = [
+    { id: 'personal' as const, label: 'Personal Info' },
+    { id: 'account'  as const, label: 'Account'       },
+  ];
 
   return (
-    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
-      <div className="max-w-[100%] mx-auto">
+    <div className="px-6 py-6">
 
-        {/* ── Profile header ───────────────────────────────────── */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">John Doe</h1>
-                  <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                  <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">Super Admin</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5" />{profile.email}
-                  </span>
-                  <span className="text-neutral-300 dark:text-neutral-700">|</span>
-                  <span className="flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5" />{profile.mobile}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <SecondaryButton icon={RotateCcw} onClick={handleReset} disabled={!hasChanges}>Reset</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={handleSave} disabled={!hasChanges}>Save Changes</PrimaryButton>
+      {/* ── Profile header ───────────────────────────────────── */}
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white">{fullName || "—"}</h1>
+              <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#172E4D]/10 text-[#172E4D] dark:bg-white/10 dark:text-blue-200 border border-[#172E4D]/20 dark:border-white/20">
+                Super Admin
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
+                <span className="text-[#3d8928]">Active</span>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* ── Contact details card ─────────────────────────────── */}
-        <div className="max-w-2xl">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-            <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-              Contact Details
-            </h4>
-            <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="profile-email" className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Email ID</label>
-                <FormInput
-                  id="profile-email"
-                  type="email"
-                  value={profile.email}
-                  onChange={e => setField("email", e.target.value)}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <label htmlFor="profile-mobile" className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Mobile Number</label>
-                <FormInput
-                  id="profile-mobile"
-                  type="tel"
-                  value={profile.mobile}
-                  onChange={e => setField("mobile", e.target.value)}
-                  placeholder="Enter mobile number"
-                />
-              </div>
-            </div>
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {effectiveEditing ? (
+            <>
+              <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
+            </>
+          ) : (
+            <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
+          )}
+        </div>
+      </div>
+
+      {/* ── Tabbed content ───────────────────────────────────── */}
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+
+        {/* Tab bar */}
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <div className="flex overflow-x-auto">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Tab content */}
+        <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
+
+          {/* ── Personal Info ── */}
+          {activeTab === 'personal' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <InfoSection title="Personal Details">
+                <EditableInfoItem label="First Name"    value={profile.firstName}  isEditing={effectiveEditing} onChange={v => setField("firstName", v)} />
+                <EditableInfoItem label="Middle Name"   value={profile.middleName} isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
+                <EditableInfoItem label="Surname"       value={profile.surname}    isEditing={effectiveEditing} onChange={v => setField("surname", v)} />
+                <EditableInfoItem label="Gender"        value={profile.gender}     isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
+                {effectiveEditing ? (
+                  <EditableInfoItem label="Date of Birth" value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" />
+                ) : (
+                  <InfoItem label="Date of Birth">
+                    {formatDate(profile.dateOfBirth)}
+                    <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
+                  </InfoItem>
+                )}
+              </InfoSection>
+
+              <InfoSection title="Contact Details">
+                <EditableInfoItem label="Email Address"  value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}           type="email" />
+                <EditableInfoItem label="Mobile Number"  value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}            type="tel" />
+                <EditableInfoItem label="Building Name"  value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
+                <EditableInfoItem label="Town / City"    value={profile.contactTownCity} isEditing={effectiveEditing} onChange={v => setField("contactTownCity", v)} />
+                <EditableInfoItem label="Address Line 1" value={profile.addressLine1}    isEditing={effectiveEditing} onChange={v => setField("addressLine1", v)} />
+                <EditableInfoItem label="Post Code"      value={profile.postCode}        isEditing={effectiveEditing} onChange={v => setField("postCode", v)} />
+                <EditableInfoItem label="Address Line 2" value={profile.addressLine2}    isEditing={effectiveEditing} onChange={v => setField("addressLine2", v)} />
+              </InfoSection>
+
+              <InfoSection title="Emergency Contact Details">
+                <EditableInfoItem label="Contact Name"         value={profile.emergencyContactName}         isEditing={effectiveEditing} onChange={v => setField("emergencyContactName", v)} />
+                <EditableInfoItem label="Contact Phone Number" value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Contact Email"        value={profile.emergencyContactEmail}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
+                <EditableInfoItem label="Contact Relationship" value={profile.emergencyContactRelationship} isEditing={effectiveEditing} onChange={v => setField("emergencyContactRelationship", v)} />
+              </InfoSection>
+            </div>
+          )}
+
+          {/* ── Account ── */}
+          {activeTab === 'account' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <InfoSection title="Account Details">
+                <InfoItem label="Role">Super Admin</InfoItem>
+                <InfoItem label="Access Level">Full System Access</InfoItem>
+                <InfoItem label="Account Status">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
+                    <span className="text-[#3d8928]">Active</span>
+                  </span>
+                </InfoItem>
+                <InfoItem label="Login Email">{profile.email || "—"}</InfoItem>
+              </InfoSection>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
   );
 }
 
-export default function MyProfile({ selectedRole = "Super Admin" }: { selectedRole?: string }) {
-  return selectedRole === "Super Admin"
-    ? <SuperAdminProfileView />
-    : <MemberProfileView selectedRole={selectedRole} />;
+export default function MyProfile({ selectedRole = "Super Admin", isPostRegistration = false, isUnderReview = false, onSubmitForApproval }: { selectedRole?: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void }) {
+  return <MemberProfileView selectedRole={selectedRole} isPostRegistration={isPostRegistration} isUnderReview={isUnderReview} onSubmitForApproval={onSubmitForApproval} />;
 }

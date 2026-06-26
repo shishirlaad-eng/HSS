@@ -30,7 +30,7 @@ function ErrorText({ children }: { children?: string }) {
   return <p className="text-xs text-[#BC0F1C] mt-1">{children}</p>;
 }
 
-export default function MemberRegistration({ onBackToLogin }: { onBackToLogin: () => void }) {
+export default function MemberRegistration({ onBackToLogin, onRegistrationComplete }: { onBackToLogin: () => void; onRegistrationComplete?: (role: 'Adult Member' | 'Teen Member') => void }) {
   const [form, setForm] = useState<RegistrationForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +62,10 @@ export default function MemberRegistration({ onBackToLogin }: { onBackToLogin: (
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 800));
     setIsSubmitting(false);
+    if (onRegistrationComplete) {
+      onRegistrationComplete('Adult Member');
+      return;
+    }
     setSubmitted(true);
     toast.success('Registration submitted successfully.');
   };
