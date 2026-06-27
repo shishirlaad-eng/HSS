@@ -218,9 +218,9 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event Name</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Expiry Date</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event Name</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Expiry Date</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -259,10 +259,10 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event Name</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Host</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">RSVP</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event Name</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Host</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">RSVP</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

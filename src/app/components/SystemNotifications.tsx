@@ -443,7 +443,7 @@ export default function SystemNotifications() {
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {/* Standardized Checkbox inside FIRST column */}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                       <input
                         type="checkbox"
                         checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
@@ -461,7 +461,7 @@ export default function SystemNotifications() {
                     {visibleColumns.id && (
                       <th 
                         onClick={() => handleSort('id')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Notification Id {renderSortIndicator('id')}
                       </th>
@@ -470,7 +470,7 @@ export default function SystemNotifications() {
                     {visibleColumns.title && (
                       <th 
                         onClick={() => handleSort('title')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Broadcast Title {renderSortIndicator('title')}
                       </th>
@@ -479,7 +479,7 @@ export default function SystemNotifications() {
                     {visibleColumns.targetAudience && (
                       <th 
                         onClick={() => handleSort('targetAudience')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Target Audience {renderSortIndicator('targetAudience')}
                       </th>
@@ -488,7 +488,7 @@ export default function SystemNotifications() {
                     {visibleColumns.triggerEvent && (
                       <th 
                         onClick={() => handleSort('triggerEvent')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Trigger Schema {renderSortIndicator('triggerEvent')}
                       </th>
@@ -497,7 +497,7 @@ export default function SystemNotifications() {
                     {visibleColumns.status && (
                       <th 
                         onClick={() => handleSort('status')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Status {renderSortIndicator('status')}
                       </th>
@@ -506,13 +506,13 @@ export default function SystemNotifications() {
                     {visibleColumns.createdDate && (
                       <th 
                         onClick={() => handleSort('createdDate')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Created Date {renderSortIndicator('createdDate')}
                       </th>
                     )}
 
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
                       Actions
                     </th>
                   </tr>

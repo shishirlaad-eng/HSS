@@ -376,7 +376,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
             <div className="w-8 h-8 rounded-full bg-[#fff0f0] flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="w-4 h-4 text-[#BC0F1C]" />
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Delete Account</h3>
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Delete Account</h3>
           </div>
           <button
             onClick={onClose}

@@ -776,7 +776,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     {!isSuperAdmin && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input
                           type="checkbox"
                           checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
@@ -795,7 +795,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                       <th 
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         <div className="flex items-center gap-1">
                           {col.label}
@@ -803,7 +803,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                         </div>
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
                       Actions
                     </th>
                   </tr>

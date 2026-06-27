@@ -755,7 +755,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {/* Standardized Checkbox inside FIRST column */}
                     {!isSuperAdmin && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input
                           type="checkbox"
                           checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
@@ -776,7 +776,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {visibleColumns.id && (
                       <th 
                         onClick={() => handleSort('id')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         {config.idLabel} {renderSortIndicator('id')}
                       </th>
@@ -785,7 +785,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {visibleColumns.name && (
                       <th 
                         onClick={() => handleSort('name')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         {config.nameLabel} {renderSortIndicator('name')}
                       </th>
@@ -794,7 +794,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {masterType === 'country' && visibleColumns.code && (
                       <th 
                         onClick={() => handleSort('code')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Country Code {renderSortIndicator('code')}
                       </th>
@@ -803,7 +803,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {masterType !== 'country' && visibleColumns.countryName && (
                       <th 
                         onClick={() => handleSort('countryName')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Country Name {renderSortIndicator('countryName')}
                       </th>
@@ -812,14 +812,14 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {masterType === 'city' && visibleColumns.stateName && (
                       <th 
                         onClick={() => handleSort('stateName')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         State Name {renderSortIndicator('stateName')}
                       </th>
                     )}
 
                     {(masterType === 'country' || masterType === 'state') && visibleColumns.childCount && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
                         {masterType === 'country' ? 'States Count' : 'Cities Count'}
                       </th>
                     )}
@@ -827,7 +827,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {visibleColumns.status && (
                       <th 
                         onClick={() => handleSort('status')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Status {renderSortIndicator('status')}
                       </th>
@@ -836,13 +836,13 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                     {visibleColumns.createdDate && (
                       <th 
                         onClick={() => handleSort('createdDate')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Created Date {renderSortIndicator('createdDate')}
                       </th>
                     )}
 
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
                       Actions
                     </th>
                   </tr>

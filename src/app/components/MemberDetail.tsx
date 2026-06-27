@@ -34,18 +34,17 @@ import {
   AgeGroup,
   AGE_GROUP_LABELS,
   getAgeGroup,
-  ComplianceStatus,
   ConsentStatus,
 } from '../../mockAPI/membersData';
 
 // ── Status helpers ────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: string; bg: string; border: string }> = {
-  active:                    { label: 'Active',                   dot: 'bg-[#4EAE33]', text: 'text-[#3d8928]', bg: 'bg-[#f1fced]', border: 'border-[#b8efa0]' },
-  pending:                   { label: 'Pending Approval',         dot: 'bg-[#F9B03D]', text: 'text-[#d97706]', bg: 'bg-[#fffbeb]', border: 'border-[#fde68a]' },
-  'pending-parental-consent':{ label: 'Pending Parental Consent', dot: 'bg-[#8B5CF6]', text: 'text-[#6d28d9]', bg: 'bg-[#f5f3ff]', border: 'border-[#ddd6fe]' },
-  inactive:                  { label: 'Inactive',                 dot: 'bg-[#9C9C9D]', text: 'text-[#6b6b6c]', bg: 'bg-[#f5f5f5]', border: 'border-[#e0e0e0]' },
-  rejected:                  { label: 'Rejected',                 dot: 'bg-[#BC0F1C]', text: 'text-[#9a0c17]', bg: 'bg-[#fff0f0]', border: 'border-[#ffaaab]' },
+  active:                    { label: 'Active',                   dot: 'bg-success-500',  text: 'text-success-700 dark:text-success-400',  bg: 'bg-success-50 dark:bg-success-950/20',  border: 'border-success-200 dark:border-success-800'  },
+  pending:                   { label: 'Pending Approval',         dot: 'bg-amber-500',    text: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-950/20',      border: 'border-amber-200 dark:border-amber-800'      },
+  'pending-parental-consent':{ label: 'Pending Parental Consent', dot: 'bg-violet-500',   text: 'text-violet-700 dark:text-violet-400',    bg: 'bg-violet-50 dark:bg-violet-950/20',    border: 'border-violet-200 dark:border-violet-800'    },
+  inactive:                  { label: 'Inactive',                 dot: 'bg-neutral-400',  text: 'text-neutral-600 dark:text-neutral-400',  bg: 'bg-neutral-100 dark:bg-neutral-800',    border: 'border-neutral-200 dark:border-neutral-700'  },
+  rejected:                  { label: 'Rejected',                 dot: 'bg-error-500',    text: 'text-error-700 dark:text-error-400',      bg: 'bg-error-50 dark:bg-error-950/20',      border: 'border-error-200 dark:border-error-800'      },
 };
 
 const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
@@ -53,7 +52,7 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
   shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
   kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
   tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
-  yuva: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  yuva: 'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800',
   jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
@@ -80,7 +79,7 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
 
 interface ComplianceCardProps {
   label: string;
-  status: ComplianceStatus | ConsentStatus;
+  status: ConsentStatus;
   refNumber?: string;
   description?: string;
 }
@@ -91,13 +90,13 @@ function ComplianceCard({ label, status, refNumber, description }: ComplianceCar
   const isPending = status === 'pending';
 
   const Icon = isClear ? ShieldCheck : isPending ? ShieldAlert : ShieldX;
-  const iconClass  = isClear ? 'text-[#4EAE33]' : isPending ? 'text-[#F9B03D]' : 'text-[#9C9C9D]';
+  const iconClass  = isClear ? 'text-success-600 dark:text-success-400' : isPending ? 'text-amber-500 dark:text-amber-400' : 'text-neutral-400';
   const bgClass    = isClear
-    ? 'bg-[#f1fced] border-[#b8efa0]'
+    ? 'bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800'
     : isPending
-      ? 'bg-[#fffbeb] border-[#fde68a]'
-      : 'bg-neutral-50 border-neutral-200';
-  const labelClass = isClear ? 'text-[#3d8928]' : isPending ? 'text-[#d97706]' : 'text-neutral-500';
+      ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
+      : 'bg-neutral-50 border-neutral-200 dark:bg-neutral-800 dark:border-neutral-700';
+  const labelClass = isClear ? 'text-success-700 dark:text-success-400' : isPending ? 'text-amber-700 dark:text-amber-400' : 'text-neutral-500';
   const statusLabel =
     status === 'completed' ? 'Completed' :
     status === 'granted'   ? 'Granted'   :
@@ -304,8 +303,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     });
 
   const complianceAlerts =
-    (member.compliance.dbs !== 'completed' ? 1 : 0) +
-    (member.compliance.firstAid !== 'completed' ? 1 : 0) +
+    (member.compliance.dbs === 'Pending' ? 1 : 0) +
+    (member.compliance.firstAid === 'Expired' ? 1 : 0) +
+    ((member.compliance.safeguardingTraining ?? 'Expired') === 'Expired' ? 1 : 0) +
     (member.compliance.parentalConsent === 'pending' ? 1 : 0);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
@@ -412,7 +412,24 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 {mode === 'approval' ? 'Back to Pending Approvals' : 'Back to Members'}
               </SecondaryButton>
 
-              {mode === 'approval' ? null : (
+              {mode === 'approval' && onApprove ? (
+                <>
+                  <button
+                    onClick={onApprove}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-success-600 hover:bg-success-700 text-white transition-colors"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    Approve
+                  </button>
+                  <button
+                    onClick={onReject}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-error-600 hover:bg-error-700 text-white transition-colors"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Reject
+                  </button>
+                </>
+              ) : mode !== 'approval' ? (
                 <>
                   <PrimaryButton icon={Edit} onClick={onEdit}>
                     Edit Member
@@ -422,7 +439,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                       isActive
                         ? 'border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                        : 'border-[#b8efa0] text-[#3d8928] bg-[#f1fced] hover:bg-[#e2fad1] dark:bg-[#f1fced]/10 dark:border-[#b8efa0]/30'
+                        : 'border-success-200 text-success-700 bg-success-50 hover:bg-success-100 dark:bg-success-950/20 dark:border-success-800 dark:text-success-400'
                     }`}
                   >
                     {isActive ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
@@ -436,7 +453,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     Delete
                   </button>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -619,119 +636,148 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                 )}
                 {complianceAlerts === 0 && (
-                  <div className="flex items-center gap-3 p-4 bg-[#f1fced] border border-[#b8efa0] rounded-lg">
-                    <CheckCircle2 className="w-4 h-4 text-[#4EAE33] flex-shrink-0" />
-                    <p className="text-sm text-[#3d8928]">All compliance checks are up to date.</p>
+                  <div className="flex items-center gap-3 p-4 bg-success-50 border border-success-200 dark:bg-success-950/20 dark:border-success-800 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-success-600 dark:text-success-400 flex-shrink-0" />
+                    <p className="text-sm text-success-700 dark:text-success-400">All compliance checks are up to date.</p>
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  {/* DBS Check */}
-                  <ComplianceCard
-                    label="DBS Check"
-                    status={member.compliance.dbs}
-                    refNumber={member.dbsRef}
-                    description={
-                      member.compliance.dbs === 'completed'
-                        ? 'Disclosure and Barring Service check is valid and on record.'
-                        : 'DBS check is pending. Please submit or process the DBS application.'
-                    }
-                  />
-                  <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {[
-                      { label: 'Certificate Number',        value: member.dbsCertificateNumber },
-                      { label: 'Certificate Date',          value: member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : undefined },
-                      { label: 'Certificate Received From', value: member.dbsCertificateReceivedFrom },
-                      { label: 'Other Source',              value: member.dbsCertificateReceivedFromOther },
-                      { label: 'DBS Update Service',        value: member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : undefined },
-                      { label: 'Update Service Number',     value: member.dbsUpdateServiceNumber },
-                      { label: 'Last Service Check',        value: member.dbsUpdateServiceCheckDate ? formatDate(member.dbsUpdateServiceCheckDate) : undefined },
-                      { label: 'App Under Process',         value: member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : undefined },
-                      { label: 'Verified By',               value: member.dbsCheckedBy },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">{label}</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{value ?? '—'}</p>
-                      </div>
-                    ))}
-                  </div>
-
+                {/* First Aid + Safeguarding — side by side */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {/* First Aid */}
-                  <ComplianceCard
-                    label="First Aid Certificate"
-                    status={member.compliance.firstAid}
-                    refNumber={member.firstAidRef}
-                    description={
-                      member.compliance.firstAid === 'completed'
-                        ? 'Valid first aid certificate on record.'
-                        : 'First aid certificate is pending submission or processing.'
-                    }
-                  />
-                  {member.isFirstAider !== undefined && (
-                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualified First Aider</p>
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">First Aid</h4>
+                    </div>
+                    <div className="px-5 py-4 grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">First Aid Status</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.firstAid}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Qualified First Aider</p>
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.isFirstAider ? 'Yes' : 'No'}</p>
                       </div>
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Level</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
-                      </div>
-                      <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Qualification Expiry</p>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Expiry Date</p>
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">
                           {member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
                         </p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Safeguarding */}
-                  <ComplianceCard
-                    label="Safeguarding Training"
-                    status={member.compliance.safeguardingTraining ?? 'pending'}
-                    description={
-                      member.compliance.safeguardingTraining === 'completed'
-                        ? 'Safeguarding training has been completed and is on record.'
-                        : 'Safeguarding training is pending.'
-                    }
-                  />
-                  <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Date of Training</p>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
-                      </p>
-                    </div>
-                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Level of Training</p>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
-                    </div>
-                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Reference Number</p>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
-                    </div>
-                    <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-3">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">Expiry Date</p>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
-                      </p>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">First Aid Qualification</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Reference Number</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidRef ?? '—'}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Parental Consent */}
+                  {/* Safeguarding */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Safeguarding</h4>
+                    </div>
+                    <div className="px-5 py-4 grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Safeguarding Status</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.safeguardingTraining ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Level of Training</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Date Completed</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Expiry Date</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Reference Number</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Disclosure Barring Service — full width */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Disclosure Barring Service</h4>
+                  </div>
+                  <div className="px-4 py-4 space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Status</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.dbs}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Number</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateNumber ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Date</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert File</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateFile ?? '—'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service No.</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsUpdateServiceNumber ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Application Under Process</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Cert Received From</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateReceivedFrom ?? '—'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Verified By</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCheckedBy ?? '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Parental Consent — only for minors */}
+                {member.compliance.parentalConsent !== 'n/a' && (
                   <ComplianceCard
                     label="Parental Consent"
                     status={member.compliance.parentalConsent}
                     description={
                       member.compliance.parentalConsent === 'granted'
                         ? 'Parental / guardian consent form has been received and approved.'
-                        : member.compliance.parentalConsent === 'pending'
-                          ? 'Consent form has been sent to the guardian and is awaiting response.'
-                          : 'Not applicable — member is 18 or over.'
+                        : 'Consent form has been sent to the guardian and is awaiting response.'
                     }
                   />
-                </div>
+                )}
               </div>
             )}
 
@@ -761,10 +807,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Type</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Event / Shakha</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Centre</th>
+                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Date</th>
+                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Type</th>
+                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event / Shakha</th>
+                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Centre</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -808,8 +854,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                   <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-md bg-[#f1fced] dark:bg-[#4EAE33]/10 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4EAE33]" />
+                      <div className="w-7 h-7 rounded-md bg-success-50 dark:bg-success-950/20 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-success-600 dark:text-success-400" />
                       </div>
                       <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
                     </div>

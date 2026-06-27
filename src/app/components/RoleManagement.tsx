@@ -342,11 +342,7 @@ export default function RoleManagement() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Role Management"
-        breadcrumbs={[
-          { label: 'Settings', href: '#' },
-          { label: 'Roles & Permissions', current: true },
-        ]}
+        title="Roles and Responsibility"
       >
         <div className="relative" ref={columnAnchorRef}>
           <SearchBar
@@ -494,31 +490,31 @@ export default function RoleManagement() {
                     </th>
                   )}
                   {visibleColumns.name && (
-                    <th onClick={() => handleSort('name')} className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer uppercase tracking-wider">
+                    <th onClick={() => handleSort('name')} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
                       Role Name {renderSortArrow('name')}
                     </th>
                   )}
                   {visibleColumns.code && (
-                    <th onClick={() => handleSort('code')} className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer uppercase tracking-wider">
+                    <th onClick={() => handleSort('code')} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
                       Role Code {renderSortArrow('code')}
                     </th>
                   )}
                   {visibleColumns.description && (
-                    <th className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                       Description
                     </th>
                   )}
                   {visibleColumns.status && (
-                    <th onClick={() => handleSort('status')} className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer uppercase tracking-wider">
+                    <th onClick={() => handleSort('status')} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
                       Status {renderSortArrow('status')}
                     </th>
                   )}
                   {visibleColumns.lastUpdated && (
-                    <th onClick={() => handleSort('lastUpdated')} className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer uppercase tracking-wider">
+                    <th onClick={() => handleSort('lastUpdated')} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
                       Updated Date {renderSortArrow('lastUpdated')}
                     </th>
                   )}
-                  <th className="px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right uppercase tracking-wider">
+                  <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right">
                     Actions
                   </th>
                 </tr>
@@ -615,7 +611,7 @@ export default function RoleManagement() {
           {/* Left Panel - Role Information */}
           <div className="w-full lg:w-[35%] space-y-6">
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-6">Role Information</h3>
+              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white mb-6">Role Information</h3>
               
               <div className="space-y-4">
                 <FormField>
@@ -668,7 +664,7 @@ export default function RoleManagement() {
               {/* Right Panel Header */}
               <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-900/50">
                 <div>
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Role Privileges</h3>
+                  <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Role Privileges</h3>
                   <p className="text-xs text-neutral-500">Configure module-level access and action permissions</p>
                 </div>
                 <PrimaryButton size="sm" onClick={handleSave}>Save Privileges</PrimaryButton>
@@ -714,7 +710,7 @@ export default function RoleManagement() {
                   {activeModule && (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
+                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
                           {activeModule.name} Permissions
                         </h4>
                         <button

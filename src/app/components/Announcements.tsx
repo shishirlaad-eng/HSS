@@ -173,7 +173,7 @@ function ConfirmModal({
       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
+          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">{title}</h3>
         </div>
         {/* Body */}
         <div className="px-5 py-4">

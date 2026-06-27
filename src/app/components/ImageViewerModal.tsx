@@ -43,7 +43,7 @@ export default function ImageViewerModal({ isOpen, onClose, imageUrl, employeeNa
         {/* Header */}
         <div className="bg-white dark:bg-neutral-900 rounded-t-lg px-4 py-3 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800">
           <div>
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">
               {employeeName}
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">

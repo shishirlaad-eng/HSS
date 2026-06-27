@@ -19,6 +19,7 @@ import {
   PageHeader,
   SearchBar,
   IconButton,
+  PrimaryButton,
   ViewModeSwitcher,
   Pagination,
   AdvancedSearchPanel,
@@ -44,10 +45,10 @@ type PageState = 'list' | 'detail' | 'create' | 'edit';
 // ── Outcome badge ─────────────────────────────────────────────
 
 const OUTCOME_CFG: Record<IncidentOutcome, { bg: string; text: string }> = {
-  'Returned to Activity': { bg: 'bg-[#f1fced] dark:bg-emerald-950/30', text: 'text-[#3d8928] dark:text-emerald-400' },
-  'Sent Home':            { bg: 'bg-[#fffbeb] dark:bg-amber-950/30',    text: 'text-[#d97706] dark:text-amber-400'  },
-  'Taken to Hospital':    { bg: 'bg-[#fff4f0] dark:bg-orange-950/30',   text: 'text-[#c2410c] dark:text-orange-400' },
-  'Ambulance Called':     { bg: 'bg-[#fff0f0] dark:bg-red-950/30',      text: 'text-[#9a0c17] dark:text-red-400'    },
+  'Returned to Activity': { bg: 'bg-success-50 dark:bg-success-950/20', text: 'text-success-700 dark:text-success-400' },
+  'Sent Home':            { bg: 'bg-amber-50 dark:bg-amber-950/20',     text: 'text-amber-700 dark:text-amber-400'    },
+  'Taken to Hospital':    { bg: 'bg-orange-50 dark:bg-orange-950/20',   text: 'text-orange-700 dark:text-orange-400'  },
+  'Ambulance Called':     { bg: 'bg-error-50 dark:bg-error-950/20',     text: 'text-error-700 dark:text-error-400'    },
 };
 
 function OutcomeBadge({ outcome }: { outcome: IncidentOutcome }) {
@@ -144,7 +145,7 @@ function DeleteModal({
             <Trash2 className="w-5 h-5 text-[#BC0F1C]" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">Delete Incident Record</h3>
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">Delete Incident Record</h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               This will permanently delete the incident record. This action cannot be undone.
             </p>
@@ -858,10 +859,7 @@ export default function IncidentManagement() {
         <PageHeader
           title="First Aid Incidents"
           subtitle="Record and manage first aid incidents attributed to Shakha sessions."
-          breadcrumbs={[
-            { label: 'Sankhya', href: '#' },
-            { label: 'First Aid Incidents', current: true },
-          ]}
+
         >
           <div className="relative">
             <SearchBar
@@ -889,13 +887,9 @@ export default function IncidentManagement() {
             ]}
           />
           {canEdit && (
-            <button
-              onClick={() => setPageState('create')}
-              className="flex items-center gap-2 px-3 h-9 text-xs font-semibold rounded-lg bg-[#172E4D] hover:bg-[#172E4D]/80 text-white transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
+            <PrimaryButton icon={Plus} onClick={() => setPageState('create')}>
               Record Incident
-            </button>
+            </PrimaryButton>
           )}
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
@@ -1003,7 +997,7 @@ export default function IncidentManagement() {
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {['ID', 'Date', 'Casualty', 'Shakha', 'Type', 'Outcome', 'First Aider', 'Follow-up', ''].map(h => (
-                      <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">
+                      <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
                         {h}
                       </th>
                     ))}

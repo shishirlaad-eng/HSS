@@ -367,7 +367,7 @@ export default function EmailTemplates() {
               </button>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+                  <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">
                     {isEditing ? 'Editing Template Layout' : 'Template Workspace'}
                   </h3>
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
@@ -820,7 +820,7 @@ export default function EmailTemplates() {
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {/* Standardized Checkbox inside FIRST column */}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                       <input
                         type="checkbox"
                         checked={selectedIds.size === paginatedTemplates.length && paginatedTemplates.length > 0}
@@ -838,7 +838,7 @@ export default function EmailTemplates() {
                     {visibleColumns.id && (
                       <th 
                         onClick={() => handleSort('id')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Template Id {renderSortIndicator('id')}
                       </th>
@@ -847,7 +847,7 @@ export default function EmailTemplates() {
                     {visibleColumns.name && (
                       <th 
                         onClick={() => handleSort('name')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Template Name {renderSortIndicator('name')}
                       </th>
@@ -856,7 +856,7 @@ export default function EmailTemplates() {
                     {visibleColumns.subject && (
                       <th 
                         onClick={() => handleSort('subject')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Subject Line {renderSortIndicator('subject')}
                       </th>
@@ -865,7 +865,7 @@ export default function EmailTemplates() {
                     {visibleColumns.category && (
                       <th 
                         onClick={() => handleSort('category')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Category {renderSortIndicator('category')}
                       </th>
@@ -874,7 +874,7 @@ export default function EmailTemplates() {
                     {visibleColumns.status && (
                       <th 
                         onClick={() => handleSort('status')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Status {renderSortIndicator('status')}
                       </th>
@@ -883,13 +883,13 @@ export default function EmailTemplates() {
                     {visibleColumns.lastUpdated && (
                       <th 
                         onClick={() => handleSort('lastUpdated')}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 tracking-normal"
                       >
                         Last Updated {renderSortIndicator('lastUpdated')}
                       </th>
                     )}
 
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
                       Actions
                     </th>
                   </tr>

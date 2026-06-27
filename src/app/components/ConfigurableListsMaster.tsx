@@ -443,7 +443,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                       <input
                         type="checkbox"
                         checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
@@ -455,13 +455,13 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
                       <th
                         key={f}
                         onClick={() => handleSort(f)}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800"
                       >
                         {{ name: 'Name', status: 'Status', lastUpdated: 'Last Updated' }[f]}
                         {renderSort(f)}
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
                       Actions
                     </th>
                   </tr>

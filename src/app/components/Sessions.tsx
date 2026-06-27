@@ -33,9 +33,9 @@ function isoDate(y: number, m: number, d: number) {
 }
 
 function statusColor(status: ShakhaSession['status']) {
-  if (status === 'completed')  return 'bg-success-100 text-success-700 dark:bg-success-950 dark:text-success-400 border-success-200 dark:border-success-800';
-  if (status === 'cancelled')  return 'bg-error-100 text-error-700 dark:bg-error-950 dark:text-error-400 border-error-200 dark:border-error-800';
-  return 'bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-400 border-primary-200 dark:border-primary-800';
+  if (status === 'completed')  return 'bg-success-50 text-success-700 dark:bg-success-950/20 dark:text-success-400 border-success-200 dark:border-success-800';
+  if (status === 'cancelled')  return 'bg-error-50 text-error-700 dark:bg-error-950/20 dark:text-error-400 border-error-200 dark:border-error-800';
+  return 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400 border-primary-200 dark:border-primary-800';
 }
 
 function statusDot(status: ShakhaSession['status']) {

@@ -1,6 +1,6 @@
-// ─────────────────────────────────────────────────────────────
-// HSS UK Membership Management System — Dashboard
-// ─────────────────────────────────────────────────────────────
+﻿// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// HSS UK Membership Management System â€” Dashboard
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { useMemo, useState, useEffect } from 'react';
 import {
@@ -38,7 +38,7 @@ import { mockDonations } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
 
-// ── Mock Announcements ────────────────────────────────────────
+// â”€â”€ Mock Announcements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Announcement {
   id: string;
@@ -53,7 +53,7 @@ interface Announcement {
 const mockAnnouncements: Announcement[] = [
   {
     id: 'ANN-001',
-    title: 'National SSV 2026 — Registrations Now Open',
+    title: 'National SSV 2026 â€” Registrations Now Open',
     body: 'The annual Sangh Shiksha Varg 2026 is scheduled for August. All shakha leaders and members are encouraged to register their participants before 15 July 2026.',
     postedAt: '2026-05-20T09:00:00Z',
     priority: 'high',
@@ -62,7 +62,7 @@ const mockAnnouncements: Announcement[] = [
   },
   {
     id: 'ANN-002',
-    title: 'DBS Renewal — Updated Guidance',
+    title: 'DBS Renewal â€” Updated Guidance',
     body: 'New DBS renewal guidelines are in effect from June 2026. All active volunteers with DBS expiry before December 2026 must initiate renewal by 30 June.',
     postedAt: '2026-05-15T10:30:00Z',
     priority: 'high',
@@ -78,23 +78,23 @@ const mockAnnouncements: Announcement[] = [
   },
   {
     id: 'ANN-004',
-    title: 'Membership Portal — Scheduled Maintenance',
-    body: 'The membership portal will undergo maintenance on 1 June 2026 between 02:00–06:00 BST. Members may experience brief interruptions during this window.',
+    title: 'Membership Portal â€” Scheduled Maintenance',
+    body: 'The membership portal will undergo maintenance on 1 June 2026 between 02:00â€“06:00 BST. Members may experience brief interruptions during this window.',
     postedAt: '2026-05-08T11:00:00Z',
     priority: 'low',
     postedBy: 'IT Operations',
   },
   {
     id: 'ANN-005',
-    title: 'New Activity Centre — Birmingham West Now Active',
+    title: 'New Activity Centre â€” Birmingham West Now Active',
     body: 'We are pleased to announce that Birmingham West Activity Centre is now fully operational. Shakha activities begin from 1 June 2026.',
     postedAt: '2026-05-05T08:00:00Z',
     priority: 'medium',
-    postedBy: 'Regional Coordinator — Midlands',
+    postedBy: 'Regional Coordinator â€” Midlands',
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -137,11 +137,11 @@ function avatarColor(name: string) {
 }
 
 const EVENT_STATUS_CFG = {
-  active:    { dot: 'bg-emerald-500', label: 'Active',    text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' },
-  published: { dot: 'bg-primary-500', label: 'Published', text: 'text-primary-700 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800' },
-  draft:     { dot: 'bg-neutral-400', label: 'Draft',     text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' },
-  completed: { dot: 'bg-sky-500',     label: 'Completed', text: 'text-sky-700 dark:text-sky-400',         bg: 'bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800' },
-  cancelled: { dot: 'bg-red-500',     label: 'Cancelled', text: 'text-red-700 dark:text-red-400',         bg: 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800' },
+  active:    { dot: 'bg-success-500',  label: 'Active',    text: 'text-success-700 dark:text-success-400',  bg: 'bg-success-50 dark:bg-success-950/20 border border-success-200 dark:border-success-800'  },
+  published: { dot: 'bg-blue-500',     label: 'Published', text: 'text-blue-700 dark:text-blue-400',        bg: 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800'              },
+  draft:     { dot: 'bg-neutral-400',  label: 'Draft',     text: 'text-neutral-600 dark:text-neutral-400',  bg: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'   },
+  completed: { dot: 'bg-amber-500',    label: 'Completed', text: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800'          },
+  cancelled: { dot: 'bg-error-500',    label: 'Cancelled', text: 'text-error-700 dark:text-error-400',      bg: 'bg-error-50 dark:bg-error-950/20 border border-error-200 dark:border-error-800'          },
 };
 
 const PRIORITY_CFG = {
@@ -151,16 +151,16 @@ const PRIORITY_CFG = {
 };
 
 const MEMBER_STATUS_CFG = {
-  active:                     { label: 'Active',            dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
-  pending:                    { label: 'Pending Approval',  dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400'   },
-  'pending-parental-consent': { label: 'Parental Consent',  dot: 'bg-violet-500',  text: 'text-violet-700 dark:text-violet-400' },
-  inactive:                   { label: 'Inactive',          dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400' },
-  rejected:                   { label: 'Rejected',          dot: 'bg-red-500',     text: 'text-red-700 dark:text-red-400'       },
+  active:                     { label: 'Active',            dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400' },
+  pending:                    { label: 'Pending Approval',  dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400'    },
+  'pending-parental-consent': { label: 'Parental Consent',  dot: 'bg-violet-500',  text: 'text-violet-700 dark:text-violet-400'  },
+  inactive:                   { label: 'Inactive',          dot: 'bg-neutral-400', text: 'text-neutral-600 dark:text-neutral-400' },
+  rejected:                   { label: 'Rejected',          dot: 'bg-error-500',   text: 'text-error-700 dark:text-error-400'    },
 };
 
 const AGE_GROUP_CHIP = 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark:bg-[#1a2e14] dark:text-[#86efac] dark:border-[#166534]';
 
-// ── Mock Donations (member view) ──────────────────────────────
+// â”€â”€ Mock Donations (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockMyDonations = [
   { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00,  type: 'recurring' },
@@ -170,20 +170,20 @@ const mockMyDonations = [
   { id: 'DON-005', datetime: '2026-01-05T16:20:00', amount: 25.00,  type: 'recurring' },
 ];
 
-// ── Mock Attendance (member view) ─────────────────────────────
+// â”€â”€ Mock Attendance (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockMyAttendance = [
-  { id: 'ATT-001', session: 'Shakha — Wembley Activity Centre',     date: '2026-06-01', status: 'present' },
-  { id: 'ATT-002', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-25', status: 'present' },
+  { id: 'ATT-001', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-06-01', status: 'present' },
+  { id: 'ATT-002', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-25', status: 'present' },
   { id: 'ATT-003', session: 'Youth Leadership Workshop',            date: '2026-05-20', status: 'present' },
-  { id: 'ATT-004', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-18', status: 'absent'  },
-  { id: 'ATT-005', session: 'Shakha — Wembley Activity Centre',     date: '2026-05-11', status: 'present' },
+  { id: 'ATT-004', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-18', status: 'absent'  },
+  { id: 'ATT-005', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-11', status: 'present' },
   { id: 'ATT-006', session: 'Annual Sports Day',                    date: '2026-05-04', status: 'present' },
-  { id: 'ATT-007', session: 'Shakha — Wembley Activity Centre',     date: '2026-04-27', status: 'absent'  },
-  { id: 'ATT-008', session: 'Bal Vihar — Cultural Evening',        date: '2026-04-20', status: 'present' },
+  { id: 'ATT-007', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-04-27', status: 'absent'  },
+  { id: 'ATT-008', session: 'Bal Vihar â€” Cultural Evening',        date: '2026-04-20', status: 'present' },
 ];
 
-// ── Mock current logged-in member ─────────────────────────────
+// â”€â”€ Mock current logged-in member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockCurrentMember = {
   firstName:           'John',
@@ -199,7 +199,7 @@ const mockCurrentMember = {
   status:              'Active',
 };
 
-// ── Member / Teen Dashboard ────────────────────────────────────
+// â”€â”€ Member / Teen Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function MemberDashboard({
   onNavigate,
@@ -251,7 +251,7 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* ── Row 1: Donut stat cards — My Sankhya · Suchana · Karyakrams · My Dakshina ── */}
+      {/* â”€â”€ Row 1: Donut stat cards â€” My Sankhya Â· Suchana Â· Karyakrams Â· My Dakshina â”€â”€ */}
       {(() => {
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
@@ -272,7 +272,7 @@ function MemberDashboard({
             ],
             detail:   `${presentAnotherShakha} Present in Another Shakha`,
             detailRows: [],
-            sub:      `${presentCount} Present · ${absentCount} Absent`,
+            sub:      `${presentCount} Present Â· ${absentCount} Absent`,
             bg:       'bg-slate-50 dark:bg-slate-900/40',
             track:    'text-slate-200 dark:text-slate-700',
             onClick:  () => onNavigate?.('attendance-log'),
@@ -315,10 +315,10 @@ function MemberDashboard({
             display:  'split',
             arc:      Math.min(totalDakshina / 500, 1) * C,
             color:    '#1D9E75',
-            center:   `£${totalDakshina.toFixed(0)}`,
+            center:   `Â£${totalDakshina.toFixed(0)}`,
             segments: [
-              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: '£' },
-              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: '£' },
+              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: 'Â£' },
+              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: 'Â£' },
             ],
             sub:      'YTD Total',
             detail:   '',
@@ -343,9 +343,9 @@ function MemberDashboard({
                 onClick={card.onClick}
                 onKeyDown={card.onClick ? e => e.key === 'Enter' && card.onClick?.() : undefined}
               >
-                <p className="text-[21px] font-bold text-neutral-600 dark:text-neutral-400 mb-3 text-center" style={{ fontFamily: "'Ramilias', serif" }}>{card.label}</p>
+                <p className="text-[19px] font-bold text-neutral-900 dark:text-white mb-3 text-center">{card.label}</p>
                 {(card as any).display === 'stat' ? (
-                  /* ── Big Stat: Suchana ── */
+                  /* â”€â”€ Big Stat: Suchana â”€â”€ */
                   <div className="flex-1 flex flex-col items-center justify-center py-2">
                     <span className="text-6xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: card.color + '20', color: card.color }}>
@@ -356,7 +356,7 @@ function MemberDashboard({
                     </p>
                   </div>
                 ) : (card as any).display === 'split' ? (
-                  /* ── Split Metric: My Dakshina ── */
+                  /* â”€â”€ Split Metric: My Dakshina â”€â”€ */
                   <div className="flex-1 flex flex-col items-center justify-center py-2">
                     <span className="text-5xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
                     <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1.5 mb-4">{card.sub}</p>
@@ -370,7 +370,7 @@ function MemberDashboard({
                     </div>
                   </div>
                 ) : (
-                  /* ── Donut chart (default) ── */
+                  /* â”€â”€ Donut chart (default) â”€â”€ */
                   <>
                   <svg width="120" height="120" viewBox="0 0 60 60" aria-hidden="true">
                     <circle
@@ -443,7 +443,7 @@ function MemberDashboard({
         );
       })()}
 
-      {/* ── Row 2: My Profile + My Sankhya list ───────────────── */}
+      {/* â”€â”€ Row 2: My Profile + My Sankhya list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
 
         {/* My Profile card */}
@@ -451,7 +451,7 @@ function MemberDashboard({
           <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Profile</h3>
+              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Profile</h3>
             </div>
             <button onClick={() => onNavigate?.('my-profile')} className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
               View all <ArrowRight className="w-3.5 h-3.5" />
@@ -528,7 +528,7 @@ function MemberDashboard({
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>My Sankhya</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Sankhya</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {attendancePct}%
                 </span>
@@ -563,7 +563,7 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* ── Row 3: Suchana + Upcoming Karyakrams ──────────────── */}
+      {/* â”€â”€ Row 3: Suchana + Upcoming Karyakrams â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Suchana */}
@@ -572,7 +572,7 @@ function MemberDashboard({
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Suchana</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Suchana</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {mockAnnouncements.length}
                 </span>
@@ -619,7 +619,7 @@ function MemberDashboard({
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                <h3 className="text-[19px] font-medium text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>Upcoming Karyakrams</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Upcoming Karyakrams</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {upcomingEvents.length}
                 </span>
@@ -656,7 +656,7 @@ function MemberDashboard({
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-[12px] text-neutral-500 dark:text-neutral-400 flex-wrap">
-                          <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} – {formatEventTime(event.endDate)}</span>
+                          <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} â€“ {formatEventTime(event.endDate)}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.activityCentre}</span>
                         </div>
                       </div>
@@ -677,7 +677,7 @@ function MemberDashboard({
 
     </div>
 
-      {/* ── Register Modal ── */}
+      {/* â”€â”€ Register Modal â”€â”€ */}
       {registerEvent && (
         <div
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
@@ -690,7 +690,7 @@ function MemberDashboard({
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200 dark:border-neutral-800" style={{ borderTop: '3px solid #172E4D' }}>
               <h4 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <ListChecks className="w-4 h-4 text-primary-600" />
-                Register — <span style={{ fontFamily: "'Ramilias', serif" }}>{registerEvent.name}</span>
+                Register â€” <span style={{ fontFamily: "'Ramilias', serif" }}>{registerEvent.name}</span>
               </h4>
               <button onClick={() => setRegisterEvent(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
                 <X className="w-4 h-4" />
@@ -723,7 +723,7 @@ function MemberDashboard({
                       onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
                       className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
-                      <option value="">Select…</option>
+                      <option value="">Selectâ€¦</option>
                       {(q.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   )}
@@ -772,9 +772,9 @@ function MemberDashboard({
   );
 }
 
-// ── Hierarchy KPI Section (Regional / Town / Activity Centre) ──
+// â”€â”€ Hierarchy KPI Section (Regional / Town / Activity Centre) â”€â”€
 
-// Age-group membership labels are NOT sangh responsibilities — exclude them
+// Age-group membership labels are NOT sangh responsibilities â€” exclude them
 // when counting "Shakha Karyakartas" (members holding a sangh responsibility).
 const AGE_GROUP_ROLE_LABELS = new Set([
   'Bal(ika)', 'Shishu', 'Kishor(i)', 'Tarun(i)', 'Yuva(ti)', 'Jyestha(a)',
@@ -845,9 +845,9 @@ function HierarchyKpiSection({
   const kpis = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`;
+    const gbp = (n: number) => `Â£${Math.round(n).toLocaleString('en-GB')}`;
 
-    // ── Attendance ──
+    // â”€â”€ Attendance â”€â”€
     const completedSessions = filterByScope(mockSessions, scope).filter(s => s.status === 'completed');
     const rateOf = (s: typeof completedSessions[number]) => {
       const present = s.attendanceRecords.filter(r => r.status === 'present').length;
@@ -866,11 +866,11 @@ function HierarchyKpiSection({
       ? Math.round(ytdSessions.reduce((sum, s) => sum + rateOf(s), 0) / ytdSessions.length) : 0;
     const sessionsHeldYTD = ytdSessions.length;
 
-    // ── Suchana ──
+    // â”€â”€ Suchana â”€â”€
     const suchanaActive = mockAnnouncements.length;
     const suchanaHigh   = mockAnnouncements.filter(a => a.priority === 'high').length;
 
-    // ── Members (scoped) ──
+    // â”€â”€ Members (scoped) â”€â”€
     const scopedMembers = filterByScope(mockMembers, scope);
     const pendingApprovals = scopedMembers.filter(
       m => m.status === 'pending' || m.status === 'pending-parental-consent',
@@ -881,7 +881,7 @@ function HierarchyKpiSection({
       m => m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle),
     ).length;
 
-    // ── Upcoming Karyakrams — events any member of this Shakha is eligible for ──
+    // â”€â”€ Upcoming Karyakrams â€” events any member of this Shakha is eligible for â”€â”€
     const isEligibleForShakha = (e: typeof mockEvents[number]) => {
       if (!e.filterAgeCategories && !e.filterGenders && !e.filterJobTitles) return true;
       return scopedMembers.some(m => {
@@ -897,17 +897,17 @@ function HierarchyKpiSection({
     const allUpcomingActive = allUpcomingList.filter(e => e.status === 'active').length;
     const allUpcomingPublished = allUpcomingList.filter(e => e.status === 'published').length;
 
-    // ── Nidhi (donations) ──
+    // â”€â”€ Nidhi (donations) â”€â”€
     const receivedDonations = filterByScope(mockDonations, scope).filter(d => d.status === 'received');
     const totalIncome = receivedDonations.reduce((sum, d) => sum + d.amount, 0);
     const onlineTotal = receivedDonations.filter(d => d.channel === 'online').reduce((sum, d) => sum + d.amount, 0);
     const cashTotal   = receivedDonations.filter(d => d.channel === 'cash').reduce((sum, d) => sum + d.amount, 0);
     const giftAidClaimable = receivedDonations.filter(d => d.giftAid).reduce((sum, d) => sum + d.amount, 0) * 0.25;
 
-    // ── Compliance ──
+    // â”€â”€ Compliance â”€â”€
     const firstAiders  = scopedMembers.filter(m => m.isFirstAider).length;
-    const dbsApproved  = scopedMembers.filter(m => m.compliance.dbs === 'completed').length;
-    const safeguarding = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'completed').length;
+    const dbsApproved  = scopedMembers.filter(m => m.compliance.dbs === 'Approved').length;
+    const safeguarding = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Certified').length;
 
     return {
       avgLast4, avgYTD, sessionsHeldYTD,
@@ -933,8 +933,8 @@ function HierarchyKpiSection({
           onClick={() => onNavigate?.('attendance-log')}
           subMetrics={[
             { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD, tone: 'primary' },
-            { label: 'Avg — last 4 Shakhas', value: kpis.avgLast4 },
-            { label: 'Avg — YTD', value: kpis.avgYTD },
+            { label: 'Avg â€” last 4 Shakhas', value: kpis.avgLast4 },
+            { label: 'Avg â€” YTD', value: kpis.avgYTD },
           ]}
         />
 
@@ -999,7 +999,7 @@ function HierarchyKpiSection({
           ]}
         />
 
-        {/* Upcoming Karyakrams — placed after Compliance */}
+        {/* Upcoming Karyakrams â€” placed after Compliance */}
         <KpiCard
           title="Upcoming Karyakrams"
           value={kpis.allUpcoming}
@@ -1016,7 +1016,7 @@ function HierarchyKpiSection({
   );
 }
 
-// ── Dashboard Component ───────────────────────────────────────
+// â”€â”€ Dashboard Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DashboardProps {
   onNavigate?: (page: string) => void;
@@ -1051,7 +1051,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
   const hideTowns    = selectedRole === 'Nagar Admin' || selectedRole === 'Shakha Admin';
   const hideCentres  = selectedRole === 'Shakha Admin';
 
-  // ── Derived KPI values ──────────────────────────────────────
+  // â”€â”€ Derived KPI values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const scopedTotalMembers = filterByScope(mockMembers, scope);
   const totalMembers   = scopedTotalMembers.length;
@@ -1091,7 +1091,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
   return (
     <div className="px-6 py-6">
 
-      {/* ── Page Header ──────────────────────────────────── */}
+      {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PageHeader
         title={
           scope.centre  ? `${scope.centre} - Dashboard`  :
@@ -1109,7 +1109,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                 ? `Country: ${scope.country}`
                 : scope.country && !scope.region
                   ? undefined
-                  : showHierarchyKpis ? undefined : `${greeting} — here's what's happening across the network`
+                  : showHierarchyKpis ? undefined : `${greeting} â€” here's what's happening across the network`
         }
         breadcrumbs={[
           { label: 'Home', href: '#' },
@@ -1118,7 +1118,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       >
       </PageHeader>
 
-      {/* ── Row 1: Org structure KPIs ────────────────────── */}
+      {/* â”€â”€ Row 1: Org structure KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard
           title="Total Members"
@@ -1163,12 +1163,12 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         )}
       </div>
 
-      {/* ── Hierarchy-scoped KPIs (Regional / Town / Activity Centre) ── */}
+      {/* â”€â”€ Hierarchy-scoped KPIs (Regional / Town / Activity Centre) â”€â”€ */}
       {showHierarchyKpis && (
         <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
       )}
 
-      {/* ── Row 2: Activity KPIs (hidden for hierarchy roles — covered by Performance Overview) ── */}
+      {/* â”€â”€ Row 2: Activity KPIs (hidden for hierarchy roles â€” covered by Performance Overview) â”€â”€ */}
       {!showHierarchyKpis && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
@@ -1185,7 +1185,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
               <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
               <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
-                {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
+                {upcomingEvents.filter(e => e.status === 'active').length} active Â·{' '}
                 {upcomingEvents.filter(e => e.status === 'published').length} published
               </p>
             </div>
@@ -1263,7 +1263,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       </div>
       )}
 
-      {/* ── Section: Upcoming Karyakrams + Pending Approvals ─── */}
+      {/* â”€â”€ Section: Upcoming Karyakrams + Pending Approvals â”€â”€â”€ */}
       {scope.level !== 'centre' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
@@ -1328,7 +1328,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                           <div className="flex items-center gap-3 text-[12px] text-neutral-500 dark:text-neutral-400 flex-wrap">
                             <span className="flex items-center gap-1">
                               <CalendarClock className="w-3.5 h-3.5 flex-shrink-0" />
-                              {formatEventTime(event.startDate)} – {formatEventTime(event.endDate)}
+                              {formatEventTime(event.startDate)} â€“ {formatEventTime(event.endDate)}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1345,7 +1345,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                         <div className="flex-shrink-0">
                           {event.paymentType === 'paid' ? (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                              £{event.price}
+                              Â£{event.price}
                             </span>
                           ) : (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -1424,7 +1424,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       </div>
       )}
 
-      {/* ── Section: Announcements + Recent Registrations ── */}
+      {/* â”€â”€ Section: Announcements + Recent Registrations â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Announcements (2/3, or full-width for AC Admin) */}
@@ -1480,7 +1480,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           </div>
         </div>
 
-        {/* Recent Registrations (1/3) — hidden for AC Admin */}
+        {/* Recent Registrations (1/3) â€” hidden for AC Admin */}
         {scope.level !== 'centre' && (
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full">
@@ -1539,3 +1539,4 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
     </div>
   );
 }
+

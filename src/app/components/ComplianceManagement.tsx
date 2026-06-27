@@ -7,6 +7,8 @@ import {
   AgeGroup,
   AGE_GROUP_LABELS,
   getAgeGroup,
+  DBSStatus,
+  CertStatus,
 } from '../../mockAPI/membersData';
 import { PageHeader } from './hb/listing';
 
@@ -17,7 +19,7 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
   shishu:  'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
   kishor:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
   tarun:   'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
-  yuva:    'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  yuva:    'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800',
   jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
@@ -30,11 +32,24 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   );
 }
 
-function ComplianceBadge({ status }: { status?: 'pending' | 'completed' }) {
+function DBSBadge({ status }: { status: DBSStatus }) {
+  const cfg = status === 'Approved'
+    ? { dot: 'bg-success-500', text: 'Approved', textCls: 'text-success-700 dark:text-success-400' }
+    : { dot: 'bg-amber-500',   text: 'Pending',  textCls: 'text-amber-700 dark:text-amber-400'    };
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+      <span className={`text-xs font-medium ${cfg.textCls}`}>{cfg.text}</span>
+    </span>
+  );
+}
+
+function CertBadge({ status }: { status?: CertStatus }) {
   if (!status) return <span className="text-sm text-neutral-400">—</span>;
-  const cfg = status === 'completed'
-    ? { dot: 'bg-[#4EAE33]', text: 'Completed', textCls: 'text-[#3d8928]' }
-    : { dot: 'bg-[#F9B03D]', text: 'Pending',   textCls: 'text-[#d97706]' };
+  const cfg =
+    status === 'Certified' ? { dot: 'bg-success-500', text: 'Certified', textCls: 'text-success-700 dark:text-success-400' } :
+    status === 'Expired'   ? { dot: 'bg-error-500',   text: 'Expired',   textCls: 'text-error-700 dark:text-error-400'     } :
+                             { dot: 'bg-neutral-400',  text: 'N/A',       textCls: 'text-neutral-500 dark:text-neutral-400' };
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
@@ -48,7 +63,7 @@ function fmtDate(date?: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
 export default function ComplianceManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
@@ -56,6 +71,12 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   const [activeTab, setActiveTab] = useState<ComplianceTab>('dbs');
 
   const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
+
+  const alertCounts = useMemo(() => ({
+    dbs:          members.filter(m => m.compliance.dbs === 'Pending').length,
+    firstAid:     members.filter(m => m.compliance.firstAid === 'Expired').length,
+    safeguarding: members.filter(m => (m.compliance.safeguardingTraining ?? 'Expired') === 'Expired').length,
+  }), [members]);
 
   const tabs: { id: ComplianceTab; label: string }[] = [
     { id: 'dbs',          label: 'DBS'          },
@@ -72,19 +93,27 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
       {/* Tab bar */}
       <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 px-6">
         <div className="flex gap-1">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-400'
-                  : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map(tab => {
+            const count = alertCounts[tab.id];
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-400'
+                    : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600'
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-error-600 text-white text-[10px] font-bold leading-none">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -132,14 +161,14 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                 >
                   {activeTab === 'dbs' && (
                     <>
-                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
-                      <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
+                      <td className="px-4 py-3.5"><DBSBadge status={m.compliance.dbs} /></td>
                       <td className={TD}>
                         {m.dbsCertificateNumber
                           ? <><span className="font-medium">{m.dbsCertificateNumber}</span>{m.dbsCertificateDate && <span className="block text-neutral-400">{fmtDate(m.dbsCertificateDate)}</span>}</>
@@ -148,8 +177,8 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className={TD}>
                         {m.dbsUpdateService === true ? (
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                            <span className="text-xs font-medium text-[#3d8928]">Yes</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
+                            <span className="text-xs font-medium text-success-700 dark:text-success-400">Yes</span>
                           </span>
                         ) : (
                           <span className="text-neutral-400 text-xs">No</span>
@@ -159,27 +188,27 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   )}
                   {activeTab === 'firstAid' && (
                     <>
-                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
-                      <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
+                      <td className="px-4 py-3.5"><CertBadge status={m.compliance.firstAid} /></td>
                       <td className={TD}>{fmtDate(m.firstAidQualificationExpiryDate)}</td>
                     </>
                   )}
                   {activeTab === 'safeguarding' && (
                     <>
-                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
-                      <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.safeguardingTraining} /></td>
+                      <td className="px-4 py-3.5"><CertBadge status={m.compliance.safeguardingTraining} /></td>
                       <td className={TD}>{m.safeguardingTrainingLevel ?? '—'}</td>
                       <td className={TD}>{fmtDate(m.safeguardingTrainingDate)}</td>
                     </>

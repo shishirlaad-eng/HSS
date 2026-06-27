@@ -47,8 +47,8 @@ type ApprovalAction = 'approve' | 'reject';
 // ── Compliance badge ──────────────────────────────────────────
 
 const COMPLIANCE_CFG = {
-  completed: { dot: 'bg-[#4EAE33]', text: 'text-[#3d8928]', label: 'Completed' },
-  pending:   { dot: 'bg-[#F9B03D]', text: 'text-[#d97706]', label: 'Pending'   },
+  completed: { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Completed' },
+  pending:   { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400',     label: 'Pending'   },
 };
 
 function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
@@ -69,8 +69,8 @@ function waitingDays(registrationDate: string): number {
 
 function WaitingBadge({ days }: { days: number }) {
   const cls =
-    days >= 14 ? 'bg-[#fff0f0] text-[#9a0c17] border-[#ffaaab]' :
-    days >= 7  ? 'bg-[#fffbeb] text-[#d97706] border-[#fde68a]' :
+    days >= 14 ? 'bg-error-50 text-error-700 border-error-200 dark:bg-error-950/20 dark:text-error-400 dark:border-error-800' :
+    days >= 7  ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800' :
                  'bg-neutral-50 text-neutral-600 border-neutral-200';
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium ${cls}`}>
@@ -100,7 +100,7 @@ function ApproveGuardianModal({
             <CheckCircle className="w-5 h-5 text-[#4EAE33]" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">
               Approve on Behalf of Guardian
             </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -175,7 +175,7 @@ function RejectReasonModal({
             <Ban className="w-5 h-5 text-[#BC0F1C]" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">Reject Application</h3>
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">Reject Application</h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Please provide a reason for rejection. This will be recorded against the member's application.
             </p>
@@ -411,8 +411,14 @@ export default function PendingGuardianApprovals() {
 
   // ── Row action menus ────────────────────────────────────────
 
+  const isSuperAdmin = selectedRole === 'Super Admin';
+
   const getRowMenuItems = (m: Member) => [
     { icon: Eye, label: 'View', onClick: () => { setSelectedMember(m); setPageState('detail'); } },
+    ...(isSuperAdmin ? [
+      { icon: UserCheck, label: 'Approve', onClick: () => { setSelectedMember(m); openModal(m, 'approve'); } },
+      { icon: Ban,       label: 'Reject',  onClick: () => { setSelectedMember(m); openModal(m, 'reject');  } },
+    ] : []),
   ];
 
   // ── Detail sub-page ─────────────────────────────────────────
@@ -435,6 +441,8 @@ export default function PendingGuardianApprovals() {
           onDelete={() => {}}
           mode="approval"
           hideComplianceTab={selectedRole === 'Shakha Admin'}
+          onApprove={isSuperAdmin ? () => openModal(liveMember, 'approve') : undefined}
+          onReject={isSuperAdmin ? () => openModal(liveMember, 'reject') : undefined}
         />
         <ApproveGuardianModal
           isOpen={modal.isOpen && modal.action === 'approve'}
@@ -674,12 +682,12 @@ export default function PendingGuardianApprovals() {
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
                       >
                         {col.label}{renderSortArrow(col.key)}
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
                       Actions
                     </th>
                   </tr>

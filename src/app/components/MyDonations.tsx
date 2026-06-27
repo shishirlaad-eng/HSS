@@ -64,10 +64,10 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
       {/* Table */}
       <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
         <div className="grid grid-cols-4 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
-          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Payment Reference</span>
-          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Date &amp; Time</span>
-          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Recorded Shakha</span>
-          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide text-right">Amount</span>
+          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Payment Reference</span>
+          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Date &amp; Time</span>
+          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Recorded Shakha</span>
+          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right">Amount</span>
         </div>
         <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
           {mockMyDonations.map(don => {
@@ -105,7 +105,7 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Give Dakshina</h3>
+                <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Give Dakshina</h3>
               </div>
               <button onClick={closeModal} className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
                 <X className="w-4 h-4" />

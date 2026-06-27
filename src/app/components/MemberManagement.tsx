@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+﻿import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   MoreVertical,
   Eye,
@@ -11,7 +11,6 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  FileSpreadsheet,
   BarChart3,
   AlertTriangle,
   Clock,
@@ -89,19 +88,22 @@ const TABLE_VIEW_DEFAULT_ROLES = [
 ];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
 
-// ── Status helpers ────────────────────────────────────────────
+// â”€â”€ Status helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: string; bg: string; border: string }> = {
-  active:                    { label: 'Active',                    dot: 'bg-[#4EAE33]', text: 'text-[#3d8928]', bg: 'bg-[#f1fced]', border: 'border-[#b8efa0]' },
-  pending:                   { label: 'Pending Approval',          dot: 'bg-[#F9B03D]', text: 'text-[#d97706]', bg: 'bg-[#fffbeb]', border: 'border-[#fde68a]' },
-  'pending-parental-consent':{ label: 'Pending Parental Consent',  dot: 'bg-[#8B5CF6]', text: 'text-[#6d28d9]', bg: 'bg-[#f5f3ff]', border: 'border-[#ddd6fe]' },
-  inactive:                  { label: 'Inactive',                  dot: 'bg-[#9C9C9D]', text: 'text-[#6b6b6c]', bg: 'bg-[#f5f5f5]', border: 'border-[#e0e0e0]' },
-  rejected:                  { label: 'Rejected',                  dot: 'bg-[#BC0F1C]', text: 'text-[#9a0c17]', bg: 'bg-[#fff0f0]', border: 'border-[#ffaaab]' },
+  active:                    { label: 'Active',                    dot: 'bg-success-500',  text: 'text-success-700 dark:text-success-400',  bg: 'bg-success-50 dark:bg-success-950/20',  border: 'border-success-200 dark:border-success-800'  },
+  pending:                   { label: 'Pending Approval',          dot: 'bg-amber-500',    text: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-950/20',      border: 'border-amber-200 dark:border-amber-800'      },
+  'pending-parental-consent':{ label: 'Pending Parental Consent',  dot: 'bg-violet-500',   text: 'text-violet-700 dark:text-violet-400',    bg: 'bg-violet-50 dark:bg-violet-950/20',    border: 'border-violet-200 dark:border-violet-800'    },
+  inactive:                  { label: 'Inactive',                  dot: 'bg-neutral-400',  text: 'text-neutral-600 dark:text-neutral-400',  bg: 'bg-neutral-100 dark:bg-neutral-800',    border: 'border-neutral-200 dark:border-neutral-700'  },
+  rejected:                  { label: 'Rejected',                  dot: 'bg-error-500',    text: 'text-error-700 dark:text-error-400',      bg: 'bg-error-50 dark:bg-error-950/20',      border: 'border-error-200 dark:border-error-800'      },
 };
 
 const COMPLIANCE_BADGE: Record<string, { text: string; dot: string; textCls: string }> = {
-  completed: { text: 'Completed', dot: 'bg-[#4EAE33]', textCls: 'text-[#3d8928]' },
-  pending:   { text: 'Pending',   dot: 'bg-[#F9B03D]', textCls: 'text-[#d97706]' },
+  Approved:  { text: 'Approved',  dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
+  Certified: { text: 'Certified', dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
+  Pending:   { text: 'Pending',   dot: 'bg-amber-500',   textCls: 'text-amber-700 dark:text-amber-400'     },
+  Expired:   { text: 'Expired',   dot: 'bg-error-500',   textCls: 'text-error-700 dark:text-error-400'     },
+  'N/A':     { text: 'N/A',       dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' },
 };
 
 const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
@@ -109,7 +111,7 @@ const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
   shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
   kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
   tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
-  yuva: 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0]',
+  yuva: 'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800',
   jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
 };
 
@@ -167,7 +169,7 @@ function RoleText({ role }: { role: string }) {
   );
 }
 
-function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
+function ComplianceBadge({ status }: { status: string }) {
   const cfg = COMPLIANCE_BADGE[status];
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -177,7 +179,7 @@ function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
   );
 }
 
-// ── Status confirmation modal ─────────────────────────────────
+// â”€â”€ Status confirmation modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StatusConfirmModal({
   isOpen, member, action, isLoading, onClose, onConfirm,
@@ -215,7 +217,7 @@ function StatusConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
-        <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-2">{config.title}</h3>
+        <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-2">{config.title}</h3>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{config.body}</p>
         <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-6">Member: <span className="font-medium text-neutral-700 dark:text-neutral-300">{member.name}</span></p>
         <div className="flex justify-end gap-3">
@@ -231,7 +233,7 @@ function StatusConfirmModal({
             disabled={isLoading}
             className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 ${config.btnCls}`}
           >
-            {isLoading ? 'Processing…' : config.btn}
+            {isLoading ? 'Processingâ€¦' : config.btn}
           </button>
         </div>
       </div>
@@ -239,7 +241,7 @@ function StatusConfirmModal({
   );
 }
 
-// ── Delete confirmation modal ─────────────────────────────────
+// â”€â”€ Delete confirmation modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DeleteConfirmModal({
   isOpen, member, isLoading, onClose, onConfirm,
@@ -257,10 +259,10 @@ function DeleteConfirmModal({
       <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-full bg-[#fff0f0] flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-[#BC0F1C]" />
+            <AlertTriangle className="w-5 h-5 text-error-600" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">Confirm Deletion</h3>
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">Confirm Deletion</h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">Are you sure you want to delete this member?</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-2">
               Member: <span className="font-medium text-neutral-700 dark:text-neutral-300">{member.name}</span> ({member.id})
@@ -281,7 +283,7 @@ function DeleteConfirmModal({
             disabled={isLoading}
             className="px-4 py-2 text-sm rounded-lg font-medium bg-[#BC0F1C] hover:bg-[#9a0c17] text-white transition-colors disabled:opacity-50"
           >
-            {isLoading ? 'Deleting…' : 'Confirm Deletion'}
+            {isLoading ? 'Deletingâ€¦' : 'Confirm Deletion'}
           </button>
         </div>
       </div>
@@ -289,7 +291,7 @@ function DeleteConfirmModal({
   );
 }
 
-// ── Add Member Modal ──────────────────────────────────────────
+// â”€â”€ Add Member Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface AddMemberForm {
   memberType: MemberType | '';
@@ -327,7 +329,7 @@ interface AddMemberForm {
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
   originatingStateIndia: string;
-  dbsStatus: 'pending' | 'completed';
+  dbsStatus: string;
   dbsRef: string;
   dbsCertificateNumber: string;
   dbsCertificateDate: string;
@@ -338,9 +340,9 @@ interface AddMemberForm {
   dbsUpdateServiceCheckDate: string;
   dbsAppUnderProcess: 'yes' | 'no';
   dbsCheckedBy: string;
-  firstAidStatus: 'pending' | 'completed';
+  firstAidStatus: string;
   firstAidRef: string;
-  safeguardingStatus: 'pending' | 'completed';
+  safeguardingStatus: string;
   safeguardingRef: string;
   safeguardingExpiry: string;
 }
@@ -358,13 +360,13 @@ const EMPTY_FORM: AddMemberForm = {
   medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
   firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '',
   dietaryRequirements: [], occupation: '', originatingStateIndia: '',
-  dbsStatus: 'pending',
+  dbsStatus: 'Pending',
   dbsRef: '', dbsCertificateNumber: '', dbsCertificateDate: '',
   dbsCertificateReceivedFrom: '', dbsCertificateReceivedFromOther: '',
   dbsUpdateService: 'no', dbsUpdateServiceNumber: '', dbsUpdateServiceCheckDate: '',
   dbsAppUnderProcess: 'no', dbsCheckedBy: '',
-  firstAidStatus: 'pending', firstAidRef: '',
-  safeguardingStatus: 'pending', safeguardingRef: '', safeguardingExpiry: '',
+  firstAidStatus: 'Expired', firstAidRef: '',
+  safeguardingStatus: 'Expired', safeguardingRef: '', safeguardingExpiry: '',
 };
 
 function AddMemberModal({
@@ -568,7 +570,7 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>First Name</FormLabel>
               <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" />
-              {errors.firstName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.firstName}</p>}
+              {errors.firstName && <p className="text-xs text-error-600 mt-1">{errors.firstName}</p>}
             </FormField>
             <FormField>
               <FormLabel>Middle Name</FormLabel>
@@ -577,12 +579,12 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>Last Name</FormLabel>
               <FormInput value={form.lastName} onChange={set('lastName')} placeholder="Last name" />
-              {errors.lastName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.lastName}</p>}
+              {errors.lastName && <p className="text-xs text-error-600 mt-1">{errors.lastName}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Date of Birth</FormLabel>
               <FormInput type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} />
-              {errors.dateOfBirth && <p className="text-xs text-[#BC0F1C] mt-1">{errors.dateOfBirth}</p>}
+              {errors.dateOfBirth && <p className="text-xs text-error-600 mt-1">{errors.dateOfBirth}</p>}
               {calcAge !== null && (
                 <p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} years</span></p>
               )}
@@ -594,7 +596,7 @@ function AddMemberModal({
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </FormSelect>
-              {errors.gender && <p className="text-xs text-[#BC0F1C] mt-1">{errors.gender}</p>}
+              {errors.gender && <p className="text-xs text-error-600 mt-1">{errors.gender}</p>}
             </FormField>
           </div>
         </div>
@@ -606,17 +608,17 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>Primary Email Address</FormLabel>
               <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" />
-              {errors.email && <p className="text-xs text-[#BC0F1C] mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-xs text-error-600 mt-1">{errors.email}</p>}
             </FormField>
             <FormField>
               <FormLabel>Secondary Email Address</FormLabel>
               <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" />
-              {errors.secondaryEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.secondaryEmail}</p>}
+              {errors.secondaryEmail && <p className="text-xs text-error-600 mt-1">{errors.secondaryEmail}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Primary Contact Number</FormLabel>
               <FormInput type="tel" value={form.phone} onChange={set('phone')} placeholder="+44 7700 000000" />
-              {errors.phone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.phone}</p>}
+              {errors.phone && <p className="text-xs text-error-600 mt-1">{errors.phone}</p>}
             </FormField>
             <FormField>
               <FormLabel>Secondary Contact Number</FormLabel>
@@ -629,7 +631,7 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>Address Line</FormLabel>
               <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line" />
-              {errors.addressLine1 && <p className="text-xs text-[#BC0F1C] mt-1">{errors.addressLine1}</p>}
+              {errors.addressLine1 && <p className="text-xs text-error-600 mt-1">{errors.addressLine1}</p>}
             </FormField>
             <FormField>
               <FormLabel>Address Line 2</FormLabel>
@@ -638,12 +640,12 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>Town / City</FormLabel>
               <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" />
-              {errors.contactTownCity && <p className="text-xs text-[#BC0F1C] mt-1">{errors.contactTownCity}</p>}
+              {errors.contactTownCity && <p className="text-xs text-error-600 mt-1">{errors.contactTownCity}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Post Code</FormLabel>
               <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" />
-              {errors.postCode && <p className="text-xs text-[#BC0F1C] mt-1">{errors.postCode}</p>}
+              {errors.postCode && <p className="text-xs text-error-600 mt-1">{errors.postCode}</p>}
             </FormField>
           </div>
         </div>
@@ -655,27 +657,27 @@ function AddMemberModal({
             <FormField>
               <FormLabel required>Contact Name</FormLabel>
               <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" />
-              {errors.emergencyContactName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactName}</p>}
+              {errors.emergencyContactName && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactName}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Phone Number</FormLabel>
               <FormInput type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder="+44 7700 000000" />
-              {errors.emergencyContactPhone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactPhone}</p>}
+              {errors.emergencyContactPhone && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactPhone}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Email</FormLabel>
               <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" />
-              {errors.emergencyContactEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactEmail}</p>}
+              {errors.emergencyContactEmail && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactEmail}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Relationship</FormLabel>
               <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="Relationship" />
-              {errors.emergencyContactRelationship && <p className="text-xs text-[#BC0F1C] mt-1">{errors.emergencyContactRelationship}</p>}
+              {errors.emergencyContactRelationship && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactRelationship}</p>}
             </FormField>
           </div>
         </div>
 
-        {/* Guardian Information (Teen only — Child exempt per B3) */}
+        {/* Guardian Information (Teen only â€” Child exempt per B3) */}
         {form.dateOfBirth && getMemberTypeFromAge(form.dateOfBirth) === 'teen' && (
           <div>
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Parent / Guardian Approval Information</p>
@@ -683,22 +685,22 @@ function AddMemberModal({
               <FormField>
                 <FormLabel required>Parent / Guardian Name</FormLabel>
                 <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" />
-                {errors.guardianName && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianName}</p>}
+                {errors.guardianName && <p className="text-xs text-error-600 mt-1">{errors.guardianName}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Phone Number</FormLabel>
                 <FormInput type="tel" value={form.guardianPhone} onChange={set('guardianPhone')} placeholder="+44 7700 000000" />
-                {errors.guardianPhone && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianPhone}</p>}
+                {errors.guardianPhone && <p className="text-xs text-error-600 mt-1">{errors.guardianPhone}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Email</FormLabel>
                 <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" />
-                {errors.guardianEmail && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianEmail}</p>}
+                {errors.guardianEmail && <p className="text-xs text-error-600 mt-1">{errors.guardianEmail}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Relationship</FormLabel>
                 <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" />
-                {errors.guardianRelationship && <p className="text-xs text-[#BC0F1C] mt-1">{errors.guardianRelationship}</p>}
+                {errors.guardianRelationship && <p className="text-xs text-error-600 mt-1">{errors.guardianRelationship}</p>}
               </FormField>
             </div>
           </div>
@@ -775,7 +777,7 @@ function AddMemberModal({
                 <option value="">Select country</option>
                 {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
               </FormSelect>
-              {errors.country && <p className="text-xs text-[#BC0F1C] mt-1">{errors.country}</p>}
+              {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Vibhag (Region)</FormLabel>
@@ -783,7 +785,7 @@ function AddMemberModal({
                 <option value="">{form.country ? 'Select region' : 'Select country first'}</option>
                 {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
               </FormSelect>
-              {errors.region && <p className="text-xs text-[#BC0F1C] mt-1">{errors.region}</p>}
+              {errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Nagar (Town)</FormLabel>
@@ -791,7 +793,7 @@ function AddMemberModal({
                 <option value="">{form.region ? 'Select town' : 'Select region first'}</option>
                 {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
               </FormSelect>
-              {errors.town && <p className="text-xs text-[#BC0F1C] mt-1">{errors.town}</p>}
+              {errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Shakha (Branch)</FormLabel>
@@ -799,14 +801,14 @@ function AddMemberModal({
                 <option value="">{form.town ? 'Select shakha' : 'Select town first'}</option>
                 {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </FormSelect>
-              {errors.activityCentre && <p className="text-xs text-[#BC0F1C] mt-1">{errors.activityCentre}</p>}
+              {errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
             </FormField>
           </div>
         </div>
 
         {/* Compliance */}
         <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — DBS</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance â€” DBS</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel>DBS Status</FormLabel>
@@ -869,7 +871,7 @@ function AddMemberModal({
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — First Aid</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance â€” First Aid</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel>First Aid Status</FormLabel>
@@ -886,7 +888,7 @@ function AddMemberModal({
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance — Safeguarding</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance â€” Safeguarding</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel>Safeguarding Status</FormLabel>
@@ -917,14 +919,14 @@ function AddMemberModal({
           Cancel
         </button>
         <PrimaryButton onClick={handleSave} disabled={isSaving} isLoading={isSaving}>
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Savingâ€¦' : 'Save'}
         </PrimaryButton>
       </div>
     </FormModal>
   );
 }
 
-// ── Bulk Upload Modal ─────────────────────────────────────────
+// â”€â”€ Bulk Upload Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type BulkUploadStep = 'upload' | 'results';
 
@@ -1038,7 +1040,7 @@ function BulkUploadModal({
               <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={e => handleFile(e.target.files?.[0])} />
               <FileUp className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
               <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                {isProcessing ? 'Processing file…' : 'Drop your CSV file here, or click to browse'}
+                {isProcessing ? 'Processing fileâ€¦' : 'Drop your CSV file here, or click to browse'}
               </p>
               <p className="text-xs text-neutral-400">CSV files only. Max 500 rows per upload.</p>
             </div>
@@ -1052,7 +1054,7 @@ function BulkUploadModal({
               {[
                 { label: 'Total Rows',    value: totalRows, cls: 'text-neutral-900 dark:text-white' },
                 { label: 'Valid Rows',    value: validRows, cls: 'text-[#3d8928]' },
-                { label: 'Error Rows',   value: errors.length, cls: errors.length > 0 ? 'text-[#BC0F1C]' : 'text-neutral-900 dark:text-white' },
+                { label: 'Error Rows',   value: errors.length, cls: errors.length > 0 ? 'text-error-600' : 'text-neutral-900 dark:text-white' },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-center">
                   <p className={`text-2xl font-bold ${cls}`}>{value}</p>
@@ -1068,7 +1070,7 @@ function BulkUploadModal({
             {/* Row-level errors */}
             {errors.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-[#BC0F1C] uppercase tracking-wider mb-2">Row-level errors</p>
+                <p className="text-xs font-semibold text-error-600 uppercase tracking-wider mb-2">Row-level errors</p>
                 <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead>
@@ -1083,7 +1085,7 @@ function BulkUploadModal({
                         <tr key={i} className="bg-white dark:bg-neutral-950">
                           <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300">{err.row}</td>
                           <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300">{err.field}</td>
-                          <td className="px-3 py-2 text-[#BC0F1C] dark:text-[#f87171]">{err.message}</td>
+                          <td className="px-3 py-2 text-error-600 dark:text-[#f87171]">{err.message}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1094,7 +1096,7 @@ function BulkUploadModal({
 
             {validRows === 0 && (
               <div className="flex items-center gap-2 p-3 bg-[#fff0f0] border border-[#ffaaab] rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-[#BC0F1C] flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-error-600 flex-shrink-0" />
                 <p className="text-xs text-[#9a0c17]">No valid rows found. Please correct the errors and re-upload.</p>
               </div>
             )}
@@ -1103,7 +1105,7 @@ function BulkUploadModal({
               onClick={() => { setStep('upload'); setFileName(''); }}
               className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
             >
-              ← Upload a different file
+              â† Upload a different file
             </button>
           </>
         )}
@@ -1125,7 +1127,7 @@ function BulkUploadModal({
         )}
         {step === 'results' && (
           <PrimaryButton onClick={handleConfirm} disabled={isConfirming || validRows === 0} isLoading={isConfirming}>
-            {isConfirming ? 'Uploading…' : 'Confirm Bulk Upload'}
+            {isConfirming ? 'Uploadingâ€¦' : 'Confirm Bulk Upload'}
           </PrimaryButton>
         )}
       </div>
@@ -1133,7 +1135,7 @@ function BulkUploadModal({
   );
 }
 
-// ── Main component ────────────────────────────────────────────
+// â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function MemberManagement({
   initialMemberId,
@@ -1146,7 +1148,7 @@ export default function MemberManagement({
   karyakartasOnly?: boolean;
   initialMemberTab?: string;
 } = {}) {
-  // ── Role scope & permissions ─────────────────────────────────
+  // â”€â”€ Role scope & permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { scope, selectedRole } = useRoleScope();
   const isSuperAdmin = selectedRole === 'Super Admin';
   const mp = useModulePermissions('members');
@@ -1164,6 +1166,7 @@ export default function MemberManagement({
   );
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [resolvedInitialTab] = useState<string | undefined>(initialMemberTab);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -1233,7 +1236,7 @@ export default function MemberManagement({
       onConsumeInitialMember?.();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only on mount — intentionally ignores prop changes after mount
+  }, []); // Run only on mount â€” intentionally ignores prop changes after mount
 
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
 
@@ -1262,7 +1265,7 @@ export default function MemberManagement({
     }
   }, [scopedMembers, selectedMember]);
 
-  // ── Filter & search ─────────────────────────────────────────
+  // â”€â”€ Filter & search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const filteredMembers = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -1305,9 +1308,9 @@ export default function MemberManagement({
           case 'Responsibility':
             return f.values.includes(m.jobTitle);
           case 'DBS Status':
-            return f.values.some(v => v.toLowerCase() === m.compliance.dbs);
+            return f.values.some(v => v.toLowerCase() === m.compliance.dbs.toLowerCase());
           case 'First Aid Status':
-            return f.values.some(v => v.toLowerCase() === m.compliance.firstAid);
+            return f.values.some(v => v.toLowerCase() === m.compliance.firstAid.toLowerCase());
           default:
             return true;
         }
@@ -1345,17 +1348,17 @@ export default function MemberManagement({
 
   const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(filteredMembers.length / itemsPerPage);
 
-  // ── Summary counts ──────────────────────────────────────────
+  // â”€â”€ Summary counts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const complianceAlerts = members.filter(
-    m => m.compliance.dbs !== 'completed' || m.compliance.firstAid !== 'completed'
+    m => m.compliance.dbs !== 'Approved' || m.compliance.firstAid !== 'Certified'
   ).length;
 
   const pendingCount = members.filter(
     m => m.status === 'pending' || m.status === 'pending-parental-consent'
   ).length;
 
-  // ── Handlers ───────────────────────────────────────────────
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleSort = (field: string) => {
     if (sortField === field) setSortDirection(p => p === 'asc' ? 'desc' : 'asc');
@@ -1413,41 +1416,8 @@ export default function MemberManagement({
     setDeleteModal({ isOpen: false, member: null, isLoading: false });
   };
 
-  const handleExportCSV = () => {
-    const rows = selectedIds.size > 0
-      ? sortedMembers.filter(m => selectedIds.has(m.id))
-      : sortedMembers;
-    if (!rows.length) { toast.error('No data to export.'); return; }
 
-    const headers = [
-      'Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Primary Contact Number', 'Secondary Email',
-      'Emergency Contact', 'Emergency Phone', 'Guardian Name', 'Guardian Email', 'Status',
-      'Country', 'Vibhaag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status',
-      'First Aider', 'Dietary Requirements', 'Registration Date',
-    ];
-    const csv = [
-      headers.join(','),
-      ...rows.map(m => [
-        m.id, `"${m.name}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email, `"${m.phone ?? ''}"`, m.secondaryEmail ?? '',
-        `"${m.emergencyContactName ?? ''}"`, `"${m.emergencyContactPhone ?? ''}"`,
-        `"${m.guardianName ?? ''}"`, m.guardianEmail ?? '', m.status,
-        `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
-        m.compliance.dbs, m.compliance.firstAid,
-        m.isFirstAider ? 'Yes' : 'No', `"${m.dietaryRequirements?.join('; ') ?? ''}"`,
-        new Date(m.registrationDate).toLocaleDateString('en-GB'),
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `members_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('CSV exported successfully.');
-  };
-
-  // ── Row action items ────────────────────────────────────────
+  // â”€â”€ Row action items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const getRowMenuItems = (m: Member) => {
     const items: any[] = [
@@ -1464,7 +1434,7 @@ export default function MemberManagement({
     return items;
   };
 
-  // ── Sub-page rendering ──────────────────────────────────────
+  // â”€â”€ Sub-page rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   if (pageState === 'detail' && selectedMember) {
     return (
@@ -1475,7 +1445,7 @@ export default function MemberManagement({
           onEdit={() => handleEdit(selectedMember)}
           onStatusChange={(action) => openStatusModal(selectedMember, action)}
           onDelete={() => openDeleteModal(selectedMember)}
-          initialTab={initialMemberTab as any}
+          initialTab={resolvedInitialTab as any}
         />
         <StatusConfirmModal
           isOpen={statusModal.isOpen}
@@ -1511,7 +1481,7 @@ export default function MemberManagement({
     );
   }
 
-  // ── Empty state ─────────────────────────────────────────────
+  // â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const EmptyState = () => (
     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-20 text-center shadow-sm">
@@ -1525,7 +1495,7 @@ export default function MemberManagement({
     </div>
   );
 
-  // ── Listing ─────────────────────────────────────────────────
+  // â”€â”€ Listing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950">
@@ -1533,9 +1503,12 @@ export default function MemberManagement({
 
         {/* PAGE HEADER */}
         <PageHeader
-          title="Members"
-          subtitle="Manage member records across all Masters scopes."
-          breadcrumbs={[
+          title={karyakartasOnly ? 'Roles and Responsibility' : 'Members'}
+          subtitle={karyakartasOnly ? 'Manage member roles and responsibilities.' : 'Manage member records across all Masters scopes.'}
+          breadcrumbs={karyakartasOnly ? [
+            { label: 'Members', href: '#' },
+            { label: 'Roles and Responsibility', current: true },
+          ] : [
             { label: 'Members Management', href: '#' },
             { label: 'Members', current: true },
           ]}
@@ -1547,7 +1520,7 @@ export default function MemberManagement({
               onAdvancedSearch={() => setShowAdvancedSearch(true)}
               onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
               activeFilterCount={filters.filter(f => f.values.length > 0).length}
-              placeholder="Search by name, email, phone or ID…"
+              placeholder="Search by name, email, phone or IDâ€¦"
             />
             <AdvancedSearchPanel
               isOpen={showAdvancedSearch}
@@ -1590,7 +1563,7 @@ export default function MemberManagement({
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {regDateStart ? (regDateLabel || `${regDateStart} – ${regDateEnd}`) : 'Reg. Date'}
+              {regDateStart ? (regDateLabel || `${regDateStart} â€“ ${regDateEnd}`) : 'Reg. Date'}
               {regDateStart && (
                 <span
                   role="button"
@@ -1624,15 +1597,7 @@ export default function MemberManagement({
           {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
-          {mp.canExport && (
-            <IconButton
-              icon={MoreVertical}
-              title="More options"
-              menuItems={[
-                { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
-              ]}
-            />
-          )}
+
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
 
@@ -1649,7 +1614,7 @@ export default function MemberManagement({
           />
         )}
 
-        {/* ── LIST VIEW ────────────────────────────────────────── */}
+        {/* â”€â”€ LIST VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {viewMode === 'list' && (
           <div className="space-y-3">
             {paginatedMembers.length > 0 ? paginatedMembers.map((m) => (
@@ -1710,7 +1675,7 @@ export default function MemberManagement({
           </div>
         )}
 
-        {/* ── GRID VIEW ────────────────────────────────────────── */}
+        {/* â”€â”€ GRID VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {paginatedMembers.length > 0 ? paginatedMembers.map((m) => (
@@ -1778,7 +1743,7 @@ export default function MemberManagement({
           </div>
         )}
 
-        {/* ── TABLE VIEW ───────────────────────────────────────── */}
+        {/* â”€â”€ TABLE VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
             <div className="overflow-x-auto slim-scroll">
@@ -1786,7 +1751,7 @@ export default function MemberManagement({
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     {!isSuperAdmin && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input type="checkbox"
                           checked={selectedIds.size === paginatedMembers.length && paginatedMembers.length > 0}
                           onChange={e => setSelectedIds(e.target.checked ? new Set(paginatedMembers.map(m => m.id)) : new Set())}
@@ -1798,7 +1763,7 @@ export default function MemberManagement({
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
+                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
                       >
                         {col.label}{renderSortArrow(col.key)}
                       </th>
@@ -1833,12 +1798,12 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.email && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.email || <span className="text-neutral-400">—</span>}
+                          {m.email || <span className="text-neutral-400">â€”</span>}
                         </td>
                       )}
                       {visibleColumns.phone && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {m.phone || <span className="text-neutral-400">—</span>}
+                          {m.phone || <span className="text-neutral-400">â€”</span>}
                         </td>
                       )}
                       {visibleColumns.sanghResponsibility && (
@@ -1850,7 +1815,7 @@ export default function MemberManagement({
                                 <div className="text-xs space-y-1">
                                   {m.responsibilities.map((r, i) => (
                                     <div key={i} className="text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                                      {shortLevel(r.responsibilityLevel)} · {r.sanghResponsibility || m.jobTitle} · {r.responsibilityType}
+                                      {shortLevel(r.responsibilityLevel)} Â· {r.sanghResponsibility || m.jobTitle} Â· {r.responsibilityType}
                                     </div>
                                   ))}
                                 </div>
@@ -1859,11 +1824,11 @@ export default function MemberManagement({
                             if (m.responsibilityType && m.responsibilityLevel) {
                               return (
                                 <div className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                                  {shortLevel(m.responsibilityLevel)} · {m.jobTitle} · {m.responsibilityType}
+                                  {shortLevel(m.responsibilityLevel)} Â· {m.jobTitle} Â· {m.responsibilityType}
                                 </div>
                               );
                             }
-                            return <span className="text-sm text-neutral-400">—</span>;
+                            return <span className="text-sm text-neutral-400">â€”</span>;
                           })()}
                         </td>
                       )}
@@ -1888,7 +1853,7 @@ export default function MemberManagement({
                                   <span key={i} className="block text-neutral-700 dark:text-neutral-300">{r}</span>
                                 ))}
                               </div>
-                            ) : <span className="text-sm text-neutral-400">—</span>;
+                            ) : <span className="text-sm text-neutral-400">â€”</span>;
                           })()}
                         </td>
                       )}
@@ -1978,3 +1943,4 @@ export default function MemberManagement({
     </div>
   );
 }
+

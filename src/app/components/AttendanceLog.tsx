@@ -149,7 +149,7 @@ function SortTh({ label, sortKey, current, dir, onSort }: {
   return (
     <th className="px-4 py-3 text-left whitespace-nowrap cursor-pointer select-none group" onClick={() => onSort(sortKey)}>
       <div className="flex items-center gap-1">
-        <span className={`text-xs font-semibold uppercase tracking-wider transition-colors ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200'}`}>
+        <span className={`text-xs font-semibold transition-colors ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
           {label}
         </span>
         {active
@@ -518,15 +518,15 @@ export default function AttendanceLog() {
                     <>
                       <SortTh label="Member"          sortKey="memberName"       current={sortKey} dir={sortDir} onSort={handleSort} />
                       <SortTh label="Role"             sortKey="jobTitle"         current={sortKey} dir={sortDir} onSort={handleSort} />
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Gender</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Gender</th>
                     </>
                   )}
                   <SortTh label="Shakha"           sortKey="activityCentre"   current={sortKey} dir={sortDir} onSort={handleSort} />
                   {!scope.selfOnly && (
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Shakha</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Shakha</th>
                   )}
                   <SortTh label="Date"             sortKey="date"             current={sortKey} dir={sortDir} onSort={handleSort} />
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Time</th>
                   <SortTh label="Status"           sortKey="attendanceStatus" current={sortKey} dir={sortDir} onSort={handleSort} />
                 </tr>
               </thead>

@@ -112,13 +112,16 @@ function StatusBadge({ status }: { status: Event['status'] }) {
 }
 
 // ─── Payment badge ────────────────────────────────────────────────────────────
-function PaymentBadge({ type }: { type: Event['paymentType'] }) {
+function PaymentBadge({ type, price, priceCategories }: { type: Event['paymentType']; price?: number; priceCategories?: Event['priceCategories'] }) {
+  const resolvedPrice = price ?? priceCategories?.[0]?.price;
+  const priceLabel = resolvedPrice != null ? `£${resolvedPrice}` : '£';
+
   return type === 'paid' ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400 text-xs font-medium border border-transparent">
-      <CreditCard className="w-3 h-3" /> £
+    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+      {priceLabel}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 text-xs font-medium border border-transparent">
+    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
       Free
     </span>
   );
@@ -162,7 +165,7 @@ function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
+          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">{title}</h3>
         </div>
         <div className="px-5 py-4">
           <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">{message}</p>
@@ -1395,7 +1398,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
                   <Calendar size={15} className="text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                  <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
+                  <h3 className="font-bold text-[19px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Not Yet Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {memberData.notRegistered.length === 0 ? (
@@ -1432,7 +1435,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
                   <Calendar size={15} className="text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                  <h3 className="font-semibold text-[16px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
+                  <h3 className="font-bold text-[19px] text-neutral-900 dark:text-white">Upcoming Karyakrams – Registered</h3>
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {memberData.registered.length === 0 ? (
@@ -1470,7 +1473,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             {/* Completed Karyakrams – Attended (full width) */}
             {memberData.attended.length > 0 && (
               <div>
-                <h2 className="text-[16px] font-semibold text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
+                <h2 className="text-[19px] font-bold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />
                   Completed Karyakrams – Attended
                 </h2>
@@ -1479,12 +1482,12 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                     <table className="w-full text-sm min-w-[640px]">
                       <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Karyakram ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Karyakram Title</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Location</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Start Date/Time</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">End Date/Time</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram Title</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Location</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Start Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">End Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1574,7 +1577,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-neutral-900 dark:text-white font-semibold truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</span>
                           <StatusBadge status={event.status} />
-                          <PaymentBadge type={event.paymentType} />
+                          <PaymentBadge type={event.paymentType} price={event.price} priceCategories={event.priceCategories} />
                           <span className="text-xs text-neutral-500 font-mono ml-auto md:ml-0">{event.id}</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1677,7 +1680,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
                       <StatusBadge status={event.status} />
-                      <PaymentBadge type={event.paymentType} />
+                      <PaymentBadge type={event.paymentType} price={event.price} priceCategories={event.priceCategories} />
                     </div>
                     <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5 mt-2" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                       {event.name}
@@ -1728,7 +1731,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     {!isMemberRole && !isSuperAdmin && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3.5 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input
                           type="checkbox"
                           checked={selectedIds.size === paginatedEvents.length && paginatedEvents.length > 0}
@@ -1741,52 +1744,52 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                       </th>
                     )}
                     {visibleColumns.id && (
-                      <th onClick={() => handleSort('id')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('id')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Karyakram ID {renderSortArrow('id')}
                       </th>
                     )}
                     {visibleColumns.name && (
-                      <th onClick={() => handleSort('name')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('name')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Karyakram Title {renderSortArrow('name')}
                       </th>
                     )}
                     {visibleColumns.location && (
-                      <th onClick={() => handleSort('town')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('town')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Location {renderSortArrow('town')}
                       </th>
                     )}
                     {visibleColumns.startDate && (
-                      <th onClick={() => handleSort('startDate')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('startDate')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Start Date/Time {renderSortArrow('startDate')}
                       </th>
                     )}
                     {visibleColumns.endDate && (
-                      <th onClick={() => handleSort('endDate')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('endDate')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         End Date/Time {renderSortArrow('endDate')}
                       </th>
                     )}
                     {visibleColumns.paymentType && (
-                      <th onClick={() => handleSort('paymentType')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('paymentType')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Payment {renderSortArrow('paymentType')}
                       </th>
                     )}
                     {visibleColumns.status && (
-                      <th onClick={() => handleSort('status')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('status')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Status {renderSortArrow('status')}
                       </th>
                     )}
                     {visibleColumns.participants && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Participants
                       </th>
                     )}
                     {visibleColumns.lastUpdated && (
-                      <th onClick={() => handleSort('lastUpdated')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                      <th onClick={() => handleSort('lastUpdated')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         Last Updated {renderSortArrow('lastUpdated')}
                       </th>
                     )}
                     {!isMemberRole && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-6 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
                         Actions
                       </th>
                     )}
@@ -1839,7 +1842,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         )}
                         {visibleColumns.paymentType && (
                           <td className="px-6 py-4">
-                            <PaymentBadge type={event.paymentType} />
+                            <PaymentBadge type={event.paymentType} price={event.price} priceCategories={event.priceCategories} />
                           </td>
                         )}
                         {visibleColumns.status && (

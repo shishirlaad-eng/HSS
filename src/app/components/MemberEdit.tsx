@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
 import { PageHeader, PrimaryButton, SecondaryButton } from './hb/listing';
 import { FormField, FormInput, FormLabel, FormSelect, FormTextarea } from './hb/common';
 import {
-  ComplianceStatus,
+  DBSStatus, CertStatus,
   DIETARY_REQUIREMENTS,
   DietaryRequirement,
   FIRST_AID_QUALIFICATION_OPTIONS,
@@ -140,7 +140,7 @@ type MemberForm = {
   responsibilities: ResponsibilityAssignment[];
   orgRole: string;
   status: MemberStatus;
-  dbsStatus: ComplianceStatus;
+  dbsStatus: DBSStatus;
   dbsRef: string;
   dbsCertificateNumber: string;
   dbsCertificateDate: string;
@@ -151,9 +151,9 @@ type MemberForm = {
   dbsUpdateServiceCheckDate: string;
   dbsAppUnderProcess: boolean;
   dbsCheckedBy: string;
-  firstAidStatus: ComplianceStatus;
+  firstAidStatus: CertStatus;
   firstAidRef: string;
-  safeguardingStatus: ComplianceStatus;
+  safeguardingStatus: CertStatus;
   safeguardingTrainingDate: string;
   safeguardingTrainingLevel: '' | SafeguardingLevel;
   safeguardingRef: string;
@@ -251,7 +251,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     dbsCheckedBy: member.dbsCheckedBy ?? '',
     firstAidStatus: member.compliance.firstAid,
     firstAidRef: member.firstAidRef ?? '',
-    safeguardingStatus: member.compliance.safeguardingTraining ?? 'pending',
+    safeguardingStatus: member.compliance.safeguardingTraining ?? 'Expired',
     safeguardingTrainingDate: member.safeguardingTrainingDate ?? '',
     safeguardingTrainingLevel: member.safeguardingTrainingLevel ?? '',
     safeguardingRef: member.safeguardingRef ?? '',
@@ -681,9 +681,9 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           </SectionCard>
 
           <SectionCard className={activeTab === 'compliance' ? '' : 'hidden'}>
-            <SectionHeader icon={Shield} title="Compliance — DBS" />
+            <SectionHeader icon={Shield} title="Compliance â€” DBS" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
+              <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="Approved">Approved</option><option value="Pending">Pending</option></FormSelect></FormField>
               <FormField><FormLabel>DBS Reference Number</FormLabel><FormInput value={formData.dbsRef} onChange={set('dbsRef')} /></FormField>
               <FormField><FormLabel>DBS Certificate Number</FormLabel><FormInput value={formData.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" /></FormField>
               <FormField><FormLabel>DBS Certificate Date</FormLabel><FormInput type="date" value={formData.dbsCertificateDate} onChange={set('dbsCertificateDate')} /></FormField>
@@ -715,7 +715,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <div className="border-t border-neutral-200 dark:border-neutral-800 mt-6 pt-6">
               <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">First Aid</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="pending">Pending</option><option value="completed">Completed</option></FormSelect></FormField>
+                <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="Certified">Certified</option><option value="Expired">Expired</option><option value="N/A">N/A</option></FormSelect></FormField>
                 <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
@@ -734,8 +734,9 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField>
                     <FormLabel>Safeguarding Status</FormLabel>
                     <FormSelect value={formData.safeguardingStatus} onChange={set('safeguardingStatus')}>
-                      <option value="pending">Pending</option>
-                      <option value="completed">Completed</option>
+                      <option value="Certified">Certified</option>
+                      <option value="Expired">Expired</option>
+                      <option value="N/A">N/A</option>
                     </FormSelect>
                   </FormField>
                   <FormField>
@@ -745,7 +746,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField>
                     <FormLabel>Level of Training</FormLabel>
                     <FormSelect value={formData.safeguardingTrainingLevel} onChange={set('safeguardingTrainingLevel')}>
-                      <option value="">Select level…</option>
+                      <option value="">Select levelâ€¦</option>
                       {SAFEGUARDING_LEVEL_OPTIONS.map(level => (
                         <option key={level} value={level}>{level}</option>
                       ))}
@@ -866,3 +867,4 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     </div>
   );
 }
+

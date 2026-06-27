@@ -162,7 +162,7 @@ export function PageHeader({
     <div className={`mb-6 ${className}`}>
       <div className="flex items-center justify-between mb-[24px] mt-[0px] mr-[0px] ml-[0px]">
         <div>
-          <h2 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white mb-1">
+          <h2 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white mb-1 whitespace-nowrap">
             {title}
           </h2>
 

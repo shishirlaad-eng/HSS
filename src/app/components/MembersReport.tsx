@@ -1,6 +1,6 @@
-// ─────────────────────────────────────────────────────────────
-// HSS UK — Members Report (aggregated statistics, no member PII)
-// ─────────────────────────────────────────────────────────────
+﻿// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// HSS UK â€” Members Report (aggregated statistics, no member PII)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import { useState, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,9 +14,9 @@ import { PageHeader, PrimaryButton } from './hb/listing';
 import { mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 
-// ── Colour palette ────────────────────────────────────────────
+// â”€â”€ Colour palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const PRIMARY   = '#f59e0b';  // amber – HSS brand
+const PRIMARY   = '#f59e0b';  // amber â€“ HSS brand
 const COLORS = {
   active:                  '#22c55e',
   pending:                 '#f59e0b',
@@ -43,7 +43,7 @@ const CHART_PALETTE = [
   '#06b6d4','#ef4444','#84cc16','#f97316','#6366f1',
 ];
 
-// ── Helpers ───────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const STATUS_LABELS: Record<string, string> = {
   active:                     'Active',
@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, label }: any) {
   );
 }
 
-// ── Chart card wrapper ─────────────────────────────────────────
+// â”€â”€ Chart card wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ChartCard({ title, subtitle, children, className = '' }: {
   title: string;
@@ -89,7 +89,7 @@ function ChartCard({ title, subtitle, children, className = '' }: {
   );
 }
 
-// ── KPI card ──────────────────────────────────────────────────
+// â”€â”€ KPI card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function KpiCard({ label, value, sub, icon: Icon, color }: {
   label: string; value: string | number; sub?: string;
@@ -109,11 +109,11 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
   );
 }
 
-// ── Main Component ────────────────────────────────────────────
+// â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function MembersReport() {
 
-  // ── Filters ────────────────────────────────────────────────
+  // â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [filterRegion,  setFilterRegion]  = useState('');
   const [filterTown,    setFilterTown]    = useState('');
   const [filterCentre,  setFilterCentre]  = useState('');
@@ -132,7 +132,7 @@ export default function MembersReport() {
     setFilterStatus(''); setFilterGender(''); setFilterPeriod('all');
   };
 
-  // ── Filtered members ───────────────────────────────────────
+  // â”€â”€ Filtered members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const filtered = useMemo(() => {
     const now = new Date();
     const cutoff = filterPeriod === '30d'  ? new Date(now.getTime() - 30  * 86400000)
@@ -151,12 +151,12 @@ export default function MembersReport() {
     });
   }, [filterRegion, filterTown, filterCentre, filterStatus, filterGender, filterPeriod]);
 
-  // ── Aggregations ───────────────────────────────────────────
+  // â”€â”€ Aggregations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const totalMembers  = filtered.length;
   const activeCount   = filtered.filter(m => m.status === 'active').length;
   const pendingCount  = filtered.filter(m => m.status === 'pending' || m.status === 'pending-parental-consent').length;
-  const compIssueCount = filtered.filter(m => m.compliance.dbs === 'pending' || m.compliance.firstAid === 'pending').length;
+  const compIssueCount = filtered.filter(m => m.compliance.dbs === 'Pending' || m.compliance.firstAid === 'Expired').length;
 
   // Status donut
   const statusData = useMemo(() => {
@@ -211,7 +211,7 @@ export default function MembersReport() {
 
   // DBS compliance
   const dbsData = useMemo(() => {
-    const completed = filtered.filter(m => m.compliance.dbs === 'completed').length;
+    const completed = filtered.filter(m => m.compliance.dbs === 'Approved').length;
     const pending   = filtered.length - completed;
     return [
       { name: 'Completed', value: completed },
@@ -221,7 +221,7 @@ export default function MembersReport() {
 
   // First Aid compliance
   const firstAidData = useMemo(() => {
-    const completed = filtered.filter(m => m.compliance.firstAid === 'completed').length;
+    const completed = filtered.filter(m => m.compliance.firstAid === 'Certified').length;
     const pending   = filtered.length - completed;
     return [
       { name: 'Completed', value: completed },
@@ -251,10 +251,10 @@ export default function MembersReport() {
     });
   }, [filtered]);
 
-  // ── Export CSV ─────────────────────────────────────────────
+  // â”€â”€ Export CSV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleExport = () => {
     if (totalMembers === 0) {
-      toast.error('No data to export — adjust your filters and try again.');
+      toast.error('No data to export â€” adjust your filters and try again.');
       return;
     }
 
@@ -267,7 +267,7 @@ export default function MembersReport() {
     if (filterPeriod !== 'all') filters.push(`Period: ${filterPeriod}`);
 
     const rows: string[][] = [
-      ['Members Report — HSS UK'],
+      ['Members Report â€” HSS UK'],
       [`Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`],
       filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All members)'],
       [],
@@ -318,10 +318,10 @@ export default function MembersReport() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported Members Report — ${totalMembers} members`);
+    toast.success(`Exported Members Report â€” ${totalMembers} members`);
   };
 
-  // ── Render ─────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
       <div className="max-w-[100%] mx-auto">
@@ -340,7 +340,7 @@ export default function MembersReport() {
           </PrimaryButton>
         </PageHeader>
 
-        {/* ── Filter Bar ──────────────────────────────────── */}
+        {/* â”€â”€ Filter Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
@@ -427,7 +427,7 @@ export default function MembersReport() {
           </span>
         </div>
 
-        {/* ── KPI Cards ────────────────────────────────────── */}
+        {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="Total Members"       value={totalMembers}   icon={Users}         color="bg-primary-500" />
           <KpiCard label="Active Members"      value={activeCount}    icon={TrendingUp}    color="bg-success-500" sub={totalMembers > 0 ? `${Math.round(activeCount/totalMembers*100)}% of total` : undefined} />
@@ -435,7 +435,7 @@ export default function MembersReport() {
           <KpiCard label="Compliance Issues"   value={compIssueCount} icon={CheckCircle2}  color="bg-error-500"   sub="DBS or First Aid pending" />
         </div>
 
-        {/* ── Row 1: Status + Gender ───────────────────────── */}
+        {/* â”€â”€ Row 1: Status + Gender â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Status Donut */}
@@ -505,7 +505,7 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* ── Row 2: Age Groups ────────────────────────────── */}
+        {/* â”€â”€ Row 2: Age Groups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">
           <ChartCard title="Age Group Distribution" subtitle="Members across HSS age groups">
             <ResponsiveContainer width="100%" height={220}>
@@ -524,12 +524,12 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* ── Row 3: By Activity Centre (only when a region is selected) ── */}
+        {/* â”€â”€ Row 3: By Activity Centre (only when a region is selected) â”€â”€ */}
         {filterRegion && (
           <div className="mt-6">
             <ChartCard
               title="Members by Activity Centre"
-              subtitle={`Gender distribution per activity centre — ${filterRegion}`}
+              subtitle={`Gender distribution per activity centre â€” ${filterRegion}`}
             >
               <ResponsiveContainer width="100%" height={Math.max(220, byCentre.length * 40 + 60)}>
                 <BarChart data={byCentre} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
@@ -546,7 +546,7 @@ export default function MembersReport() {
           </div>
         )}
 
-        {/* ── Row 4: Role Types ────────────────────────────── */}
+        {/* â”€â”€ Row 4: Role Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">
           <ChartCard title="Top 10 Role Types" subtitle="Most common HSS roles across filtered members">
             <ResponsiveContainer width="100%" height={240}>
@@ -563,7 +563,7 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* ── Row 5: Compliance ────────────────────────────── */}
+        {/* â”€â”€ Row 5: Compliance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* DBS */}
@@ -629,7 +629,7 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* ── Row 6: Registrations Over Time ──────────────── */}
+        {/* â”€â”€ Row 6: Registrations Over Time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">
           <ChartCard title="New Member Registrations" subtitle="Monthly registration trend over the last 18 months">
             <ResponsiveContainer width="100%" height={220}>
@@ -656,3 +656,4 @@ export default function MembersReport() {
     </div>
   );
 }
+
