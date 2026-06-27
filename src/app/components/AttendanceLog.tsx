@@ -475,7 +475,9 @@ export default function AttendanceLog() {
           </div>
 
           <IconButton icon={BarChart3}   onClick={() => setShowSummary(s => !s)} title="Toggle Summary" />
-          <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setDateRangeLabel(''); setPage(1); }} title="Reset" />
+          {!scope.selfOnly && (
+            <IconButton icon={RefreshCw}   onClick={() => { setSearchQuery(''); setFilters([]); setDateFrom(''); setDateTo(''); setDateRangeLabel(''); setPage(1); }} title="Reset" />
+          )}
           {!scope.selfOnly && (
             <IconButton
               icon={MoreVertical}

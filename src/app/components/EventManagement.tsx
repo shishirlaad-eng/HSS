@@ -880,7 +880,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pageState, setPageState]         = useState<PageState>('list');
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
-  const [showSummary, setShowSummary]     = useState(true);
+  const [showSummary, setShowSummary]         = useState(true);
+  const [showMemberSummary, setShowMemberSummary] = useState(true);
 
   const scrollToTop = () => {
     requestAnimationFrame(() => {
@@ -1334,6 +1335,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             />
           </div>
 
+          {isMemberRole && (
+            <IconButton icon={BarChart3} onClick={() => setShowMemberSummary(s => !s)} title="Summary" />
+          )}
           {ep.canAdd && (
             <PrimaryButton icon={Plus} onClick={() => { setPageState('create'); scrollToTop(); }}>
               Create Karyakram
@@ -1374,7 +1378,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         )}
 
         {/* SUMMARY WIDGETS — member */}
-        {isMemberRole && memberData && (
+        {isMemberRole && memberData && showMemberSummary && (
           <SummaryWidgets
             title="My Karyakrams Summary"
             colorCards={true}

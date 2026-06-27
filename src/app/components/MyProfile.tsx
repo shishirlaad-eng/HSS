@@ -418,7 +418,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
 
 // ── Member profile view ───────────────────────────────────────
 
-type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other';
+type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other' | 'roles';
 
 function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void }) {
   const loadProfile = () => {
@@ -591,6 +591,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     ...(showGuardian ? [{ id: 'guardian' as ProfileTab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation', label: 'Organisation'        },
     { id: 'compliance',   label: 'Compliance Details'  },
+    { id: 'roles',        label: 'Roles & Responsibility' },
     { id: 'other',        label: 'Other Information'   },
     { id: 'history',      label: 'History'             },
   ];
@@ -1003,61 +1004,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
               </InfoSection>
 
-              {/* Current Sangh Responsibility */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
-                </div>
-                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Since</span>
-                  </div>
-                  {profile.responsibilityLevel || profile.sanghTitle || profile.responsibilityType ? (
-                    <div className="grid grid-cols-4 gap-4 px-4 py-3">
-                      <span className="text-sm text-neutral-900 dark:text-white">{profile.responsibilityLevel || '—'}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">{profile.sanghTitle || '—'}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">{profile.responsibilityType || '—'}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">
-                        {profile.responsibilityStartDate
-                          ? new Date(profile.responsibilityStartDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-                          : '—'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No current responsibility assigned.</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Previous Sangh Responsibility */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
-                </div>
-                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
-                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">From – To</span>
-                  </div>
-                  {MOCK_PREVIOUS_RESPONSIBILITIES.map((r, i) => (
-                    <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3">
-                      <span className="text-sm text-neutral-900 dark:text-white">{r.level}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">{r.responsibility}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">{r.type}</span>
-                      <span className="text-sm text-neutral-900 dark:text-white">
-                        {new Date(r.from).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
-                        {' – '}
-                        {new Date(r.to).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </>
           )}
 
@@ -1082,6 +1028,148 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
             </div>
           )}
+
+          {/* ── Roles & Responsibility Tab ── */}
+          {activeTab === 'roles' && (() => {
+            const currentResponsibilities = [
+              { level: 'Shakha', responsibility: 'Ghatnayak', type: 'Seva', from: '2022-04-01', to: null },
+              { level: 'Shakha', responsibility: 'Shakha Mukhya Shikshak', type: 'Seva', from: '2021-06-01', to: null },
+            ];
+            const previousResponsibilities = [
+              { level: 'Shakha', responsibility: 'Shikshak', type: 'Seva', from: '2019-06-15', to: '2021-05-31' },
+              { level: 'Nagar', responsibility: 'Karyavah', type: 'Administrative', from: '2018-01-01', to: '2019-06-14' },
+            ];
+            const currentRoles = [
+              { role: 'Member', from: '2019-06-15', to: null },
+            ];
+            const previousRoles: { role: string; from: string; to: string }[] = [];
+            const fmtD = (d: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Present';
+            const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+            const TD = 'px-4 py-3 text-sm text-neutral-900 dark:text-white';
+            const TDE = 'px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400';
+            return (
+              <div className="space-y-5">
+                {/* Current Sangh Responsibility */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                          <th className={TH}>Responsibility Level</th>
+                          <th className={TH}>Responsibility</th>
+                          <th className={TH}>Responsibility Type</th>
+                          <th className={TH}>From – To</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {currentResponsibilities.length > 0 ? currentResponsibilities.map((r, i) => (
+                          <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                            <td className={TD}>{r.level}</td>
+                            <td className={TD}>{r.responsibility}</td>
+                            <td className={TDE}>{r.type}</td>
+                            <td className={TDE}>{fmtD(r.from)} – {fmtD(r.to)}</td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Previous Sangh Responsibility */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                          <th className={TH}>Responsibility Level</th>
+                          <th className={TH}>Responsibility</th>
+                          <th className={TH}>Responsibility Type</th>
+                          <th className={TH}>From – To</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {previousResponsibilities.length > 0 ? previousResponsibilities.map((r, i) => (
+                          <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                            <td className={TD}>{r.level}</td>
+                            <td className={TD}>{r.responsibility}</td>
+                            <td className={TDE}>{r.type}</td>
+                            <td className={TDE}>{fmtD(r.from)} – {fmtD(r.to)}</td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No previous responsibilities</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Current & Previous MyHSS Roles — side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Current MyHSS Role */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role</h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                            <th className={TH}>MyHSS Role</th>
+                            <th className={TH}>From – To</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {currentRoles.length > 0 ? currentRoles.map((r, i) => (
+                            <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                              <td className={TD}>{r.role}</td>
+                              <td className={TDE}>{fmtD(r.from)} – {fmtD(r.to)}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-neutral-400">No current roles</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Previous MyHSS Roles */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous MyHSS Roles</h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                            <th className={TH}>MyHSS Role</th>
+                            <th className={TH}>From – To</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {previousRoles.length > 0 ? previousRoles.map((r, i) => (
+                            <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                              <td className={TD}>{r.role}</td>
+                              <td className={TDE}>{fmtD(r.from)} – {fmtD(r.to)}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-neutral-400">No previous roles</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── History Tab ── */}
           {activeTab === 'history' && (

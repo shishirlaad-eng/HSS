@@ -492,14 +492,18 @@ function MemberDashboard({
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center mt-1">
-                    <span className={`w-2 h-2 rounded-full ${mockCurrentMember.status === 'Active' ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
-                  </span>
                   <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Status</p>
-                    <p className={`text-[15px] font-semibold leading-snug ${mockCurrentMember.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                      {mockCurrentMember.status}
-                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Status</p>
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs ${
+                      mockCurrentMember.status === 'Active'
+                        ? 'bg-success-50 dark:bg-success-950/20 border-success-200 dark:border-success-800'
+                        : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${mockCurrentMember.status === 'Active' ? 'bg-success-500' : 'bg-neutral-400'}`} />
+                      <span className={`whitespace-nowrap ${mockCurrentMember.status === 'Active' ? 'text-success-700 dark:text-success-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                        {mockCurrentMember.status}
+                      </span>
+                    </span>
                   </div>
                 </div>
               </div>

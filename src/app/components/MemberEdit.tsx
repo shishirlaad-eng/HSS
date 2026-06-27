@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -14,6 +14,7 @@ import {
   Trash2,
   User as UserIcon,
   Users,
+  Briefcase,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton, SecondaryButton } from './hb/listing';
 import { FormField, FormInput, FormLabel, FormSelect, FormTextarea } from './hb/common';
@@ -65,24 +66,9 @@ const STATUS_LABELS: Record<MemberStatus, string> = {
   rejected: 'Rejected',
 };
 
-const STATUS_COLOURS: Record<MemberStatus, string> = {
-  active: 'bg-[#4EAE33]',
-  pending: 'bg-[#F9B03D]',
-  'pending-parental-consent': 'bg-[#8B5CF6]',
-  inactive: 'bg-[#9C9C9D]',
-  rejected: 'bg-[#BC0F1C]',
-};
-
 const QUALIFIED_FIRST_AIDER_ROLES = new Set([
-  'Super Admin',
-  'Member',
-  'Adult Member',
-  'Teen',
-  'Teen Member',
-  'Shakha Admin',
-  'Nagar Admin',
-  'Vibhaag Admin',
-  'Kendriya Admin',
+  'Super Admin', 'Member', 'Adult Member', 'Teen', 'Teen Member',
+  'Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Kendriya Admin',
 ]);
 
 function canAccessQualifiedFirstAider(selectedRole: string) {
@@ -161,24 +147,7 @@ type MemberForm = {
   adminRoles: string[];
 };
 
-function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-      <Icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-      {title}
-    </div>
-  );
-}
-
-function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-type EditTab = 'profile' | 'compliance' | 'activity' | 'history';
+type EditTab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'other' | 'roles' | 'activity' | 'history';
 
 function buildName(firstName: string, middleName: string, surname: string) {
   return [firstName, middleName, surname].map(p => p.trim()).filter(Boolean).join(' ');
@@ -188,10 +157,29 @@ function validEmail(value: string) {
   return !value.trim() || /^\S+@\S+\.\S+$/.test(value);
 }
 
+// ── Shared card/section components matching My Profile layout ──
+
+function EditSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg"
+      style={{ borderTop: '3px solid #172E4D' }}
+    >
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
+      </div>
+      <div className="px-6 pb-6 pt-5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) {
   const { selectedRole } = useRoleScope();
   const canEditQualifiedFirstAider = canAccessQualifiedFirstAider(selectedRole);
   const canEditSafeguardingFields = canEditSafeguarding(selectedRole);
+
   const [formData, setFormData] = useState<MemberForm>({
     memberType: member.memberType,
     firstName: member.firstName ?? member.name.split(' ')[0] ?? '',
@@ -261,20 +249,27 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       ...(member.adminRoles?.length ? member.adminRoles : [member.adminRole].filter(Boolean) as string[]),
     ])),
   });
+
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<EditTab>('profile');
-  const tabs: { id: EditTab; label: string }[] = [
-    { id: 'profile', label: 'Profile' },
-    { id: 'compliance', label: 'Compliance' },
-    { id: 'activity', label: 'Activity' },
-    { id: 'history', label: 'History' },
-  ];
+  const [activeTab, setActiveTab] = useState<EditTab>('personal');
 
   const calcAge = formData.dateOfBirth ? getAge(formData.dateOfBirth) : getAge(member.dateOfBirth);
   const isMinor = calcAge < 18;
+
   const regionOptions = formData.country ? (MASTERS_CASCADE.regions[formData.country] ?? []) : [];
   const townOptions = formData.region ? (MASTERS_CASCADE.towns[formData.region] ?? []) : [];
   const centreOptions = formData.town ? (MASTERS_CASCADE.centres[formData.town] ?? []) : [];
+
+  const tabs: { id: EditTab; label: string }[] = [
+    { id: 'personal',      label: 'Personal Info'          },
+    ...(isMinor ? [{ id: 'guardian' as EditTab, label: 'Parent / Guardian' }] : []),
+    { id: 'organisation',  label: 'Organisation'           },
+    { id: 'compliance',    label: 'Compliance Details'     },
+    { id: 'other',         label: 'Other Information'      },
+    { id: 'roles',         label: 'Roles & Responsibility' },
+    { id: 'activity',      label: 'Activity'               },
+    { id: 'history',       label: 'History'                },
+  ];
 
   const set = (key: keyof MemberForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -309,15 +304,11 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     }));
   };
 
-  const updateResponsibility = (
-    index: number,
-    key: keyof ResponsibilityAssignment,
-    value: string,
-  ) => {
+  const updateResponsibility = (index: number, key: keyof ResponsibilityAssignment, value: string) => {
     setFormData(prev => ({
       ...prev,
-      responsibilities: prev.responsibilities.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } as ResponsibilityAssignment : item
+      responsibilities: prev.responsibilities.map((item, i) =>
+        i === index ? { ...item, [key]: value } as ResponsibilityAssignment : item
       ),
     }));
   };
@@ -340,7 +331,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
   const removeResponsibility = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      responsibilities: prev.responsibilities.filter((_, itemIndex) => itemIndex !== index),
+      responsibilities: prev.responsibilities.filter((_, i) => i !== index),
     }));
   };
 
@@ -357,36 +348,28 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
   const handleSave = async () => {
     const fullName = buildName(formData.firstName, formData.middleName, formData.surname);
     if (!formData.firstName.trim() || !formData.surname.trim() || !fullName) {
-      toast.error('First name and surname are required.');
-      return;
+      toast.error('First name and surname are required.'); return;
     }
     if (!formData.email.trim() || !validEmail(formData.email) || !validEmail(formData.secondaryEmail)) {
-      toast.error('Enter valid email details.');
-      return;
+      toast.error('Enter valid email details.'); return;
     }
     if (!formData.phone.trim() || !formData.addressLine1.trim() || !formData.contactTownCity.trim() || !formData.postCode.trim()) {
-      toast.error('Primary contact number and address details are required.');
-      return;
+      toast.error('Primary contact number and address details are required.'); return;
     }
     if (!formData.emergencyContactName.trim() || !formData.emergencyContactPhone.trim() || !formData.emergencyContactEmail.trim() || !formData.emergencyContactRelationship.trim()) {
-      toast.error('Emergency contact details are required.');
-      return;
+      toast.error('Emergency contact details are required.'); return;
     }
     if (!validEmail(formData.emergencyContactEmail)) {
-      toast.error('Enter a valid emergency contact email.');
-      return;
+      toast.error('Enter a valid emergency contact email.'); return;
     }
     if (isMinor && (!formData.guardianName.trim() || !formData.guardianPhone.trim() || !formData.guardianEmail.trim() || !formData.guardianRelationship.trim())) {
-      toast.error('Parent / guardian approval details are required for child and teen members.');
-      return;
+      toast.error('Parent / guardian approval details are required for child and teen members.'); return;
     }
     if (isMinor && !validEmail(formData.guardianEmail)) {
-      toast.error('Enter a valid parent / guardian email.');
-      return;
+      toast.error('Enter a valid parent / guardian email.'); return;
     }
     if (!formData.country || !formData.region || !formData.town || !formData.activityCentre) {
-      toast.error('Organisation mapping fields are required.');
-      return;
+      toast.error('Organisation mapping fields are required.'); return;
     }
     setIsSaving(true);
     try {
@@ -495,274 +478,331 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         </div>
       </PageHeader>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
-            <div className="flex px-2 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/30 overflow-x-auto">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative px-4 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
-                    activeTab === tab.id
-                      ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
-                      : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+      {/* Important note banner */}
+      <div className="mb-5 flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
+        <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed italic">
+          Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to events, Shakhas, and the member portal.
+        </p>
+      </div>
+
+      {/* Tabbed content — same card/border style as My Profile */}
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg">
+
+        {/* Tab bar */}
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <div className="flex overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={UserIcon} title="Personal Information" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} /></FormField>
-              <FormField><FormLabel>Middle Name</FormLabel><FormInput value={formData.middleName} onChange={set('middleName')} /></FormField>
-              <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} /></FormField>
-              <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
-              <FormField><FormLabel required>Date of Birth</FormLabel><FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} /><p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} years</span></p></FormField>
-              <FormField><FormLabel>Age Groups (years old)</FormLabel><FormInput value={getAgeGroupLabel(formData.dateOfBirth)} readOnly /></FormField>
-            </div>
-          </SectionCard>
+        {/* Tab content */}
+        <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
 
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={Phone} title="Contact Information" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel required>Primary Contact Number</FormLabel><FormInput type="tel" value={formData.phone} onChange={set('phone')} /></FormField>
-              <FormField><FormLabel>Secondary Contact Number</FormLabel><FormInput type="tel" value={formData.secondaryPhone} onChange={set('secondaryPhone')} /></FormField>
-              <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} /></FormField>
-              <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} /></FormField>
-              <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
-              <FormField><FormLabel required>Address Line</FormLabel><FormInput value={formData.addressLine1} onChange={set('addressLine1')} /></FormField>
-              <FormField><FormLabel>Address Line 2</FormLabel><FormInput value={formData.addressLine2} onChange={set('addressLine2')} /></FormField>
-              <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} /></FormField>
-              <FormField><FormLabel required>Post Code</FormLabel><FormInput value={formData.postCode} onChange={set('postCode')} /></FormField>
-            </div>
-          </SectionCard>
+          {/* ── Personal Info ── */}
+          {activeTab === 'personal' && (
+            <>
+              <EditSection title="Personal Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} /></FormField>
+                  <FormField><FormLabel>Membership ID</FormLabel><FormInput value={member.id} readOnly /></FormField>
+                  <FormField><FormLabel>Middle Name</FormLabel><FormInput value={formData.middleName} onChange={set('middleName')} /></FormField>
+                  <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} /></FormField>
+                  <FormField>
+                    <FormLabel required>Date of Birth</FormLabel>
+                    <FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} />
+                    <p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} yrs — {getAgeGroupLabel(formData.dateOfBirth)}</span></p>
+                  </FormField>
+                </div>
+              </EditSection>
 
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={Users} title="Emergency Contact" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} /></FormField>
-              <FormField><FormLabel required>Contact Phone Number</FormLabel><FormInput type="tel" value={formData.emergencyContactPhone} onChange={set('emergencyContactPhone')} /></FormField>
-              <FormField><FormLabel required>Contact Email</FormLabel><FormInput type="email" value={formData.emergencyContactEmail} onChange={set('emergencyContactEmail')} /></FormField>
-              <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} /></FormField>
-            </div>
-          </SectionCard>
+              <EditSection title="Contact Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel required>Primary Contact Number</FormLabel><FormInput type="tel" value={formData.phone} onChange={set('phone')} /></FormField>
+                  <FormField><FormLabel>Secondary Contact Number</FormLabel><FormInput type="tel" value={formData.secondaryPhone} onChange={set('secondaryPhone')} /></FormField>
+                  <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} /></FormField>
+                  <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} /></FormField>
+                  <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
+                  <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} /></FormField>
+                  <FormField><FormLabel required>Address Line 1</FormLabel><FormInput value={formData.addressLine1} onChange={set('addressLine1')} /></FormField>
+                  <FormField><FormLabel required>Post Code</FormLabel><FormInput value={formData.postCode} onChange={set('postCode')} /></FormField>
+                  <FormField><FormLabel>Address Line 2</FormLabel><FormInput value={formData.addressLine2} onChange={set('addressLine2')} /></FormField>
+                </div>
+              </EditSection>
 
-          {isMinor && (
-            <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-              <SectionHeader icon={Users} title="Parent / Guardian Approval Information" />
+              <EditSection title="Emergency Contact Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} /></FormField>
+                  <FormField><FormLabel required>Contact Phone Number</FormLabel><FormInput type="tel" value={formData.emergencyContactPhone} onChange={set('emergencyContactPhone')} /></FormField>
+                  <FormField><FormLabel required>Contact Email</FormLabel><FormInput type="email" value={formData.emergencyContactEmail} onChange={set('emergencyContactEmail')} /></FormField>
+                  <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} /></FormField>
+                </div>
+              </EditSection>
+            </>
+          )}
+
+          {/* ── Parent / Guardian ── */}
+          {activeTab === 'guardian' && isMinor && (
+            <EditSection title="Parent / Guardian Approval Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField><FormLabel required>Parent / Guardian Name</FormLabel><FormInput value={formData.guardianName} onChange={set('guardianName')} /></FormField>
                 <FormField><FormLabel required>Parent / Guardian Phone Number</FormLabel><FormInput type="tel" value={formData.guardianPhone} onChange={set('guardianPhone')} /></FormField>
                 <FormField><FormLabel required>Parent / Guardian Email</FormLabel><FormInput type="email" value={formData.guardianEmail} onChange={set('guardianEmail')} /></FormField>
                 <FormField><FormLabel required>Parent / Guardian Relationship</FormLabel><FormInput value={formData.guardianRelationship} onChange={set('guardianRelationship')} /></FormField>
               </div>
-            </SectionCard>
+            </EditSection>
           )}
 
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={HeartPulse} title="Other Information" />
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                  <input type="checkbox" checked={formData.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
-                  Medical information declared
-                </label>
-                <FormField className="md:col-span-2"><FormLabel>Medical Information Details</FormLabel><FormTextarea rows={3} value={formData.medicalInfoDetails} onChange={set('medicalInfoDetails')} /></FormField>
-                {canEditQualifiedFirstAider && (
-                  <>
-                    <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                      <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                      Are you a qualified First Aider
-                    </label>
-                    {formData.isFirstAider && (
-                      <>
-                        <FormField>
-                          <FormLabel>Level of qualification</FormLabel>
-                          <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
-                            <option value="">Select qualification</option>
-                            {FIRST_AID_QUALIFICATION_OPTIONS.map(option => (
-                              <option key={option} value={option}>{option}</option>
-                            ))}
-                          </FormSelect>
-                        </FormField>
-                        <FormField>
-                          <FormLabel>Qualification expiry date</FormLabel>
-                          <FormInput type="date" value={formData.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} />
-                        </FormField>
-                      </>
-                    )}
-                  </>
-                )}
-                <FormField><FormLabel>Occupation</FormLabel><FormInput value={formData.occupation} onChange={set('occupation')} /></FormField>
-                <FormField><FormLabel>Originating State in India</FormLabel><FormInput value={formData.originatingStateIndia} onChange={set('originatingStateIndia')} /></FormField>
-              </div>
+          {/* ── Organisation ── */}
+          {activeTab === 'organisation' && (
+            <>
+              <EditSection title="Shakha Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Vibhaag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
+                  <FormField>
+                    <FormLabel>Member Status</FormLabel>
+                    <FormSelect value={formData.status} onChange={set('status')}>
+                      {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </FormSelect>
+                  </FormField>
+                </div>
+              </EditSection>
+            </>
+          )}
 
-              <div>
-                <FormLabel>Special Dietary Requirements</FormLabel>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {DIETARY_REQUIREMENTS.map(item => (
-                    <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                      <input type="checkbox" checked={formData.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
-                      {item}
-                    </label>
+          {/* ── Compliance ── */}
+          {activeTab === 'compliance' && (
+            <>
+              <EditSection title="DBS">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="Approved">Approved</option><option value="Pending">Pending</option></FormSelect></FormField>
+                  <FormField><FormLabel>DBS Reference Number</FormLabel><FormInput value={formData.dbsRef} onChange={set('dbsRef')} /></FormField>
+                  <FormField><FormLabel>DBS Certificate Number</FormLabel><FormInput value={formData.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" /></FormField>
+                  <FormField><FormLabel>DBS Certificate Date</FormLabel><FormInput type="date" value={formData.dbsCertificateDate} onChange={set('dbsCertificateDate')} /></FormField>
+                  <FormField><FormLabel>Certificate Received From</FormLabel><FormInput value={formData.dbsCertificateReceivedFrom} onChange={set('dbsCertificateReceivedFrom')} /></FormField>
+                  <FormField><FormLabel>Other Source</FormLabel><FormInput value={formData.dbsCertificateReceivedFromOther} onChange={set('dbsCertificateReceivedFromOther')} /></FormField>
+                  <FormField>
+                    <FormLabel>Enrolled in DBS Update Service</FormLabel>
+                    <FormSelect value={formData.dbsUpdateService ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsUpdateService: e.target.value === 'yes' }))}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </FormSelect>
+                  </FormField>
+                  {formData.dbsUpdateService && (
+                    <>
+                      <FormField><FormLabel>Update Service Number</FormLabel><FormInput value={formData.dbsUpdateServiceNumber} onChange={set('dbsUpdateServiceNumber')} /></FormField>
+                      <FormField><FormLabel>Last Service Check Date</FormLabel><FormInput type="date" value={formData.dbsUpdateServiceCheckDate} onChange={set('dbsUpdateServiceCheckDate')} /></FormField>
+                    </>
+                  )}
+                  <FormField>
+                    <FormLabel>DBS Application Under Process</FormLabel>
+                    <FormSelect value={formData.dbsAppUnderProcess ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsAppUnderProcess: e.target.value === 'yes' }))}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </FormSelect>
+                  </FormField>
+                  <FormField><FormLabel>Verified By</FormLabel><FormInput value={formData.dbsCheckedBy} onChange={set('dbsCheckedBy')} placeholder="e.g. Ramesh Patel (Karyawaha)" /></FormField>
+                </div>
+              </EditSection>
+
+              <EditSection title="First Aid">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="Certified">Certified</option><option value="Expired">Expired</option><option value="N/A">N/A</option></FormSelect></FormField>
+                  <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
+                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
+                  The profile first-aider flag and qualification level are separate from the First Aid compliance certificate status.
+                </p>
+              </EditSection>
+
+              {canEditSafeguardingFields && (
+                <EditSection title="Safeguarding">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField>
+                      <FormLabel>Safeguarding Status</FormLabel>
+                      <FormSelect value={formData.safeguardingStatus} onChange={set('safeguardingStatus')}>
+                        <option value="Certified">Certified</option>
+                        <option value="Expired">Expired</option>
+                        <option value="N/A">N/A</option>
+                      </FormSelect>
+                    </FormField>
+                    <FormField><FormLabel>Date of Safeguarding Training</FormLabel><FormInput type="date" value={formData.safeguardingTrainingDate} onChange={set('safeguardingTrainingDate')} /></FormField>
+                    <FormField>
+                      <FormLabel>Level of Training</FormLabel>
+                      <FormSelect value={formData.safeguardingTrainingLevel} onChange={set('safeguardingTrainingLevel')}>
+                        <option value="">Select level…</option>
+                        {SAFEGUARDING_LEVEL_OPTIONS.map(level => <option key={level} value={level}>{level}</option>)}
+                      </FormSelect>
+                    </FormField>
+                    <FormField><FormLabel>Safeguarding Reference Number</FormLabel><FormInput value={formData.safeguardingRef} onChange={set('safeguardingRef')} placeholder="e.g. SG-2024-042" /></FormField>
+                    <FormField><FormLabel>Safeguarding Expiry Date</FormLabel><FormInput type="date" value={formData.safeguardingExpiry} onChange={set('safeguardingExpiry')} /></FormField>
+                  </div>
+                </EditSection>
+              )}
+            </>
+          )}
+
+          {/* ── Other Information ── */}
+          {activeTab === 'other' && (
+            <>
+              <EditSection title="Medical Information">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input type="checkbox" checked={formData.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
+                    Medical information declared
+                  </label>
+                  <FormField className="md:col-span-2"><FormLabel>Medical Information Details</FormLabel><FormTextarea rows={3} value={formData.medicalInfoDetails} onChange={set('medicalInfoDetails')} /></FormField>
+                  {canEditQualifiedFirstAider && (
+                    <>
+                      <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
+                        Are you a qualified First Aider
+                      </label>
+                      {formData.isFirstAider && (
+                        <>
+                          <FormField>
+                            <FormLabel>Level of qualification</FormLabel>
+                            <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
+                              <option value="">Select qualification</option>
+                              {FIRST_AID_QUALIFICATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                            </FormSelect>
+                          </FormField>
+                          <FormField><FormLabel>Qualification expiry date</FormLabel><FormInput type="date" value={formData.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} /></FormField>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </EditSection>
+
+              <EditSection title="Additional Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField><FormLabel>Occupation</FormLabel><FormInput value={formData.occupation} onChange={set('occupation')} /></FormField>
+                  <FormField><FormLabel>Originating State in India</FormLabel><FormInput value={formData.originatingStateIndia} onChange={set('originatingStateIndia')} /></FormField>
+                  <div className="md:col-span-2">
+                    <FormLabel>Special Dietary Requirements</FormLabel>
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {DIETARY_REQUIREMENTS.map(item => (
+                        <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                          <input type="checkbox" checked={formData.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
+                          {item}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </EditSection>
+            </>
+          )}
+
+          {/* ── Roles & Responsibility ── */}
+          {activeTab === 'roles' && (
+            <>
+              <EditSection title="MyHSS Role">
+                <FormField>
+                  <FormLabel>Role</FormLabel>
+                  <details className="relative group">
+                    <summary className="relative h-10 w-full px-3 py-2 pr-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white cursor-pointer list-none focus:outline-none focus:border-primary-500">
+                      <span className={formData.adminRoles.length ? '' : 'text-neutral-400'}>
+                        {formData.adminRoles.length
+                          ? `${formData.adminRoles.length} role${formData.adminRoles.length > 1 ? 's' : ''} selected`
+                          : 'Select Roles'}
+                      </span>
+                      <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto slim-scroll rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1">
+                      {ADMIN_ROLE_OPTIONS.map(role => (
+                        <label key={role} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.adminRoles.includes(role)}
+                            onChange={() => toggleAdminRole(role)}
+                            disabled={role === REQUIRED_MEMBER_ROLE}
+                            className="w-4 h-4 accent-primary-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                          />
+                          <span className={role === REQUIRED_MEMBER_ROLE ? 'font-medium' : ''}>{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                  {formData.adminRoles.length > 0 && (
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{formData.adminRoles.join(', ')}</p>
+                  )}
+                </FormField>
+              </EditSection>
+
+              <EditSection title="Sangh Responsibility">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Add one or more responsibilities</p>
+                  <SecondaryButton icon={Plus} onClick={addResponsibility}>Add Responsibility</SecondaryButton>
+                </div>
+                <div className="space-y-4">
+                  {formData.responsibilities.map((responsibility, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-end rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/50 dark:bg-neutral-900/30">
+                      <FormField>
+                        <FormLabel>Level</FormLabel>
+                        <FormSelect value={responsibility.responsibilityLevel} onChange={e => updateResponsibility(index, 'responsibilityLevel', e.target.value)}>
+                          <option value="">Select Level</option>
+                          {LEVEL_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </FormSelect>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Sangh Responsibility (HSS Role)</FormLabel>
+                        <FormSelect value={responsibility.sanghResponsibility} onChange={e => updateResponsibility(index, 'sanghResponsibility', e.target.value)}>
+                          <option value="">Select Sangh Responsibility</option>
+                          {ROLE_TYPE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
+                        </FormSelect>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Responsibility Type</FormLabel>
+                        <FormSelect value={responsibility.responsibilityType} onChange={e => updateResponsibility(index, 'responsibilityType', e.target.value)}>
+                          <option value="">Select Responsibility Type</option>
+                          {RESPONSIBILITY_TYPE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                        </FormSelect>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Since (Start Date)</FormLabel>
+                        <FormInput type="date" value={responsibility.startDate ?? ''} onChange={e => updateResponsibility(index, 'startDate', e.target.value)} />
+                      </FormField>
+                      {formData.responsibilities.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeResponsibility(index)}
+                          className="h-10 w-10 rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30 flex items-center justify-center"
+                          aria-label={`Remove responsibility ${index + 1}`}
+                          title="Remove responsibility"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </div>
+              </EditSection>
+            </>
+          )}
 
-            </div>
-          </SectionCard>
-
-          <SectionCard className={activeTab === 'profile' ? '' : 'hidden'}>
-            <SectionHeader icon={Building2} title="Organisational Details" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-              <FormField><FormLabel required>Vibhag (Region)</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
-              <FormField><FormLabel required>Nagar (Town)</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
-              <FormField><FormLabel required>Shakha (Branch)</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-              <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
-            </div>
-
-            <div className="mt-6">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <FormLabel>Responsibility</FormLabel>
-                <SecondaryButton icon={Plus} onClick={addResponsibility}>
-                  Add more responsibility
-                </SecondaryButton>
-              </div>
-              <div className="space-y-4">
-                {formData.responsibilities.map((responsibility, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-end rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
-                    <FormField>
-                      <FormLabel>Level</FormLabel>
-                      <FormSelect value={responsibility.responsibilityLevel} onChange={event => updateResponsibility(index, 'responsibilityLevel', event.target.value)}>
-                        <option value="">Select Level</option>
-                        {LEVEL_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </FormSelect>
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Sangh Responsibility (HSS Role)</FormLabel>
-                      <FormSelect value={responsibility.sanghResponsibility} onChange={event => updateResponsibility(index, 'sanghResponsibility', event.target.value)}>
-                        <option value="">Select Sangh Responsibility</option>
-                        {ROLE_TYPE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
-                      </FormSelect>
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Responsibility Type</FormLabel>
-                      <FormSelect value={responsibility.responsibilityType} onChange={event => updateResponsibility(index, 'responsibilityType', event.target.value)}>
-                        <option value="">Select Responsibility Type</option>
-                        {RESPONSIBILITY_TYPE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                      </FormSelect>
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Since (Start Date)</FormLabel>
-                      <FormInput type="date" value={responsibility.startDate ?? ''} onChange={event => updateResponsibility(index, 'startDate', event.target.value)} />
-                    </FormField>
-                    {formData.responsibilities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeResponsibility(index)}
-                        className="h-10 w-10 rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30 flex items-center justify-center"
-                        aria-label={`Remove responsibility ${index + 1}`}
-                        title="Remove responsibility"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard className={activeTab === 'compliance' ? '' : 'hidden'}>
-            <SectionHeader icon={Shield} title="Compliance â€” DBS" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField><FormLabel>DBS Status</FormLabel><FormSelect value={formData.dbsStatus} onChange={set('dbsStatus')}><option value="Approved">Approved</option><option value="Pending">Pending</option></FormSelect></FormField>
-              <FormField><FormLabel>DBS Reference Number</FormLabel><FormInput value={formData.dbsRef} onChange={set('dbsRef')} /></FormField>
-              <FormField><FormLabel>DBS Certificate Number</FormLabel><FormInput value={formData.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" /></FormField>
-              <FormField><FormLabel>DBS Certificate Date</FormLabel><FormInput type="date" value={formData.dbsCertificateDate} onChange={set('dbsCertificateDate')} /></FormField>
-              <FormField><FormLabel>Certificate Received From</FormLabel><FormInput value={formData.dbsCertificateReceivedFrom} onChange={set('dbsCertificateReceivedFrom')} /></FormField>
-              <FormField><FormLabel>Other Source</FormLabel><FormInput value={formData.dbsCertificateReceivedFromOther} onChange={set('dbsCertificateReceivedFromOther')} /></FormField>
-              <FormField>
-                <FormLabel>Enrolled in DBS Update Service</FormLabel>
-                <FormSelect value={formData.dbsUpdateService ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsUpdateService: e.target.value === 'yes' }))}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </FormSelect>
-              </FormField>
-              {formData.dbsUpdateService && (
-                <>
-                  <FormField><FormLabel>Update Service Number</FormLabel><FormInput value={formData.dbsUpdateServiceNumber} onChange={set('dbsUpdateServiceNumber')} /></FormField>
-                  <FormField><FormLabel>Last Service Check Date</FormLabel><FormInput type="date" value={formData.dbsUpdateServiceCheckDate} onChange={set('dbsUpdateServiceCheckDate')} /></FormField>
-                </>
-              )}
-              <FormField>
-                <FormLabel>DBS Application Under Process</FormLabel>
-                <FormSelect value={formData.dbsAppUnderProcess ? 'yes' : 'no'} onChange={e => setFormData(prev => ({ ...prev, dbsAppUnderProcess: e.target.value === 'yes' }))}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </FormSelect>
-              </FormField>
-              <FormField><FormLabel>Verified By</FormLabel><FormInput value={formData.dbsCheckedBy} onChange={set('dbsCheckedBy')} placeholder="e.g. Ramesh Patel (Karyawaha)" /></FormField>
-            </div>
-
-            <div className="border-t border-neutral-200 dark:border-neutral-800 mt-6 pt-6">
-              <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">First Aid</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="Certified">Certified</option><option value="Expired">Expired</option><option value="N/A">N/A</option></FormSelect></FormField>
-                <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
-                The profile first-aider flag and qualification level are separate from the First Aid compliance certificate status.
-              </p>
-            </div>
-
-            {canEditSafeguardingFields && (
-              <>
-                <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6 mt-6 mb-4">
-                  <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5" /> Safeguarding
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField>
-                    <FormLabel>Safeguarding Status</FormLabel>
-                    <FormSelect value={formData.safeguardingStatus} onChange={set('safeguardingStatus')}>
-                      <option value="Certified">Certified</option>
-                      <option value="Expired">Expired</option>
-                      <option value="N/A">N/A</option>
-                    </FormSelect>
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Date of Safeguarding Training</FormLabel>
-                    <FormInput type="date" value={formData.safeguardingTrainingDate} onChange={set('safeguardingTrainingDate')} />
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Level of Training</FormLabel>
-                    <FormSelect value={formData.safeguardingTrainingLevel} onChange={set('safeguardingTrainingLevel')}>
-                      <option value="">Select levelâ€¦</option>
-                      {SAFEGUARDING_LEVEL_OPTIONS.map(level => (
-                        <option key={level} value={level}>{level}</option>
-                      ))}
-                    </FormSelect>
-                  </FormField>
-                  <FormField><FormLabel>Safeguarding Reference Number</FormLabel><FormInput value={formData.safeguardingRef} onChange={set('safeguardingRef')} placeholder="e.g. SG-2024-042" /></FormField>
-                  <FormField><FormLabel>Safeguarding Expiry Date</FormLabel><FormInput type="date" value={formData.safeguardingExpiry} onChange={set('safeguardingExpiry')} /></FormField>
-                </div>
-              </>
-            )}
-          </SectionCard>
-
-
+          {/* ── Activity ── */}
           {activeTab === 'activity' && (
-            <SectionCard>
-              <SectionHeader icon={CalendarDays} title="Activity" />
+            <EditSection title="Activity">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">Events Attended</p>
@@ -776,95 +816,38 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
                 Activity records are read-only and managed through the Events and Attendance modules.
               </p>
-            </SectionCard>
+            </EditSection>
           )}
 
+          {/* ── History ── */}
           {activeTab === 'history' && (
-            <SectionCard>
-              <SectionHeader icon={History} title="History" />
+            <EditSection title="Member Reference">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Member ID</p>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white mt-1">{member.id}</p>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Member ID</label>
+                  <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">{member.id}</code>
                 </div>
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Registration Date</p>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white mt-1">
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Registration Date</label>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
                     {new Date(member.registrationDate).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Current Age</label>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                    {calcAge < 13 ? `Child (${calcAge})` : calcAge < 18 ? `Teen (${calcAge})` : `Adult (${calcAge})`}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
                 Audit history is read-only and available from the member detail view.
               </p>
-            </SectionCard>
+            </EditSection>
           )}
-        </div>
 
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-            <div className="space-y-4">
-              <FormField>
-                <FormLabel>Role</FormLabel>
-                <details className="relative group">
-                  <summary className="relative h-10 w-full px-3 py-2 pr-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white cursor-pointer list-none focus:outline-none focus:border-primary-500">
-                    <span className={formData.adminRoles.length ? '' : 'text-neutral-400'}>
-                      {formData.adminRoles.length
-                        ? `${formData.adminRoles.length} role${formData.adminRoles.length > 1 ? 's' : ''} selected`
-                        : 'Select Roles'}
-                    </span>
-                    <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" />
-                  </summary>
-                  <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto slim-scroll rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1">
-                    {ADMIN_ROLE_OPTIONS.map(role => (
-                      <label key={role} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.adminRoles.includes(role)}
-                          onChange={() => toggleAdminRole(role)}
-                          disabled={role === REQUIRED_MEMBER_ROLE}
-                          className="w-4 h-4 accent-primary-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                        />
-                        <span className={role === REQUIRED_MEMBER_ROLE ? 'font-medium' : ''}>{role}</span>
-                      </label>
-                    ))}
-                  </div>
-                </details>
-                {formData.adminRoles.length > 0 && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
-                    {formData.adminRoles.join(', ')}
-                  </p>
-                )}
-              </FormField>
-            </div>
-          </div>
-
-          <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Important Note</h3>
-            </div>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed italic">
-              Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to events, Shakhas, and the member portal.
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Member Reference</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Member ID</label>
-                <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">{member.id}</code>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Current Age</label>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{calcAge < 13 ? `Child (${calcAge})` : calcAge < 18 ? `Teen (${calcAge})` : `Adult (${calcAge})`}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 }
-

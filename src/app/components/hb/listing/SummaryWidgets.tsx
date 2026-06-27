@@ -114,7 +114,7 @@ export function SummaryWidgets({
             return (
               <div
                 key={isWidgetConfig(widget) ? widget.id : widget.label}
-                className={`${cardColors.cardBg} p-5 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col items-center gap-3 hover:scale-[1.03] hover:shadow-md transition-all duration-200`}
+                className={`${cardColors.cardBg} p-5 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col items-center gap-3`}
               >
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${cardColors.iconBg}`}>
                   <Icon className={`w-5 h-5 ${cardColors.iconText}`} />
