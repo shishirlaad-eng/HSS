@@ -1228,7 +1228,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                     <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                       <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Change History</h4>
                       <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
                         {changeHistory.length} record{changeHistory.length !== 1 ? 's' : ''}
                       </span>
@@ -1236,9 +1236,9 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800">
-                            {['Date', 'Time', 'User', 'Role', 'Field Changed', 'Old Value', 'New Value'].map(col => (
-                              <th key={col} className="px-4 py-2.5 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{col}</th>
+                          <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+                            {['Date & Time', 'Changed By', 'Old Value', 'New Value'].map(col => (
+                              <th key={col} className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{col}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1248,15 +1248,17 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                             const isAdmin = row.role === 'Admin';
                             return (
                               <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
-                                <td className="px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </td>
-                                <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
-                                  {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                                </td>
-                                <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.user}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                                  <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                                    {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </p>
+                                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                    {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <p className="text-xs font-medium text-neutral-900 dark:text-white">{row.user}</p>
+                                  <span className={`mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
                                     isAdmin
                                       ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
                                       : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
@@ -1265,7 +1267,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                                     {row.role}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300">{row.field}</td>
                                 <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
                                 <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
                               </tr>

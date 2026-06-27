@@ -25,7 +25,7 @@ import {
   UserCircle2,
   ClipboardList,
 } from 'lucide-react';
-import { SecondaryButton, PrimaryButton } from './hb/listing';
+import { SecondaryButton, PrimaryButton, Pagination } from './hb/listing';
 import {
   Member,
   getAge,
@@ -199,16 +199,16 @@ type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'other' | '
 
 // ── Mock change-history generator ────────────────────────────
 
-interface ChangeEntry {
+interface ChangeRow {
   id: string;
   timestamp: string;
-  changedFields: string[];
   changedBy: 'Admin' | 'Self';
   changedByName: string;
-  note?: string;
+  oldValue: string;
+  newValue: string;
 }
 
-function buildMockHistory(member: { id: string; registrationDate: string; status: string }): ChangeEntry[] {
+function buildMockHistory(member: { id: string; registrationDate: string; status: string }): ChangeRow[] {
   const seed = member.id.charCodeAt(member.id.length - 1);
   const base  = new Date(member.registrationDate);
 
@@ -219,67 +219,50 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
     return d.toISOString();
   };
 
-  const entries: ChangeEntry[] = [
-    {
-      id: 'h-1',
-      timestamp: base.toISOString(),
-      changedFields: [],
-      changedBy: 'Self',
-      changedByName: 'Member (self-registration)',
-      note: 'Member account created via online registration form.',
-    },
+  const rows: ChangeRow[] = [
+    { id: 'h-1a', timestamp: base.toISOString(), changedBy: 'Self', changedByName: 'Member (self-registration)', oldValue: '—', newValue: 'Registration submitted' },
   ];
 
   if (member.status !== 'pending' && member.status !== 'pending-parental-consent') {
-    entries.push({
-      id: 'h-2',
+    rows.push({
+      id: 'h-2a',
       timestamp: shift(seed % 3 + 2, 10, 30),
-      changedFields: ['Status'],
       changedBy: 'Admin',
       changedByName: 'John Doe (Admin)',
-      note: member.status === 'rejected' ? 'Member application rejected.' : 'Member application approved.',
+      oldValue: 'Pending',
+      newValue: member.status === 'rejected' ? 'Rejected' : 'Active & Approved',
     });
   }
 
-  entries.push({
-    id: 'h-3',
-    timestamp: shift(seed % 5 + 5, 14, 15),
-    changedFields: ['DBS Status', 'DBS Reference Number'],
-    changedBy: 'Admin',
-    changedByName: 'Sarah Patel (Admin)',
-  });
+  rows.push(
+    { id: 'h-3a', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)', oldValue: 'Pending',  newValue: 'Approved' },
+    { id: 'h-3b', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)', oldValue: '—',        newValue: 'DBS-2024-001' },
+  );
 
   if (seed % 2 === 0) {
-    entries.push({
-      id: 'h-4',
-      timestamp: shift(seed % 7 + 10, 9, 45),
-      changedFields: ['First Aid Status', 'First Aid Reference Number'],
-      changedBy: 'Admin',
-      changedByName: 'John Doe (Admin)',
-    });
+    rows.push(
+      { id: 'h-4a', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe (Admin)', oldValue: 'Expired', newValue: 'Certified' },
+      { id: 'h-4b', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe (Admin)', oldValue: '—',       newValue: 'FA-2023-001' },
+    );
   }
 
   if (seed % 3 !== 0) {
-    entries.push({
-      id: 'h-5',
-      timestamp: shift(seed % 14 + 20, 18, 5),
-      changedFields: ['Primary Contact Number', 'Address Line', 'Post Code'],
-      changedBy: 'Self',
-      changedByName: 'Member (self-service)',
-    });
+    rows.push(
+      { id: 'h-5a', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: '+44 7700 900100', newValue: '+44 7700 900123' },
+      { id: 'h-5b', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: '10 Queens Road',   newValue: '18 Kings Road' },
+      { id: 'h-5c', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: 'HA2 0AA',           newValue: 'HA1 2AB' },
+    );
   }
 
   if (seed % 4 !== 1) {
-    entries.push({
-      id: 'h-6',
-      timestamp: shift(seed % 20 + 30, 11, 0),
-      changedFields: ['Sangh Responsibility (HSS Role)', 'Vibhag (Region)', 'Shakha (Branch)'],
-      changedBy: 'Admin',
-      changedByName: 'Priya Sharma (Admin)',
-    });
+    rows.push(
+      { id: 'h-6a', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'Shikshak',           newValue: 'Ghatnayak' },
+      { id: 'h-6b', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'North West',          newValue: 'London & South East' },
+      { id: 'h-6c', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'Manchester Central',  newValue: 'Harrow Activity Centre' },
+    );
   }
 
-  return entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return rows.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 // ── Component ─────────────────────────────────────────────────
@@ -321,8 +304,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   ];
 
   const changeHistory = useMemo(() => buildMockHistory(member), [member]);
+  const [historyPage, setHistoryPage]         = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(20);
 
-  const approvalEntry = changeHistory.find(e => e.changedFields.includes('Status') && e.changedBy === 'Admin');
+  const approvalEntry = changeHistory.find(e => e.newValue === 'Active & Approved' && e.changedBy === 'Admin');
   const approvedDate  = approvalEntry?.timestamp ?? null;
   const approvedBy    = approvalEntry?.changedByName ?? '—';
 
@@ -800,7 +785,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </div>
 
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <h4 className="text-sm font-medium text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                     Attendance History
                   </h4>
                   <div className="overflow-x-auto slim-scroll">
@@ -884,81 +869,65 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                 </div>
 
-                {/* Change History timeline */}
+                {/* Change History table */}
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                     <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white">Change History</h4>
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Change History</h4>
                     <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-                      {changeHistory.length} event{changeHistory.length !== 1 ? 's' : ''}
+                      {changeHistory.length} record{changeHistory.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                    {changeHistory.map((entry, idx) => {
-                      const isAdmin = entry.changedBy === 'Admin';
-                      const isFirst = idx === changeHistory.length - 1;
-                      return (
-                        <div key={entry.id} className="flex gap-4 px-6 py-4 hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
-
-                          {/* Icon */}
-                          <div className="flex-shrink-0 mt-0.5">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              isFirst
-                                ? 'bg-primary-50 dark:bg-primary-950'
-                                : isAdmin
-                                  ? 'bg-amber-50 dark:bg-amber-950/30'
-                                  : 'bg-neutral-100 dark:bg-neutral-800'
-                            }`}>
-                              {isFirst ? (
-                                <ClipboardList className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                              ) : isAdmin ? (
-                                <UserCog className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                              ) : (
-                                <UserCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                                isAdmin
-                                  ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
-                                  : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
-                              }`}>
-                                {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
-                                {entry.changedBy}
-                              </span>
-                              <span className="text-xs text-neutral-600 dark:text-neutral-400">{entry.changedByName}</span>
-                              <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-                                <Clock className="w-3 h-3" />
-                                {formatDateTime(entry.timestamp)}
-                              </span>
-                            </div>
-
-                            {entry.note && (
-                              <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 italic">{entry.note}</p>
-                            )}
-
-                            {entry.changedFields.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                {entry.changedFields.map(field => (
-                                  <span
-                                    key={field}
-                                    className="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs border border-neutral-200 dark:border-neutral-700"
-                                  >
-                                    {field}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                          {['Date & Time', 'Changed By', 'Old Value', 'New Value'].map(col => (
+                            <th key={col} className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                        {changeHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize).map(row => {
+                          const d = new Date(row.timestamp);
+                          const isAdmin = row.changedBy === 'Admin';
+                          return (
+                            <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                  {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="text-xs font-medium text-neutral-900 dark:text-white">{row.changedByName}</p>
+                                <span className={`mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                                  isAdmin
+                                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
+                                    : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
+                                }`}>
+                                  {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
+                                  {row.changedBy}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
+                              <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
+                  <Pagination
+                    currentPage={historyPage}
+                    totalPages={Math.ceil(changeHistory.length / historyPageSize)}
+                    totalItems={changeHistory.length}
+                    itemsPerPage={historyPageSize}
+                    onPageChange={setHistoryPage}
+                    onItemsPerPageChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}
+                  />
                 </div>
 
               </div>
