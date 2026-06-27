@@ -1682,7 +1682,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                       <StatusBadge status={event.status} />
                       <PaymentBadge type={event.paymentType} price={event.price} priceCategories={event.priceCategories} />
                     </div>
-                    <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5 mt-2" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
+                    <h4 className="text-[16px] font-semibold text-neutral-900 dark:text-white truncate mb-0.5 mt-2" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                       {event.name}
                     </h4>
                     <p className="text-xs text-neutral-400 font-mono mb-3">{event.id}</p>

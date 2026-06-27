@@ -764,7 +764,7 @@ export default function SessionDetail({
                 <Trash2 className="w-5 h-5 text-error-600 dark:text-error-400" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">Delete Shakha</h3>
+                <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">Delete Shakha</h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
                   Are you sure you want to permanently delete{' '}
                   <span className="font-medium text-neutral-900 dark:text-white">{session.title}</span>?
@@ -805,7 +805,7 @@ export default function SessionDetail({
                 <AlertTriangle className="w-5 h-5 text-error-600 dark:text-error-400" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+                <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">
                   Cancel Shakha
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">

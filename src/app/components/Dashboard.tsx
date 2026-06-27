@@ -251,7 +251,7 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* â”€â”€ Row 1: Donut stat cards â€” My Sankhya Â· Suchana Â· Karyakrams Â· My Dakshina â”€â”€ */}
+      {/* â”€â”€ Row 1: Donut stat cards â€” My Sankhya · Suchana · Karyakrams · My Dakshina â”€â”€ */}
       {(() => {
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
@@ -272,7 +272,7 @@ function MemberDashboard({
             ],
             detail:   `${presentAnotherShakha} Present in Another Shakha`,
             detailRows: [],
-            sub:      `${presentCount} Present Â· ${absentCount} Absent`,
+            sub:      `${presentCount} Present · ${absentCount} Absent`,
             bg:       'bg-slate-50 dark:bg-slate-900/40',
             track:    'text-slate-200 dark:text-slate-700',
             onClick:  () => onNavigate?.('attendance-log'),
@@ -315,10 +315,10 @@ function MemberDashboard({
             display:  'split',
             arc:      Math.min(totalDakshina / 500, 1) * C,
             color:    '#1D9E75',
-            center:   `Â£${totalDakshina.toFixed(0)}`,
+            center:   `£${totalDakshina.toFixed(0)}`,
             segments: [
-              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: 'Â£' },
-              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: 'Â£' },
+              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: '£' },
+              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: '£' },
             ],
             sub:      'YTD Total',
             detail:   '',
@@ -343,14 +343,14 @@ function MemberDashboard({
                 onClick={card.onClick}
                 onKeyDown={card.onClick ? e => e.key === 'Enter' && card.onClick?.() : undefined}
               >
-                <p className="text-[19px] font-bold text-neutral-900 dark:text-white mb-3 text-center">{card.label}</p>
+                <p className="text-[21px] font-bold text-neutral-600 dark:text-neutral-400 mb-3 text-center" style={{ fontFamily: "'Ramilias', serif" }}>{card.label}</p>
                 {(card as any).display === 'stat' ? (
                   /* â”€â”€ Big Stat: Suchana â”€â”€ */
                   <div className="flex-1 flex flex-col items-center justify-center py-2">
                     <span className="text-6xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: card.color + '20', color: card.color }}>
+                    <p className="mt-3 text-xs font-semibold" style={{ color: card.color }}>
                       {card.sub}
-                    </span>
+                    </p>
                     <p className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
                       {card.segments[1].value} Other
                     </p>
@@ -845,7 +845,7 @@ function HierarchyKpiSection({
   const kpis = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const gbp = (n: number) => `Â£${Math.round(n).toLocaleString('en-GB')}`;
+    const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`;
 
     // â”€â”€ Attendance â”€â”€
     const completedSessions = filterByScope(mockSessions, scope).filter(s => s.status === 'completed');
@@ -1185,7 +1185,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
               <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">Upcoming Karyakrams</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{upcomingEvents.length}</p>
               <p className="text-xs mt-1.5 text-primary-600 dark:text-primary-400">
-                {upcomingEvents.filter(e => e.status === 'active').length} active Â·{' '}
+                {upcomingEvents.filter(e => e.status === 'active').length} active ·{' '}
                 {upcomingEvents.filter(e => e.status === 'published').length} published
               </p>
             </div>
@@ -1345,7 +1345,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                         <div className="flex-shrink-0">
                           {event.paymentType === 'paid' ? (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                              Â£{event.price}
+                              £{event.price}
                             </span>
                           ) : (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">

@@ -81,7 +81,7 @@ function ChartCard({ title, subtitle, children, className = '' }: {
   return (
     <div className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm ${className}`}>
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
+        <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h3>
         {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
       </div>
       {children}

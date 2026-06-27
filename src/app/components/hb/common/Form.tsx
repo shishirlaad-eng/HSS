@@ -312,7 +312,7 @@ export function FormCard({ children, title, description, className, icon: Icon }
       {(title || description) && (
         <div className="mb-6">
            {title && (
-             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+             <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                {Icon && <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />}
                {title}
              </h3>

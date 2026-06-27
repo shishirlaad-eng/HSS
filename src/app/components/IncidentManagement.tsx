@@ -141,8 +141,8 @@ function DeleteModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
         <div className="flex items-start gap-4 mb-5">
-          <div className="w-10 h-10 rounded-full bg-[#fff0f0] flex items-center justify-center flex-shrink-0">
-            <Trash2 className="w-5 h-5 text-[#BC0F1C]" />
+          <div className="w-10 h-10 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center flex-shrink-0">
+            <Trash2 className="w-5 h-5 text-error-600 dark:text-error-400" />
           </div>
           <div>
             <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">Delete Incident Record</h3>
@@ -168,7 +168,7 @@ function DeleteModal({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 text-sm rounded-lg font-medium bg-[#BC0F1C] hover:bg-[#9a0c17] text-white transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-lg font-medium bg-error-600 hover:bg-error-700 text-white transition-colors disabled:opacity-50"
           >
             {isLoading ? 'Deleting…' : 'Delete'}
           </button>
@@ -271,7 +271,7 @@ function IncidentForm({
           Back
         </button>
         <span className="text-neutral-300 dark:text-neutral-700">/</span>
-        <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
+        <h2 className="text-[18px] font-semibold text-neutral-900 dark:text-white">
           {isEdit ? 'Edit Incident Record' : 'Record First Aid Incident'}
         </h2>
       </div>
@@ -494,7 +494,7 @@ function IncidentDetail({
             Back
           </button>
           <span className="text-neutral-300 dark:text-neutral-700">/</span>
-          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Incident Record</h2>
+          <h2 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Incident Record</h2>
           <span className="font-mono text-xs text-neutral-400">{incident.id}</span>
         </div>
         {canEdit && (

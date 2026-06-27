@@ -1815,7 +1815,7 @@ export default function MemberManagement({
                                 <div className="text-xs space-y-1">
                                   {m.responsibilities.map((r, i) => (
                                     <div key={i} className="text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                                      {shortLevel(r.responsibilityLevel)} Â· {r.sanghResponsibility || m.jobTitle} Â· {r.responsibilityType}
+                                      {shortLevel(r.responsibilityLevel)} · {r.sanghResponsibility || m.jobTitle} · {r.responsibilityType}
                                     </div>
                                   ))}
                                 </div>
@@ -1824,7 +1824,7 @@ export default function MemberManagement({
                             if (m.responsibilityType && m.responsibilityLevel) {
                               return (
                                 <div className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                                  {shortLevel(m.responsibilityLevel)} Â· {m.jobTitle} Â· {m.responsibilityType}
+                                  {shortLevel(m.responsibilityLevel)} · {m.jobTitle} · {m.responsibilityType}
                                 </div>
                               );
                             }

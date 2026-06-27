@@ -79,7 +79,7 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
                   {date} <span className="text-neutral-400 dark:text-neutral-500">{time}</span>
                 </p>
                 <span className="text-sm text-neutral-600 dark:text-neutral-400">{don.activityCentre}</span>
-                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 text-right">
+                <span className="text-sm font-semibold text-success-600 dark:text-success-400 text-right">
                   £{don.amount.toFixed(2)}
                 </span>
               </div>
@@ -91,7 +91,7 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
             {mockMyDonations.length} Dakshina
           </span>
           <span className="text-sm font-bold text-neutral-900 dark:text-white">
-            Total: <span className="text-emerald-600 dark:text-emerald-400">£{total.toFixed(2)}</span>
+            Total: <span className="text-success-600 dark:text-success-400">£{total.toFixed(2)}</span>
           </span>
         </div>
       </div>

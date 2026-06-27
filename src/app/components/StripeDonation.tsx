@@ -227,7 +227,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
               <div className="px-6 pt-6 pb-4 border-b border-neutral-100 dark:border-neutral-800">
                 <div className="flex items-center gap-2 mb-1">
                   <Heart className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  <h2 className="text-base font-bold text-neutral-900 dark:text-white">Payment Details</h2>
+                  <h2 className="text-[19px] font-bold text-neutral-900 dark:text-white">Payment Details</h2>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {donationMode === 'one-off'

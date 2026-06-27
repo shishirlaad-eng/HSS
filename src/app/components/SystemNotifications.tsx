@@ -303,7 +303,7 @@ export default function SystemNotifications() {
                           <Bell className="w-4 h-4" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white line-clamp-1">
+                          <h4 className="text-[16px] font-semibold text-neutral-900 dark:text-white line-clamp-1">
                             {item.title}
                           </h4>
                           <span className="text-[11px] font-mono text-neutral-400">
@@ -393,7 +393,7 @@ export default function SystemNotifications() {
 
                     <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
                       <div className="min-w-[180px]">
-                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                        <h4 className="text-[16px] font-semibold text-neutral-900 dark:text-white truncate">
                           {item.title}
                         </h4>
                         <span className="text-[11px] font-mono text-neutral-400">
