@@ -241,8 +241,7 @@ export default function SessionDetail({
   // Shakha Admin can cancel all sessions (past + future); other admins only future
   const canCancel = !isMemberRole && session.status !== 'cancelled' && !!onCancelSession
     && (isShakhaAdmin || isFutureSession);
-  // Shakha Admin can delete any session (past + future)
-  const canDelete = isShakhaAdmin && !!onDeleteSession;
+  const canDelete = selectedRole === 'Super Admin' && !!onDeleteSession;
   // Editing blocked for past sessions
   const canEdit   = !isMemberRole && !isPastSession;
 
@@ -404,7 +403,7 @@ export default function SessionDetail({
               className="flex items-center gap-2 px-3 h-9 text-xs font-medium rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-950 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Delete Shakha
+              Delete Shakha Session
             </button>
           )}
         </PageHeader>
