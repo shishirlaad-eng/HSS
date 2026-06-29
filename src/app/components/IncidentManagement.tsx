@@ -93,35 +93,55 @@ function fmtDate(iso: string) {
 interface IncidentForm {
   dateTime: string;
   sessionId: string;
+  sessionPersonInCharge: string;
+  incidentSite: string;
   isShakhaMember: boolean;
   memberId: string;
   casualtyName: string;
+  casualtyAddress: string;
   incidentType: IncidentType | '';
   incidentDescription: string;
+  activityAtTimeOfIncident: string;
   firstAidGiven: string;
   firstAiderName: string;
   outcome: IncidentOutcome | '';
+  contactedParents: boolean;
+  contactedPolice: boolean;
+  contactedAmbulance: boolean;
   reportedBy: string;
   witnesses: string;
   followUpRequired: boolean;
   followUpNotes: string;
+  declarationName: string;
+  declarationRole: string;
+  declarationDate: string;
 }
 
 const EMPTY_FORM: IncidentForm = {
   dateTime: new Date().toISOString().slice(0, 16),
   sessionId: '',
+  sessionPersonInCharge: '',
+  incidentSite: '',
   isShakhaMember: false,
   memberId: '',
   casualtyName: '',
+  casualtyAddress: '',
   incidentType: '',
   incidentDescription: '',
+  activityAtTimeOfIncident: '',
   firstAidGiven: '',
   firstAiderName: '',
   outcome: '',
+  contactedParents: false,
+  contactedPolice: false,
+  contactedAmbulance: false,
   reportedBy: '',
   witnesses: '',
   followUpRequired: false,
   followUpNotes: '',
+  declarationName: '',
+  declarationRole: '',
+  declarationDate: '',
 };
 
 // ── Delete confirm modal ──────────────────────────────────────
@@ -201,18 +221,28 @@ function IncidentForm({
       ? {
           dateTime: incident.dateTime.slice(0, 16),
           sessionId: incident.sessionId ?? '',
+          sessionPersonInCharge: incident.sessionPersonInCharge ?? '',
+          incidentSite: incident.incidentSite ?? '',
           isShakhaMember: incident.isShakhaMember,
           memberId: incident.memberId ?? '',
           casualtyName: incident.casualtyName,
+          casualtyAddress: incident.casualtyAddress ?? '',
           incidentType: incident.incidentType,
           incidentDescription: incident.incidentDescription,
+          activityAtTimeOfIncident: incident.activityAtTimeOfIncident ?? '',
           firstAidGiven: incident.firstAidGiven,
           firstAiderName: incident.firstAiderName,
           outcome: incident.outcome,
+          contactedParents: incident.contactedParents ?? false,
+          contactedPolice: incident.contactedPolice ?? false,
+          contactedAmbulance: incident.contactedAmbulance ?? false,
           reportedBy: incident.reportedBy,
           witnesses: incident.witnesses ?? '',
           followUpRequired: incident.followUpRequired,
           followUpNotes: incident.followUpNotes ?? '',
+          declarationName: incident.declarationName ?? '',
+          declarationRole: incident.declarationRole ?? '',
+          declarationDate: incident.declarationDate ?? '',
         }
       : EMPTY_FORM,
   );
@@ -328,11 +358,32 @@ function IncidentForm({
             </div>
           )}
 
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Incident Site <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.incidentSite} onChange={e => set('incidentSite', e.target.value)} placeholder="e.g. sports hall, car park…" className={fieldCls(false)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Person in Charge of Session <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.sessionPersonInCharge} onChange={e => set('sessionPersonInCharge', e.target.value)} placeholder="Name of session lead…" className={fieldCls(false)} />
+          </div>
+
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Activity at Time of Incident <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.activityAtTimeOfIncident} onChange={e => set('activityAtTimeOfIncident', e.target.value)} placeholder="e.g. training, game, getting changed…" className={fieldCls(false)} />
+          </div>
+
           <div className="md:col-span-3">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Incident Description <span className="text-red-500">*</span>
             </label>
-            <textarea rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened…" className={fieldCls(errors.incidentDescription)} />
+            <textarea rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened and precisely where…" className={fieldCls(errors.incidentDescription)} />
           </div>
         </div>
       </Card>
@@ -368,6 +419,13 @@ function IncidentForm({
               <input type="text" value={form.casualtyName} onChange={e => set('casualtyName', e.target.value)} placeholder="Full name of casualty…" className={fieldCls(errors.casualtyName)} />
             </div>
           )}
+
+          <div className="sm:col-span-2 md:col-span-4">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Address of Injured Person <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <textarea rows={2} value={form.casualtyAddress} onChange={e => set('casualtyAddress', e.target.value)} placeholder="Street, town, postcode…" className={fieldCls(false)} />
+          </div>
         </div>
       </Card>
 
@@ -401,6 +459,29 @@ function IncidentForm({
               First Aid Given <span className="text-red-500">*</span>
             </label>
             <textarea rows={3} value={form.firstAidGiven} onChange={e => set('firstAidGiven', e.target.value)} placeholder="Describe treatment administered…" className={fieldCls(errors.firstAidGiven)} />
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-4">
+            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Contacts Notified</p>
+            <div className="flex flex-wrap gap-4">
+              {([
+                ['contactedParents',   'Parents / Guardians'] as const,
+                ['contactedPolice',    'Police']              as const,
+                ['contactedAmbulance', 'Ambulance']           as const,
+              ]).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => set(key, !form[key])}
+                  className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300"
+                >
+                  <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form[key] ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
+                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form[key] ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </span>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </Card>
@@ -440,6 +521,31 @@ function IncidentForm({
       </Card>
 
       </div>{/* end row 2 */}
+
+      {/* Declaration */}
+      <Card title="Declaration">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">All of the above facts are a true record of the incident/accident.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Signatory Name <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.declarationName} onChange={e => set('declarationName', e.target.value)} placeholder="Full name…" className={fieldCls(false)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Responsibility in Shakha <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="text" value={form.declarationRole} onChange={e => set('declarationRole', e.target.value)} placeholder="e.g. Karyavah, Mukhya Shikshak…" className={fieldCls(false)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Declaration Date <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input type="date" value={form.declarationDate} onChange={e => set('declarationDate', e.target.value)} className={fieldCls(false)} />
+          </div>
+        </div>
+      </Card>
 
       {touched && hasErrors && (
         <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
@@ -536,6 +642,15 @@ function IncidentDetail({
               <DetailRow label="Shakha">{incident.activityCentre}</DetailRow>
               <DetailRow label="Incident Type"><TypeBadge type={incident.incidentType} /></DetailRow>
               {incident.sessionId && <DetailRow label="Linked Session">{incident.sessionId}</DetailRow>}
+              {incident.incidentSite && <DetailRow label="Incident Site">{incident.incidentSite}</DetailRow>}
+              {incident.sessionPersonInCharge && <DetailRow label="Person in Charge">{incident.sessionPersonInCharge}</DetailRow>}
+              {incident.activityAtTimeOfIncident && (
+                <div className="sm:col-span-2">
+                  <DetailRow label="Activity at Time of Incident">
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal">{incident.activityAtTimeOfIncident}</p>
+                  </DetailRow>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <DetailRow label="Incident Description">
                   <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.incidentDescription}</p>
@@ -553,6 +668,13 @@ function IncidentDetail({
               <DetailRow label="Name">{incident.casualtyName}</DetailRow>
               <DetailRow label="Shakha Member">{incident.isShakhaMember ? 'Yes' : 'No'}</DetailRow>
               {incident.memberId && <DetailRow label="Member ID">{incident.memberId}</DetailRow>}
+              {incident.casualtyAddress && (
+                <div className="sm:col-span-2">
+                  <DetailRow label="Address">
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal whitespace-pre-wrap">{incident.casualtyAddress}</p>
+                  </DetailRow>
+                </div>
+              )}
             </div>
           </div>
 
@@ -569,6 +691,16 @@ function IncidentDetail({
               </div>
               <DetailRow label="First Aider">{incident.firstAiderName}</DetailRow>
               <DetailRow label="Outcome"><OutcomeBadge outcome={incident.outcome} /></DetailRow>
+              {(incident.contactedParents !== undefined || incident.contactedPolice !== undefined || incident.contactedAmbulance !== undefined) && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Contacts Notified</p>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    <span className={incident.contactedParents ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Parents/Guardians</span>
+                    <span className={incident.contactedPolice ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Police</span>
+                    <span className={incident.contactedAmbulance ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Ambulance</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -591,6 +723,20 @@ function IncidentDetail({
               )}
             </div>
           </div>
+
+          {(incident.declarationName || incident.declarationRole || incident.declarationDate) && (
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+              <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Declaration</h3>
+              </div>
+              <div className="px-5 py-5 space-y-4">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 italic">All of the above facts are a true record of the accident/incident.</p>
+                {incident.declarationName && <DetailRow label="Signed By">{incident.declarationName}</DetailRow>}
+                {incident.declarationRole && <DetailRow label="Responsibility in Shakha">{incident.declarationRole}</DetailRow>}
+                {incident.declarationDate && <DetailRow label="Date">{fmtDate(incident.declarationDate)}</DetailRow>}
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
@@ -670,18 +816,28 @@ export default function IncidentManagement() {
         ...selected,
         dateTime: form.dateTime,
         sessionId: form.sessionId || undefined,
+        sessionPersonInCharge: form.sessionPersonInCharge || undefined,
+        incidentSite: form.incidentSite || undefined,
         isShakhaMember: form.isShakhaMember,
         memberId: form.isShakhaMember ? form.memberId || undefined : undefined,
         casualtyName: form.casualtyName,
+        casualtyAddress: form.casualtyAddress || undefined,
         incidentType: form.incidentType as IncidentType,
         incidentDescription: form.incidentDescription,
+        activityAtTimeOfIncident: form.activityAtTimeOfIncident || undefined,
         firstAidGiven: form.firstAidGiven,
         firstAiderName: form.firstAiderName,
         outcome: form.outcome as IncidentOutcome,
+        contactedParents: form.contactedParents,
+        contactedPolice: form.contactedPolice,
+        contactedAmbulance: form.contactedAmbulance,
         reportedBy: form.reportedBy,
         witnesses: form.witnesses || undefined,
         followUpRequired: form.followUpRequired,
         followUpNotes: form.followUpRequired ? form.followUpNotes || undefined : undefined,
+        declarationName: form.declarationName || undefined,
+        declarationRole: form.declarationRole || undefined,
+        declarationDate: form.declarationDate || undefined,
         updatedAt: now,
       };
       setIncidents(prev => prev.map(i => i.id === selected.id ? updated : i));
@@ -697,18 +853,28 @@ export default function IncidentManagement() {
         activityCentre: scope.centre ?? form.sessionId ?? '',
         dateTime: form.dateTime,
         sessionId: form.sessionId || undefined,
+        sessionPersonInCharge: form.sessionPersonInCharge || undefined,
+        incidentSite: form.incidentSite || undefined,
         isShakhaMember: form.isShakhaMember,
         memberId: form.isShakhaMember ? form.memberId || undefined : undefined,
         casualtyName: form.casualtyName,
+        casualtyAddress: form.casualtyAddress || undefined,
         incidentType: form.incidentType as IncidentType,
         incidentDescription: form.incidentDescription,
+        activityAtTimeOfIncident: form.activityAtTimeOfIncident || undefined,
         firstAidGiven: form.firstAidGiven,
         firstAiderName: form.firstAiderName,
         outcome: form.outcome as IncidentOutcome,
+        contactedParents: form.contactedParents,
+        contactedPolice: form.contactedPolice,
+        contactedAmbulance: form.contactedAmbulance,
         reportedBy: form.reportedBy,
         witnesses: form.witnesses || undefined,
         followUpRequired: form.followUpRequired,
         followUpNotes: form.followUpRequired ? form.followUpNotes || undefined : undefined,
+        declarationName: form.declarationName || undefined,
+        declarationRole: form.declarationRole || undefined,
+        declarationDate: form.declarationDate || undefined,
         createdAt: now,
         updatedAt: now,
       };
