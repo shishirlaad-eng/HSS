@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
   Pencil,
@@ -198,6 +198,122 @@ function DeleteModal({
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────
+
+function memberAddress(m: typeof mockMembers[number]): string {
+  return [m.buildingName, m.addressLine1, m.addressLine2, m.contactTownCity, m.postCode]
+    .filter(Boolean).join(', ');
+}
+
+// ── Member autocomplete ───────────────────────────────────────
+
+type MemberList = typeof mockMembers;
+
+function MemberAutocomplete({
+  label,
+  value,
+  members,
+  required,
+  error,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  members: MemberList;
+  required?: boolean;
+  error?: boolean;
+  placeholder?: string;
+  onChange: (name: string, member: MemberList[number] | null) => void;
+}) {
+  const [query, setQuery]   = useState(value);
+  const [open, setOpen]     = useState(false);
+  const ref                  = useRef<HTMLDivElement>(null);
+  const selfTyping           = useRef(false);   // true while we caused the value change
+
+  // Only sync inward when the parent resets the field (not echoing our own typing back)
+  useEffect(() => {
+    if (!selfTyping.current) setQuery(value);
+  }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const suggestions = useMemo(() =>
+    query.trim().length >= 1
+      ? members.filter(m => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : [],
+    [query, members],
+  );
+
+  const baseCls = `w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+    error
+      ? 'border-red-400 dark:border-red-600 focus:ring-red-400/30'
+      : 'border-neutral-200 dark:border-neutral-700 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+  }`;
+
+  const handleType = (text: string) => {
+    selfTyping.current = true;
+    setQuery(text);
+    setOpen(true);
+    onChange(text, null);
+    // release guard after parent re-render has settled
+    requestAnimationFrame(() => { selfTyping.current = false; });
+  };
+
+  const handleSelect = (m: MemberList[number]) => {
+    selfTyping.current = true;
+    setQuery(m.name);
+    setOpen(false);
+    onChange(m.name, m);
+    requestAnimationFrame(() => { selfTyping.current = false; });
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+        {label}
+        {required
+          ? <span className="text-red-500 ml-0.5">*</span>
+          : <span className="text-neutral-400 text-xs font-normal ml-1">(optional)</span>
+        }
+      </label>
+      <input
+        type="text"
+        value={query}
+        placeholder={placeholder ?? 'Type to search members…'}
+        className={baseCls}
+        onChange={e => handleType(e.target.value)}
+        onFocus={() => { if (query.trim().length >= 1) setOpen(true); }}
+      />
+      {open && suggestions.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+          {suggestions.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => handleSelect(m)}
+              className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{m.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.jobTitle} · {m.activityCentre}</p>
+              </div>
+              <span className="text-xs font-mono text-neutral-400 ml-3 flex-shrink-0">{m.id}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Create / Edit form ────────────────────────────────────────
 
 function IncidentForm({
@@ -276,14 +392,15 @@ function IncidentForm({
         : 'border-neutral-200 dark:border-neutral-700 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
     }`;
 
-  const activeSessions = scopeSessions.filter(s => s.status !== 'cancelled');
+  const activeSessions = useMemo(() => scopeSessions.filter(s => s.status !== 'cancelled'), [scopeSessions]);
+  const activeMembers  = useMemo(() => scopeMembers.filter(m => m.status === 'active'), [scopeMembers]);
 
   const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+    <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex-shrink-0">
         <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h3>
       </div>
-      <div className="px-5 py-5">
+      <div className="px-5 py-5 flex-1">
         {children}
       </div>
     </div>
@@ -366,10 +483,13 @@ function IncidentForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Person in Charge of Session <span className="text-neutral-400 text-xs font-normal">(optional)</span>
-            </label>
-            <input type="text" value={form.sessionPersonInCharge} onChange={e => set('sessionPersonInCharge', e.target.value)} placeholder="Name of session lead…" className={fieldCls(false)} />
+            <MemberAutocomplete
+              label="Person in Charge of Session"
+              value={form.sessionPersonInCharge}
+              members={activeMembers}
+              placeholder="Type to search members…"
+              onChange={(name) => set('sessionPersonInCharge', name)}
+            />
           </div>
 
           <div className="md:col-span-3">
@@ -391,34 +511,27 @@ function IncidentForm({
       {/* Casualty */}
       <Card title="Casualty">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="sm:col-span-2 md:col-span-4 flex items-center gap-3">
-            <button type="button" onClick={() => { set('isShakhaMember', !form.isShakhaMember); set('memberId', ''); }}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.isShakhaMember ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
-              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.isShakhaMember ? 'translate-x-4' : 'translate-x-0.5'}`} />
-            </button>
-            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Shakha Member</span>
+          <div className="sm:col-span-2">
+            <MemberAutocomplete
+              label="Casualty Name"
+              value={form.casualtyName}
+              members={activeMembers}
+              required
+              error={touched && errors.casualtyName}
+              placeholder="Type name or search members…"
+              onChange={(name, member) => {
+                set('casualtyName', name);
+                if (member) {
+                  set('memberId', member.id);
+                  set('isShakhaMember', true);
+                  const addr = memberAddress(member);
+                  if (addr) set('casualtyAddress', addr);
+                } else {
+                  set('memberId', '');
+                }
+              }}
+            />
           </div>
-
-          {form.isShakhaMember ? (
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Select Member <span className="text-red-500">*</span>
-              </label>
-              <select value={form.memberId} onChange={e => { const m = scopeMembers.find(m => m.id === e.target.value); set('memberId', e.target.value); if (m) set('casualtyName', m.name); }} className={fieldCls(!form.memberId && touched)}>
-                <option value="">Select member…</option>
-                {scopeMembers.filter(m => m.status === 'active').map(m => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Casualty Name <span className="text-red-500">*</span>
-              </label>
-              <input type="text" value={form.casualtyName} onChange={e => set('casualtyName', e.target.value)} placeholder="Full name of casualty…" className={fieldCls(errors.casualtyName)} />
-            </div>
-          )}
 
           <div className="sm:col-span-2 md:col-span-4">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
@@ -432,19 +545,23 @@ function IncidentForm({
       </div>{/* end row 1 */}
 
       {/* Row 2: Treatment & Outcome + Reporting & Follow-up */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
 
       {/* Treatment & Outcome */}
       <Card title="Treatment & Outcome">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              First Aider Name <span className="text-red-500">*</span>
-            </label>
-            <input type="text" value={form.firstAiderName} onChange={e => set('firstAiderName', e.target.value)} placeholder="Name of first aider…" className={fieldCls(errors.firstAiderName)} />
+          <div className="md:col-span-2">
+            <MemberAutocomplete
+              label="First Aider Name"
+              value={form.firstAiderName}
+              members={activeMembers}
+              required
+              error={touched && errors.firstAiderName}
+              onChange={(name) => set('firstAiderName', name)}
+            />
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Outcome <span className="text-red-500">*</span>
             </label>
@@ -489,14 +606,18 @@ function IncidentForm({
       {/* Reporting & Follow-up */}
       <Card title="Reporting & Follow-up">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Reported By <span className="text-red-500">*</span>
-            </label>
-            <input type="text" value={form.reportedBy} onChange={e => set('reportedBy', e.target.value)} placeholder="Name of person reporting…" className={fieldCls(errors.reportedBy)} />
+          <div className="md:col-span-2">
+            <MemberAutocomplete
+              label="Reported By"
+              value={form.reportedBy}
+              members={activeMembers}
+              required
+              error={touched && errors.reportedBy}
+              onChange={(name) => set('reportedBy', name)}
+            />
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Witnesses <span className="text-neutral-400 text-xs font-normal">(optional)</span>
             </label>
@@ -527,16 +648,28 @@ function IncidentForm({
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">All of the above facts are a true record of the incident/accident.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Signatory Name <span className="text-neutral-400 text-xs font-normal">(optional)</span>
-            </label>
-            <input type="text" value={form.declarationName} onChange={e => set('declarationName', e.target.value)} placeholder="Full name…" className={fieldCls(false)} />
+            <MemberAutocomplete
+              label="Signatory Name"
+              value={form.declarationName}
+              members={activeMembers}
+              placeholder="Type to search members…"
+              onChange={(name, member) => {
+                set('declarationName', name);
+                if (member) set('declarationRole', member.jobTitle);
+              }}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Responsibility in Shakha <span className="text-neutral-400 text-xs font-normal">(optional)</span>
+              Responsibility in Shakha <span className="text-neutral-400 text-xs font-normal">(auto-filled)</span>
             </label>
-            <input type="text" value={form.declarationRole} onChange={e => set('declarationRole', e.target.value)} placeholder="e.g. Karyavah, Mukhya Shikshak…" className={fieldCls(false)} />
+            <input
+              type="text"
+              value={form.declarationRole}
+              onChange={e => set('declarationRole', e.target.value)}
+              placeholder="Auto-filled from member role…"
+              className={fieldCls(false)}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
