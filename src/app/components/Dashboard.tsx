@@ -28,6 +28,7 @@ import {
   X,
   Check,
   ListChecks,
+  IdCard,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
@@ -490,6 +491,7 @@ function MemberDashboard({
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Status</p>
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs ${
@@ -505,9 +507,19 @@ function MemberDashboard({
                 </div>
               </div>
 
-              {/* Right column: responsibilities */}
+              {/* Right column: member ID + responsibilities */}
               <div className="flex flex-col">
-                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 mb-4">Responsibilities</p>
+                <div className="flex items-start gap-2 mb-5">
+                  <IdCard className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Member ID</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.memberId}</p>
+                  </div>
+                </div>
+                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 mb-4 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  Responsibilities
+                </p>
                 <div className="flex flex-col gap-5">
                   <div className="flex items-start gap-2">
                     <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
