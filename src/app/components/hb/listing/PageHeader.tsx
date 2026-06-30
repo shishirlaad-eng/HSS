@@ -80,7 +80,6 @@ import { toast } from 'sonner';
 import { IconButton } from './IconButton';
 import { FlyoutMenu, FlyoutMenuItem, FlyoutMenuDivider } from './FlyoutMenu';
 import { cn } from '../../ui/utils';
-import { useRoleScope } from '../../../contexts/RoleScopeContext';
 
 interface BreadcrumbConfig {
   label: string;
@@ -145,8 +144,6 @@ export function PageHeader({
   className = '',
   moreMenu,
 }: PageHeaderProps) {
-  const { selectedRole } = useRoleScope();
-  const isSuperAdmin = selectedRole === 'Super Admin';
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Check if More Menu should be shown
@@ -166,7 +163,7 @@ export function PageHeader({
             {title}
           </h2>
 
-          {subtitle && !isSuperAdmin && (
+          {subtitle && (
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
               {subtitle}
             </p>

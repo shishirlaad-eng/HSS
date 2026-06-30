@@ -1490,7 +1490,7 @@ export default function MemberManagement({
         {/* PAGE HEADER */}
         <PageHeader
           title={karyakartasOnly ? 'Roles and Responsibility' : 'Members'}
-          subtitle={karyakartasOnly ? 'Manage member roles and responsibilities.' : 'Manage member records across all Masters scopes.'}
+          subtitle={isSuperAdmin ? (karyakartasOnly ? 'Below is a list of all current members that have a Sangh Responsibility and/or a MyHSS Role' : 'Below is a list of all members for your Shakha / Nagar / Vibhag') : undefined}
           breadcrumbs={karyakartasOnly ? [
             { label: 'Members', href: '#' },
             { label: 'Roles and Responsibility', current: true },

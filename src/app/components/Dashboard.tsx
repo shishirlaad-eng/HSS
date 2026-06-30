@@ -1,5 +1,5 @@
 ﻿// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// HSS UK Membership Management System â€” Dashboard
+// HSS UK Membership Management System - Dashboard
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { useMemo, useState, useEffect } from 'react';
@@ -54,7 +54,7 @@ interface Announcement {
 const mockAnnouncements: Announcement[] = [
   {
     id: 'ANN-001',
-    title: 'National SSV 2026 â€” Registrations Now Open',
+    title: 'National SSV 2026 - Registrations Now Open',
     body: 'The annual Sangh Shiksha Varg 2026 is scheduled for August. All shakha leaders and members are encouraged to register their participants before 15 July 2026.',
     postedAt: '2026-05-20T09:00:00Z',
     priority: 'high',
@@ -63,7 +63,7 @@ const mockAnnouncements: Announcement[] = [
   },
   {
     id: 'ANN-002',
-    title: 'DBS Renewal â€” Updated Guidance',
+    title: 'DBS Renewal - Updated Guidance',
     body: 'New DBS renewal guidelines are in effect from June 2026. All active volunteers with DBS expiry before December 2026 must initiate renewal by 30 June.',
     postedAt: '2026-05-15T10:30:00Z',
     priority: 'high',
@@ -79,19 +79,19 @@ const mockAnnouncements: Announcement[] = [
   },
   {
     id: 'ANN-004',
-    title: 'Membership Portal â€” Scheduled Maintenance',
-    body: 'The membership portal will undergo maintenance on 1 June 2026 between 02:00â€“06:00 BST. Members may experience brief interruptions during this window.',
+    title: 'Membership Portal - Scheduled Maintenance',
+    body: 'The membership portal will undergo maintenance on 1 June 2026 between 02:00-06:00 BST. Members may experience brief interruptions during this window.',
     postedAt: '2026-05-08T11:00:00Z',
     priority: 'low',
     postedBy: 'IT Operations',
   },
   {
     id: 'ANN-005',
-    title: 'New Activity Centre â€” Birmingham West Now Active',
+    title: 'New Activity Centre - Birmingham West Now Active',
     body: 'We are pleased to announce that Birmingham West Activity Centre is now fully operational. Shakha activities begin from 1 June 2026.',
     postedAt: '2026-05-05T08:00:00Z',
     priority: 'medium',
-    postedBy: 'Regional Coordinator â€” Midlands',
+    postedBy: 'Regional Coordinator - Midlands',
   },
 ];
 
@@ -172,14 +172,14 @@ const mockMyDonations = [
 // â”€â”€ Mock Attendance (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockMyAttendance = [
-  { id: 'ATT-001', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-06-01', status: 'present' },
-  { id: 'ATT-002', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-25', status: 'present' },
+  { id: 'ATT-001', session: 'Shakha - Wembley Activity Centre',     date: '2026-06-01', status: 'present' },
+  { id: 'ATT-002', session: 'Shakha - Wembley Activity Centre',     date: '2026-05-25', status: 'present' },
   { id: 'ATT-003', session: 'Youth Leadership Workshop',            date: '2026-05-20', status: 'present' },
-  { id: 'ATT-004', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-18', status: 'absent'  },
-  { id: 'ATT-005', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-05-11', status: 'present' },
+  { id: 'ATT-004', session: 'Shakha - Wembley Activity Centre',     date: '2026-05-18', status: 'absent'  },
+  { id: 'ATT-005', session: 'Shakha - Wembley Activity Centre',     date: '2026-05-11', status: 'present' },
   { id: 'ATT-006', session: 'Annual Sports Day',                    date: '2026-05-04', status: 'present' },
-  { id: 'ATT-007', session: 'Shakha â€” Wembley Activity Centre',     date: '2026-04-27', status: 'absent'  },
-  { id: 'ATT-008', session: 'Bal Vihar â€” Cultural Evening',        date: '2026-04-20', status: 'present' },
+  { id: 'ATT-007', session: 'Shakha - Wembley Activity Centre',     date: '2026-04-27', status: 'absent'  },
+  { id: 'ATT-008', session: 'Bal Vihar - Cultural Evening',        date: '2026-04-20', status: 'present' },
 ];
 
 // â”€â”€ Mock current logged-in member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -250,7 +250,7 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* â”€â”€ Row 1: Donut stat cards â€” My Attendance · Suchana · Karyakrams · My Dakshina â”€â”€ */}
+      {/* â”€â”€ Row 1: Donut stat cards - My Attendance · Suchana · Karyakrams · My Dakshina â”€â”€ */}
       {(() => {
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
@@ -516,18 +516,14 @@ function MemberDashboard({
                     <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.memberId}</p>
                   </div>
                 </div>
-                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 mb-4 flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                  Responsibilities
-                </p>
-                <div className="flex flex-col gap-5">
-                  <div className="flex items-start gap-2">
-                    <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility}</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility2}</p>
+                <div className="flex items-start gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Responsibilities</p>
+                    <div className="flex flex-col gap-5">
+                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility}</p>
+                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility2}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -664,12 +660,12 @@ function MemberDashboard({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-[16px] font-semibold text-neutral-900 dark:text-white" style={{ fontFamily: "'Ramilias', serif" }}>{event.name}</span>
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />{cfg.label}
+                          <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+                            {cfg.label}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-[12px] text-neutral-500 dark:text-neutral-400 flex-wrap">
-                          <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} â€“ {formatEventTime(event.endDate)}</span>
+                          <span className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" />{formatEventTime(event.startDate)} - {formatEventTime(event.endDate)}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.activityCentre}</span>
                         </div>
                       </div>
@@ -703,7 +699,7 @@ function MemberDashboard({
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200 dark:border-neutral-800" style={{ borderTop: '3px solid #172E4D' }}>
               <h4 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <ListChecks className="w-4 h-4 text-primary-600" />
-                Register â€” <span style={{ fontFamily: "'Ramilias', serif" }}>{registerEvent.name}</span>
+                Register - <span style={{ fontFamily: "'Ramilias', serif" }}>{registerEvent.name}</span>
               </h4>
               <button onClick={() => setRegisterEvent(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
                 <X className="w-4 h-4" />
@@ -736,7 +732,7 @@ function MemberDashboard({
                       onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
                       className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
-                      <option value="">Selectâ€¦</option>
+                      <option value="">Select...</option>
                       {(q.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   )}
@@ -787,7 +783,7 @@ function MemberDashboard({
 
 // â”€â”€ Hierarchy KPI Section (Regional / Town / Activity Centre) â”€â”€
 
-// Age-group membership labels are NOT sangh responsibilities â€” exclude them
+// Age-group membership labels are NOT sangh responsibilities - exclude them
 // when counting "Shakha Karyakartas" (members holding a sangh responsibility).
 const AGE_GROUP_ROLE_LABELS = new Set([
   'Bal(ika)', 'Shishu', 'Kishor(i)', 'Tarun(i)', 'Yuva(ti)', 'Jyestha(a)',
@@ -894,7 +890,7 @@ function HierarchyKpiSection({
       m => m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle),
     ).length;
 
-    // â”€â”€ Upcoming Karyakrams â€” events any member of this Shakha is eligible for â”€â”€
+    // â”€â”€ Upcoming Karyakrams - events any member of this Shakha is eligible for â”€â”€
     const isEligibleForShakha = (e: typeof mockEvents[number]) => {
       if (!e.filterAgeCategories && !e.filterGenders && !e.filterJobTitles) return true;
       return scopedMembers.some(m => {
@@ -946,8 +942,8 @@ function HierarchyKpiSection({
           onClick={() => onNavigate?.('attendance-log')}
           subMetrics={[
             { label: 'Shakhas held YTD', value: kpis.sessionsHeldYTD, tone: 'primary' },
-            { label: 'Avg â€” last 4 Shakhas', value: kpis.avgLast4 },
-            { label: 'Avg â€” YTD', value: kpis.avgYTD },
+            { label: 'Avg - last 4 Shakhas', value: kpis.avgLast4 },
+            { label: 'Avg - YTD', value: kpis.avgYTD },
           ]}
         />
 
@@ -1012,7 +1008,7 @@ function HierarchyKpiSection({
           ]}
         />
 
-        {/* Upcoming Karyakrams â€” placed after Compliance */}
+        {/* Upcoming Karyakrams - placed after Compliance */}
         <KpiCard
           title="Upcoming Karyakrams"
           value={kpis.allUpcoming}
@@ -1122,7 +1118,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                 ? `Country: ${scope.country}`
                 : scope.country && !scope.region
                   ? undefined
-                  : showHierarchyKpis ? undefined : `${greeting} â€” here's what's happening across the network`
+                  : showHierarchyKpis ? undefined : `${greeting} - here's what's happening across the network`
         }
         breadcrumbs={[
           { label: 'Home', href: '#' },
@@ -1181,7 +1177,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
       )}
 
-      {/* â”€â”€ Row 2: Activity KPIs (hidden for hierarchy roles â€” covered by Performance Overview) â”€â”€ */}
+      {/* â”€â”€ Row 2: Activity KPIs (hidden for hierarchy roles - covered by Performance Overview) â”€â”€ */}
       {!showHierarchyKpis && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
@@ -1333,15 +1329,14 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                             <span className="text-sm font-semibold text-neutral-900 dark:text-white">
                               {event.name}
                             </span>
-                            <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                            <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
                               {cfg.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 text-[12px] text-neutral-500 dark:text-neutral-400 flex-wrap">
                             <span className="flex items-center gap-1">
                               <CalendarClock className="w-3.5 h-3.5 flex-shrink-0" />
-                              {formatEventTime(event.startDate)} â€“ {formatEventTime(event.endDate)}
+                              {formatEventTime(event.startDate)} - {formatEventTime(event.endDate)}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1493,7 +1488,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           </div>
         </div>
 
-        {/* Recent Registrations (1/3) â€” hidden for AC Admin */}
+        {/* Recent Registrations (1/3) - hidden for AC Admin */}
         {scope.level !== 'centre' && (
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full">

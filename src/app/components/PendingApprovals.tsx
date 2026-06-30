@@ -514,7 +514,7 @@ export default function PendingApprovals() {
         {/* PAGE HEADER */}
         <PageHeader
           title="Pending Karyawaha Approvals"
-          subtitle="Review and action member registration requests awaiting approval."
+          subtitle={selectedRole === 'Super Admin' ? 'Below is a list of all user accounts that are pending Shakha Karyawaha approval' : 'Review and action member registration requests awaiting approval.'}
           breadcrumbs={[
             { label: 'Members Management', href: '#' },
             { label: 'Pending Karyawaha Approvals', current: true },

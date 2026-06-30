@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope } from '../../mockAPI/roleScope';
 import {
@@ -10,7 +11,7 @@ import {
   DBSStatus,
   CertStatus,
 } from '../../mockAPI/membersData';
-import { PageHeader } from './hb/listing';
+import { PageHeader, SearchBar, Pagination } from './hb/listing';
 
 type ComplianceTab = 'dbs' | 'firstAid' | 'safeguarding';
 
@@ -53,9 +54,37 @@ function fmtDate(date?: string) {
 const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
+type SortCol = 'id' | 'name' | 'ageCategory';
+
+function SortableTH({ col, label, sortCol, sortDir, onSort }: { col: SortCol; label: string; sortCol: SortCol; sortDir: 'asc' | 'desc'; onSort: (col: SortCol) => void }) {
+  const active = sortCol === col;
+  const Icon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th
+      className={`${TH} cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors`}
+      onClick={() => onSort(col)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <Icon className={`w-3 h-3 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
+      </span>
+    </th>
+  );
+}
+
 export default function ComplianceManagement({ onNavigateToMember }: { onNavigateToMember?: (memberId: string) => void } = {}) {
-  const { scope } = useRoleScope();
+  const { scope, selectedRole } = useRoleScope();
   const [activeTab, setActiveTab] = useState<ComplianceTab>('dbs');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortCol, setSortCol] = useState<SortCol>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  const handleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
 
   const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
 
@@ -64,6 +93,27 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
     firstAid:     members.filter(m => m.compliance.firstAid === 'Expired').length,
     safeguarding: members.filter(m => (m.compliance.safeguardingTraining ?? 'Expired') === 'Expired').length,
   }), [members]);
+
+  const filteredMembers = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    let rows = !q ? members : members.filter(m =>
+      m.id.toLowerCase().includes(q) ||
+      m.name.toLowerCase().includes(q)
+    );
+    rows = [...rows].sort((a, b) => {
+      let av: string, bv: string;
+      if (sortCol === 'id') { av = a.id; bv = b.id; }
+      else if (sortCol === 'name') { av = a.name; bv = b.name; }
+      else { av = AGE_GROUP_LABELS[getAgeGroup(a.dateOfBirth)]; bv = AGE_GROUP_LABELS[getAgeGroup(b.dateOfBirth)]; }
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return rows;
+  }, [members, searchQuery, sortCol, sortDir]);
+
+  const pagedMembers = useMemo(() =>
+    filteredMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredMembers, currentPage, pageSize]
+  );
 
   const tabs: { id: ComplianceTab; label: string }[] = [
     { id: 'dbs',          label: 'DBS'          },
@@ -74,7 +124,16 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6">
-        <PageHeader title="Compliance" />
+        <PageHeader
+          title="Compliance"
+          subtitle={selectedRole === 'Super Admin' ? 'Below is a list of all members that have undertaken compliance requirements to run Shakha activities' : undefined}
+        >
+          <SearchBar
+            value={searchQuery}
+            onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+            placeholder="Search by name or member ID..."
+          />
+        </PageHeader>
       </div>
 
       {/* Tab bar */}
@@ -85,7 +144,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-400'
@@ -111,9 +170,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
             <thead>
               {activeTab === 'dbs' && (
                 <tr>
-                  <th className={TH}>Member ID</th>
-                  <th className={TH}>Name</th>
-                  <th className={TH}>Age Category</th>
+                  <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <th className={TH}>DBS Status</th>
                   <th className={TH}>DBS Cert Date</th>
                   <th className={TH}>DBS Update Service</th>
@@ -121,18 +180,18 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               )}
               {activeTab === 'firstAid' && (
                 <tr>
-                  <th className={TH}>Member ID</th>
-                  <th className={TH}>Name</th>
-                  <th className={TH}>Age Category</th>
+                  <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <th className={TH}>First Aid Status</th>
                   <th className={TH}>Expiry Date</th>
                 </tr>
               )}
               {activeTab === 'safeguarding' && (
                 <tr>
-                  <th className={TH}>Member ID</th>
-                  <th className={TH}>Name</th>
-                  <th className={TH}>Age Category</th>
+                  <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <th className={TH}>Safeguarding Status</th>
                   <th className={TH}>Level of Training</th>
                   <th className={TH}>Date Completed</th>
@@ -140,7 +199,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               )}
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {members.map(m => (
+              {pagedMembers.map(m => (
                 <tr
                   key={m.id}
                   className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
@@ -199,7 +258,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   )}
                 </tr>
               ))}
-              {members.length === 0 && (
+              {pagedMembers.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-sm text-neutral-400">
                     No members found.
@@ -208,6 +267,14 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filteredMembers.length / pageSize))}
+            totalItems={filteredMembers.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
         </div>
       </div>
     </div>

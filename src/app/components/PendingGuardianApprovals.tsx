@@ -493,7 +493,7 @@ export default function PendingGuardianApprovals() {
         {/* PAGE HEADER */}
         <PageHeader
           title="Pending Parent/Guardian Approvals"
-          subtitle="Teen member registrations awaiting parental / guardian consent. Super admin can approve on behalf of the guardian."
+          subtitle={selectedRole === 'Super Admin' ? 'Below is a list of Teen (13-17) users who are pending their nominated Parent/Guardian for approval' : 'Teen member registrations awaiting parental / guardian consent. Super admin can approve on behalf of the guardian.'}
           breadcrumbs={[
             { label: 'Members Management', href: '#' },
             { label: 'Pending Parent/Guardian Approvals', current: true },
