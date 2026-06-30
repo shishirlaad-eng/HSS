@@ -457,8 +457,7 @@ export default function Sessions() {
                     <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
                   )}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDot(s.status)}`} />
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
                       {statusLabel(s.status)}
                     </span>
                   </td>

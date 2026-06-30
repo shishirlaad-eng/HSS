@@ -158,9 +158,7 @@ const MEMBER_STATUS_CFG = {
   rejected:                   { label: 'Rejected',          dot: 'bg-error-500',   text: 'text-error-700 dark:text-error-400'    },
 };
 
-const AGE_GROUP_CHIP = 'bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] dark:bg-[#1a2e14] dark:text-[#86efac] dark:border-[#166534]';
-
-// â”€â”€ Mock Donations (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//â”€â”€ Mock Donations (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockMyDonations = [
   { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00,  type: 'recurring' },
@@ -251,7 +249,7 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* â”€â”€ Row 1: Donut stat cards â€” My Sankhya · Suchana · Karyakrams · My Dakshina â”€â”€ */}
+      {/* â”€â”€ Row 1: Donut stat cards â€” My Attendance · Suchana · Karyakrams · My Dakshina â”€â”€ */}
       {(() => {
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
@@ -261,7 +259,7 @@ function MemberDashboard({
         const recurringDakshina = 60;
         const donutCards = [
           {
-            label:    'My Sankhya',
+            label:    'My Attendance',
             arc:      (attendancePct / 100) * C,
             color:    '#172E4D',
             center:   `${attendancePct}%`,
@@ -280,18 +278,18 @@ function MemberDashboard({
           {
             label:    'Suchana',
             arc:      (Math.min(mockAnnouncements.length, 10) / 10) * C,
-            color:    '#E24B4A',
+            color:    '#F9B03D',
             display:  'stat',
             center:   `${mockAnnouncements.length}`,
             segments: [
-              { label: 'High Priority', value: highPriority, color: '#E24B4A' },
+              { label: 'High Priority', value: highPriority, color: '#F9B03D' },
               { label: 'Other Suchana', value: Math.max(mockAnnouncements.length - highPriority, 0), color: '#F9B03D' },
             ],
             detail:   '',
             detailRows: [],
             sub:      `${highPriority} High Priority`,
-            bg:       'bg-red-50 dark:bg-red-950/30',
-            track:    'text-red-100 dark:text-red-900/60',
+            bg:       'bg-amber-50 dark:bg-amber-900/20',
+            track:    'text-amber-100 dark:text-amber-900/60',
             onClick:  () => onNavigate?.('announcements'),
           },
           {
@@ -443,7 +441,7 @@ function MemberDashboard({
         );
       })()}
 
-      {/* â”€â”€ Row 2: My Profile + My Sankhya list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â”€â”€ Row 2: My Profile + My Attendance list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
 
         {/* My Profile card */}
@@ -499,7 +497,6 @@ function MemberDashboard({
                         ? 'bg-success-50 dark:bg-success-950/20 border-success-200 dark:border-success-800'
                         : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${mockCurrentMember.status === 'Active' ? 'bg-success-500' : 'bg-neutral-400'}`} />
                       <span className={`whitespace-nowrap ${mockCurrentMember.status === 'Active' ? 'text-success-700 dark:text-success-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
                         {mockCurrentMember.status}
                       </span>
@@ -526,13 +523,13 @@ function MemberDashboard({
           </div>
         </div>
 
-        {/* My Sankhya attendance list */}
+        {/* My Attendance attendance list */}
         <div className="flex flex-col cursor-pointer" onClick={() => onNavigate?.('attendance-log')}>
           <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col flex-1 overflow-hidden hover:border-primary-300 dark:hover:border-primary-700 transition-colors" style={{ borderTop: '3px solid #172E4D' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Sankhya</h3>
+                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">My Attendance</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                   {attendancePct}%
                 </span>
@@ -556,8 +553,8 @@ function MemberDashboard({
                       <p className="text-[12px] text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
                     </div>
                     {att.status === 'present'
-                      ? <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Present</span>
-                      : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Absent</span>
+                      ? <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 flex-shrink-0">Present</span>
+                      : <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0">Absent</span>
                     }
                   </div>
                 </div>
@@ -666,7 +663,7 @@ function MemberDashboard({
                       </div>
                       <div className="flex-shrink-0">
                         {registered.has(event.id)
-                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">Registered</span>
+                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800">Registered</span>
                           : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">Not Yet Registered</span>
                         }
                       </div>
@@ -1352,7 +1349,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                               £{event.price}
                             </span>
                           ) : (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800">
                               Free
                             </span>
                           )}
@@ -1411,7 +1408,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                             {sc.label}
                           </div>
                         </div>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP} flex-shrink-0`}>
+                        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex-shrink-0">
                           {getAgeGroupLabel(member.dateOfBirth)}
                         </span>
                       </div>
@@ -1519,7 +1516,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${AGE_GROUP_CHIP}`}>
+                          <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
                             {getAgeGroupLabel(member.dateOfBirth)}
                           </span>
                           <span className={`inline-flex items-center gap-1 text-[10px] ${sc.text}`}>

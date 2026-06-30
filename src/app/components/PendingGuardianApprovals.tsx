@@ -54,10 +54,7 @@ const COMPLIANCE_CFG = {
 function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
   const cfg = COMPLIANCE_CFG[status];
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
-    </span>
+    <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
   );
 }
 
@@ -616,12 +613,6 @@ export default function PendingGuardianApprovals() {
                   onClick={() => { setSelectedMember(m); setPageState('detail'); }}
                   className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 hover:shadow-md hover:border-primary-600 dark:hover:border-primary-400 transition-all cursor-pointer shadow-sm flex flex-col"
                 >
-                  {/* Top row */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div onClick={e => e.stopPropagation()}>
-                      <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getRowMenuItems(m)} />
-                    </div>
-                  </div>
 
                   {/* Content */}
                   <div className="flex-1">

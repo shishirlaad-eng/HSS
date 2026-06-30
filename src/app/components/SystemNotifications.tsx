@@ -178,10 +178,9 @@ export default function SystemNotifications() {
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${
         isActive 
-          ? 'bg-success-50 text-success-600 border-success-100 dark:bg-success-950/20 dark:text-success-400 dark:border-success-900/30' 
+          ? 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800'
           : 'bg-neutral-50 text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800'
       }`}>
-        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-success-500' : 'bg-neutral-400'}`}></div>
         <span className="text-xs font-medium capitalize">{status}</span>
       </span>
     );

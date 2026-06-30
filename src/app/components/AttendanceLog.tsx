@@ -398,7 +398,7 @@ export default function AttendanceLog() {
 
         {/* ── PAGE HEADER ── */}
         <PageHeader
-          title={scope.selfOnly ? "My Sankhya" : "Sankhya Log"}
+          title={scope.selfOnly ? "My Attendance" : "Sankhya Log"}
           subtitle={scope.selfOnly ? "Your Personal Attendance Record" : "Complete record of member Sankhya across all Shakha gatherings."}
           >
           {/* Search + Advanced Filter panel — admin only */}

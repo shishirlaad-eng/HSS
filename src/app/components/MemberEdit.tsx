@@ -5,8 +5,11 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  Clock,
   HeartPulse,
   History,
+  Mail,
+  MapPin,
   Plus,
   Phone,
   Save,
@@ -16,7 +19,7 @@ import {
   Users,
   Briefcase,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, SecondaryButton } from './hb/listing';
+import { PrimaryButton, SecondaryButton } from './hb/listing';
 import { FormField, FormInput, FormLabel, FormSelect, FormTextarea } from './hb/common';
 import {
   DBSStatus, CertStatus,
@@ -41,6 +44,17 @@ import {
 import { toast } from 'sonner';
 import { ADMIN_ROLE_OPTIONS } from '../../mockAPI/rolesData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: string; bg: string; border: string }> = {
+  active:                    { label: 'Active',                   dot: 'bg-success-500',  text: 'text-success-700 dark:text-success-400',  bg: 'bg-success-50 dark:bg-success-950/20',  border: 'border-success-200 dark:border-success-800'  },
+  pending:                   { label: 'Pending Approval',         dot: 'bg-amber-500',    text: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-950/20',      border: 'border-amber-200 dark:border-amber-800'      },
+  'pending-parental-consent':{ label: 'Pending Parental Consent', dot: 'bg-violet-500',   text: 'text-violet-700 dark:text-violet-400',    bg: 'bg-violet-50 dark:bg-violet-950/20',    border: 'border-violet-200 dark:border-violet-800'    },
+  inactive:                  { label: 'Inactive',                 dot: 'bg-neutral-400',  text: 'text-neutral-600 dark:text-neutral-400',  bg: 'bg-neutral-100 dark:bg-neutral-800',    border: 'border-neutral-200 dark:border-neutral-700'  },
+  rejected:                  { label: 'Rejected',                 dot: 'bg-error-500',    text: 'text-error-700 dark:text-error-400',      bg: 'bg-error-50 dark:bg-error-950/20',      border: 'border-error-200 dark:border-error-800'      },
+};
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
@@ -113,12 +127,16 @@ type MemberForm = {
   guardianRelationship: string;
   medicalInfoDeclared: boolean;
   medicalInfoDetails: string;
+  epiPen: string;
+  allergies: string;
   isFirstAider: boolean;
   firstAidQualificationLevel: '' | FirstAidQualification;
   firstAidQualificationExpiryDate: string;
   dietaryRequirements: DietaryRequirement[];
   occupation: string;
+  spokenLanguages: string;
   originatingStateIndia: string;
+  additionalNotes: string;
   country: string;
   region: string;
   town: string;
@@ -206,12 +224,16 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     guardianRelationship: member.guardianRelationship ?? '',
     medicalInfoDeclared: member.medicalInfoDeclared ?? false,
     medicalInfoDetails: member.medicalInfoDetails ?? '',
+    epiPen: member.epiPen ?? '',
+    allergies: member.allergies ?? '',
     isFirstAider: member.isFirstAider ?? false,
     firstAidQualificationLevel: member.firstAidQualificationLevel ?? '',
     firstAidQualificationExpiryDate: member.firstAidQualificationExpiryDate ?? '',
     dietaryRequirements: member.dietaryRequirements ?? [],
     occupation: member.occupation ?? '',
+    spokenLanguages: Array.isArray(member.spokenLanguages) ? member.spokenLanguages.join(', ') : (member.spokenLanguages ?? ''),
     originatingStateIndia: member.originatingStateIndia ?? '',
+    additionalNotes: member.additionalNotes ?? '',
     country: member.country,
     region: member.region,
     town: member.town,
@@ -281,18 +303,6 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         if (key === 'town') { next.activityCentre = ''; }
         return next;
       });
-    };
-
-  const setBoolean = (key: keyof Pick<MemberForm, 'medicalInfoDeclared' | 'isFirstAider'>) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = e.target.checked;
-      setFormData(prev => ({
-        ...prev,
-        [key]: checked,
-        ...(key === 'isFirstAider' && !checked
-          ? { firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '' }
-          : {}),
-      }));
     };
 
   const toggleDietaryRequirement = (value: DietaryRequirement) => {
@@ -435,6 +445,8 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         safeguardingExpiry: formData.safeguardingExpiry || undefined,
         medicalInfoDeclared: formData.medicalInfoDeclared,
         medicalInfoDetails: formData.medicalInfoDetails.trim() || undefined,
+        epiPen: formData.epiPen.trim() || undefined,
+        allergies: formData.allergies.trim() || undefined,
         isFirstAider: canEditQualifiedFirstAider ? formData.isFirstAider : member.isFirstAider,
         firstAidQualificationLevel: canEditQualifiedFirstAider && formData.isFirstAider
           ? formData.firstAidQualificationLevel || undefined
@@ -444,7 +456,9 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           : member.firstAidQualificationExpiryDate,
         dietaryRequirements: formData.dietaryRequirements,
         occupation: formData.occupation.trim() || undefined,
+        spokenLanguages: formData.spokenLanguages.trim() ? formData.spokenLanguages.split(',').map(s => s.trim()).filter(Boolean) : undefined,
         originatingStateIndia: formData.originatingStateIndia.trim() || undefined,
+        additionalNotes: formData.additionalNotes.trim() || undefined,
         adminRole: formData.adminRoles[0] || undefined,
         adminRoles: formData.adminRoles,
         responsibilityType: primaryResponsibility?.responsibilityType || undefined,
@@ -461,22 +475,72 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
   };
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
-      <PageHeader
-        title="Edit Member Profile"
-        breadcrumbs={[
-          { label: 'Members', onClick: onBack },
-          { label: member.name, onClick: onBack },
-          { label: 'Edit', current: true },
-        ]}
-      >
-        <div className="flex items-center gap-3">
-          <SecondaryButton icon={ArrowLeft} onClick={onBack}>Cancel</SecondaryButton>
-          <PrimaryButton icon={Save} onClick={handleSave} isLoading={isSaving}>
-            {isSaving ? 'Saving...' : 'Update'}
-          </PrimaryButton>
-        </div>
-      </PageHeader>
+    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
+
+      {/* ── Member identity header (read-only, mirrors MemberDetail) ── */}
+      {(() => {
+        const cfg = STATUS_CONFIG[member.status];
+        return (
+          <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              {/* Row 1 — Name · Member ID */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white leading-tight">
+                  {member.name}
+                </h1>
+                <span className="text-neutral-400 dark:text-neutral-600">·</span>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">{member.id}</span>
+              </div>
+              {/* Row 2 — Age group · Status */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {getAgeGroupLabel(member.dateOfBirth)}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${cfg.bg} ${cfg.border} ${cfg.text} whitespace-nowrap`}>
+                  {cfg.label}
+                </span>
+              </div>
+              {/* Row 3 — Email · Phone */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                <a href={`mailto:${member.email}`} className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  <Mail className="w-3.5 h-3.5" />{member.email}
+                </a>
+                {member.guardianEmail && calcAge < 18 && (
+                  <>
+                    <span className="text-neutral-300 dark:text-neutral-700">|</span>
+                    <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />Guardian: {member.guardianEmail}</span>
+                  </>
+                )}
+                {member.phone && (
+                  <>
+                    <span className="text-neutral-300 dark:text-neutral-700">|</span>
+                    <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{member.phone}</span>
+                  </>
+                )}
+              </div>
+              {/* Row 4 — Location · Registered */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-500">
+                <span>{member.country}</span>
+                <span>·</span>
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{member.region}</span>
+                <span>·</span>
+                <span>{member.town}</span>
+                <span>·</span>
+                <span>{member.activityCentre}</span>
+                <span>·</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Registered {fmtDate(member.registrationDate)}</span>
+              </div>
+            </div>
+            {/* Action buttons — right side, same row as header */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <SecondaryButton icon={ArrowLeft} onClick={onBack}>Cancel</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={handleSave} isLoading={isSaving}>
+                {isSaving ? 'Saving...' : 'Update'}
+              </PrimaryButton>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Important note banner */}
       <div className="mb-5 flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
@@ -552,6 +616,49 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} /></FormField>
                 </div>
               </EditSection>
+
+              <EditSection title="Medical Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField>
+                    <FormLabel>Do you have any medical condition?</FormLabel>
+                    <FormSelect value={formData.medicalInfoDeclared ? 'Yes' : 'No'} onChange={e => setFormData(prev => ({ ...prev, medicalInfoDeclared: e.target.value === 'Yes' }))}>
+                      <option>No</option>
+                      <option>Yes</option>
+                    </FormSelect>
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Do you carry an EpiPen/Jext/Emerade?</FormLabel>
+                    <FormSelect value={formData.epiPen || 'No'} onChange={set('epiPen')}>
+                      <option>No</option>
+                      <option>Yes</option>
+                    </FormSelect>
+                  </FormField>
+                  <FormField className="md:col-span-2">
+                    <FormLabel>Medical Information Details</FormLabel>
+                    <FormTextarea rows={3} value={formData.medicalInfoDetails} onChange={set('medicalInfoDetails')} />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Any Allergies</FormLabel>
+                    <FormInput value={formData.allergies} onChange={set('allergies')} placeholder="e.g. Peanuts, Latex" />
+                  </FormField>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {DIETARY_REQUIREMENTS.map(item => (
+                        <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-primary-600"
+                            checked={formData.dietaryRequirements.includes(item)}
+                            onChange={() => toggleDietaryRequirement(item)}
+                          />
+                          {item}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </EditSection>
             </>
           )}
 
@@ -625,12 +732,32 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
               <EditSection title="First Aid">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField>
+                    <FormLabel>Are you a first aider for HSS?</FormLabel>
+                    <FormSelect value={formData.isFirstAider ? 'Yes' : 'No'} onChange={e => setFormData(prev => ({
+                      ...prev,
+                      isFirstAider: e.target.value === 'Yes',
+                      ...( e.target.value !== 'Yes' ? { firstAidQualificationLevel: '' as const, firstAidQualificationExpiryDate: '' } : {}),
+                    }))}>
+                      <option>No</option>
+                      <option>Yes</option>
+                    </FormSelect>
+                  </FormField>
                   <FormField><FormLabel>First Aid Status</FormLabel><FormSelect value={formData.firstAidStatus} onChange={set('firstAidStatus')}><option value="Certified">Certified</option><option value="Expired">Expired</option><option value="N/A">N/A</option></FormSelect></FormField>
+                  {formData.isFirstAider && (
+                    <>
+                      <FormField>
+                        <FormLabel>First Aid Qualification</FormLabel>
+                        <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
+                          <option value="">Select qualification</option>
+                          {FIRST_AID_QUALIFICATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                        </FormSelect>
+                      </FormField>
+                      <FormField><FormLabel>Expiry Date</FormLabel><FormInput type="date" value={formData.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} /></FormField>
+                    </>
+                  )}
                   <FormField><FormLabel>First Aid Reference Number</FormLabel><FormInput value={formData.firstAidRef} onChange={set('firstAidRef')} /></FormField>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 leading-relaxed">
-                  The profile first-aider flag and qualification level are separate from the First Aid compliance certificate status.
-                </p>
               </EditSection>
 
               {canEditSafeguardingFields && (
@@ -662,55 +789,17 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
           {/* ── Other Information ── */}
           {activeTab === 'other' && (
-            <>
-              <EditSection title="Medical Information">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                    <input type="checkbox" checked={formData.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
-                    Medical information declared
-                  </label>
-                  <FormField className="md:col-span-2"><FormLabel>Medical Information Details</FormLabel><FormTextarea rows={3} value={formData.medicalInfoDetails} onChange={set('medicalInfoDetails')} /></FormField>
-                  {canEditQualifiedFirstAider && (
-                    <>
-                      <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                        <input type="checkbox" checked={formData.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                        Are you a qualified First Aider
-                      </label>
-                      {formData.isFirstAider && (
-                        <>
-                          <FormField>
-                            <FormLabel>Level of qualification</FormLabel>
-                            <FormSelect value={formData.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
-                              <option value="">Select qualification</option>
-                              {FIRST_AID_QUALIFICATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                            </FormSelect>
-                          </FormField>
-                          <FormField><FormLabel>Qualification expiry date</FormLabel><FormInput type="date" value={formData.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} /></FormField>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              </EditSection>
-
-              <EditSection title="Additional Details">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel>Occupation</FormLabel><FormInput value={formData.occupation} onChange={set('occupation')} /></FormField>
-                  <FormField><FormLabel>Originating State in India</FormLabel><FormInput value={formData.originatingStateIndia} onChange={set('originatingStateIndia')} /></FormField>
-                  <div className="md:col-span-2">
-                    <FormLabel>Special Dietary Requirements</FormLabel>
-                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {DIETARY_REQUIREMENTS.map(item => (
-                        <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                          <input type="checkbox" checked={formData.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
-                          {item}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </EditSection>
-            </>
+            <EditSection title="Other Information">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField><FormLabel>Occupation (Select Other if not listed)</FormLabel><FormInput value={formData.occupation} onChange={set('occupation')} /></FormField>
+                <FormField><FormLabel>Spoken Language(s)</FormLabel><FormInput value={formData.spokenLanguages} onChange={set('spokenLanguages')} placeholder="e.g. English, Hindi, Gujarati" /></FormField>
+                <FormField><FormLabel>Originating State in India</FormLabel><FormInput value={formData.originatingStateIndia} onChange={set('originatingStateIndia')} /></FormField>
+                <FormField className="md:col-span-2">
+                  <FormLabel>Additional Notes / Comments</FormLabel>
+                  <FormTextarea rows={3} value={formData.additionalNotes} onChange={set('additionalNotes')} />
+                </FormField>
+              </div>
+            </EditSection>
           )}
 
           {/* ── Roles & Responsibility ── */}

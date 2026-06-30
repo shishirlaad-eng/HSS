@@ -104,9 +104,8 @@ function StatusBadge({ status }: { status: Event['status'] }) {
   };
   const s = map[status] ?? map.draft;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-transparent ${s.bg} ${s.text}`}>
-      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
-      <span className="text-xs font-medium">{s.label}</span>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border border-transparent text-xs font-medium ${s.bg} ${s.text}`}>
+      {s.label}
     </span>
   );
 }
@@ -121,7 +120,7 @@ function PaymentBadge({ type, price, priceCategories }: { type: Event['paymentTy
       {priceLabel}
     </span>
   ) : (
-    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800">
       Free
     </span>
   );
@@ -1459,7 +1458,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                               <span className="font-semibold text-sm text-neutral-900 dark:text-white truncate">{ev.name}</span>
                               <StatusBadge status={ev.status} />
                             </div>
-                            <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 whitespace-nowrap">Registered</span>
+                            <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 whitespace-nowrap">Registered</span>
                           </div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span className="flex items-center gap-1"><Clock size={10} />{utcHHMM(ev.startDate)} – {utcHHMM(ev.endDate)}</span>

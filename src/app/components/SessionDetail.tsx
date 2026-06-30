@@ -486,8 +486,7 @@ export default function SessionDetail({
                   </div>
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Status</p>
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(session.status)}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusDot(session.status)}`} />
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(session.status)}`}>
                       {statusLabel}
                     </span>
                   </div>

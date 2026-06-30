@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   ArrowLeft,
   Edit,
@@ -24,8 +24,12 @@ import {
   UserCog,
   UserCircle2,
   ClipboardList,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
 } from 'lucide-react';
-import { SecondaryButton, PrimaryButton, Pagination } from './hb/listing';
+import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
 import {
   Member,
   getAge,
@@ -47,32 +51,18 @@ const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: st
   rejected:                  { label: 'Rejected',                 dot: 'bg-error-500',    text: 'text-error-700 dark:text-error-400',      bg: 'bg-error-50 dark:bg-error-950/20',      border: 'border-error-200 dark:border-error-800'      },
 };
 
-const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
-  bal: 'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
-  shishu: 'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
-  kishor: 'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
-  tarun: 'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
-  yuva: 'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800',
-  jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
-};
-
 function StatusBadge({ status }: { status: MemberStatus }) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs ${cfg.bg} ${cfg.border}`}>
-      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      <span className={`${cfg.text} whitespace-nowrap`}>{cfg.label}</span>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${cfg.bg} ${cfg.border} ${cfg.text} whitespace-nowrap`}>
+      {cfg.label}
     </span>
   );
 }
 
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   const group = getAgeGroup(dateOfBirth);
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${AGE_GROUP_CHIP[group]}`}>
-      {AGE_GROUP_LABELS[group]}
-    </span>
-  );
+  return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
 // ── Compliance card helpers ───────────────────────────────────
@@ -195,7 +185,7 @@ interface MemberDetailProps {
   initialTab?: Tab;
 }
 
-type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'other' | 'activity' | 'history';
+type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'roles' | 'other' | 'activity' | 'history';
 
 // ── Mock change-history generator ────────────────────────────
 
@@ -204,6 +194,8 @@ interface ChangeRow {
   timestamp: string;
   changedBy: 'Admin' | 'Self';
   changedByName: string;
+  role: string;
+  field: string;
   oldValue: string;
   newValue: string;
 }
@@ -220,7 +212,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
   };
 
   const rows: ChangeRow[] = [
-    { id: 'h-1a', timestamp: base.toISOString(), changedBy: 'Self', changedByName: 'Member (self-registration)', oldValue: '—', newValue: 'Registration submitted' },
+    { id: 'h-1a', timestamp: base.toISOString(), changedBy: 'Self', changedByName: 'Member (self-registration)', role: 'Member', field: 'Status', oldValue: '-', newValue: 'Registration submitted' },
   ];
 
   if (member.status !== 'pending' && member.status !== 'pending-parental-consent') {
@@ -228,37 +220,39 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
       id: 'h-2a',
       timestamp: shift(seed % 3 + 2, 10, 30),
       changedBy: 'Admin',
-      changedByName: 'John Doe (Admin)',
+      changedByName: 'John Doe',
+      role: 'Shakha Admin',
+      field: 'Status',
       oldValue: 'Pending',
       newValue: member.status === 'rejected' ? 'Rejected' : 'Active & Approved',
     });
   }
 
   rows.push(
-    { id: 'h-3a', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)', oldValue: 'Pending',  newValue: 'Approved' },
-    { id: 'h-3b', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel (Admin)', oldValue: '—',        newValue: 'DBS-2024-001' },
+    { id: 'h-3a', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel', role: 'Compliance Officer', field: 'DBS Status',      oldValue: 'Pending',  newValue: 'Approved' },
+    { id: 'h-3b', timestamp: shift(seed % 5 + 5, 14, 15), changedBy: 'Admin', changedByName: 'Sarah Patel', role: 'Compliance Officer', field: 'DBS Cert Number', oldValue: '-',        newValue: 'DBS-2024-001' },
   );
 
   if (seed % 2 === 0) {
     rows.push(
-      { id: 'h-4a', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe (Admin)', oldValue: 'Expired', newValue: 'Certified' },
-      { id: 'h-4b', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe (Admin)', oldValue: '—',       newValue: 'FA-2023-001' },
+      { id: 'h-4a', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe', role: 'Shakha Admin', field: 'First Aid Status', oldValue: 'Expired', newValue: 'Certified' },
+      { id: 'h-4b', timestamp: shift(seed % 7 + 10, 9, 45), changedBy: 'Admin', changedByName: 'John Doe', role: 'Shakha Admin', field: 'First Aid Ref',    oldValue: '-',       newValue: 'FA-2023-001' },
     );
   }
 
   if (seed % 3 !== 0) {
     rows.push(
-      { id: 'h-5a', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: '+44 7700 900100', newValue: '+44 7700 900123' },
-      { id: 'h-5b', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: '10 Queens Road',   newValue: '18 Kings Road' },
-      { id: 'h-5c', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', oldValue: 'HA2 0AA',           newValue: 'HA1 2AB' },
+      { id: 'h-5a', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', role: 'Member', field: 'Phone',          oldValue: '+44 7700 900100', newValue: '+44 7700 900123' },
+      { id: 'h-5b', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', role: 'Member', field: 'Address Line 1', oldValue: '10 Queens Road',  newValue: '18 Kings Road' },
+      { id: 'h-5c', timestamp: shift(seed % 14 + 20, 18, 5), changedBy: 'Self', changedByName: 'Member (self-service)', role: 'Member', field: 'Post Code',      oldValue: 'HA2 0AA',         newValue: 'HA1 2AB' },
     );
   }
 
   if (seed % 4 !== 1) {
     rows.push(
-      { id: 'h-6a', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'Shikshak',           newValue: 'Ghatnayak' },
-      { id: 'h-6b', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'North West',          newValue: 'London & South East' },
-      { id: 'h-6c', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma (Admin)', oldValue: 'Manchester Central',  newValue: 'Harrow Activity Centre' },
+      { id: 'h-6a', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Responsibility',  oldValue: 'Shikshak',          newValue: 'Ghatnayak' },
+      { id: 'h-6b', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Vibhaag',          oldValue: 'North West',         newValue: 'London & South East' },
+      { id: 'h-6c', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Activity Centre',  oldValue: 'Manchester Central', newValue: 'Harrow Activity Centre' },
     );
   }
 
@@ -292,11 +286,12 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     (member.compliance.parentalConsent === 'pending' ? 1 : 0);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'personal',      label: 'Personal Info'      },
+    { id: 'personal',      label: 'Personal Info'          },
     ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
-    { id: 'organisation',  label: 'Organisation'       },
+    { id: 'organisation',  label: 'Organisation'           },
     ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
-    { id: 'other',         label: 'Other Information'  },
+    { id: 'roles',         label: 'Roles & Responsibility' },
+    { id: 'other',         label: 'Other Information'      },
     ...(mode !== 'approval' ? [
       { id: 'activity' as Tab, label: 'Activity' },
       { id: 'history'  as Tab, label: 'History'  },
@@ -306,10 +301,51 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   const changeHistory = useMemo(() => buildMockHistory(member), [member]);
   const [historyPage, setHistoryPage]         = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(20);
+  const [historySearch, setHistorySearch]     = useState('');
+  const [historySortCol, setHistorySortCol]   = useState<keyof ChangeRow>('timestamp');
+  const [historySortDir, setHistorySortDir]   = useState<'asc' | 'desc'>('desc');
+  const [historyDateStart, setHistoryDateStart] = useState('');
+  const [historyDateEnd, setHistoryDateEnd]     = useState('');
+  const [historyDateLabel, setHistoryDateLabel] = useState('');
+  const [showHistoryDateFilter, setShowHistoryDateFilter] = useState(false);
+  const historyDateRef = useRef<HTMLDivElement>(null);
+
+  const filteredHistory = useMemo(() => {
+    let rows = [...changeHistory];
+    if (historySearch.trim()) {
+      const q = historySearch.toLowerCase();
+      rows = rows.filter(r =>
+        r.changedByName.toLowerCase().includes(q) ||
+        r.role.toLowerCase().includes(q) ||
+        r.field.toLowerCase().includes(q) ||
+        r.oldValue.toLowerCase().includes(q) ||
+        r.newValue.toLowerCase().includes(q)
+      );
+    }
+    if (historyDateStart) {
+      const start = new Date(historyDateStart).getTime();
+      rows = rows.filter(r => new Date(r.timestamp).getTime() >= start);
+    }
+    if (historyDateEnd) {
+      const end = new Date(historyDateEnd).getTime() + 86399999;
+      rows = rows.filter(r => new Date(r.timestamp).getTime() <= end);
+    }
+    rows.sort((a, b) => {
+      let av: string = String(a[historySortCol]);
+      let bv: string = String(b[historySortCol]);
+      if (historySortCol === 'timestamp') {
+        av = new Date(a.timestamp).getTime().toString();
+        bv = new Date(b.timestamp).getTime().toString();
+        return historySortDir === 'asc' ? Number(av) - Number(bv) : Number(bv) - Number(av);
+      }
+      return historySortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return rows;
+  }, [changeHistory, historySearch, historyDateStart, historyDateEnd, historySortCol, historySortDir]);
 
   const approvalEntry = changeHistory.find(e => e.newValue === 'Active & Approved' && e.changedBy === 'Admin');
   const approvedDate  = approvalEntry?.timestamp ?? null;
-  const approvedBy    = approvalEntry?.changedByName ?? '—';
+  const approvedBy    = approvalEntry?.changedByName ?? '-';
 
   const isActive = member.status === 'active';
 
@@ -328,7 +364,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
               {/* Row 1 — Name · Member ID */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
+                <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white">
                   {member.name}
                 </h1>
                 <span className="text-neutral-400 dark:text-neutral-600">·</span>
@@ -520,7 +556,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <InfoItem label="Medical Information Details">
                     {valueOrDash(member.medicalInfoDetails)}
                   </InfoItem>
-                  <InfoItem label="Do you carry an EpiPen/Jext/Emerade?">—</InfoItem>
+                  <InfoItem label="Do you carry an EpiPen/Jext/Emerade?">{valueOrDash(member.epiPen)}</InfoItem>
+                  <InfoItem label="Any Allergies">{valueOrDash(member.allergies)}</InfoItem>
                 </InfoSection>
 
               </div>
@@ -538,76 +575,141 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
             {/* ── ORGANISATION TAB ───────────────────────────── */}
             {activeTab === 'organisation' && (
-              <>
-                <InfoSection title="Organisation Details" cols={4}>
-                  <InfoItem label="Country / Organisation">{valueOrDash(member.country)}</InfoItem>
-                  <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
-                  <InfoItem label="Vibhaag">{valueOrDash(member.region)}</InfoItem>
-                  <InfoItem label="Nagar">{valueOrDash(member.town)}</InfoItem>
-                  <InfoItem label="Shakha">{valueOrDash(member.activityCentre)}</InfoItem>
-                </InfoSection>
-
-                {/* Current Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
-                  </div>
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Since</span>
-                    </div>
-                    {member.responsibilityLevel || member.jobTitle || member.responsibilityType ? (
-                      <div className="grid grid-cols-4 gap-4 px-4 py-3">
-                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.responsibilityLevel)}</span>
-                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.jobTitle)}</span>
-                        <span className="text-sm text-neutral-900 dark:text-white">{valueOrDash(member.responsibilityType)}</span>
-                        <span className="text-sm text-neutral-900 dark:text-white">
-                          {member.responsibilityStartDate
-                            ? formatDate(member.responsibilityStartDate)
-                            : '—'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No current responsibility assigned.</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Previous Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
-                  </div>
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50">
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Level</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Responsibility Type</span>
-                      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">From – To</span>
-                    </div>
-                    {member.previousResponsibilities && member.previousResponsibilities.length > 0 ? (
-                      member.previousResponsibilities.map((r, i) => (
-                        <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3">
-                          <span className="text-sm text-neutral-900 dark:text-white">{r.responsibilityLevel}</span>
-                          <span className="text-sm text-neutral-900 dark:text-white">—</span>
-                          <span className="text-sm text-neutral-900 dark:text-white">{r.responsibilityType}</span>
-                          <span className="text-sm text-neutral-900 dark:text-white">
-                            {new Date(r.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                            {' – '}
-                            {new Date(r.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-neutral-400 dark:text-neutral-500">No previous responsibilities on record.</div>
-                    )}
-                  </div>
-                </div>
-              </>
+              <InfoSection title="Organisation Details" cols={4}>
+                <InfoItem label="Country / Organisation">{valueOrDash(member.country)}</InfoItem>
+                <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
+                <InfoItem label="Vibhaag">{valueOrDash(member.region)}</InfoItem>
+                <InfoItem label="Nagar">{valueOrDash(member.town)}</InfoItem>
+                <InfoItem label="Shakha">{valueOrDash(member.activityCentre)}</InfoItem>
+              </InfoSection>
             )}
+
+            {/* ── ROLES & RESPONSIBILITY TAB ─────────────────── */}
+            {activeTab === 'roles' && (() => {
+              const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+              const TD = 'px-4 py-3 text-sm text-neutral-900 dark:text-white';
+              const TDE = 'px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400';
+              const fmtD = (d: string | null | undefined) =>
+                d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Present';
+              const currentRole = member.orgRole || member.adminRole || 'Member';
+              return (
+                <div className="space-y-5">
+                  {/* Current Sangh Responsibility */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                            <th className={TH}>Responsibility Level</th>
+                            <th className={TH}>Responsibility</th>
+                            <th className={TH}>Responsibility Type</th>
+                            <th className={TH}>From – To</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {member.responsibilities && member.responsibilities.length > 0 ? (
+                            member.responsibilities.map((r, i) => (
+                              <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                <td className={TD}>{r.responsibilityLevel}</td>
+                                <td className={TD}>{r.sanghResponsibility}</td>
+                                <td className={TDE}>{r.responsibilityType}</td>
+                                <td className={TDE}>{fmtD(r.startDate)} – Present</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Previous Sangh Responsibility */}
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                            <th className={TH}>Responsibility Level</th>
+                            <th className={TH}>Responsibility</th>
+                            <th className={TH}>Responsibility Type</th>
+                            <th className={TH}>From – To</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {member.previousResponsibilities && member.previousResponsibilities.length > 0 ? (
+                            member.previousResponsibilities.map((r, i) => (
+                              <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                <td className={TD}>{r.responsibilityLevel}</td>
+                                <td className={TD}>—</td>
+                                <td className={TDE}>{r.responsibilityType}</td>
+                                <td className={TDE}>
+                                  {new Date(r.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                                  {' – '}
+                                  {new Date(r.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No previous responsibilities on record</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Current & Previous MyHSS Roles — side by side */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role</h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                              <th className={TH}>MyHSS Role</th>
+                              <th className={TH}>From – To</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                            <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                              <td className={TD}>{currentRole}</td>
+                              <td className={TDE}>{fmtD(member.registrationDate)} – Present</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous MyHSS Roles</h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                              <th className={TH}>MyHSS Role</th>
+                              <th className={TH}>From – To</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                            <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-neutral-400">No previous roles</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── COMPLIANCE DETAILS TAB ─────────────────────── */}
             {activeTab === 'compliance' && (
@@ -751,18 +853,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                 </div>
 
-                {/* Parental Consent — only for minors */}
-                {member.compliance.parentalConsent !== 'n/a' && (
-                  <ComplianceCard
-                    label="Parental Consent"
-                    status={member.compliance.parentalConsent}
-                    description={
-                      member.compliance.parentalConsent === 'granted'
-                        ? 'Parental / guardian consent form has been received and approved.'
-                        : 'Consent form has been sent to the guardian and is awaiting response.'
-                    }
-                  />
-                )}
               </div>
             )}
 
@@ -772,7 +862,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
                 <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
                 <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
-                <InfoItem label="Additional Notes / Comments">—</InfoItem>
+                <InfoItem label="Additional Notes / Comments">{valueOrDash(member.additionalNotes)}</InfoItem>
               </InfoSection>
             )}
 
@@ -871,26 +961,85 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 {/* Change History table */}
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                    <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Change History</h4>
-                    <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-                      {changeHistory.length} record{changeHistory.length !== 1 ? 's' : ''}
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex-wrap">
+                    <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white mr-2">Change History</h4>
+                    <div className="flex-1 min-w-[180px] max-w-xs">
+                      <SearchBar
+                        value={historySearch}
+                        onChange={v => { setHistorySearch(v); setHistoryPage(1); }}
+                        placeholder="Search history..."
+                      />
+                    </div>
+                    {/* Date filter */}
+                    <div className="relative" ref={historyDateRef}>
+                      <button
+                        onClick={() => setShowHistoryDateFilter(p => !p)}
+                        className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                          historyDateStart
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                            : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+                        }`}
+                      >
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {historyDateStart ? (historyDateLabel || `${historyDateStart} - ${historyDateEnd}`) : 'Date range'}
+                        {historyDateStart && (
+                          <span role="button" onClick={e => { e.stopPropagation(); setHistoryDateStart(''); setHistoryDateEnd(''); setHistoryDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
+                            <X className="w-3 h-3" />
+                          </span>
+                        )}
+                      </button>
+                      <DateRangeFilter
+                        isOpen={showHistoryDateFilter}
+                        onClose={() => setShowHistoryDateFilter(false)}
+                        startDate={historyDateStart}
+                        endDate={historyDateEnd}
+                        onApply={(start, end, label) => { setHistoryDateStart(start); setHistoryDateEnd(end); setHistoryDateLabel(label || ''); setHistoryPage(1); }}
+                        title="Filter by Date"
+                      />
+                    </div>
+                    <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                      {filteredHistory.length} record{filteredHistory.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                          {['Date & Time', 'Changed By', 'Old Value', 'New Value'].map(col => (
-                            <th key={col} className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">{col}</th>
-                          ))}
+                          {([
+                            { key: 'timestamp',    label: 'Date / Time'    },
+                            { key: 'changedByName', label: 'Changed By'    },
+                            { key: 'role',          label: 'Role'          },
+                            { key: 'field',         label: 'Field'         },
+                            { key: 'oldValue',      label: 'Old Value'     },
+                            { key: 'newValue',      label: 'New Value'     },
+                          ] as { key: keyof ChangeRow; label: string }[]).map(col => {
+                            const active = historySortCol === col.key;
+                            const Icon = active ? (historySortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+                            return (
+                              <th
+                                key={col.key}
+                                className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                onClick={() => {
+                                  if (historySortCol === col.key) setHistorySortDir(d => d === 'asc' ? 'desc' : 'asc');
+                                  else { setHistorySortCol(col.key); setHistorySortDir('asc'); }
+                                }}
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  {col.label}
+                                  <Icon className={`w-3 h-3 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
+                                </span>
+                              </th>
+                            );
+                          })}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                        {changeHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize).map(row => {
+                        {filteredHistory.length === 0 ? (
+                          <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-neutral-400">No records match your search</td></tr>
+                        ) : filteredHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize).map(row => {
                           const d = new Date(row.timestamp);
-                          const isAdmin = row.changedBy === 'Admin';
                           return (
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                               <td className="px-4 py-3 whitespace-nowrap">
@@ -903,15 +1052,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <p className="text-xs font-medium text-neutral-900 dark:text-white">{row.changedByName}</p>
-                                <span className={`mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                                  isAdmin
-                                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
-                                    : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
-                                }`}>
-                                  {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
-                                  {row.changedBy}
-                                </span>
                               </td>
+                              <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.role}</td>
+                              <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.field}</td>
                               <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
                               <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
                             </tr>
@@ -922,8 +1065,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                   <Pagination
                     currentPage={historyPage}
-                    totalPages={Math.ceil(changeHistory.length / historyPageSize)}
-                    totalItems={changeHistory.length}
+                    totalPages={Math.ceil(filteredHistory.length / historyPageSize)}
+                    totalItems={filteredHistory.length}
                     itemsPerPage={historyPageSize}
                     onPageChange={setHistoryPage}
                     onItemsPerPageChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}

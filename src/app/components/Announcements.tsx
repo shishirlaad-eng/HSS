@@ -761,8 +761,7 @@ export default function Announcements({
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-500 dark:text-neutral-400">Status</span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
                   {sc.label}
                 </span>
               </div>
@@ -1055,8 +1054,7 @@ export default function Announcements({
                           </h3>
                           {/* Status */}
                           {canViewAdminSuchanaValues && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>
                               {sc.label}
                             </span>
                           )}

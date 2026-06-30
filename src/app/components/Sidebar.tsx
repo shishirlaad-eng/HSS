@@ -146,7 +146,7 @@ export function Sidebar({
     "announcements":                  "Suchana",
 
     // 5. Attendance
-    "attendance-group":               isMemberRole ? "My Sankhya" : "Attendance",
+    "attendance-group":               isMemberRole ? "My Attendance" : "Attendance",
     "sessions":                       "Shakha",
     "attendance-log":                 "Attendance Log",
 

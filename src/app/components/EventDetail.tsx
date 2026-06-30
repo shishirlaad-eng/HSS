@@ -101,9 +101,8 @@ function StatusBadge({ status }: { status: Event['status'] }) {
   };
   const s = map[status] ?? map.draft;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-transparent ${s.bg} ${s.text}`}>
-      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
-      <span className="text-xs font-medium">{s.label}</span>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border border-transparent text-xs font-medium ${s.bg} ${s.text}`}>
+      {s.label}
     </span>
   );
 }

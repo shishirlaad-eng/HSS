@@ -147,7 +147,7 @@ export function GlobalHeader({
       if (id === "event-management-group") label = "Event Mgmt";
       if (id === "organisational-master") label = "Master Mgmt";
     }
-    if (id === "attendance-group" && isMemberRole) label = "My Sankhya";
+    if (id === "attendance-group" && isMemberRole) label = "My Attendance";
     if (id === "my-donations" && isMemberRole) label = "My Dakshina";
     return label;
   };
@@ -1367,9 +1367,6 @@ export function GlobalHeader({
                       </div>
                       <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">
                         john.doe@company.com
-                      </div>
-                      <div className="text-xs text-neutral-500 dark:text-neutral-500">
-                        Sales Manager
                       </div>
                     </div>
                   </div>

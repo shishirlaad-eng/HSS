@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
-import { SecondaryButton, PrimaryButton, Pagination } from "./hb/listing";
+import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
 import { DIETARY_REQUIREMENTS, FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
@@ -444,11 +444,20 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [profile, setProfile] = useState<MemberProfileForm>(loadProfile);
   const [savedProfile, setSavedProfile] = useState<MemberProfileForm>(profile);
   const [isEditing, setIsEditing] = useState(false);
-  const effectiveEditing = !isUnderReview && (isEditing || isPostRegistration);
+  const [postRegEditing, setPostRegEditing] = useState(isPostRegistration);
+  const effectiveEditing = !isUnderReview && (isEditing || postRegEditing);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(20);
+  const [historySearch, setHistorySearch]       = useState('');
+  const [historySortCol, setHistorySortCol]     = useState<'timestamp' | 'user' | 'role' | 'field' | 'oldValue' | 'newValue'>('timestamp');
+  const [historySortDir, setHistorySortDir]     = useState<'asc' | 'desc'>('desc');
+  const [historyDateStart, setHistoryDateStart] = useState('');
+  const [historyDateEnd, setHistoryDateEnd]     = useState('');
+  const [historyDateLabel, setHistoryDateLabel] = useState('');
+  const [showHistoryDateFilter, setShowHistoryDateFilter] = useState(false);
+  const historyDateRef = useRef<HTMLDivElement>(null);
   const memberId = getRoleScope(selectedRole).selfMemberId || selectedRole;
   const [pendingTransfer, setPendingTransfer] = useState<ShakhaTransferRequest | undefined>(
     () => getPendingTransferForMember(memberId),
@@ -635,8 +644,41 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
 
   const approvalEntry = changeHistory.find(e => e.field === 'Status' && e.role === 'Admin');
   const approvedDate  = approvalEntry?.timestamp ?? null;
-  const approvedBy    = approvalEntry ? `${approvalEntry.user} (Admin)` : '—';
+  const approvedBy    = approvalEntry ? `${approvalEntry.user} (Admin)` : '-';
   const registrationDate = '2021-01-20T10:00:00Z';
+
+  const filteredHistory = useMemo(() => {
+    let rows = [...changeHistory];
+    if (historySearch.trim()) {
+      const q = historySearch.toLowerCase();
+      rows = rows.filter(r =>
+        r.user.toLowerCase().includes(q) ||
+        r.role.toLowerCase().includes(q) ||
+        r.field.toLowerCase().includes(q) ||
+        r.oldValue.toLowerCase().includes(q) ||
+        r.newValue.toLowerCase().includes(q)
+      );
+    }
+    if (historyDateStart) {
+      const start = new Date(historyDateStart).getTime();
+      rows = rows.filter(r => new Date(r.timestamp).getTime() >= start);
+    }
+    if (historyDateEnd) {
+      const end = new Date(historyDateEnd).getTime() + 86399999;
+      rows = rows.filter(r => new Date(r.timestamp).getTime() <= end);
+    }
+    rows.sort((a, b) => {
+      if (historySortCol === 'timestamp') {
+        const av = new Date(a.timestamp).getTime();
+        const bv = new Date(b.timestamp).getTime();
+        return historySortDir === 'asc' ? av - bv : bv - av;
+      }
+      const av = String(a[historySortCol]);
+      const bv = String(b[historySortCol]);
+      return historySortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return rows;
+  }, [changeHistory, historySearch, historyDateStart, historyDateEnd, historySortCol, historySortDir]);
 
   return (
     <div className="px-6 py-6">
@@ -660,9 +702,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   <span className="text-[#d97706]">Pending Approval</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                  <span className="text-[#3d8928]">Active &amp; Approved</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
+                  <span className="text-success-700 dark:text-success-400">Active &amp; Approved</span>
                 </span>
               )}
             </div>
@@ -671,9 +712,14 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
 
         {/* Right: action buttons */}
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {isUnderReview ? null : isPostRegistration ? (
+          {isUnderReview ? null : isPostRegistration && postRegEditing ? (
             <>
-              <SecondaryButton icon={Save} onClick={handleSave}>Save as Draft</SecondaryButton>
+              <SecondaryButton icon={Save} onClick={() => { handleSave(); setPostRegEditing(false); }}>Save as Draft</SecondaryButton>
+              <PrimaryButton icon={Save} onClick={() => { handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+            </>
+          ) : isPostRegistration && !postRegEditing ? (
+            <>
+              <SecondaryButton icon={Edit} onClick={() => setPostRegEditing(true)}>Edit Profile</SecondaryButton>
               <PrimaryButton icon={Save} onClick={() => { handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
             </>
           ) : isEditing ? (
@@ -682,9 +728,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
             </>
           ) : (
-            <>
-              <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
-            </>
+            <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
           )}
         </div>
       </div>
@@ -1221,71 +1265,115 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </div>
 
               {/* Change History table */}
-              {(() => {
-                const totalPages = Math.ceil(changeHistory.length / historyPageSize);
-                const pageRows = changeHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
-                return (
-                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Change History</h4>
-                      <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-                        {changeHistory.length} record{changeHistory.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['Date & Time', 'Changed By', 'Old Value', 'New Value'].map(col => (
-                              <th key={col} className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{col}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                          {pageRows.map(row => {
-                            const d = new Date(row.timestamp);
-                            const isAdmin = row.role === 'Admin';
-                            return (
-                              <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                  <p className="text-xs font-medium text-neutral-900 dark:text-white">
-                                    {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                  </p>
-                                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
-                                    {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                  <p className="text-xs font-medium text-neutral-900 dark:text-white">{row.user}</p>
-                                  <span className={`mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                                    isAdmin
-                                      ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-400'
-                                      : 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-800/40 dark:text-primary-400'
-                                  }`}>
-                                    {isAdmin ? <UserCog className="w-2.5 h-2.5" /> : <UserCircle2 className="w-2.5 h-2.5" />}
-                                    {row.role}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
-                                <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                    <Pagination
-                      currentPage={historyPage}
-                      totalPages={totalPages}
-                      totalItems={changeHistory.length}
-                      itemsPerPage={historyPageSize}
-                      onPageChange={setHistoryPage}
-                      onItemsPerPageChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                {/* Toolbar */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex-wrap">
+                  <History className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white mr-2">Change History</h4>
+                  <div className="flex-1 min-w-[180px] max-w-xs">
+                    <SearchBar
+                      value={historySearch}
+                      onChange={v => { setHistorySearch(v); setHistoryPage(1); }}
+                      placeholder="Search history..."
                     />
                   </div>
-                );
-              })()}
+                  <div className="relative" ref={historyDateRef}>
+                    <button
+                      onClick={() => setShowHistoryDateFilter(p => !p)}
+                      className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        historyDateStart
+                          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+                      }`}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      {historyDateStart ? (historyDateLabel || `${historyDateStart} - ${historyDateEnd}`) : 'Date range'}
+                      {historyDateStart && (
+                        <span role="button" onClick={e => { e.stopPropagation(); setHistoryDateStart(''); setHistoryDateEnd(''); setHistoryDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
+                          <X className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                    <DateRangeFilter
+                      isOpen={showHistoryDateFilter}
+                      onClose={() => setShowHistoryDateFilter(false)}
+                      startDate={historyDateStart}
+                      endDate={historyDateEnd}
+                      onApply={(start, end, label) => { setHistoryDateStart(start); setHistoryDateEnd(end); setHistoryDateLabel(label || ''); setHistoryPage(1); }}
+                      title="Filter by Date"
+                    />
+                  </div>
+                  <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                    {filteredHistory.length} record{filteredHistory.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                        {([
+                          { key: 'timestamp', label: 'Date / Time'  },
+                          { key: 'user',      label: 'Changed By'   },
+                          { key: 'role',      label: 'Role'         },
+                          { key: 'field',     label: 'Field'        },
+                          { key: 'oldValue',  label: 'Old Value'    },
+                          { key: 'newValue',  label: 'New Value'    },
+                        ] as { key: typeof historySortCol; label: string }[]).map(col => {
+                          const active = historySortCol === col.key;
+                          const Icon = active ? (historySortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+                          return (
+                            <th
+                              key={col.key}
+                              className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                              onClick={() => {
+                                if (historySortCol === col.key) setHistorySortDir(d => d === 'asc' ? 'desc' : 'asc');
+                                else { setHistorySortCol(col.key); setHistorySortDir('asc'); }
+                              }}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                {col.label}
+                                <Icon className={`w-3 h-3 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
+                              </span>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                      {filteredHistory.length === 0 ? (
+                        <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-neutral-400">No records match your search</td></tr>
+                      ) : filteredHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize).map(row => {
+                        const d = new Date(row.timestamp);
+                        return (
+                          <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                                {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-neutral-900 dark:text-white">{row.user}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-xs text-neutral-600 dark:text-neutral-400">{row.role}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-neutral-900 dark:text-white">{row.field}</td>
+                            <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
+                            <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination
+                  currentPage={historyPage}
+                  totalPages={Math.ceil(filteredHistory.length / historyPageSize)}
+                  totalItems={filteredHistory.length}
+                  itemsPerPage={historyPageSize}
+                  onPageChange={setHistoryPage}
+                  onItemsPerPageChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}
+                />
+              </div>
             </div>
           )}
 
@@ -1356,9 +1444,8 @@ function SuperAdminProfileView() {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#172E4D]/10 text-[#172E4D] dark:bg-white/10 dark:text-blue-200 border border-[#172E4D]/20 dark:border-white/20">
                 Super Admin
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#f1fced] border-[#b8efa0]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                <span className="text-[#3d8928]">Active</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
+                <span className="text-success-700 dark:text-success-400">Active</span>
               </span>
             </div>
           </div>
@@ -1445,9 +1532,8 @@ function SuperAdminProfileView() {
                 <InfoItem label="Role">Super Admin</InfoItem>
                 <InfoItem label="Access Level">Full System Access</InfoItem>
                 <InfoItem label="Account Status">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4EAE33]" />
-                    <span className="text-[#3d8928]">Active</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
+                    <span className="text-success-700 dark:text-success-400">Active</span>
                   </span>
                 </InfoItem>
                 <InfoItem label="Login Email">{profile.email || "—"}</InfoItem>

@@ -28,8 +28,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
   const getStatusBadge = (status: string) => {
     const isActive = status === 'active';
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full">
-        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-success-500' : 'bg-neutral-400'}`}></div>
+      <span className="inline-flex items-center px-2 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full">
         <span className="text-xs text-neutral-600 dark:text-neutral-400">
           {isActive ? 'Active' : 'Inactive'}
         </span>
@@ -231,7 +230,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                                 <td className="px-6 py-4 text-sm">
                                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                                     event.status === 'active' 
-                                      ? 'bg-success-50 text-success-600 border border-success-100 dark:bg-success-950/20 dark:text-success-400 dark:border-success-900/30' 
+                                      ? 'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800' 
                                       : 'bg-neutral-50 text-neutral-600 border border-neutral-100 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800'
                                   }`}>
                                     {event.status}
@@ -283,7 +282,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                                 <td className="px-6 py-4 text-sm">
                                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                                     event.status === 'active' 
-                                      ? 'bg-success-50 text-success-600 border border-success-100 dark:bg-success-950/20 dark:text-success-400 dark:border-success-900/30' 
+                                      ? 'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800' 
                                       : 'bg-error-50 text-error-600 border border-error-100 dark:bg-error-950/20 dark:text-error-400 dark:border-error-900/30'
                                   }`}>
                                     {event.status}

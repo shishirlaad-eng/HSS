@@ -14,22 +14,9 @@ import { PageHeader } from './hb/listing';
 
 type ComplianceTab = 'dbs' | 'firstAid' | 'safeguarding';
 
-const AGE_GROUP_CHIP: Record<AgeGroup, string> = {
-  bal:     'bg-[#fef0fc] text-[#c026d3] border border-[#f0abfc]',
-  shishu:  'bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]',
-  kishor:  'bg-[#e6f6fd] text-[#0080b8] border border-[#89d5f6]',
-  tarun:   'bg-[#eef2ff] text-[#4f46e5] border border-[#c7d2fe]',
-  yuva:    'bg-success-50 text-success-700 border border-success-200 dark:bg-success-950/20 dark:text-success-400 dark:border-success-800',
-  jyestha: 'bg-neutral-100 text-neutral-700 border border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700',
-};
-
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   const group = getAgeGroup(dateOfBirth);
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${AGE_GROUP_CHIP[group]}`}>
-      {AGE_GROUP_LABELS[group]}
-    </span>
-  );
+  return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
 function DBSBadge({ status }: { status: DBSStatus }) {
@@ -176,10 +163,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       </td>
                       <td className={TD}>
                         {m.dbsUpdateService === true ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
-                            <span className="text-xs font-medium text-success-700 dark:text-success-400">Yes</span>
-                          </span>
+                          <span className="text-xs font-medium text-success-700 dark:text-success-400">Yes</span>
                         ) : (
                           <span className="text-neutral-400 text-xs">No</span>
                         )}

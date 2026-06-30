@@ -317,8 +317,7 @@ export default function RoleManagement() {
   const getStatusBadge = (status: string) => {
     const isActive = status === 'active';
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full">
-        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-success-500' : 'bg-neutral-400'}`}></div>
+      <span className="inline-flex items-center px-2 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full">
         <span className="text-xs text-neutral-600 dark:text-neutral-400">
           {isActive ? 'Active' : 'Inactive'}
         </span>
