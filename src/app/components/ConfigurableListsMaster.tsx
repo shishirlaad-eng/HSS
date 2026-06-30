@@ -49,7 +49,7 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
   {
     label: 'Roles & Responsibility',
     lists: [
-      { key: 'role-types',           label: 'Role Types (Job Title)', idPrefix: 'ROT' },
+      { key: 'role-types',           label: 'Sangh Responsibility',   idPrefix: 'ROT' },
       { key: 'responsibility-type',  label: 'Responsibility Type',    idPrefix: 'RST' },
       { key: 'responsibility-level', label: 'Responsibility Level',   idPrefix: 'RSL' },
     ],
