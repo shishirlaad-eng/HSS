@@ -1048,7 +1048,7 @@ export default function Announcements({
 
                       {/* Main content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2 flex-wrap mb-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="text-[16px] font-semibold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                             {ann.title}
                           </h3>

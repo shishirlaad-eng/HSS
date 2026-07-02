@@ -22,12 +22,11 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
 
 function DBSBadge({ status }: { status: DBSStatus }) {
   const cfg = status === 'Approved'
-    ? { dot: 'bg-success-500', text: 'Approved', textCls: 'text-success-700 dark:text-success-400' }
-    : { dot: 'bg-amber-500',   text: 'Pending',  textCls: 'text-amber-700 dark:text-amber-400'    };
+    ? { text: 'Approved', chipCls: 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800' }
+    : { text: 'Pending',  chipCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' };
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      <span className={`text-xs font-medium ${cfg.textCls}`}>{cfg.text}</span>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.chipCls}`}>
+      {cfg.text}
     </span>
   );
 }
@@ -35,13 +34,12 @@ function DBSBadge({ status }: { status: DBSStatus }) {
 function CertBadge({ status }: { status?: CertStatus }) {
   if (!status) return <span className="text-sm text-neutral-400">—</span>;
   const cfg =
-    status === 'Certified' ? { dot: 'bg-success-500', text: 'Certified', textCls: 'text-success-700 dark:text-success-400' } :
-    status === 'Expired'   ? { dot: 'bg-error-500',   text: 'Expired',   textCls: 'text-error-700 dark:text-error-400'     } :
-                             { dot: 'bg-neutral-400',  text: 'N/A',       textCls: 'text-neutral-500 dark:text-neutral-400' };
+    status === 'Certified' ? { text: 'Certified', chipCls: 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800' } :
+    status === 'Expired'   ? { text: 'Expired',   chipCls: 'bg-error-50 text-error-700 border-error-200 dark:bg-error-950 dark:text-error-400 dark:border-error-800'          } :
+                             { text: 'N/A',       chipCls: 'bg-neutral-50 text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800' };
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      <span className={`text-xs font-medium ${cfg.textCls}`}>{cfg.text}</span>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.chipCls}`}>
+      {cfg.text}
     </span>
   );
 }

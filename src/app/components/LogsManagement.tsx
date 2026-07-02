@@ -523,23 +523,20 @@ export default function LogsManagement({ type }: LogsManagementProps) {
 
   const getStatusBadge = (status: string | number) => {
     const statusStr = String(status).toLowerCase();
-    let color = 'bg-neutral-400';
+    let chipCls = 'bg-neutral-50 text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800';
     let label = String(status);
 
     if (statusStr.includes('success') || statusStr.includes('delivered') || statusStr === 'active' || (typeof status === 'number' && status >= 200 && status < 300)) {
-      color = 'bg-success-500';
+      chipCls = 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800';
     } else if (statusStr.includes('failed') || statusStr.includes('bounced') || statusStr === 'inactive' || (typeof status === 'number' && status >= 400)) {
-      color = 'bg-error-500';
+      chipCls = 'bg-error-50 text-error-700 border-error-200 dark:bg-error-950 dark:text-error-400 dark:border-error-800';
     } else if (statusStr.includes('pending') || statusStr.includes('sent')) {
-      color = 'bg-primary-500';
+      chipCls = 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-950 dark:text-primary-400 dark:border-primary-800';
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full shadow-sm">
-        <div className={`w-1.5 h-1.5 rounded-full ${color}`}></div>
-        <span className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
-          {label}
-        </span>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${chipCls}`}>
+        {label}
       </span>
     );
   };

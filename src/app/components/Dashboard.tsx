@@ -152,11 +152,11 @@ const PRIORITY_CFG = {
 };
 
 const MEMBER_STATUS_CFG = {
-  active:                     { label: 'Active',            dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400' },
-  pending:                    { label: 'Pending Approval',  dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400'    },
-  'pending-parental-consent': { label: 'Parental Consent',  dot: 'bg-violet-500',  text: 'text-violet-700 dark:text-violet-400'  },
-  inactive:                   { label: 'Inactive',          dot: 'bg-neutral-400', text: 'text-neutral-600 dark:text-neutral-400' },
-  rejected:                   { label: 'Rejected',          dot: 'bg-error-500',   text: 'text-error-700 dark:text-error-400'    },
+  active:                     { label: 'Active',            chipCls: 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800' },
+  pending:                    { label: 'Pending Approval',  chipCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
+  'pending-parental-consent': { label: 'Parental Consent',  chipCls: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800' },
+  inactive:                   { label: 'Inactive',          chipCls: 'bg-neutral-50 text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800' },
+  rejected:                   { label: 'Rejected',          chipCls: 'bg-error-50 text-error-700 border-error-200 dark:bg-error-950 dark:text-error-400 dark:border-error-800' },
 };
 
 //â”€â”€ Mock Donations (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1410,10 +1410,9 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                           <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                             {member.name}
                           </div>
-                          <div className={`inline-flex items-center gap-1 text-xs mt-0.5 ${sc.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border mt-0.5 ${sc.chipCls}`}>
                             {sc.label}
-                          </div>
+                          </span>
                         </div>
                         <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex-shrink-0">
                           {getAgeGroupLabel(member.dateOfBirth)}
@@ -1526,8 +1525,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                           <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
                             {getAgeGroupLabel(member.dateOfBirth)}
                           </span>
-                          <span className={`inline-flex items-center gap-1 text-[10px] ${sc.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sc.chipCls}`}>
                             {sc.label}
                           </span>
                         </div>
