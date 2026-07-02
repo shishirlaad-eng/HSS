@@ -36,6 +36,7 @@ import SuperAdminAuth from "./components/SuperAdminAuth";
 import StripeDonation from "./components/StripeDonation";
 import MyDonations from "./components/MyDonations";
 import ComplianceManagement from "./components/ComplianceManagement";
+import EmergencyDetails from "./components/EmergencyDetails";
 import IncidentManagement from "./components/IncidentManagement";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
@@ -292,6 +293,13 @@ export default function App() {
             onNavigateToMember={(id) => {
               setMemberToView(id);
               setMemberToViewTab('compliance');
+              setCurrentPage('members');
+            }}
+          />
+        ) : currentPage === "emergency-details" ? (
+          <EmergencyDetails
+            onNavigateToMember={(id) => {
+              setMemberToView(id);
               setCurrentPage('members');
             }}
           />

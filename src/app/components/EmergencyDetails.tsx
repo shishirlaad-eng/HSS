@@ -1,0 +1,185 @@
+import { useState, useMemo } from 'react';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useRoleScope } from '../contexts/RoleScopeContext';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { mockMembers, Member, getAge } from '../../mockAPI/membersData';
+import { PageHeader, SearchBar, Pagination } from './hb/listing';
+
+type SortCol = 'id' | 'name' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
+
+const TH_BASE = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
+
+function SortableTH({ col, label, sortCol, sortDir, onSort }: {
+  col: SortCol; label: string; sortCol: SortCol; sortDir: 'asc' | 'desc'; onSort: (c: SortCol) => void;
+}) {
+  const active = sortCol === col;
+  const Icon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th
+      className={`${TH_BASE} cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors`}
+      onClick={() => onSort(col)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <Icon className={`w-3 h-3 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
+      </span>
+    </th>
+  );
+}
+
+function dash(v?: string | boolean | null) {
+  if (v === undefined || v === null || v === '') return '-';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  return v;
+}
+
+function RequiredBadge() {
+  return <span className="text-error-500 ml-0.5">*</span>;
+}
+
+export default function EmergencyDetails({
+  onNavigateToMember,
+}: { onNavigateToMember?: (id: string) => void } = {}) {
+  const { scope, selectedRole } = useRoleScope();
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [sortCol, setSortCol]           = useState<SortCol>('name');
+  const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage]   = useState(1);
+  const [pageSize, setPageSize]         = useState(20);
+
+  const handleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+
+  const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    let rows = !q ? members : members.filter(m =>
+      m.id.toLowerCase().includes(q) ||
+      m.name.toLowerCase().includes(q) ||
+      (m.emergencyContactName?.toLowerCase().includes(q) ?? false) ||
+      (m.emergencyContactPhone?.toLowerCase().includes(q) ?? false) ||
+      (m.emergencyContactEmail?.toLowerCase().includes(q) ?? false)
+    );
+    rows = [...rows].sort((a, b) => {
+      const get = (m: Member): string => {
+        switch (sortCol) {
+          case 'id':                  return m.id;
+          case 'name':                return m.name;
+          case 'dateOfBirth':         return m.dateOfBirth;
+          case 'contactName':         return m.emergencyContactName ?? '';
+          case 'contactPhone':        return m.emergencyContactPhone ?? '';
+          case 'contactEmail':        return m.emergencyContactEmail ?? '';
+          case 'contactRelationship': return m.emergencyContactRelationship ?? '';
+          default:                    return '';
+        }
+      };
+      return sortDir === 'asc' ? get(a).localeCompare(get(b)) : get(b).localeCompare(get(a));
+    });
+    return rows;
+  }, [members, searchQuery, sortCol, sortDir]);
+
+  const paged = useMemo(() =>
+    filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize]
+  );
+
+  return (
+    <div className="p-6 bg-transparent dark:bg-neutral-950">
+      <div className="max-w-[100%] mx-auto">
+        <PageHeader
+          title="Emergency Details"
+          subtitle={selectedRole === 'Super Admin' ? 'Below is a list of emergency contact and medical details for all members' : undefined}
+          breadcrumbs={[
+            { label: 'Members Management', href: '#' },
+            { label: 'Emergency Details', current: true },
+          ]}
+        >
+          <SearchBar
+            value={searchQuery}
+            onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+            placeholder="Search by name, member ID or contact..."
+          />
+        </PageHeader>
+
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                  <SortableTH col="id"                  label="Member ID"           sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="name"                label="Name"                sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="dateOfBirth"         label="Date of Birth"       sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <th className={TH_BASE}>Contact Name <RequiredBadge /></th>
+                  <th className={TH_BASE}>Contact Phone <RequiredBadge /></th>
+                  <th className={TH_BASE}>Contact Email <RequiredBadge /></th>
+                  <th className={TH_BASE}>Relationship <RequiredBadge /></th>
+                  <th className={TH_BASE}>Medical Details</th>
+                  <th className={TH_BASE}>EpiPen/Jext/Emerade?</th>
+                  <th className={TH_BASE}>Any Allergies</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {paged.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-6 py-16 text-center text-sm text-neutral-400">No members found.</td>
+                  </tr>
+                ) : paged.map(m => (
+                  <tr
+                    key={m.id}
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                    onClick={() => onNavigateToMember?.(m.id)}
+                  >
+                    <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">{m.id}</td>
+                    <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.name}</td>
+                    <td className={TD}>
+                      <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                        {new Date(m.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">Age {getAge(m.dateOfBirth)}</p>
+                    </td>
+                    <td className={TD}>
+                      <p className="text-xs font-medium text-neutral-900 dark:text-white">{dash(m.emergencyContactName)}</p>
+                      {m.emergencyContactRelationship && (
+                        <p className="text-[11px] text-neutral-400 mt-0.5">{m.emergencyContactRelationship}</p>
+                      )}
+                    </td>
+                    <td className={TD}>
+                      {m.emergencyContactPhone
+                        ? <a href={`tel:${m.emergencyContactPhone}`} className="text-primary-600 dark:text-primary-400 hover:underline" onClick={e => e.stopPropagation()}>{m.emergencyContactPhone}</a>
+                        : '-'}
+                    </td>
+                    <td className={TD}>
+                      {m.emergencyContactEmail
+                        ? <a href={`mailto:${m.emergencyContactEmail}`} className="text-primary-600 dark:text-primary-400 hover:underline" onClick={e => e.stopPropagation()}>{m.emergencyContactEmail}</a>
+                        : '-'}
+                    </td>
+                    <td className={TD}>{dash(m.emergencyContactRelationship)}</td>
+                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[200px] truncate">
+                      {m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : '-'}
+                    </td>
+                    <td className={TD}>{dash(m.epiPen)}</td>
+                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[160px] truncate">
+                      {dash(m.allergies)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filtered.length / pageSize))}
+            totalItems={filtered.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

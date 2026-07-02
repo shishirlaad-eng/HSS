@@ -136,6 +136,7 @@ export function Sidebar({
     "members":                        "Members",
     "karyakartas":                    "Roles and Responsibilities",
     "compliance":                     "Compliance",
+    "emergency-details":              "Emergency Details",
     "pending-approvals":              "Pending Karyawaha Approvals",
     "pending-guardian-approvals":     "Pending Parent/Guardian Approvals",
 

@@ -365,12 +365,42 @@ function splitMemberName(name: string) {
   };
 }
 
+const EC_FIRST_NAMES = [
+  'Sunita','Ramesh','Kavitha','Dinesh','Ananya','Suresh','Meena','Vijay','Rekha','Arun',
+  'Geeta','Harish','Lalitha','Mohan','Nandita','Prakash','Rohini','Sanjay','Usha','Venkat',
+  'Asha','Bhuvan','Chitra','Devika','Eswar','Fatima','Girish','Heena','Imran','Jyoti',
+  'Kiran','Latha','Mahesh','Nisha','Om','Pallavi','Rajan','Savita','Tarun','Urmila',
+];
+const EC_SURNAMES = [
+  'Sharma','Patel','Mehta','Singh','Verma','Rao','Nair','Joshi','Gupta','Kumar',
+  'Shah','Reddy','Kapoor','Bose','Menon','Iyer','Pillai','Krishnan','Agarwal','Malhotra',
+  'Pandey','Tiwari','Mishra','Dubey','Sinha','Ghosh','Das','Chatterjee','Banerjee','Mukherjee',
+  'Chopra','Khanna','Arora','Sethi','Tandon','Bajaj','Bhatt','Desai','Lal','Saxena',
+];
+const EC_RELATIONSHIPS = ['Spouse','Parent','Sibling','Partner','Uncle','Aunt','Cousin','Friend'];
+
+function deterministicEC(id: string): { name: string; phone: string; email: string; relationship: string } {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  const first = EC_FIRST_NAMES[hash % EC_FIRST_NAMES.length];
+  const last  = EC_SURNAMES[(hash >> 3) % EC_SURNAMES.length];
+  const rel   = EC_RELATIONSHIPS[(hash >> 6) % EC_RELATIONSHIPS.length];
+  const phoneDigits = String((hash % 90000000) + 10000000);
+  return {
+    name: `${first} ${last}`,
+    phone: `+44 77${phoneDigits.slice(0,2)} ${phoneDigits.slice(2)}`,
+    email: `${first.toLowerCase()}.${last.toLowerCase()}@example.com`,
+    relationship: rel,
+  };
+}
+
 function withRegistrationFields(member: Member): Member {
   const nameParts = splitMemberName(member.name);
   const isMinor = member.memberType === 'teen' || member.memberType === 'child';
   const guardianName = member.guardianName ?? (isMinor ? `Parent of ${member.name}` : undefined);
   const guardianEmail = member.guardianEmail ?? (isMinor ? `guardian.${member.email}` : undefined);
   const guardianPhone = member.guardianPhone ?? (isMinor ? member.phone ?? '+44 7700 000000' : undefined);
+  const ec = (!member.emergencyContactName && !isMinor) ? deterministicEC(member.id) : null;
 
   return {
     ...member,
@@ -384,10 +414,10 @@ function withRegistrationFields(member: Member): Member {
     addressLine2: member.addressLine2 ?? '',
     contactTownCity: member.contactTownCity ?? member.town,
     postCode: member.postCode ?? 'AB1 2CD',
-    emergencyContactName: member.emergencyContactName ?? guardianName ?? 'Emergency Contact',
-    emergencyContactPhone: member.emergencyContactPhone ?? guardianPhone ?? member.phone ?? '+44 7700 000000',
-    emergencyContactEmail: member.emergencyContactEmail ?? guardianEmail ?? member.email,
-    emergencyContactRelationship: member.emergencyContactRelationship ?? (isMinor ? 'Parent / Guardian' : 'Family'),
+    emergencyContactName: member.emergencyContactName ?? guardianName ?? ec?.name ?? 'Emergency Contact',
+    emergencyContactPhone: member.emergencyContactPhone ?? guardianPhone ?? ec?.phone ?? member.phone ?? '+44 7700 000000',
+    emergencyContactEmail: member.emergencyContactEmail ?? guardianEmail ?? ec?.email ?? member.email,
+    emergencyContactRelationship: member.emergencyContactRelationship ?? (isMinor ? 'Parent / Guardian' : ec?.relationship ?? 'Family'),
     guardianName,
     guardianEmail,
     guardianPhone,
@@ -438,6 +468,10 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2023-001',
     eventsAttended: 14,
     shakhaSessionsAttended: 52,
+    emergencyContactName: 'Sunita Sharma',
+    emergencyContactPhone: '+44 7700 111001',
+    emergencyContactEmail: 'sunita.sharma@example.com',
+    emergencyContactRelationship: 'Spouse',
     adminRoles: ['Shakha Admin', 'Shakha Operations'],
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Ghatnayak', responsibilityType: 'Pramukh', startDate: '2023-04-01' },
@@ -463,6 +497,10 @@ const rawMockMembers: Member[] = [
     dbsRef: 'DBS-2023-002',
     eventsAttended: 8,
     shakhaSessionsAttended: 30,
+    emergencyContactName: 'Nilesh Patel',
+    emergencyContactPhone: '+44 7700 111002',
+    emergencyContactEmail: 'nilesh.patel@example.com',
+    emergencyContactRelationship: 'Brother',
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sankhya', responsibilityType: 'Pramukh (Saha)', startDate: '2023-09-01' },
     ],
@@ -488,6 +526,10 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2022-003',
     eventsAttended: 22,
     shakhaSessionsAttended: 104,
+    emergencyContactName: 'Anjali Mehta',
+    emergencyContactPhone: '+44 7700 111003',
+    emergencyContactEmail: 'anjali.mehta@example.com',
+    emergencyContactRelationship: 'Spouse',
     adminRoles: ['Shakha Admin', 'Reporting User', 'Shakha Operations'],
     responsibilities: [
       { responsibilityLevel: 'Vibhaag / Region', sanghResponsibility: 'Shikshak', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
@@ -536,6 +578,10 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2021-005',
     eventsAttended: 35,
     shakhaSessionsAttended: 156,
+    emergencyContactName: 'Harpreet Kaur',
+    emergencyContactPhone: '+44 7700 111005',
+    emergencyContactEmail: 'harpreet.kaur@example.com',
+    emergencyContactRelationship: 'Spouse',
     adminRoles: ['Shakha Admin', 'Activity Centre Admin'],
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
@@ -558,6 +604,10 @@ const rawMockMembers: Member[] = [
     status: 'pending',
     registrationDate: '2025-04-20T09:30:00Z',
     compliance: { dbs: 'pending', firstAid: 'pending', parentalConsent: 'n/a' },
+    emergencyContactName: 'Sunil Verma',
+    emergencyContactPhone: '+44 7700 111006',
+    emergencyContactEmail: 'sunil.verma@example.com',
+    emergencyContactRelationship: 'Father',
     eventsAttended: 0,
     shakhaSessionsAttended: 0,
   },
@@ -599,6 +649,10 @@ const rawMockMembers: Member[] = [
     status: 'inactive',
     registrationDate: '2022-03-14T08:00:00Z',
     compliance: { dbs: 'pending', firstAid: 'completed', parentalConsent: 'n/a' },
+    emergencyContactName: 'Thomas Nair',
+    emergencyContactPhone: '+44 7700 111008',
+    emergencyContactEmail: 'thomas.nair@example.com',
+    emergencyContactRelationship: 'Husband',
     firstAidRef: 'FA-2022-008',
     eventsAttended: 11,
     shakhaSessionsAttended: 44,
@@ -620,6 +674,10 @@ const rawMockMembers: Member[] = [
     status: 'rejected',
     registrationDate: '2025-02-10T13:00:00Z',
     compliance: { dbs: 'pending', firstAid: 'pending', parentalConsent: 'n/a' },
+    emergencyContactName: 'Meera Rao',
+    emergencyContactPhone: '+44 7700 111009',
+    emergencyContactEmail: 'meera.rao@example.com',
+    emergencyContactRelationship: 'Mother',
     eventsAttended: 0,
     shakhaSessionsAttended: 0,
   },

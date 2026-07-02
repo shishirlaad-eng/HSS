@@ -112,7 +112,7 @@ export const getNavigationData = (
       label: "Members",
       icon: UserCheck,
       onClick: () => onNavigate("members"),
-      active: ['members', 'karyakartas', 'compliance', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
+      active: ['members', 'karyakartas', 'compliance', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
       subItems: [
         {
           id: "karyakartas",
@@ -125,6 +125,12 @@ export const getNavigationData = (
           label: "Compliance",
           onClick: () => onNavigate("compliance"),
           active: currentPage === "compliance",
+        },
+        {
+          id: "emergency-details",
+          label: "Emergency Details",
+          onClick: () => onNavigate("emergency-details"),
+          active: currentPage === "emergency-details",
         },
         {
           id: "pending-approvals",

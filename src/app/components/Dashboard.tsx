@@ -520,7 +520,7 @@ function MemberDashboard({
                   <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Responsibilities</p>
-                    <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-1">
                       <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility}</p>
                       <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility2}</p>
                     </div>
@@ -561,7 +561,7 @@ function MemberDashboard({
                       <p className="text-[12px] text-neutral-400 dark:text-neutral-500 mt-0.5">{formatDate(att.date)}</p>
                     </div>
                     {att.status === 'present'
-                      ? <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 flex-shrink-0">Present</span>
+                      ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400 border border-success-200 dark:border-success-800 flex-shrink-0"><CheckCircle2 className="w-3 h-3" /> Present</span>
                       : <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0">Absent</span>
                     }
                   </div>

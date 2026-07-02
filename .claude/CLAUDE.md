@@ -3,6 +3,10 @@
 Project memory and routing rules for keeping the FRD (`frd/*.md`) in sync with the
 frontend prototype, and publishing to the Google Doc on explicit instruction.
 
+## Before any frontend implementation
+Read `guidelines/Guidelines.md` first — UI consistency rules and standing context to
+remember. Update it when new consistency rules or context emerge.
+
 ## Source of truth
 - The **editable source of truth** for the FRD is the local Markdown in `frd/*.md`.
 - The **Google Doc is a publish target**, not an editing surface.

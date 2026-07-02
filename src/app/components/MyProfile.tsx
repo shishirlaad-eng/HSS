@@ -607,7 +607,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     { id: 'organisation', label: 'Organisation'        },
     { id: 'compliance',   label: 'Compliance Details'  },
     { id: 'roles',        label: 'Roles & Responsibility' },
-    { id: 'other',        label: 'Other Information'   },
+    ...(!isPostRegistration ? [{ id: 'other' as ProfileTab, label: 'Other Information' }] : []),
     { id: 'history',      label: 'History'             },
   ];
 
@@ -783,7 +783,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <InfoSection title="Personal Details">
                 <EditableInfoItem label="First Name" required    value={profile.firstName}   isEditing={effectiveEditing} onChange={v => setField("firstName", v)} />
-                <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>
+                {!isPostRegistration && <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>}
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
                 <EditableInfoItem label="Gender" required        value={profile.gender}      isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} />
                 <EditableInfoItem label="Surname" required       value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} />
@@ -888,9 +888,9 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {/* ── Compliance Details ── */}
           {activeTab === 'compliance' && (
             <>
-              {/* First Aid + Safeguarding — side by side */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                <InfoSection title="First Aid">
+              {/* First Aid + Safeguarding — full width */}
+              <div className="space-y-5">
+                <InfoSection title="First Aid" cols={4}>
                   <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
                   <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
                   <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
@@ -916,18 +916,20 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       </div>
                     )}
                   </div>
-                  <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={effectiveEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />
+                  {!isPostRegistration && <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={effectiveEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />}
                 </InfoSection>
 
-                <InfoSection title="Safeguarding">
+                {!isPostRegistration && (
+                <InfoSection title="Safeguarding" cols={4}>
                   <EditableInfoItem label="Level of Training"  value={profile.safeguardingRef}    isEditing={effectiveEditing} onChange={v => setField("safeguardingRef", v)} />
                   <EditableInfoItem label="Date Completed"     value={profile.safeguardingExpiry} isEditing={effectiveEditing} onChange={v => setField("safeguardingExpiry", v)} type="date" />
                   <EditableInfoItem label="Safeguarding Status" value={profile.safeguardingStatus} isEditing={effectiveEditing} onChange={v => setField("safeguardingStatus", v)} options={["Pending", "Completed"]} />
                 </InfoSection>
+                )}
               </div>
 
               {/* Disclosure Barring Service — full width, 4-col rows */}
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+              {!isPostRegistration && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                 <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                   <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Disclosure Barring Service</h4>
                 </div>
@@ -1013,7 +1015,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     </div>
                   </div>
                 </div>
-              </div>
+              </div>}
             </>
           )}
 
@@ -1051,7 +1053,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   onChange={value => setOrganisationField('activityCentre', value)}
                   options={profile.town ? (MASTERS_CASCADE.centres[profile.town] ?? []) : []}
                 />
-                <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>
+                {!isPostRegistration && <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>}
               </InfoSection>
 
             </>
@@ -1100,7 +1102,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             return (
               <div className="space-y-5">
                 {/* Current Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                {!isPostRegistration && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                   <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                     <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
                   </div>
@@ -1128,10 +1130,10 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </div>}
 
                 {/* Previous Sangh Responsibility */}
-                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                {!isPostRegistration && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                   <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                     <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
                   </div>
@@ -1159,7 +1161,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </div>}
 
                 {/* Current & Previous MyHSS Roles — side by side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
