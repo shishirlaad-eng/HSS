@@ -562,7 +562,7 @@ function MemberDashboard({
                     </div>
                     {att.status === 'present'
                       ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400 border border-success-200 dark:border-success-800 flex-shrink-0"><CheckCircle2 className="w-3 h-3" /> Present</span>
-                      : <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 flex-shrink-0">Absent</span>
+                      : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error-50 text-error-700 dark:bg-error-950 dark:text-error-400 border border-error-200 dark:border-error-800 flex-shrink-0"><XCircle className="w-3 h-3" /> Absent</span>
                     }
                   </div>
                 </div>

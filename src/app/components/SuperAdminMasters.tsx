@@ -119,13 +119,12 @@ const MASTER_TABS: { id: MasterType; label: string }[] = [
   { id: 'region',             label: 'Vibhaag' },
   { id: 'town',               label: 'Nagar' },
   { id: 'centre',             label: 'Shakha' },
-  { id: 'role-types',         label: 'Responsibility' },
   { id: 'configurable-lists', label: 'Lists & Options' },
 ];
 
 // Tabs hidden per role (role cannot manage higher-level geography than their scope)
 const HIDDEN_TABS_BY_ROLE: Partial<Record<string, MasterType[]>> = {
-  'Vibhaag Admin':  ['country', 'region'],
+  'Vibhaag Admin':  ['country', 'region', 'configurable-lists'],
   'Nagar Admin':    ['country', 'region', 'town'],
   'Shakha Admin':   ['country', 'region', 'town', 'centre'],
 };
@@ -153,7 +152,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   }, [selectedRole]);
 
   // ── View & pagination ──────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 

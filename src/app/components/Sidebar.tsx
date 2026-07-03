@@ -166,7 +166,6 @@ export function Sidebar({
     "region":                         "Vibhaag",
     "town":                           "Nagar",
     "centre":                         "Shakha",
-    "role-types":                     "Responsibility",
 
     // 8. Settings
     "role-management":                "Roles & Permissions",

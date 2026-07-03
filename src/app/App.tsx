@@ -328,8 +328,6 @@ export default function App() {
           <SuperAdminMasters masterType="town"       onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "centre" ? (
           <SuperAdminMasters masterType="centre"     onNavigate={handleNavigate} selectedRole={selectedRole} />
-        ) : currentPage === "role-types" ? (
-          <SuperAdminMasters masterType="role-types" onNavigate={handleNavigate} selectedRole={selectedRole} />
         ) : currentPage === "system-settings" ? (
           <SystemSettings logoUrl={logoUrl} onLogoChange={handleLogoChange} />
         ) : currentPage === "static-pages" ? (

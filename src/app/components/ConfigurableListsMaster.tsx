@@ -20,6 +20,8 @@ import { mockRoles } from '../../mockAPI/rolesData';
 
 export type ListKey =
   | 'age-groups'
+  | 'dietary-requirements'
+  | 'spoken-languages'
   | 'role-types'
   | 'responsibility-type'
   | 'responsibility-level'
@@ -43,7 +45,9 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
   {
     label: 'Member',
     lists: [
-      { key: 'age-groups', label: 'Age Groups', idPrefix: 'AGE' },
+      { key: 'age-groups',            label: 'Age Groups',            idPrefix: 'AGE' },
+      { key: 'dietary-requirements',  label: 'Dietary Requirements',  idPrefix: 'DIT' },
+      { key: 'spoken-languages',      label: 'Spoken Languages',      idPrefix: 'LNG' },
     ],
   },
   {
@@ -93,6 +97,8 @@ function makeItems(idPrefix: string, names: string[]): ConfigItem[] {
 
 const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'age-groups':           makeItems('AGE', ['Bal (0–5)', 'Shishu (6–11)', 'Kishor (12–16)', 'Tarun (17–30)', 'Yuva (30–60)', 'Jyestha (60+)']),
+  'dietary-requirements': makeItems('DIT', ['Coeliac', 'Gluten-free', 'Vegan', 'Lacto (allows dairy)', 'Paleo Diet', 'Ketogenic (low carbohydrate, high fat)', 'Low GI (limits carbohydrate intake)', 'FODMAP', 'No Onions or Garlic', 'Other - With box to specify']),
+  'spoken-languages':     makeItems('LNG', ['Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani', 'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other']),
   'role-types':           makeItems('ROT', ROLE_TYPE_OPTIONS),
   'responsibility-type':  makeItems('RST', ['Pramukh', 'Pramukh (Saha)', 'Toli']),
   'responsibility-level': makeItems('RSL', ['Kendriya / National', 'Vibhaag / Region', 'Nagar / Town', 'Shakha / Activity Centre']),
@@ -125,7 +131,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
   const [selectedList, setSelectedList] = useState<ListKey>('age-groups');
   const [allData, setAllData]           = useState<Record<ListKey, ConfigItem[]>>(INITIAL_DATA);
 
-  const [viewMode,     setViewMode]     = useState<'grid' | 'list' | 'table'>('grid');
+  const [viewMode,     setViewMode]     = useState<'grid' | 'list' | 'table'>('table');
   const [currentPage,  setCurrentPage]  = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchQuery,  setSearchQuery]  = useState('');
@@ -438,7 +444,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
         {/* ── TABLE ─────────────────────────────────────────────────────────── */}
         {viewMode === 'table' && (
           <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-380px)]">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">

@@ -27,6 +27,7 @@ import {
   FileUp,
   CalendarDays,
   Award,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -1334,6 +1335,20 @@ export default function MemberManagement({
 
   const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(filteredMembers.length / itemsPerPage);
 
+  const handleExportCsv = () => {
+    const data = selectedIds.size > 0 ? sortedMembers.filter(m => selectedIds.has(m.id)) : sortedMembers;
+    if (!data.length) { toast.error('No data to export.'); return; }
+    const csv = [
+      'Membership ID,Name,Email,Phone,Status,Country,Vibhaag,Nagar,Shakha,Registration Date',
+      ...data.map(m => `"${m.id}","${m.name}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${m.registrationDate}"`),
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `members_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast.success(`Exported ${data.length} member${data.length > 1 ? 's' : ''}.`);
+  };
+
   // â"€â"€ Summary counts â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const complianceAlerts = members.filter(
@@ -1584,6 +1599,7 @@ export default function MemberManagement({
           {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           {!karyakartasOnly && <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />}
+          <IconButton icon={FileSpreadsheet} onClick={handleExportCsv} title="Export CSV" />
 
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ArrowLeft,
   Edit,
@@ -28,8 +28,11 @@ import {
   ArrowUp,
   ArrowDown,
   X,
+  Save,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
+import { FormInput, FormSelect, FormTextarea } from './hb/common/Form';
 import {
   Member,
   getAge,
@@ -39,6 +42,9 @@ import {
   AGE_GROUP_LABELS,
   getAgeGroup,
   ConsentStatus,
+  MASTERS_CASCADE,
+  FIRST_AID_QUALIFICATION_OPTIONS,
+  SAFEGUARDING_LEVEL_OPTIONS,
 } from '../../mockAPI/membersData';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -167,6 +173,78 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+function MiniField({
+  label,
+  value,
+  isEditing,
+  onChange,
+  type = 'text',
+  options,
+  displayValue,
+}: {
+  label: string;
+  value: string;
+  isEditing: boolean;
+  onChange: (value: string) => void;
+  type?: string;
+  options?: { value: string; label: string }[];
+  displayValue?: React.ReactNode;
+}) {
+  const inputCls = 'w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white';
+  return (
+    <div>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
+      {!isEditing ? (
+        <p className="text-sm font-medium text-neutral-900 dark:text-white">{displayValue ?? valueOrDash(value)}</p>
+      ) : options ? (
+        <select value={value} onChange={e => onChange(e.target.value)} className={inputCls}>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} className={inputCls} />
+      )}
+    </div>
+  );
+}
+
+function EditableInfoItem({
+  label,
+  value,
+  isEditing,
+  onChange,
+  type = 'text',
+  options,
+  displayValue,
+  textarea = false,
+}: {
+  label: string;
+  value: string;
+  isEditing: boolean;
+  onChange: (value: string) => void;
+  type?: string;
+  options?: { value: string; label: string }[];
+  displayValue?: React.ReactNode;
+  textarea?: boolean;
+}) {
+  if (!isEditing) {
+    return <InfoItem label={label}>{displayValue ?? valueOrDash(value)}</InfoItem>;
+  }
+  return (
+    <div>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      {options ? (
+        <FormSelect value={value} onChange={e => onChange(e.target.value)}>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </FormSelect>
+      ) : textarea ? (
+        <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+      ) : (
+        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
+      )}
+    </div>
+  );
+}
+
 // ── Props ─────────────────────────────────────────────────────
 
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
@@ -263,6 +341,52 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab }: MemberDetailProps) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
+
+  const [isEditing, setIsEditing]   = useState(false);
+  const [form, setForm]             = useState<Member>(member);
+  const [savedForm, setSavedForm]   = useState<Member>(member);
+
+  useEffect(() => {
+    setForm(member);
+    setSavedForm(member);
+    setIsEditing(false);
+  }, [member.id]);
+
+  const setField = (field: keyof Member, value: string | boolean) => {
+    setForm(cur => ({ ...cur, [field]: value }));
+  };
+
+  const setComplianceField = (field: 'dbs' | 'firstAid' | 'safeguardingTraining', value: string) => {
+    setForm(cur => ({ ...cur, compliance: { ...cur.compliance, [field]: value } }));
+  };
+
+  const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
+    setForm(cur => {
+      const next = { ...cur, [field]: value };
+      if (field === 'country') {
+        next.region = '';
+        next.town = '';
+        next.activityCentre = '';
+      } else if (field === 'region') {
+        next.town = '';
+        next.activityCentre = '';
+      } else if (field === 'town') {
+        next.activityCentre = '';
+      }
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    setSavedForm(form);
+    setIsEditing(false);
+    toast.success('Member updated successfully.');
+  };
+
+  const handleCancel = () => {
+    setForm(savedForm);
+    setIsEditing(false);
+  };
 
   const age = getAge(member.dateOfBirth);
   const ageCategory = getAgeCategory(member.dateOfBirth);
@@ -367,9 +491,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white">
                   {member.name}
                 </h1>
-                <span className="text-neutral-400 dark:text-neutral-600">·</span>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">
-                  {member.id}
+                <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                <span className="text-xl font-medium text-neutral-400 dark:text-neutral-500">
+                  [{member.id}]
                 </span>
               </div>
 
@@ -450,9 +574,14 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     Reject
                   </button>
                 </>
-              ) : mode !== 'approval' ? (
+              ) : mode !== 'approval' ? isEditing ? (
                 <>
-                  <PrimaryButton icon={Edit} onClick={onEdit}>
+                  <SecondaryButton icon={X} onClick={handleCancel}>Cancel</SecondaryButton>
+                  <PrimaryButton icon={Save} onClick={handleSave}>Save Changes</PrimaryButton>
+                </>
+              ) : (
+                <>
+                  <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>
                     Edit Member
                   </PrimaryButton>
                   <button
@@ -514,50 +643,64 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
                 <InfoSection title="Personal Details">
-                  <InfoItem label="First Name">{valueOrDash(member.firstName)}</InfoItem>
+                  <EditableInfoItem label="First Name" value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} />
                   <InfoItem label="Membership ID">{member.id}</InfoItem>
-                  <InfoItem label="Middle Name">{valueOrDash(member.middleName)}</InfoItem>
-                  <InfoItem label="Gender"><span className="capitalize">{valueOrDash(member.gender)}</span></InfoItem>
-                  <InfoItem label="Surname">{valueOrDash(member.surname)}</InfoItem>
-                  <InfoItem label="Date of Birth">
-                    {formatDate(member.dateOfBirth)}
-                    <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span>
-                  </InfoItem>
+                  <EditableInfoItem label="Middle Name" value={form.middleName ?? ''} isEditing={isEditing} onChange={v => setField('middleName', v)} />
+                  <EditableInfoItem
+                    label="Gender"
+                    value={form.gender}
+                    isEditing={isEditing}
+                    onChange={v => setField('gender', v)}
+                    options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]}
+                    displayValue={<span className="capitalize">{valueOrDash(member.gender)}</span>}
+                  />
+                  <EditableInfoItem label="Surname" value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} />
+                  <EditableInfoItem
+                    label="Date of Birth"
+                    value={form.dateOfBirth}
+                    isEditing={isEditing}
+                    onChange={v => setField('dateOfBirth', v)}
+                    type="date"
+                    displayValue={<>{formatDate(member.dateOfBirth)}<span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span></>}
+                  />
                   <InfoItem label="Full Name">{member.name}</InfoItem>
                   <InfoItem label="Age Group"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                 </InfoSection>
 
                 <InfoSection title="Contact Details">
-                  <InfoItem label="Primary Contact Number">{valueOrDash(member.phone)}</InfoItem>
-                  <InfoItem label="Primary Email Address">{member.email}</InfoItem>
-                  <InfoItem label="Secondary Contact Number">{valueOrDash(member.secondaryPhone)}</InfoItem>
-                  <InfoItem label="Secondary Email Address">{valueOrDash(member.secondaryEmail)}</InfoItem>
-                  <InfoItem label="Building Name">{valueOrDash(member.buildingName)}</InfoItem>
-                  <InfoItem label="Town / City">{valueOrDash(member.contactTownCity)}</InfoItem>
-                  <InfoItem label="Address Line 1">{valueOrDash(member.addressLine1)}</InfoItem>
-                  <InfoItem label="Post Code">{valueOrDash(member.postCode)}</InfoItem>
-                  <InfoItem label="Address Line 2">{valueOrDash(member.addressLine2)}</InfoItem>
+                  <EditableInfoItem label="Primary Contact Number" value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} type="tel" />
+                  <EditableInfoItem label="Primary Email Address" value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
+                  <EditableInfoItem label="Secondary Contact Number" value={form.secondaryPhone ?? ''} isEditing={isEditing} onChange={v => setField('secondaryPhone', v)} type="tel" />
+                  <EditableInfoItem label="Secondary Email Address" value={form.secondaryEmail ?? ''} isEditing={isEditing} onChange={v => setField('secondaryEmail', v)} type="email" />
+                  <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
+                  <EditableInfoItem label="Town / City" value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
+                  <EditableInfoItem label="Address Line 1" value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} />
+                  <EditableInfoItem label="Post Code" value={form.postCode ?? ''} isEditing={isEditing} onChange={v => setField('postCode', v)} />
+                  <EditableInfoItem label="Address Line 2" value={form.addressLine2 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine2', v)} />
                 </InfoSection>
 
                 <InfoSection title="Emergency Contact Details">
-                  <InfoItem label="Contact Name">{valueOrDash(member.emergencyContactName)}</InfoItem>
-                  <InfoItem label="Contact Phone Number">{valueOrDash(member.emergencyContactPhone)}</InfoItem>
-                  <InfoItem label="Contact Email">{valueOrDash(member.emergencyContactEmail)}</InfoItem>
-                  <InfoItem label="Contact Relationship">{valueOrDash(member.emergencyContactRelationship)}</InfoItem>
+                  <EditableInfoItem label="Contact Name" value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
+                  <EditableInfoItem label="Contact Phone Number" value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} type="tel" />
+                  <EditableInfoItem label="Contact Email" value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
+                  <EditableInfoItem label="Contact Relationship" value={form.emergencyContactRelationship ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactRelationship', v)} />
                 </InfoSection>
 
                 <InfoSection title="Medical Details">
-                  <InfoItem label="Do you have any medical condition?">
-                    {member.medicalInfoDeclared ? 'Yes' : 'No'}
-                  </InfoItem>
+                  <EditableInfoItem
+                    label="Do you have any medical condition?"
+                    value={form.medicalInfoDeclared ? 'Yes' : 'No'}
+                    isEditing={isEditing}
+                    onChange={v => setField('medicalInfoDeclared', v === 'Yes')}
+                    options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                    displayValue={member.medicalInfoDeclared ? 'Yes' : 'No'}
+                  />
                   <InfoItem label="Special Dietary Requirements">
                     {valueOrDash(member.dietaryRequirements)}
                   </InfoItem>
-                  <InfoItem label="Medical Information Details">
-                    {valueOrDash(member.medicalInfoDetails)}
-                  </InfoItem>
-                  <InfoItem label="Do you carry an EpiPen/Jext/Emerade?">{valueOrDash(member.epiPen)}</InfoItem>
-                  <InfoItem label="Any Allergies">{valueOrDash(member.allergies)}</InfoItem>
+                  <EditableInfoItem label="Medical Information Details" value={form.medicalInfoDetails ?? ''} isEditing={isEditing} onChange={v => setField('medicalInfoDetails', v)} />
+                  <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={form.epiPen ?? ''} isEditing={isEditing} onChange={v => setField('epiPen', v)} />
+                  <EditableInfoItem label="Any Allergies" value={form.allergies ?? ''} isEditing={isEditing} onChange={v => setField('allergies', v)} />
                 </InfoSection>
 
               </div>
@@ -566,21 +709,45 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── PARENT / GUARDIAN TAB ──────────────────────── */}
             {activeTab === 'guardian' && (
               <InfoSection title="Approval Details" cols={4}>
-                <InfoItem label="Parent / Guardian Name">{valueOrDash(member.guardianName)}</InfoItem>
-                <InfoItem label="Parent / Guardian Phone Number">{valueOrDash(member.guardianPhone)}</InfoItem>
-                <InfoItem label="Parent / Guardian Email">{valueOrDash(member.guardianEmail)}</InfoItem>
-                <InfoItem label="Parent / Guardian Relationship">{valueOrDash(member.guardianRelationship)}</InfoItem>
+                <EditableInfoItem label="Parent / Guardian Name" value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
+                <EditableInfoItem label="Parent / Guardian Phone Number" value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} type="tel" />
+                <EditableInfoItem label="Parent / Guardian Email" value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
+                <EditableInfoItem label="Parent / Guardian Relationship" value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} />
               </InfoSection>
             )}
 
             {/* ── ORGANISATION TAB ───────────────────────────── */}
             {activeTab === 'organisation' && (
               <InfoSection title="Organisation Details" cols={4}>
-                <InfoItem label="Country / Organisation">{valueOrDash(member.country)}</InfoItem>
+                <EditableInfoItem
+                  label="Country / Organisation"
+                  value={form.country ?? ''}
+                  isEditing={isEditing}
+                  onChange={v => setOrganisationField('country', v)}
+                  options={MASTERS_CASCADE.countries.map(c => ({ value: c, label: c }))}
+                />
                 <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
-                <InfoItem label="Vibhaag">{valueOrDash(member.region)}</InfoItem>
-                <InfoItem label="Nagar">{valueOrDash(member.town)}</InfoItem>
-                <InfoItem label="Shakha">{valueOrDash(member.activityCentre)}</InfoItem>
+                <EditableInfoItem
+                  label="Vibhaag"
+                  value={form.region ?? ''}
+                  isEditing={isEditing}
+                  onChange={v => setOrganisationField('region', v)}
+                  options={(form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : []).map(r => ({ value: r, label: r }))}
+                />
+                <EditableInfoItem
+                  label="Nagar"
+                  value={form.town ?? ''}
+                  isEditing={isEditing}
+                  onChange={v => setOrganisationField('town', v)}
+                  options={(form.region ? (MASTERS_CASCADE.towns[form.region] ?? []) : []).map(t => ({ value: t, label: t }))}
+                />
+                <EditableInfoItem
+                  label="Shakha"
+                  value={form.activityCentre ?? ''}
+                  isEditing={isEditing}
+                  onChange={v => setOrganisationField('activityCentre', v)}
+                  options={(form.town ? (MASTERS_CASCADE.centres[form.town] ?? []) : []).map(c => ({ value: c, label: c }))}
+                />
               </InfoSection>
             )}
 
@@ -737,28 +904,37 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">First Aid</h4>
                     </div>
                     <div className="px-5 py-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">First Aid Status</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.firstAid}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Qualified First Aider</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.isFirstAider ? 'Yes' : 'No'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Expiry Date</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">First Aid Qualification</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidQualificationLevel ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Reference Number</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.firstAidRef ?? '—'}</p>
-                      </div>
+                      <MiniField
+                        label="First Aid Status"
+                        value={form.compliance.firstAid}
+                        isEditing={isEditing}
+                        onChange={v => setComplianceField('firstAid', v)}
+                        options={[{ value: 'Certified', label: 'Certified' }, { value: 'Expired', label: 'Expired' }, { value: 'N/A', label: 'N/A' }]}
+                      />
+                      <MiniField
+                        label="Qualified First Aider"
+                        value={form.isFirstAider ? 'Yes' : 'No'}
+                        isEditing={isEditing}
+                        onChange={v => setField('isFirstAider', v === 'Yes')}
+                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                        displayValue={member.isFirstAider ? 'Yes' : 'No'}
+                      />
+                      <MiniField
+                        label="Expiry Date"
+                        value={form.firstAidQualificationExpiryDate ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('firstAidQualificationExpiryDate', v)}
+                        type="date"
+                        displayValue={member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
+                      />
+                      <MiniField
+                        label="First Aid Qualification"
+                        value={form.firstAidQualificationLevel ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('firstAidQualificationLevel', v)}
+                        options={FIRST_AID_QUALIFICATION_OPTIONS.map(o => ({ value: o, label: o }))}
+                      />
+                      <MiniField label="Reference Number" value={form.firstAidRef ?? ''} isEditing={isEditing} onChange={v => setField('firstAidRef', v)} />
                     </div>
                   </div>
 
@@ -768,30 +944,37 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Safeguarding</h4>
                     </div>
                     <div className="px-5 py-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Safeguarding Status</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.safeguardingTraining ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Level of Training</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingTrainingLevel ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Date Completed</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Expiry Date</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Reference Number</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.safeguardingRef ?? '—'}</p>
-                      </div>
+                      <MiniField
+                        label="Safeguarding Status"
+                        value={form.compliance.safeguardingTraining ?? 'N/A'}
+                        isEditing={isEditing}
+                        onChange={v => setComplianceField('safeguardingTraining', v)}
+                        options={[{ value: 'Certified', label: 'Certified' }, { value: 'Expired', label: 'Expired' }, { value: 'N/A', label: 'N/A' }]}
+                      />
+                      <MiniField
+                        label="Level of Training"
+                        value={form.safeguardingTrainingLevel ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('safeguardingTrainingLevel', v)}
+                        options={SAFEGUARDING_LEVEL_OPTIONS.map(o => ({ value: o, label: o }))}
+                      />
+                      <MiniField
+                        label="Date Completed"
+                        value={form.safeguardingTrainingDate ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('safeguardingTrainingDate', v)}
+                        type="date"
+                        displayValue={member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
+                      />
+                      <MiniField
+                        label="Expiry Date"
+                        value={form.safeguardingExpiry ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('safeguardingExpiry', v)}
+                        type="date"
+                        displayValue={member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
+                      />
+                      <MiniField label="Reference Number" value={form.safeguardingRef ?? ''} isEditing={isEditing} onChange={v => setField('safeguardingRef', v)} />
                     </div>
                   </div>
                 </div>
@@ -803,52 +986,46 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                   <div className="px-4 py-4 space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Status</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.compliance.dbs}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Number</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateNumber ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Date</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert File</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateFile ?? '—'}</p>
-                      </div>
+                      <MiniField
+                        label="DBS Status"
+                        value={form.compliance.dbs}
+                        isEditing={isEditing}
+                        onChange={v => setComplianceField('dbs', v)}
+                        options={[{ value: 'Approved', label: 'Approved' }, { value: 'Pending', label: 'Pending' }]}
+                      />
+                      <MiniField label="DBS Cert Number" value={form.dbsCertificateNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateNumber', v)} />
+                      <MiniField
+                        label="DBS Cert Date"
+                        value={form.dbsCertificateDate ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('dbsCertificateDate', v)}
+                        type="date"
+                        displayValue={member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : '—'}
+                      />
+                      <MiniField label="DBS Cert File" value={form.dbsCertificateFile ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateFile', v)} />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Update Service No.</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsUpdateServiceNumber ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Application Under Process</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Cert Received From</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCertificateReceivedFrom ?? '—'}</p>
-                      </div>
+                      <MiniField
+                        label="DBS Update Service"
+                        value={form.dbsUpdateService === true ? 'Yes' : 'No'}
+                        isEditing={isEditing}
+                        onChange={v => setField('dbsUpdateService', v === 'Yes')}
+                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                        displayValue={member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : '—'}
+                      />
+                      <MiniField label="DBS Update Service No." value={form.dbsUpdateServiceNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsUpdateServiceNumber', v)} />
+                      <MiniField
+                        label="Application Under Process"
+                        value={form.dbsAppUnderProcess === true ? 'Yes' : 'No'}
+                        isEditing={isEditing}
+                        onChange={v => setField('dbsAppUnderProcess', v === 'Yes')}
+                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                        displayValue={member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : '—'}
+                      />
+                      <MiniField label="Cert Received From" value={form.dbsCertificateReceivedFrom ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateReceivedFrom', v)} />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Verified By</p>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.dbsCheckedBy ?? '—'}</p>
-                      </div>
+                      <MiniField label="Verified By" value={form.dbsCheckedBy ?? ''} isEditing={isEditing} onChange={v => setField('dbsCheckedBy', v)} />
                     </div>
                   </div>
                 </div>
@@ -859,10 +1036,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── OTHER INFORMATION TAB ──────────────────────── */}
             {activeTab === 'other' && (
               <InfoSection title="Other Information" cols={4}>
-                <InfoItem label="Occupation">{valueOrDash(member.occupation)}</InfoItem>
+                <EditableInfoItem label="Occupation" value={form.occupation ?? ''} isEditing={isEditing} onChange={v => setField('occupation', v)} />
                 <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
-                <InfoItem label="Originating State in India">{valueOrDash(member.originatingStateIndia)}</InfoItem>
-                <InfoItem label="Additional Notes / Comments">{valueOrDash(member.additionalNotes)}</InfoItem>
+                <EditableInfoItem label="Originating State in India" value={form.originatingStateIndia ?? ''} isEditing={isEditing} onChange={v => setField('originatingStateIndia', v)} />
+                <EditableInfoItem label="Additional Notes / Comments" value={form.additionalNotes ?? ''} isEditing={isEditing} onChange={v => setField('additionalNotes', v)} textarea />
               </InfoSection>
             )}
 

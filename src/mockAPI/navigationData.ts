@@ -29,7 +29,7 @@ export interface MenuItem {
 
 // Masters sub-items hidden per role (mirrors SuperAdminMasters tab logic)
 const HIDDEN_MASTERS_BY_ROLE: Partial<Record<string, string[]>> = {
-  'Vibhaag Admin':  ['country', 'region'],
+  'Vibhaag Admin':  ['country', 'region', 'configurable-lists'],
   'Nagar Admin':    ['country', 'region', 'town'],
   'Shakha Admin':   ['country', 'region', 'town', 'centre'],
 };
@@ -94,16 +94,16 @@ export const getNavigationData = (
     },
 
     // ── 2. HSS (UK) Setup ────────────────────────────────────────
-    ...(selectedRole === 'Super Admin' ? [{
+    ...(['Super Admin', 'Vibhaag Admin'].includes(selectedRole) ? [{
       id: "masters-group",
       label: "HSS (UK) Setup",
       icon: Database,
       onClick: () => {
-        const TAB_ORDER = ['country', 'region', 'town', 'centre', 'role-types'];
+        const TAB_ORDER = ['country', 'region', 'town', 'centre'];
         const first = TAB_ORDER.find(t => !hiddenMasters.has(t)) ?? 'country';
         onNavigate(first);
       },
-      active: ['country', 'region', 'town', 'centre', 'role-types', 'configurable-lists'].includes(currentPage),
+      active: ['country', 'region', 'town', 'centre', 'configurable-lists'].includes(currentPage),
     }] : []),
 
     // ── 3. Members Management ────────────────────────────────────
@@ -111,9 +111,14 @@ export const getNavigationData = (
       id: "members-management-group",
       label: "Members",
       icon: UserCheck,
-      onClick: () => onNavigate("members"),
       active: ['members', 'karyakartas', 'compliance', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
       subItems: [
+        {
+          id: "members",
+          label: "Members",
+          onClick: () => onNavigate("members"),
+          active: currentPage === "members",
+        },
         {
           id: "karyakartas",
           label: "Roles and Responsibilities",
