@@ -43,6 +43,8 @@ const DIETARY_MULTISELECT_OPTIONS = [
 
 const RELATIONSHIP_OPTIONS = ['Spouse', 'Sibling', 'Parent', 'Child'];
 
+const OCCUPATION_OPTIONS = ['Student', 'Business man', 'Job'];
+
 const SPOKEN_LANGUAGE_OPTIONS = [
   'Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani',
   'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other',
@@ -1017,31 +1019,35 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               <div className="space-y-5">
                 <InfoSection title="First Aid" cols={4}>
                   <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
-                  <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
-                  <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
-                  <div>
-                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Cert Upload</label>
-                    {effectiveEditing ? (
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
-                          <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                          <span className="text-sm text-neutral-500 dark:text-neutral-400 flex-1 truncate">
-                            {profile.firstAidCertFile || "Click to upload certificate…"}
-                          </span>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only"
-                            onChange={e => { const f = e.target.files?.[0]; if (f) setField("firstAidCertFile", f.name); }} />
-                        </label>
-                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Accepted: PDF, JPG, PNG</p>
+                  {profile.isFirstAider === "Yes" && (
+                    <>
+                      <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
+                      <EditableInfoItem label="First Aid Qualification"         value={profile.firstAidQualificationLevel}      isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationLevel", v)}      options={[...FIRST_AID_QUALIFICATION_OPTIONS]} />
+                      <div>
+                        <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Cert Upload</label>
+                        {effectiveEditing ? (
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 transition-colors">
+                              <Upload className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                              <span className="text-sm text-neutral-500 dark:text-neutral-400 flex-1 truncate">
+                                {profile.firstAidCertFile || "Click to upload certificate…"}
+                              </span>
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only"
+                                onChange={e => { const f = e.target.files?.[0]; if (f) setField("firstAidCertFile", f.name); }} />
+                            </label>
+                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Accepted: PDF, JPG, PNG</p>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-neutral-900 dark:text-white font-medium">
+                            {profile.firstAidCertFile
+                              ? <span className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400"><Paperclip className="w-3.5 h-3.5 flex-shrink-0" />{profile.firstAidCertFile}</span>
+                              : "—"}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-sm text-neutral-900 dark:text-white font-medium">
-                        {profile.firstAidCertFile
-                          ? <span className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400"><Paperclip className="w-3.5 h-3.5 flex-shrink-0" />{profile.firstAidCertFile}</span>
-                          : "—"}
-                      </div>
-                    )}
-                  </div>
-                  {!isPostRegistration && <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={effectiveEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />}
+                      {!isPostRegistration && <EditableInfoItem label="First Aid Status" value={profile.firstAidStatus} isEditing={effectiveEditing} onChange={v => setField("firstAidStatus", v)} options={["Pending", "Completed"]} />}
+                    </>
+                  )}
                 </InfoSection>
 
                 {!isPostRegistration && (
@@ -1167,7 +1173,34 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {activeTab === 'other' && (
             <div className="space-y-5">
               <InfoSection title="Other Information" cols={4}>
-                <EditableInfoItem label="Occupation (Select Other if not listed)" required value={profile.occupation}           isEditing={effectiveEditing} onChange={v => setField("occupation", v)} />
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
+                    Occupation<span className="text-error-500 ml-0.5">*</span>
+                  </label>
+                  {effectiveEditing ? (
+                    <div className="space-y-2">
+                      <FormSelect
+                        value={OCCUPATION_OPTIONS.includes(profile.occupation) ? profile.occupation : 'Other'}
+                        onChange={e => setField("occupation", e.target.value === 'Other' ? '' : e.target.value)}
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Business man">Business man</option>
+                        <option value="Job">Job</option>
+                        <option value="Other">Other - With box to specify</option>
+                      </FormSelect>
+                      {!OCCUPATION_OPTIONS.includes(profile.occupation) && (
+                        <FormInput
+                          type="text"
+                          placeholder="Please specify"
+                          value={profile.occupation}
+                          onChange={e => setField("occupation", e.target.value)}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-neutral-900 dark:text-white font-medium">{valueOrDash(profile.occupation)}</p>
+                  )}
+                </div>
                 <EditableInfoItem label="Spoken Language(s)"                       value={profile.spokenLanguages}      isEditing={effectiveEditing} onChange={v => setField("spokenLanguages", v)} options={SPOKEN_LANGUAGE_OPTIONS} />
                 <EditableInfoItem label="Originating State in India"               value={profile.originatingStateIndia} isEditing={effectiveEditing} onChange={v => setField("originatingStateIndia", v)} options={INDIA_STATE_OPTIONS} />
                 <EditableInfoItem label="Additional Notes / Comments"              value={profile.additionalNotes}      isEditing={effectiveEditing} onChange={v => setField("additionalNotes", v)} textarea />

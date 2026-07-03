@@ -208,6 +208,7 @@ export interface Member {
   firstAidQualificationLevel?: FirstAidQualification;
   firstAidQualificationExpiryDate?: string;
   dietaryRequirements?: DietaryRequirement[];
+  dietaryOtherSpecify?: string;
   epiPen?: string;
   allergies?: string;
   occupation?: string;

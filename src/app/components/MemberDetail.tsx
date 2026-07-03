@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   Edit,
@@ -29,6 +30,8 @@ import {
   ArrowDown,
   X,
   Save,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
@@ -144,6 +147,125 @@ function valueOrDash(value?: string | string[] | boolean | null) {
   if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   return value && String(value).trim() ? String(value) : '—';
+}
+
+const RELATIONSHIP_OPTIONS = ['Spouse', 'Sibling', 'Parent', 'Child'];
+
+const OCCUPATION_OPTIONS = ['Student', 'Business man', 'Job'];
+
+const SPOKEN_LANGUAGE_OPTIONS = [
+  'Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani',
+  'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other',
+];
+
+const INDIA_STATE_OPTIONS = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
+  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+  'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+];
+
+const DIETARY_MULTISELECT_OPTIONS = [
+  'Coeliac',
+  'Gluten-free',
+  'Vegan',
+  'Lacto (allows dairy)',
+  'Paleo Diet',
+  'Ketogenic (low carbohydrate, high fat)',
+  'Low GI (limits carbohydrate intake)',
+  'FODMAP',
+  'No Onions or Garlic',
+  'Other',
+] as const;
+
+function DietaryMultiSelect({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (vals: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        buttonRef.current && !buttonRef.current.contains(e.target as Node) &&
+        popoverRef.current && !popoverRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const updateRect = () => {
+      const r = buttonRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open]);
+
+  const toggle = (val: string) => {
+    onChange(selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val]);
+  };
+
+  const optionLabel = (val: string) => val === 'Other' ? 'Other - With box to specify' : val;
+
+  const displayText = selected.length === 0
+    ? 'Select dietary requirements'
+    : selected.map(optionLabel).join(', ');
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-3 py-2 text-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-left hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+      >
+        <span className={`truncate text-sm ${selected.length === 0 ? 'text-neutral-400' : 'text-neutral-900 dark:text-white'}`}>
+          {displayText}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 flex-shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && rect && createPortal(
+        <div
+          ref={popoverRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          <div className="max-h-56 overflow-y-auto">
+            {DIETARY_MULTISELECT_OPTIONS.map(opt => (
+              <div
+                key={opt}
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                onClick={() => toggle(opt)}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(opt) ? 'bg-primary-600 border-primary-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                  {selected.includes(opt) && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-xs text-neutral-700 dark:text-neutral-300">{optionLabel(opt)}</span>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
 }
 
 function InfoSection({ title, children, className = '', cols = 2 }: { title: string; children: React.ReactNode; className?: string; cols?: 2 | 4 }) {
@@ -352,7 +474,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     setIsEditing(false);
   }, [member.id]);
 
-  const setField = (field: keyof Member, value: string | boolean) => {
+  const setField = (field: keyof Member, value: string | boolean | string[]) => {
     setForm(cur => ({ ...cur, [field]: value }));
   };
 
@@ -683,22 +805,68 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <EditableInfoItem label="Contact Name" value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
                   <EditableInfoItem label="Contact Phone Number" value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} type="tel" />
                   <EditableInfoItem label="Contact Email" value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
-                  <EditableInfoItem label="Contact Relationship" value={form.emergencyContactRelationship ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactRelationship', v)} />
+                  <div>
+                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship</label>
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <FormSelect
+                          value={RELATIONSHIP_OPTIONS.includes(form.emergencyContactRelationship ?? '') ? form.emergencyContactRelationship : 'Other'}
+                          onChange={e => setField('emergencyContactRelationship', e.target.value === 'Other' ? '' : e.target.value)}
+                        >
+                          <option value="Spouse">Spouse</option>
+                          <option value="Sibling">Sibling</option>
+                          <option value="Parent">Parent</option>
+                          <option value="Child">Child</option>
+                          <option value="Other">Other - With box to specify</option>
+                        </FormSelect>
+                        {!RELATIONSHIP_OPTIONS.includes(form.emergencyContactRelationship ?? '') && (
+                          <FormInput
+                            type="text"
+                            placeholder="Please specify"
+                            value={form.emergencyContactRelationship ?? ''}
+                            onChange={e => setField('emergencyContactRelationship', e.target.value)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-900 dark:text-white font-medium">{valueOrDash(member.emergencyContactRelationship)}</p>
+                    )}
+                  </div>
                 </InfoSection>
 
                 <InfoSection title="Medical Details">
                   <EditableInfoItem
                     label="Do you have any medical condition?"
-                    value={form.medicalInfoDeclared ? 'Yes' : 'No'}
+                    value={form.medicalInfoDetails ?? ''}
                     isEditing={isEditing}
-                    onChange={v => setField('medicalInfoDeclared', v === 'Yes')}
-                    options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
-                    displayValue={member.medicalInfoDeclared ? 'Yes' : 'No'}
+                    onChange={v => { setField('medicalInfoDetails', v); setField('medicalInfoDeclared', v.trim().length > 0); }}
+                    displayValue={valueOrDash(member.medicalInfoDetails)}
                   />
-                  <InfoItem label="Special Dietary Requirements">
-                    {valueOrDash(member.dietaryRequirements)}
-                  </InfoItem>
-                  <EditableInfoItem label="Medical Information Details" value={form.medicalInfoDetails ?? ''} isEditing={isEditing} onChange={v => setField('medicalInfoDetails', v)} />
+                  <div>
+                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <DietaryMultiSelect
+                          selected={form.dietaryRequirements ?? []}
+                          onChange={vals => setField('dietaryRequirements', vals)}
+                        />
+                        {(form.dietaryRequirements ?? []).includes('Other') && (
+                          <FormInput
+                            type="text"
+                            placeholder="Please specify"
+                            value={form.dietaryOtherSpecify ?? ''}
+                            onChange={e => setField('dietaryOtherSpecify', e.target.value)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-900 dark:text-white font-medium">
+                        {member.dietaryRequirements && member.dietaryRequirements.length
+                          ? member.dietaryRequirements.map(v => v === 'Other' ? `Other${member.dietaryOtherSpecify ? `: ${member.dietaryOtherSpecify}` : ''}` : v).join(', ')
+                          : '—'}
+                      </p>
+                    )}
+                  </div>
                   <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={form.epiPen ?? ''} isEditing={isEditing} onChange={v => setField('epiPen', v)} />
                   <EditableInfoItem label="Any Allergies" value={form.allergies ?? ''} isEditing={isEditing} onChange={v => setField('allergies', v)} />
                 </InfoSection>
@@ -712,7 +880,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <EditableInfoItem label="Parent / Guardian Name" value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
                 <EditableInfoItem label="Parent / Guardian Phone Number" value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} type="tel" />
                 <EditableInfoItem label="Parent / Guardian Email" value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
-                <EditableInfoItem label="Parent / Guardian Relationship" value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} />
+                <EditableInfoItem label="Parent / Guardian Relationship" value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} />
               </InfoSection>
             )}
 
@@ -905,13 +1073,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                     <div className="px-5 py-4 grid grid-cols-2 gap-4">
                       <MiniField
-                        label="First Aid Status"
-                        value={form.compliance.firstAid}
-                        isEditing={isEditing}
-                        onChange={v => setComplianceField('firstAid', v)}
-                        options={[{ value: 'Certified', label: 'Certified' }, { value: 'Expired', label: 'Expired' }, { value: 'N/A', label: 'N/A' }]}
-                      />
-                      <MiniField
                         label="Qualified First Aider"
                         value={form.isFirstAider ? 'Yes' : 'No'}
                         isEditing={isEditing}
@@ -919,22 +1080,33 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
                         displayValue={member.isFirstAider ? 'Yes' : 'No'}
                       />
-                      <MiniField
-                        label="Expiry Date"
-                        value={form.firstAidQualificationExpiryDate ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('firstAidQualificationExpiryDate', v)}
-                        type="date"
-                        displayValue={member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
-                      />
-                      <MiniField
-                        label="First Aid Qualification"
-                        value={form.firstAidQualificationLevel ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('firstAidQualificationLevel', v)}
-                        options={FIRST_AID_QUALIFICATION_OPTIONS.map(o => ({ value: o, label: o }))}
-                      />
-                      <MiniField label="Reference Number" value={form.firstAidRef ?? ''} isEditing={isEditing} onChange={v => setField('firstAidRef', v)} />
+                      {form.isFirstAider && (
+                        <>
+                          <MiniField
+                            label="First Aid Status"
+                            value={form.compliance.firstAid}
+                            isEditing={isEditing}
+                            onChange={v => setComplianceField('firstAid', v)}
+                            options={[{ value: 'Certified', label: 'Certified' }, { value: 'Expired', label: 'Expired' }, { value: 'N/A', label: 'N/A' }]}
+                          />
+                          <MiniField
+                            label="Expiry Date"
+                            value={form.firstAidQualificationExpiryDate ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('firstAidQualificationExpiryDate', v)}
+                            type="date"
+                            displayValue={member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}
+                          />
+                          <MiniField
+                            label="First Aid Qualification"
+                            value={form.firstAidQualificationLevel ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('firstAidQualificationLevel', v)}
+                            options={FIRST_AID_QUALIFICATION_OPTIONS.map(o => ({ value: o, label: o }))}
+                          />
+                          <MiniField label="Reference Number" value={form.firstAidRef ?? ''} isEditing={isEditing} onChange={v => setField('firstAidRef', v)} />
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1036,9 +1208,41 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── OTHER INFORMATION TAB ──────────────────────── */}
             {activeTab === 'other' && (
               <InfoSection title="Other Information" cols={4}>
-                <EditableInfoItem label="Occupation" value={form.occupation ?? ''} isEditing={isEditing} onChange={v => setField('occupation', v)} />
-                <InfoItem label="Spoken Language(s)">{valueOrDash(member.spokenLanguages)}</InfoItem>
-                <EditableInfoItem label="Originating State in India" value={form.originatingStateIndia ?? ''} isEditing={isEditing} onChange={v => setField('originatingStateIndia', v)} />
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Occupation</label>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <FormSelect
+                        value={OCCUPATION_OPTIONS.includes(form.occupation ?? '') ? form.occupation : 'Other'}
+                        onChange={e => setField('occupation', e.target.value === 'Other' ? '' : e.target.value)}
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Business man">Business man</option>
+                        <option value="Job">Job</option>
+                        <option value="Other">Other - With box to specify</option>
+                      </FormSelect>
+                      {!OCCUPATION_OPTIONS.includes(form.occupation ?? '') && (
+                        <FormInput
+                          type="text"
+                          placeholder="Please specify"
+                          value={form.occupation ?? ''}
+                          onChange={e => setField('occupation', e.target.value)}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-neutral-900 dark:text-white font-medium">{valueOrDash(member.occupation)}</p>
+                  )}
+                </div>
+                <EditableInfoItem
+                  label="Spoken Language(s)"
+                  value={(form.spokenLanguages && form.spokenLanguages[0]) ?? ''}
+                  isEditing={isEditing}
+                  onChange={v => setField('spokenLanguages', [v])}
+                  options={SPOKEN_LANGUAGE_OPTIONS.map(l => ({ value: l, label: l }))}
+                  displayValue={valueOrDash(member.spokenLanguages)}
+                />
+                <EditableInfoItem label="Originating State in India" value={form.originatingStateIndia ?? ''} isEditing={isEditing} onChange={v => setField('originatingStateIndia', v)} options={INDIA_STATE_OPTIONS.map(s => ({ value: s, label: s }))} />
                 <EditableInfoItem label="Additional Notes / Comments" value={form.additionalNotes ?? ''} isEditing={isEditing} onChange={v => setField('additionalNotes', v)} textarea />
               </InfoSection>
             )}

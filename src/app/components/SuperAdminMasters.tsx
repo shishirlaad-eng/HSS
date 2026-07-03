@@ -18,7 +18,7 @@ import {
   FormInput, FormSelect, StatusSlider
 } from './hb/common';
 import { toast } from 'sonner';
-import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
 import { getRoleScope } from '../../mockAPI/roleScope';
 
@@ -312,15 +312,13 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       if (masterType === 'region')  return data.filter(i => i.countryName === scope.country);
       // Towns: only those whose regionName is in scope country's regions
       if (masterType === 'town') {
-        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
-        const countryRegions: string[] = MC.regions[scope.country] ?? [];
+        const countryRegions: string[] = MASTERS_CASCADE.regions[scope.country] ?? [];
         return data.filter(i => countryRegions.includes(i.regionName ?? ''));
       }
       // Centres: only those whose town is in scope country
       if (masterType === 'centre') {
-        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
-        const countryRegions: string[] = MC.regions[scope.country] ?? [];
-        const countryTowns: string[] = countryRegions.flatMap((r: string) => MC.towns[r] ?? []);
+        const countryRegions: string[] = MASTERS_CASCADE.regions[scope.country] ?? [];
+        const countryTowns: string[] = countryRegions.flatMap((r: string) => MASTERS_CASCADE.towns[r] ?? []);
         return data.filter(i => countryTowns.includes(i.townName ?? ''));
       }
     }
@@ -328,8 +326,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       if (masterType === 'region')  return data.filter(i => i.name === scope.region);
       if (masterType === 'town')    return data.filter(i => i.regionName === scope.region);
       if (masterType === 'centre')  {
-        const { MASTERS_CASCADE: MC } = require('../../mockAPI/membersData');
-        const regionTowns: string[] = MC.towns[scope.region] ?? [];
+        const regionTowns: string[] = MASTERS_CASCADE.towns[scope.region] ?? [];
         return data.filter(i => regionTowns.includes(i.townName ?? ''));
       }
     }
