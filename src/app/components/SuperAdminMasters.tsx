@@ -174,7 +174,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
 
   // ── Selection & summary ────────────────────────────────────────────────────
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
-  const [showSummary,  setShowSummary]  = useState(true);
+  const [showSummary,  setShowSummary]  = useState(false);
 
   // ── Column visibility (table view only) ───────────────────────────────────
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({

@@ -1170,7 +1170,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           )}
 
           {/* ── Other Information Tab ── */}
-          {activeTab === 'other' && (
+          {(isPostRegistration || activeTab === 'other') && (
             <div className="space-y-5">
               <InfoSection title="Other Information" cols={4}>
                 <div>

@@ -138,7 +138,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
   const [sortField,    setSortField]    = useState<'name' | 'status' | 'lastUpdated'>('name');
   const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('asc');
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
-  const [showSummary,  setShowSummary]  = useState(true);
+  const [showSummary,  setShowSummary]  = useState(false);
 
   const [modalMode,    setModalMode]    = useState<'create' | 'edit' | 'view' | null>(null);
   const [activeItem,   setActiveItem]   = useState<Partial<ConfigItem> | null>(null);
