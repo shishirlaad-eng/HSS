@@ -1,17 +1,21 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
-import { filterByScope } from '../../mockAPI/roleScope';
+import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import {
   mockMembers,
   Member,
   AgeGroup,
   AGE_GROUP_LABELS,
   getAgeGroup,
+  getAgeGroupLabel,
   DBSStatus,
   CertStatus,
+  MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
-import { PageHeader, SearchBar, Pagination } from './hb/listing';
+import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton } from './hb/listing';
+import type { FilterCondition } from './hb/listing';
 
 type ComplianceTab = 'dbs' | 'firstAid' | 'safeguarding';
 
@@ -79,12 +83,18 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('table');
+
   const handleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortCol(col); setSortDir('asc'); }
   };
 
   const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
+  const scopedFilterOptions = useMemo(() => getScopedFilterOptions(scope), [scope]);
 
   const alertCounts = useMemo(() => ({
     dbs:          members.filter(m => m.compliance.dbs === 'Pending').length,
@@ -98,6 +108,21 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
       m.id.toLowerCase().includes(q) ||
       m.name.toLowerCase().includes(q)
     );
+    rows = rows.filter(m => filters.every(f => {
+      if (!f.values.length) return true;
+      switch (f.field) {
+        case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
+        case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
+        case 'Country':                return f.values.includes(m.country);
+        case 'Vibhaag':                return f.values.includes(m.region);
+        case 'Nagar':                  return f.values.includes(m.town);
+        case 'Shakha':                 return f.values.includes(m.activityCentre);
+        case 'DBS Status':             return f.values.some(v => v.toLowerCase() === m.compliance.dbs.toLowerCase());
+        case 'First Aid Status':       return f.values.some(v => v.toLowerCase() === m.compliance.firstAid.toLowerCase());
+        case 'Safeguarding Status':    return f.values.some(v => v.toLowerCase() === (m.compliance.safeguardingTraining ?? 'N/A').toLowerCase());
+        default:                       return true;
+      }
+    }));
     rows = [...rows].sort((a, b) => {
       let av: string, bv: string;
       if (sortCol === 'id') { av = a.id; bv = b.id; }
@@ -106,7 +131,20 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
       return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     });
     return rows;
-  }, [members, searchQuery, sortCol, sortDir]);
+  }, [members, searchQuery, filters, sortCol, sortDir]);
+
+  const handleExportCsv = () => {
+    if (!filteredMembers.length) { toast.error('No data to export.'); return; }
+    const csv = [
+      'Member ID,Name,Age Category,DBS Status,First Aid Status,Safeguarding Status',
+      ...filteredMembers.map(m => `"${m.id}","${m.name}","${AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]}","${m.compliance.dbs}","${m.compliance.firstAid}","${m.compliance.safeguardingTraining ?? 'N/A'}"`),
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `compliance_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast.success(`Exported ${filteredMembers.length} records.`);
+  };
 
   const pagedMembers = useMemo(() =>
     filteredMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize),
@@ -126,13 +164,58 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
           title="Compliance"
           subtitle={selectedRole === 'Super Admin' ? 'Below is a list of all members that have undertaken compliance requirements to run Shakha activities' : undefined}
         >
-          <SearchBar
-            value={searchQuery}
-            onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
-            placeholder="Search by name or member ID..."
+          <div className="relative">
+            <SearchBar
+              value={searchQuery}
+              onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+              onAdvancedSearch={() => setShowAdvancedSearch(true)}
+              activeFilterCount={filters.filter(f => f.values.length > 0).length}
+              placeholder="Search by name or member ID..."
+            />
+            <AdvancedSearchPanel
+              isOpen={showAdvancedSearch}
+              onClose={() => setShowAdvancedSearch(false)}
+              filters={filters}
+              onFiltersChange={v => { setFilters(v); setCurrentPage(1); }}
+              filterOptions={{
+                'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
+                'Gender':                 ['Male', 'Female'],
+                ...(scope.showCountryFilter ? { 'Country': MASTERS_CASCADE.countries }        : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhaag': scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter    ? { 'Nagar':   scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter  ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
+                'DBS Status':             ['Approved', 'Pending'],
+                'First Aid Status':       ['Certified', 'Expired', 'N/A'],
+                'Safeguarding Status':    ['Certified', 'Expired', 'N/A'],
+              }}
+              title="Filter Compliance"
+            />
+          </div>
+          <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+          <IconButton
+            icon={MoreVertical}
+            title="More options"
+            menuItems={[
+              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCsv },
+            ]}
           />
+          <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
       </div>
+
+      {showSummary && (
+        <div className="px-6 pt-4">
+          <SummaryWidgets
+            title="Compliance Summary"
+            widgets={[
+              { label: 'Total Members',   value: members.length,                  icon: 'Users'       },
+              { label: 'DBS Pending',     value: alertCounts.dbs,                 icon: 'AlertTriangle' },
+              { label: 'First Aid Expired', value: alertCounts.firstAid,          icon: 'AlertTriangle' },
+              { label: 'Safeguarding Expired', value: alertCounts.safeguarding,    icon: 'AlertTriangle' },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 px-6">
@@ -161,7 +244,86 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
         </div>
       </div>
 
+      {/* Grid */}
+      {viewMode === 'grid' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {pagedMembers.length > 0 ? pagedMembers.map(m => (
+              <div
+                key={m.id}
+                onClick={() => onNavigateToMember?.(m.id)}
+                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-700 transition-all cursor-pointer flex flex-col justify-between min-h-[120px]"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">{m.name}</p>
+                  <span className="text-[11px] font-mono text-neutral-400">{m.id}</span>
+                </div>
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-neutral-100 dark:border-neutral-800">
+                  <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
+                  {activeTab === 'dbs' && <DBSBadge status={m.compliance.dbs} />}
+                  {activeTab === 'firstAid' && <CertBadge status={m.compliance.firstAid} />}
+                  {activeTab === 'safeguarding' && <CertBadge status={m.compliance.safeguardingTraining} />}
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-full py-16 text-center border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <p className="text-sm text-neutral-400">No members found.</p>
+              </div>
+            )}
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filteredMembers.length / pageSize))}
+            totalItems={filteredMembers.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
+        </div>
+      )}
+
+      {/* List */}
+      {viewMode === 'list' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-2">
+            {pagedMembers.length > 0 ? pagedMembers.map(m => (
+              <div
+                key={m.id}
+                onClick={() => onNavigateToMember?.(m.id)}
+                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors flex items-center justify-between gap-4 cursor-pointer"
+              >
+                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
+                  <div className="min-w-[180px]">
+                    <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">{m.name}</h4>
+                    <span className="text-[11px] font-mono text-neutral-400">{m.id}</span>
+                  </div>
+                  <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
+                </div>
+                <div className="flex-shrink-0">
+                  {activeTab === 'dbs' && <DBSBadge status={m.compliance.dbs} />}
+                  {activeTab === 'firstAid' && <CertBadge status={m.compliance.firstAid} />}
+                  {activeTab === 'safeguarding' && <CertBadge status={m.compliance.safeguardingTraining} />}
+                </div>
+              </div>
+            )) : (
+              <div className="py-16 text-center border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <p className="text-sm text-neutral-400">No members found.</p>
+              </div>
+            )}
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filteredMembers.length / pageSize))}
+            totalItems={filteredMembers.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
+        </div>
+      )}
+
       {/* Table */}
+      {viewMode === 'table' && (
       <div className="flex-1 overflow-auto p-6">
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
           <table className="w-full">
@@ -275,6 +437,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
           />
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -53,7 +53,7 @@ export const getNavigationData = (
       },
       {
         id: "attendance-group",
-        label: "My Sankhya",
+        label: "My Attendance",
         icon: ClipboardCheck,
         onClick: () => onNavigate("attendance-log"),
         active: currentPage === "attendance-log",
@@ -115,7 +115,7 @@ export const getNavigationData = (
       subItems: [
         {
           id: "members",
-          label: "Members",
+          label: "All Members",
           onClick: () => onNavigate("members"),
           active: currentPage === "members",
         },
@@ -170,16 +170,16 @@ export const getNavigationData = (
       active: currentPage === "announcements",
     },
 
-    // ── 6. Sankhya (Attendance) ──────────────────────────────────
+    // ── 6. Attendance ──────────────────────────────────
     ...(['Adult Member', 'Teen Member'].includes(selectedRole) ? [{
       id: "attendance-group",
-      label: "My Sankhya",
+      label: "My Attendance",
       icon: ClipboardCheck,
       onClick: () => onNavigate("attendance-log"),
       active: currentPage === "attendance-log",
     }] : [{
       id: "attendance-group",
-      label: "Sankhya",
+      label: "Attendance",
       icon: ClipboardCheck,
       active: ['sessions', 'attendance-log', 'first-aid-incidents'].includes(currentPage),
       subItems: [
@@ -191,7 +191,7 @@ export const getNavigationData = (
         },
         {
           id: "attendance-log",
-          label: "My Sankhya",
+          label: "My Attendance",
           onClick: () => onNavigate("attendance-log"),
           active: currentPage === "attendance-log",
         },
@@ -239,7 +239,7 @@ export const getNavigationData = (
         },
         {
           id: "report-attendance",
-          label: "Sankhya Report",
+          label: "Attendance Report",
           onClick: () => onNavigate("report-attendance"),
           active: currentPage === "report-attendance",
         },

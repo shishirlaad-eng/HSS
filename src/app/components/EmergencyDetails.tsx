@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
-import { filterByScope } from '../../mockAPI/roleScope';
-import { mockMembers, Member, getAge } from '../../mockAPI/membersData';
-import { PageHeader, SearchBar, Pagination } from './hb/listing';
+import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { mockMembers, Member, getAge, getAgeGroupLabel, AGE_GROUP_LABELS, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton } from './hb/listing';
+import type { FilterCondition } from './hb/listing';
 
 type SortCol = 'id' | 'name' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
 
@@ -48,12 +50,21 @@ export default function EmergencyDetails({
   const [currentPage, setCurrentPage]   = useState(1);
   const [pageSize, setPageSize]         = useState(20);
 
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('table');
+
   const handleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortCol(col); setSortDir('asc'); }
   };
 
   const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
+  const scopedFilterOptions = useMemo(() => getScopedFilterOptions(scope), [scope]);
+
+  const withMedical = useMemo(() => members.filter(m => m.medicalInfoDeclared).length, [members]);
+  const withAllergies = useMemo(() => members.filter(m => m.allergies).length, [members]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -64,6 +75,18 @@ export default function EmergencyDetails({
       (m.emergencyContactPhone?.toLowerCase().includes(q) ?? false) ||
       (m.emergencyContactEmail?.toLowerCase().includes(q) ?? false)
     );
+    rows = rows.filter(m => filters.every(f => {
+      if (!f.values.length) return true;
+      switch (f.field) {
+        case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
+        case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
+        case 'Country':                return f.values.includes(m.country);
+        case 'Vibhaag':                return f.values.includes(m.region);
+        case 'Nagar':                  return f.values.includes(m.town);
+        case 'Shakha':                 return f.values.includes(m.activityCentre);
+        default:                       return true;
+      }
+    }));
     rows = [...rows].sort((a, b) => {
       const get = (m: Member): string => {
         switch (sortCol) {
@@ -80,12 +103,25 @@ export default function EmergencyDetails({
       return sortDir === 'asc' ? get(a).localeCompare(get(b)) : get(b).localeCompare(get(a));
     });
     return rows;
-  }, [members, searchQuery, sortCol, sortDir]);
+  }, [members, searchQuery, filters, sortCol, sortDir]);
 
   const paged = useMemo(() =>
     filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
     [filtered, currentPage, pageSize]
   );
+
+  const handleExportCsv = () => {
+    if (!filtered.length) { toast.error('No data to export.'); return; }
+    const csv = [
+      'Member ID,Name,Contact Name,Contact Phone,Contact Email,Relationship,Medical Details,EpiPen,Allergies',
+      ...filtered.map(m => `"${m.id}","${m.name}","${m.emergencyContactName ?? ''}","${m.emergencyContactPhone ?? ''}","${m.emergencyContactEmail ?? ''}","${m.emergencyContactRelationship ?? ''}","${m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : ''}","${m.epiPen ?? ''}","${m.allergies ?? ''}"`),
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `emergency_details_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast.success(`Exported ${filtered.length} records.`);
+  };
 
   return (
     <div className="p-6 bg-transparent dark:bg-neutral-950">
@@ -98,13 +134,129 @@ export default function EmergencyDetails({
             { label: 'Emergency Details', current: true },
           ]}
         >
-          <SearchBar
-            value={searchQuery}
-            onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
-            placeholder="Search by name, member ID or contact..."
+          <div className="relative">
+            <SearchBar
+              value={searchQuery}
+              onChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+              onAdvancedSearch={() => setShowAdvancedSearch(true)}
+              activeFilterCount={filters.filter(f => f.values.length > 0).length}
+              placeholder="Search by name, member ID or contact..."
+            />
+            <AdvancedSearchPanel
+              isOpen={showAdvancedSearch}
+              onClose={() => setShowAdvancedSearch(false)}
+              filters={filters}
+              onFiltersChange={v => { setFilters(v); setCurrentPage(1); }}
+              filterOptions={{
+                'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
+                'Gender':                 ['Male', 'Female'],
+                ...(scope.showCountryFilter ? { 'Country': MASTERS_CASCADE.countries }        : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhaag': scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showTownFilter    ? { 'Nagar':   scopedFilterOptions.townOptions }   : {}),
+                ...(scope.showCentreFilter  ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
+              }}
+              title="Filter Emergency Details"
+            />
+          </div>
+          <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+          <IconButton
+            icon={MoreVertical}
+            title="More options"
+            menuItems={[
+              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCsv },
+            ]}
           />
+          <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
 
+        {showSummary && (
+          <div className="mb-6">
+            <SummaryWidgets
+              title="Emergency Details Summary"
+              widgets={[
+                { label: 'Total Members',         value: members.length,    icon: 'Users'         },
+                { label: 'Medical Condition Declared', value: withMedical,  icon: 'AlertTriangle' },
+                { label: 'With Allergies',         value: withAllergies,    icon: 'AlertTriangle' },
+              ]}
+            />
+          </div>
+        )}
+
+        {/* Grid */}
+        {viewMode === 'grid' && (
+          <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            {paged.length > 0 ? paged.map(m => (
+              <div
+                key={m.id}
+                onClick={() => onNavigateToMember?.(m.id)}
+                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-700 transition-all cursor-pointer flex flex-col justify-between min-h-[130px]"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">{m.name}</p>
+                  <span className="text-[11px] font-mono text-neutral-400">{m.id}</span>
+                </div>
+                <div className="pt-3 mt-3 border-t border-neutral-100 dark:border-neutral-800">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Contact: <span className="text-neutral-900 dark:text-white font-medium">{dash(m.emergencyContactName)}</span></p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{dash(m.emergencyContactPhone)}</p>
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-full py-16 text-center border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <p className="text-sm text-neutral-400">No members found.</p>
+              </div>
+            )}
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filtered.length / pageSize))}
+            totalItems={filtered.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
+        </>
+        )}
+
+        {/* List */}
+        {viewMode === 'list' && (
+          <>
+          <div className="space-y-2 mb-6">
+            {paged.length > 0 ? paged.map(m => (
+              <div
+                key={m.id}
+                onClick={() => onNavigateToMember?.(m.id)}
+                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors flex items-center justify-between gap-4 cursor-pointer"
+              >
+                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
+                  <div className="min-w-[180px]">
+                    <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">{m.name}</h4>
+                    <span className="text-[11px] font-mono text-neutral-400">{m.id}</span>
+                  </div>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{dash(m.emergencyContactName)}</span>
+                </div>
+                <div className="flex-shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
+                  {dash(m.emergencyContactPhone)}
+                </div>
+              </div>
+            )) : (
+              <div className="py-16 text-center border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <p className="text-sm text-neutral-400">No members found.</p>
+              </div>
+            )}
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.max(1, Math.ceil(filtered.length / pageSize))}
+            totalItems={filtered.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
+          />
+          </>
+        )}
+
+        {viewMode === 'table' && (
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -179,6 +331,7 @@ export default function EmergencyDetails({
             onItemsPerPageChange={size => { setPageSize(size); setCurrentPage(1); }}
           />
         </div>
+        )}
       </div>
     </div>
   );

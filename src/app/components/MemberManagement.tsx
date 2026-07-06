@@ -6,7 +6,6 @@ import {
   ToggleLeft,
   ToggleRight,
   Search,
-  RefreshCw,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -1598,8 +1597,13 @@ export default function MemberManagement({
           )}
           {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
-          {!karyakartasOnly && <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />}
-          <IconButton icon={FileSpreadsheet} onClick={handleExportCsv} title="Export CSV" />
+          <IconButton
+            icon={MoreVertical}
+            title="More options"
+            menuItems={[
+              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCsv },
+            ]}
+          />
 
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>

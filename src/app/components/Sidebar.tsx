@@ -133,7 +133,7 @@ export function Sidebar({
 
     // 2. Members Management
     "members-management-group":      "Members",
-    "members":                        "Members",
+    "members":                        "All Members",
     "karyakartas":                    "Roles and Responsibilities",
     "compliance":                     "Compliance",
     "emergency-details":              "Emergency Details",
@@ -188,8 +188,9 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 bottom-0 bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 z-50 ${isCollapsed ? "w-16" : "w-64"
+      className={`fixed left-0 top-0 bottom-0 border-r border-white/10 transition-all duration-300 z-50 ${isCollapsed ? "w-16" : "w-64"
         }`}
+      style={{ backgroundColor: "#172E4D" }}
     >
       {/* Sidebar Header — HSS brand blue bar */}
       <div
@@ -264,8 +265,8 @@ export function Sidebar({
                     }
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors focus:outline-none ${hasActiveSubItem || menuItem.active
-                    ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                    : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                    ? "bg-[#F9B03D] text-[#172E4D] font-semibold"
+                    : "text-white/90 hover:bg-[#F9B03D] hover:text-[#172E4D]"
                     } ${isCollapsed ? "justify-center" : ""}`}
                   title={isCollapsed ? getLabel(menuItem.id, menuItem.label) : ""}
                 >
@@ -303,8 +304,8 @@ export function Sidebar({
                           key={subItem.id}
                           onClick={subItem.onClick}
                           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${subItem.active
-                            ? "bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400"
-                            : "text-neutral-600 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300"
+                            ? "bg-[#F9B03D] text-[#172E4D] font-semibold"
+                            : "text-white/70 hover:bg-[#F9B03D] hover:text-[#172E4D]"
                             }`}
                         >
                           <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />

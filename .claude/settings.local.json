@@ -5,7 +5,8 @@
       "Bash(node_modules\\\\.bin\\\\tsc --noEmit)",
       "Bash(find / -path /proc -prune -o -iname \"*document-formatter*\" -print 2>/dev/null)",
       "Read(//mnt/**)",
-      "Read(//d//**)"
+      "Read(//d//**)",
+      "Bash(netstat -ano)"
     ]
   }
 }

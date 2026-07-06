@@ -1,0 +1,19 @@
+{
+  "name": "hss-qa-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Functional + UI test automation for HSS Membership Management System",
+  "scripts": {
+    "test:ui": "playwright test tests/ui",
+    "test:functional": "playwright test tests/functional",
+    "test:all": "playwright test",
+    "report": "node scripts/generate-report.js",
+    "test:ui:report": "playwright test tests/ui --reporter=json --output=reports/raw && node scripts/generate-report.js",
+    "test:all:report": "playwright test --reporter=json > reports/results.json; node scripts/generate-report.js",
+    "codegen": "playwright codegen $npm_config_url"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "exceljs": "^4.4.0"
+  }
+}
