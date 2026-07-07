@@ -220,7 +220,7 @@ export const mockRoles: Role[] = [
     lastUpdated: "2025-01-14T11:00:00Z",
     permissions: {
       dashboard:     ["view"],
-      masters:       ["view"],
+      masters:       ["view", "add"],
       members:       ["view", "approve", "approve_guardian", "export"],
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],

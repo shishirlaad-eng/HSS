@@ -1640,11 +1640,14 @@ export default function MemberManagement({
         {showSummary && (
           <SummaryWidgets
             title="Member Summary"
-            widgets={[
-              { label: 'Total Members',     value: members.length,                                  icon: 'Users' },
-              { label: 'Active',            value: members.filter(m => m.status === 'active').length, icon: 'CheckCircle' },
-              { label: 'Pending Approval',  value: pendingCount,                                    icon: 'Clock' },
-              { label: 'Compliance Alerts', value: complianceAlerts,                                icon: 'AlertTriangle' },
+            widgets={karyakartasOnly ? [
+              { label: 'Total with Current Sangh Responsibility', value: members.filter(m => hasResponsibility(m) || (m.responsibilities && m.responsibilities.length > 0)).length, icon: 'Briefcase' },
+              { label: 'Total with current MyHSS Role',           value: members.filter(m => (m.adminRoles && m.adminRoles.length > 0) || !!m.adminRole).length,                    icon: 'Building2' },
+            ] : [
+              { label: 'Total Members',   value: members.length,                                      icon: 'Users' },
+              { label: 'Total Active',    value: members.filter(m => m.status === 'active').length,    icon: 'CheckCircle' },
+              { label: 'Total Inactive',  value: members.filter(m => m.status === 'inactive').length,  icon: 'TrendingDown' },
+              { label: 'Total Rejected',  value: members.filter(m => m.status === 'rejected').length,  icon: 'XCircle' },
             ]}
           />
         )}

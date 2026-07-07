@@ -57,7 +57,11 @@ function fmtDate(date?: string) {
 const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
-type SortCol = 'id' | 'name' | 'ageCategory';
+type SortCol =
+  | 'id' | 'name' | 'ageCategory'
+  | 'dbsStatus' | 'dbsCertDate' | 'dbsUpdateService'
+  | 'firstAidStatus' | 'firstAidExpiry'
+  | 'safeguardingStatus' | 'safeguardingLevel' | 'safeguardingDate';
 
 function SortableTH({ col, label, sortCol, sortDir, onSort }: { col: SortCol; label: string; sortCol: SortCol; sortDir: 'asc' | 'desc'; onSort: (col: SortCol) => void }) {
   const active = sortCol === col;
@@ -125,11 +129,21 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
       }
     }));
     rows = [...rows].sort((a, b) => {
-      let av: string, bv: string;
-      if (sortCol === 'id') { av = a.id; bv = b.id; }
-      else if (sortCol === 'name') { av = a.name; bv = b.name; }
-      else { av = AGE_GROUP_LABELS[getAgeGroup(a.dateOfBirth)]; bv = AGE_GROUP_LABELS[getAgeGroup(b.dateOfBirth)]; }
-      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      const dir = sortDir === 'asc' ? 1 : -1;
+      switch (sortCol) {
+        case 'id':                  return a.id.localeCompare(b.id) * dir;
+        case 'name':                return a.name.localeCompare(b.name) * dir;
+        case 'ageCategory':         return AGE_GROUP_LABELS[getAgeGroup(a.dateOfBirth)].localeCompare(AGE_GROUP_LABELS[getAgeGroup(b.dateOfBirth)]) * dir;
+        case 'dbsStatus':           return a.compliance.dbs.localeCompare(b.compliance.dbs) * dir;
+        case 'dbsCertDate':         return (a.dbsCertificateDate ?? '').localeCompare(b.dbsCertificateDate ?? '') * dir;
+        case 'dbsUpdateService':    return (Number(!!a.dbsUpdateService) - Number(!!b.dbsUpdateService)) * dir;
+        case 'firstAidStatus':      return a.compliance.firstAid.localeCompare(b.compliance.firstAid) * dir;
+        case 'firstAidExpiry':      return (a.firstAidQualificationExpiryDate ?? '').localeCompare(b.firstAidQualificationExpiryDate ?? '') * dir;
+        case 'safeguardingStatus':  return (a.compliance.safeguardingTraining ?? '').localeCompare(b.compliance.safeguardingTraining ?? '') * dir;
+        case 'safeguardingLevel':   return (a.safeguardingTrainingLevel ?? '').localeCompare(b.safeguardingTrainingLevel ?? '') * dir;
+        case 'safeguardingDate':    return (a.safeguardingTrainingDate ?? '').localeCompare(b.safeguardingTrainingDate ?? '') * dir;
+        default:                    return 0;
+      }
     });
     return rows;
   }, [members, searchQuery, filters, sortCol, sortDir]);
@@ -209,10 +223,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
           <SummaryWidgets
             title="Compliance Summary"
             widgets={[
-              { label: 'Total Members',   value: members.length,                  icon: 'Users'       },
-              { label: 'DBS Pending',     value: alertCounts.dbs,                 icon: 'AlertTriangle' },
-              { label: 'First Aid Expired', value: alertCounts.firstAid,          icon: 'AlertTriangle' },
-              { label: 'Safeguarding Expired', value: alertCounts.safeguarding,    icon: 'AlertTriangle' },
+              { label: 'Total with DBS',          value: members.filter(m => m.compliance.dbs !== 'N/A').length,                     icon: 'Users' },
+              { label: 'Total with First Aid',     value: members.filter(m => m.compliance.firstAid !== 'N/A').length,                icon: 'CheckCircle' },
+              { label: 'Total with Safeguarding',  value: members.filter(m => (m.compliance.safeguardingTraining ?? 'N/A') !== 'N/A').length, icon: 'Briefcase' },
             ]}
           />
         </div>
@@ -226,7 +239,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
             return (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
+                onClick={() => { setActiveTab(tab.id); setCurrentPage(1); setSortCol('name'); setSortDir('asc'); }}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-400'
@@ -334,9 +347,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-                  <th className={TH}>DBS Status</th>
-                  <th className={TH}>DBS Cert Date</th>
-                  <th className={TH}>DBS Update Service</th>
+                  <SortableTH col="dbsStatus" label="DBS Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="dbsCertDate" label="DBS Cert Date" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="dbsUpdateService" label="DBS Update Service" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                 </tr>
               )}
               {activeTab === 'firstAid' && (
@@ -344,8 +357,8 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-                  <th className={TH}>First Aid Status</th>
-                  <th className={TH}>Expiry Date</th>
+                  <SortableTH col="firstAidStatus" label="First Aid Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="firstAidExpiry" label="Expiry Date" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                 </tr>
               )}
               {activeTab === 'safeguarding' && (
@@ -353,9 +366,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="name" label="Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-                  <th className={TH}>Safeguarding Status</th>
-                  <th className={TH}>Level of Training</th>
-                  <th className={TH}>Date Completed</th>
+                  <SortableTH col="safeguardingStatus" label="Safeguarding Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="safeguardingLevel" label="Level of Training" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="safeguardingDate" label="Date Completed" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                 </tr>
               )}
             </thead>
