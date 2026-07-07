@@ -46,13 +46,18 @@ type ApprovalAction = 'approve' | 'reject';
 
 // ── Compliance badge ──────────────────────────────────────────
 
-const COMPLIANCE_CFG = {
+const COMPLIANCE_CFG: Record<string, { dot: string; text: string; label: string }> = {
   completed: { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Completed' },
   pending:   { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400',     label: 'Pending'   },
+  Approved:  { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Approved'  },
+  Certified: { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Certified' },
+  Pending:   { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400',     label: 'Pending'   },
+  Expired:   { dot: 'bg-error-500',   text: 'text-error-700 dark:text-error-400',     label: 'Expired'   },
+  'N/A':     { dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400', label: 'N/A'       },
 };
 
-function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
-  const cfg = COMPLIANCE_CFG[status];
+function ComplianceBadge({ status }: { status: string }) {
+  const cfg = COMPLIANCE_CFG[status] ?? { dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400', label: status || 'N/A' };
   return (
     <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
   );
@@ -244,7 +249,7 @@ export default function PendingGuardianApprovals() {
 
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]   = useState<ViewMode>('grid');
+  const [viewMode, setViewMode]   = useState<ViewMode>('table');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -678,9 +683,6 @@ export default function PendingGuardianApprovals() {
                         {col.label}{renderSortArrow(col.key)}
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -693,7 +695,7 @@ export default function PendingGuardianApprovals() {
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                       >
                         {/* Member ID */}
-                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                           {m.id}
                         </td>
                         {/* Name */}
@@ -734,22 +736,11 @@ export default function PendingGuardianApprovals() {
                             <WaitingBadge days={days} />
                           </div>
                         </td>
-                        {/* Actions */}
-                        <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
-                            <IconButton
-                              icon={Eye}
-                              borderless
-                              onClick={() => { setSelectedMember(m); setPageState('detail'); }}
-                              title="View"
-                            />
-                          </div>
-                        </td>
                       </tr>
                     );
                   }) : (
                     <tr>
-                      <td colSpan={6} className="px-6 py-20 text-center">
+                      <td colSpan={5} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">

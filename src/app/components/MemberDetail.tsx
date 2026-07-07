@@ -32,6 +32,7 @@ import {
   Save,
   ChevronDown,
   Check,
+  Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
@@ -48,6 +49,11 @@ import {
   MASTERS_CASCADE,
   FIRST_AID_QUALIFICATION_OPTIONS,
   SAFEGUARDING_LEVEL_OPTIONS,
+  mockMembers,
+  RESPONSIBILITY_LEVEL_OPTIONS,
+  RESPONSIBILITY_TYPE_OPTIONS,
+  ROLE_TYPE_OPTIONS,
+  ResponsibilityAssignment,
 } from '../../mockAPI/membersData';
 
 // ── Status helpers ────────────────────────────────────────────
@@ -401,6 +407,40 @@ interface ChangeRow {
   newValue: string;
 }
 
+// ── Mock activity generator (first 20 members only) ──────────
+
+interface ActivityRow {
+  id: string;
+  date: string;
+  type: 'Event' | 'Shakha Session';
+  name: string;
+  centre: string;
+}
+
+const ACTIVITY_EVENT_NAMES = ['Youth Leadership Summit', 'Fundraising Gala', 'Cultural Evening', 'Family Picnic Day', 'Tech Workshop Series', 'HSS Annual General Meeting'];
+const ACTIVITY_CENTRES = ['Wembley Activity Centre', 'Harrow Activity Centre', 'Manchester Central Activity Centre', 'Birmingham East Activity Centre', 'Dublin Activity Centre'];
+
+function buildMockActivity(member: { id: string; registrationDate: string; activityCentre: string }): ActivityRow[] {
+  const seed = member.id.charCodeAt(member.id.length - 1) + member.id.charCodeAt(0);
+  const base = new Date(member.registrationDate);
+  const rowCount = 8 + (seed % 8); // 8–15 rows
+
+  const rows: ActivityRow[] = [];
+  for (let i = 0; i < rowCount; i++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + (i * (3 + (seed % 5))) + (seed % 7));
+    const isEvent = (seed + i) % 2 === 0;
+    rows.push({
+      id: `act-${member.id}-${i}`,
+      date: d.toISOString(),
+      type: isEvent ? 'Event' : 'Shakha Session',
+      name: isEvent ? ACTIVITY_EVENT_NAMES[(seed + i) % ACTIVITY_EVENT_NAMES.length] : 'Weekly Shakha',
+      centre: i % 4 === 0 ? ACTIVITY_CENTRES[(seed + i) % ACTIVITY_CENTRES.length] : member.activityCentre,
+    });
+  }
+  return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 function buildMockHistory(member: { id: string; registrationDate: string; status: string }): ChangeRow[] {
   const seed = member.id.charCodeAt(member.id.length - 1);
   const base  = new Date(member.registrationDate);
@@ -500,6 +540,30 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     });
   };
 
+  const addResponsibility = () => {
+    setForm(cur => ({
+      ...cur,
+      responsibilities: [
+        ...(cur.responsibilities ?? []),
+        { responsibilityLevel: RESPONSIBILITY_LEVEL_OPTIONS[0], sanghResponsibility: '', responsibilityType: RESPONSIBILITY_TYPE_OPTIONS[0], startDate: '' },
+      ],
+    }));
+  };
+
+  const updateResponsibility = (index: number, key: keyof ResponsibilityAssignment, value: string) => {
+    setForm(cur => ({
+      ...cur,
+      responsibilities: (cur.responsibilities ?? []).map((r, i) => i === index ? { ...r, [key]: value } as ResponsibilityAssignment : r),
+    }));
+  };
+
+  const removeResponsibility = (index: number) => {
+    setForm(cur => ({
+      ...cur,
+      responsibilities: (cur.responsibilities ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSave = () => {
     setSavedForm(form);
     setIsEditing(false);
@@ -544,6 +608,38 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
       { id: 'history'  as Tab, label: 'History'  },
     ] : []),
   ];
+
+  const isInFirst20 = useMemo(() => mockMembers.findIndex(m => m.id === member.id) < 20, [member.id]);
+  const memberActivity = useMemo(() => isInFirst20 ? buildMockActivity(member) : [], [member, isInFirst20]);
+  const [activityPage, setActivityPage]         = useState(1);
+  const [activityPageSize, setActivityPageSize] = useState(20);
+  const [activitySearch, setActivitySearch]     = useState('');
+  const [activityDateStart, setActivityDateStart] = useState('');
+  const [activityDateEnd, setActivityDateEnd]     = useState('');
+  const [activityDateLabel, setActivityDateLabel] = useState('');
+  const [showActivityDateFilter, setShowActivityDateFilter] = useState(false);
+  const activityDateRef = useRef<HTMLDivElement>(null);
+
+  const filteredActivity = useMemo(() => {
+    let rows = [...memberActivity];
+    if (activitySearch.trim()) {
+      const q = activitySearch.toLowerCase();
+      rows = rows.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.type.toLowerCase().includes(q) ||
+        r.centre.toLowerCase().includes(q)
+      );
+    }
+    if (activityDateStart) {
+      const start = new Date(activityDateStart).getTime();
+      rows = rows.filter(r => new Date(r.date).getTime() >= start);
+    }
+    if (activityDateEnd) {
+      const end = new Date(activityDateEnd).getTime() + 86399999;
+      rows = rows.filter(r => new Date(r.date).getTime() <= end);
+    }
+    return rows;
+  }, [memberActivity, activitySearch, activityDateStart, activityDateEnd]);
 
   const changeHistory = useMemo(() => buildMockHistory(member), [member]);
   const [historyPage, setHistoryPage]         = useState(1);
@@ -932,8 +1028,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <div className="space-y-5">
                   {/* Current Sangh Responsibility */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                      {isEditing && (
+                        <SecondaryButton icon={Plus} onClick={addResponsibility}>Add Responsibility</SecondaryButton>
+                      )}
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">
@@ -942,21 +1041,57 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             <th className={TH}>Responsibility Level</th>
                             <th className={TH}>Responsibility</th>
                             <th className={TH}>Responsibility Type</th>
-                            <th className={TH}>From – To</th>
+                            <th className={TH}>Start Date</th>
+                            {isEditing && <th className={TH}></th>}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                          {member.responsibilities && member.responsibilities.length > 0 ? (
-                            member.responsibilities.map((r, i) => (
-                              <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
-                                <td className={TD}>{r.responsibilityLevel}</td>
-                                <td className={TD}>{r.sanghResponsibility}</td>
-                                <td className={TDE}>{r.responsibilityType}</td>
-                                <td className={TDE}>{fmtD(r.startDate)} – Present</td>
-                              </tr>
-                            ))
+                          {isEditing ? (
+                            (form.responsibilities ?? []).length > 0 ? (
+                              (form.responsibilities ?? []).map((r, i) => (
+                                <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                  <td className="px-4 py-2.5">
+                                    <FormSelect value={r.responsibilityLevel} onChange={e => updateResponsibility(i, 'responsibilityLevel', e.target.value)}>
+                                      {RESPONSIBILITY_LEVEL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </FormSelect>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <FormSelect value={r.sanghResponsibility} onChange={e => updateResponsibility(i, 'sanghResponsibility', e.target.value)}>
+                                      <option value="">Select Sangh Responsibility</option>
+                                      {ROLE_TYPE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </FormSelect>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <FormSelect value={r.responsibilityType} onChange={e => updateResponsibility(i, 'responsibilityType', e.target.value)}>
+                                      {RESPONSIBILITY_TYPE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </FormSelect>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <FormInput type="date" value={r.startDate ?? ''} onChange={e => updateResponsibility(i, 'startDate', e.target.value)} />
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <button type="button" onClick={() => removeResponsibility(i)} className="w-8 h-8 flex items-center justify-center rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/30 transition-colors" aria-label={`Remove responsibility ${i + 1}`}>
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities — click "Add Responsibility" to add one</td></tr>
+                            )
                           ) : (
-                            <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities</td></tr>
+                            form.responsibilities && form.responsibilities.length > 0 ? (
+                              form.responsibilities.map((r, i) => (
+                                <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                  <td className={TD}>{r.responsibilityLevel}</td>
+                                  <td className={TD}>{r.sanghResponsibility}</td>
+                                  <td className={TDE}>{r.responsibilityType}</td>
+                                  <td className={TDE}>{fmtD(r.startDate)} – Present</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities</td></tr>
+                            )
                           )}
                         </tbody>
                       </table>
@@ -1269,9 +1404,52 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </div>
 
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                    Attendance History
-                  </h4>
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex-wrap">
+                    <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white mr-2">Attendance History</h4>
+                    {isInFirst20 && (
+                      <>
+                        <div className="flex-1 min-w-[180px] max-w-xs">
+                          <SearchBar
+                            value={activitySearch}
+                            onChange={v => { setActivitySearch(v); setActivityPage(1); }}
+                            placeholder="Search activity..."
+                          />
+                        </div>
+                        {/* Date filter */}
+                        <div className="relative" ref={activityDateRef}>
+                          <button
+                            onClick={() => setShowActivityDateFilter(p => !p)}
+                            className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                              activityDateStart
+                                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                                : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+                            }`}
+                          >
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            {activityDateStart ? (activityDateLabel || `${activityDateStart} - ${activityDateEnd}`) : 'Date range'}
+                            {activityDateStart && (
+                              <span role="button" onClick={e => { e.stopPropagation(); setActivityDateStart(''); setActivityDateEnd(''); setActivityDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
+                                <X className="w-3 h-3" />
+                              </span>
+                            )}
+                          </button>
+                          <DateRangeFilter
+                            isOpen={showActivityDateFilter}
+                            onClose={() => setShowActivityDateFilter(false)}
+                            startDate={activityDateStart}
+                            endDate={activityDateEnd}
+                            onApply={(start, end, label) => { setActivityDateStart(start); setActivityDateEnd(end); setActivityDateLabel(label || ''); setActivityPage(1); }}
+                            title="Filter by Date"
+                          />
+                        </div>
+                        <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                          {filteredActivity.length} record{filteredActivity.length !== 1 ? 's' : ''}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   <div className="overflow-x-auto slim-scroll">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -1282,20 +1460,49 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Centre</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        <tr>
-                          <td colSpan={4} className="px-6 py-12 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                              <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
-                              <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                                Detailed attendance history will be available once the Attendance module is implemented.
-                              </p>
-                            </div>
-                          </td>
-                        </tr>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                        {!isInFirst20 || filteredActivity.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-12 text-center">
+                              <div className="flex flex-col items-center gap-2">
+                                <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                                <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                                  {isInFirst20 ? 'No records match your search.' : 'Detailed attendance history will be available once the Attendance module is implemented.'}
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : filteredActivity.slice((activityPage - 1) * activityPageSize, activityPage * activityPageSize).map(row => {
+                          const d = new Date(row.date);
+                          return (
+                            <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
+                              <td className="px-6 py-3 whitespace-nowrap">
+                                <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                  {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </td>
+                              <td className="px-6 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.type}</td>
+                              <td className="px-6 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.name}</td>
+                              <td className="px-6 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.centre}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
+                  {isInFirst20 && filteredActivity.length > 0 && (
+                    <Pagination
+                      currentPage={activityPage}
+                      totalPages={Math.max(1, Math.ceil(filteredActivity.length / activityPageSize))}
+                      totalItems={filteredActivity.length}
+                      itemsPerPage={activityPageSize}
+                      onPageChange={setActivityPage}
+                      onItemsPerPageChange={size => { setActivityPageSize(size); setActivityPage(1); }}
+                    />
+                  )}
                 </div>
               </div>
             )}

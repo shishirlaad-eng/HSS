@@ -32,6 +32,7 @@ interface SidebarProps {
   logoUrl?: string;
   menuOrientation?: "vertical" | "horizontal";
   selectedRole?: string;
+  isPostRegistration?: boolean;
 }
 
 export function Sidebar({
@@ -43,6 +44,7 @@ export function Sidebar({
   logoUrl,
   menuOrientation = "vertical",
   selectedRole = "Super Admin",
+  isPostRegistration = false,
 }: SidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([
     "employee-management",
@@ -234,7 +236,7 @@ export function Sidebar({
         onMouseLeave={() => setIsHoveringMenu(false)}
       >
         <div className="space-y-1 px-2">
-          {menuItems.map((menuItem) => {
+          {!isPostRegistration && menuItems.map((menuItem) => {
             const Icon = menuItem.icon;
             const isExpanded = expandedMenus.includes(
               menuItem.id,

@@ -58,9 +58,14 @@ type ApprovalAction = 'approve' | 'reject';
 
 // ── Status / type helpers ─────────────────────────────────────
 
-const COMPLIANCE_CFG = {
+const COMPLIANCE_CFG: Record<string, { dot: string; text: string; label: string }> = {
   completed: { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Completed' },
   pending:   { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400',     label: 'Pending'   },
+  Approved:  { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Approved'  },
+  Certified: { dot: 'bg-success-500', text: 'text-success-700 dark:text-success-400', label: 'Certified' },
+  Pending:   { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400',     label: 'Pending'   },
+  Expired:   { dot: 'bg-error-500',   text: 'text-error-700 dark:text-error-400',     label: 'Expired'   },
+  'N/A':     { dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400', label: 'N/A'       },
 };
 
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
@@ -68,8 +73,8 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
-function ComplianceBadge({ status }: { status: 'pending' | 'completed' }) {
-  const cfg = COMPLIANCE_CFG[status];
+function ComplianceBadge({ status }: { status: string }) {
+  const cfg = COMPLIANCE_CFG[status] ?? { dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400', label: status || 'N/A' };
   return (
     <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
   );
@@ -256,7 +261,7 @@ export default function PendingApprovals() {
   // Source: all members; only pending-approval ones shown
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]     = useState<ViewMode>('grid');
+  const [viewMode, setViewMode]     = useState<ViewMode>('table');
   const [pageState, setPageState]   = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -775,8 +780,6 @@ export default function PendingApprovals() {
                       { key: 'name',             label: 'Name' },
                       { key: 'memberType',       label: 'Age Groups (years old)' },
                       { key: 'mastersScope',     label: 'HSS (UK) Setup Scope' },
-                      { key: 'dbsStatus',        label: 'DBS Status' },
-                      { key: 'firstAidStatus',   label: 'First Aid' },
                       { key: 'registrationDate', label: 'Waiting Since' },
                     ].map(col => (
                       <th
@@ -787,9 +790,6 @@ export default function PendingApprovals() {
                         {col.label}{renderSortArrow(col.key)}
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -801,21 +801,14 @@ export default function PendingApprovals() {
                         onClick={() => { setSelectedMember(m); setPageState('detail'); }}
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                       >
-                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                           {m.id}
                         </td>
                         <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400 text-xs font-medium flex-shrink-0">
-                              {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
-                                {m.name}
-                              </span>
-                              <span className="text-xs text-neutral-400 block truncate">{m.email}</span>
-                            </div>
-                          </div>
+                          <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
+                            {m.name}
+                          </span>
+                          <span className="text-xs text-neutral-400 block truncate">{m.email}</span>
                         </td>
                         <td className="px-4 py-3.5">
                           <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
@@ -827,12 +820,6 @@ export default function PendingApprovals() {
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <ComplianceBadge status={m.compliance.dbs} />
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <ComplianceBadge status={m.compliance.firstAid} />
-                        </td>
-                        <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
                               {new Date(m.registrationDate).toLocaleDateString('en-GB')}
@@ -840,35 +827,11 @@ export default function PendingApprovals() {
                             <WaitingBadge days={days} />
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => openModal(m, 'approve')}
-                              title="Approve"
-                              className="p-1.5 rounded-lg text-[#3d8928] hover:bg-[#f1fced] transition-colors"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openModal(m, 'reject')}
-                              title="Reject"
-                              className="p-1.5 rounded-lg text-[#9a0c17] hover:bg-[#fff0f0] transition-colors"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                            <IconButton
-                              icon={Eye}
-                              borderless
-                              onClick={() => { setSelectedMember(m); setPageState('detail'); }}
-                              title="View"
-                            />
-                          </div>
-                        </td>
                       </tr>
                     );
                   }) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-20 text-center">
+                      <td colSpan={5} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">

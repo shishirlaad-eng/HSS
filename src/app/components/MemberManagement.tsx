@@ -156,7 +156,7 @@ function RoleText({ role }: { role: string }) {
 }
 
 function ComplianceBadge({ status }: { status: string }) {
-  const cfg = COMPLIANCE_BADGE[status];
+  const cfg = COMPLIANCE_BADGE[status] ?? { text: status || 'N/A', dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' };
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
@@ -1203,12 +1203,38 @@ export default function MemberManagement({
     { key: 'email',      label: 'Email Address'  },
     { key: 'phone',      label: 'Contact Number' },
     { key: 'status',     label: 'Member Status'  },
+    { key: 'townCity',                       label: 'Town/City'                          },
+    { key: 'emergencyContactName',           label: 'Emergency Contact Name'             },
+    { key: 'emergencyContactPhone',           label: 'Emergency Contact Phone Number'    },
+    { key: 'emergencyContactEmail',           label: 'Emergency Contact Email'           },
+    { key: 'emergencyContactRelationship',    label: 'Emergency Contact Relationship'    },
+    { key: 'medicalDetails',                 label: 'Medical Details'                    },
+    { key: 'dietaryRequirements',             label: 'Special Dietary Requirements'      },
+    { key: 'epiPen',                         label: 'EpiPen/Jext/Emerade'                 },
+    { key: 'allergies',                      label: 'Any Allergies'                      },
+    { key: 'vibhag',                         label: 'Vibhag (Region)'                    },
+    { key: 'nagar',                          label: 'Nagar (Town)'                       },
+    { key: 'shakha',                         label: 'Shakha (Branch)'                    },
+    { key: 'responsibilityLevel',            label: 'Responsibility Level'               },
+    { key: 'responsibility',                 label: 'Responsibility'                     },
+    { key: 'responsibilityType',             label: 'Responsibility Type'                },
+    { key: 'firstAidStatus',                 label: 'First Aid Status'                   },
+    { key: 'safeguardingStatus',             label: 'Safeguarding Status'                },
+    { key: 'dbsStatus',                      label: 'DBS Status'                         },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
       ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
-      : { id: true, name: true, memberType: true, email: true, phone: true, status: true }
+      : {
+          id: true, name: true, memberType: true, email: true, phone: true, status: true,
+          townCity: false,
+          emergencyContactName: false, emergencyContactPhone: false, emergencyContactEmail: false, emergencyContactRelationship: false,
+          medicalDetails: false, dietaryRequirements: false, epiPen: false, allergies: false,
+          vibhag: false, nagar: false, shakha: false,
+          responsibilityLevel: false, responsibility: false, responsibilityType: false,
+          firstAidStatus: false, safeguardingStatus: false, dbsStatus: false,
+        }
   );
 
   // Navigate directly to a member detail when arriving from another module
@@ -1867,6 +1893,60 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.status && (
                         <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
+                      )}
+                      {visibleColumns.townCity && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.contactTownCity || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.emergencyContactName && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.emergencyContactName || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.emergencyContactPhone && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.emergencyContactPhone || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.emergencyContactEmail && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.emergencyContactEmail || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.emergencyContactRelationship && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.emergencyContactRelationship || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.medicalDetails && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[200px] truncate">{m.medicalInfoDetails || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.dietaryRequirements && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[200px] truncate">{(m.dietaryRequirements && m.dietaryRequirements.length) ? m.dietaryRequirements.join(', ') : <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.epiPen && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.epiPen || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.allergies && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[160px] truncate">{m.allergies || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.vibhag && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.region || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.nagar && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.town || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.shakha && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.activityCentre || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.responsibilityLevel && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.responsibilityLevel || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.responsibility && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.jobTitle || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.responsibilityType && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.responsibilityType || <span className="text-neutral-400">-</span>}</td>
+                      )}
+                      {visibleColumns.firstAidStatus && (
+                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.firstAid} /></td>
+                      )}
+                      {visibleColumns.safeguardingStatus && (
+                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.safeguardingTraining ?? 'N/A'} /></td>
+                      )}
+                      {visibleColumns.dbsStatus && (
+                        <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
                       )}
                     </tr>
                   )) : (

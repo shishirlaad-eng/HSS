@@ -369,6 +369,7 @@ export default function Announcements({
   const dateFilterRef                     = useRef<HTMLDivElement>(null);
   const [page, setPage]                   = useState(1);
   const [PER_PAGE, setPER_PAGE]           = useState(10);
+  const [readIds, setReadIds]             = useState<Set<string>>(new Set());
 
   // Create form
   const [form, setForm] = useState<CreateForm>(blankForm());
@@ -563,6 +564,7 @@ export default function Announcements({
     setSelected(ann);
     setPageState('detail');
     scrollToTop();
+    if (isMemberRole) setReadIds(prev => (prev.has(ann.id) ? prev : new Set(prev).add(ann.id)));
   };
   const goBack     = () => { setSelected(null); setPageState('list'); scrollToTop(); };
 
@@ -1012,6 +1014,11 @@ export default function Announcements({
         {filtered.length === announcements.length
           ? `${announcements.length} Suchana${announcements.length !== 1 ? 's' : ''}`
           : `${filtered.length} of ${announcements.length} Suchanas`}
+        {isMemberRole && filtered.filter(a => !readIds.has(a.id)).length > 0 && (
+          <span className="text-primary-600 dark:text-primary-400 font-medium">
+            {' '}· {filtered.filter(a => !readIds.has(a.id)).length} unread
+          </span>
+        )}
       </p>
 
       {/* ── Announcement Cards ───────────────────────────── */}
@@ -1028,12 +1035,17 @@ export default function Announcements({
             const pc  = PRIORITY_CFG[ann.priority];
             const cc  = CONTENT_CFG[ann.contentType];
             const ContentIcon = cc.icon;
+            const isUnread = isMemberRole && !readIds.has(ann.id);
 
             return (
               <div
                 key={ann.id}
                 onClick={isMemberRole ? () => openDetail(ann) : undefined}
-                className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors group${isMemberRole ? ' cursor-pointer' : ''}`}
+                className={`border rounded-lg overflow-hidden shadow-sm transition-colors group${isMemberRole ? ' cursor-pointer' : ''} ${
+                  isUnread
+                    ? 'bg-primary-50/40 dark:bg-primary-950/10 border-primary-200 dark:border-primary-900 hover:border-primary-300 dark:hover:border-primary-800'
+                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                }`}
               >
                 <div className="flex">
                   {/* Priority bar */}
@@ -1049,7 +1061,10 @@ export default function Announcements({
                       {/* Main content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 className="text-[16px] font-semibold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
+                          {isUnread && (
+                            <span className="w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-400 flex-shrink-0" title="Unread" />
+                          )}
+                          <h3 className={`text-[16px] text-neutral-900 dark:text-white ${isUnread ? 'font-bold' : 'font-semibold'}`} style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>
                             {ann.title}
                           </h3>
                           {/* Status */}
@@ -1058,10 +1073,12 @@ export default function Announcements({
                               {sc.label}
                             </span>
                           )}
-                          {/* Priority */}
-                          <span className={`text-xs font-medium ${pc.text}`}>
-                            {pc.label} priority
-                          </span>
+                          {/* Priority — only High is ever selectable at creation */}
+                          {ann.priority === 'high' && (
+                            <span className={`text-xs font-medium ${pc.text}`}>
+                              {pc.label} priority
+                            </span>
+                          )}
                         </div>
 
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2 mb-3">

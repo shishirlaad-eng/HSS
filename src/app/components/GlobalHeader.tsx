@@ -846,7 +846,7 @@ export function GlobalHeader({
               ref={horizNavRef}
               className="flex items-center gap-0.5 min-w-0 flex-1 ml-[5px]"
             >
-              {navItems.map((item, index) => {
+              {!isPostRegistration && navItems.map((item, index) => {
                 const isOverflow = index >= horizVisibleCount;
                 const Icon = item.icon;
                 const isActive = item.active || item.subItems?.some((s) => s.active);
@@ -906,7 +906,7 @@ export function GlobalHeader({
                 );
               })}
               {/* ── "More ▾" overflow button ── */}
-              {horizVisibleCount < 999 && (
+              {!isPostRegistration && horizVisibleCount < 999 && (
                 <div ref={moreMenuRef} className="relative flex-shrink-0">
                   <button
                     onClick={() => setShowMoreMenu(v => !v)}

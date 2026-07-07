@@ -238,6 +238,7 @@ export default function App() {
         logoUrl={logoUrl}
         menuOrientation={menuOrientation}
         selectedRole={selectedRole}
+        isPostRegistration={isPostRegistration || isUnderReview}
       />
 
       {/* Main Content */}
@@ -265,6 +266,7 @@ export default function App() {
           selectedRole={selectedRole}
           onRoleChange={handleRoleChange}
           onLogout={handleLogout}
+          isPostRegistration={isPostRegistration || isUnderReview}
         />
 
         {/* Page Content */}
