@@ -1196,6 +1196,7 @@ export default function MemberManagement({
     { key: 'registrationDate',    label: 'Since'               },
     { key: 'hssRoles',            label: 'My HSS Role'         },
     { key: 'status',              label: 'Member Status'       },
+    { key: 'regDate',             label: 'Registration Date'   },
   ] : [
     { key: 'id',         label: 'Member ID'      },
     { key: 'name',       label: 'Name'           },
@@ -1225,7 +1226,7 @@ export default function MemberManagement({
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
-      ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
+      ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, regDate: true }
       : {
           id: true, name: true, memberType: true, email: true, phone: true, status: true,
           townCity: false,
@@ -1867,8 +1868,26 @@ export default function MemberManagement({
                         </td>
                       )}
                       {visibleColumns.registrationDate && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {new Date(m.registrationDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        <td className="px-4 py-3.5">
+                          {(() => {
+                            const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                            if (m.responsibilities && m.responsibilities.length > 0) {
+                              return (
+                                <div className="text-xs space-y-1">
+                                  {m.responsibilities.map((r, i) => (
+                                    <div key={i} className="text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                                      {fmt(r.startDate)}
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <span className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                                {fmt(m.registrationDate)}
+                              </span>
+                            );
+                          })()}
                         </td>
                       )}
                       {visibleColumns.hssRoles && (
@@ -1893,6 +1912,11 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.status && (
                         <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
+                      )}
+                      {visibleColumns.regDate && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {new Date(m.registrationDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
                       )}
                       {visibleColumns.townCity && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.contactTownCity || <span className="text-neutral-400">-</span>}</td>

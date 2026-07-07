@@ -476,6 +476,7 @@ const rawMockMembers: Member[] = [
     adminRoles: ['Shakha Admin', 'Shakha Operations'],
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Ghatnayak', responsibilityType: 'Pramukh', startDate: '2023-04-01' },
+      { responsibilityLevel: 'Vibhag / Region', sanghResponsibility: 'Karyawaha', responsibilityType: 'Toli', startDate: '2024-10-01' },
     ],
   },
   {
@@ -504,6 +505,8 @@ const rawMockMembers: Member[] = [
     emergencyContactRelationship: 'Brother',
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sankhya', responsibilityType: 'Pramukh (Saha)', startDate: '2023-09-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Shikshak', responsibilityType: 'Toli', startDate: '2024-04-01' },
+      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sewa', responsibilityType: 'Pramukh', startDate: '2025-01-15' },
     ],
   },
   {
@@ -707,7 +710,7 @@ const rawMockMembers: Member[] = [
   // â”€â”€ Wembley Activity Centre â€” 200 members (WBL-001 to WBL-200) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Matches the attendance record IDs used in SES-001
 
-  { id:'WBL-001', memberType:'adult',  name:'Vikram Singh',       email:'vikram.singh@hssuk.org',       dateOfBirth:'1966-02-14', gender:'male',   jobTitle:'Ghatnayak',              orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:8,  shakhaSessionsAttended:35, adminRoles:['Shakha Admin','Shakha Operations'], responsibilities:[{responsibilityLevel:'Nagar / Town',sanghResponsibility:'Ghatnayak',responsibilityType:'Pramukh',startDate:'2023-04-01'}] },
+  { id:'WBL-001', memberType:'adult',  name:'Vikram Singh',       email:'vikram.singh@hssuk.org',       dateOfBirth:'1966-02-14', gender:'male',   jobTitle:'Ghatnayak',              orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:8,  shakhaSessionsAttended:35, adminRoles:['Shakha Admin','Shakha Operations'], responsibilities:[{responsibilityLevel:'Nagar / Town',sanghResponsibility:'Ghatnayak',responsibilityType:'Pramukh',startDate:'2023-04-01'},{responsibilityLevel:'Shakha / Activity center',sanghResponsibility:'Vyavestha',responsibilityType:'Pramukh (Saha)',startDate:'2024-11-01'}] },
   { id:'WBL-002', memberType:'adult',  name:'Priya Patel',        email:'priya.patel@hssuk.org',        dateOfBirth:'1995-01-15', gender:'female', jobTitle:'Shikshak',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-01-20T10:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:5,  shakhaSessionsAttended:22 },
   { id:'WBL-003', memberType:'adult',  name:'Rahul Mehta',        email:'rahul.mehta@hssuk.org',        dateOfBirth:'1996-05-20', gender:'male',   jobTitle:'Bauddhik',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:11, shakhaSessionsAttended:41 },
   { id:'WBL-004', memberType:'youth',  name:'Kavya Reddy',        email:'kavya.reddy@hssuk.org',        dateOfBirth:'2010-03-15', gender:'female', jobTitle:'Kishor(i)',              orgRole:'Youth Member',   country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2023-03-10T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Expired', parentalConsent:'granted'}, eventsAttended:2,  shakhaSessionsAttended:15 },
