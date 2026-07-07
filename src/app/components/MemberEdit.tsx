@@ -288,7 +288,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     { id: 'organisation',  label: 'Organisation'           },
     { id: 'compliance',    label: 'Compliance Details'     },
     { id: 'other',         label: 'Other Information'      },
-    { id: 'roles',         label: 'Roles & Responsibility' },
+    { id: 'roles',         label: 'Responsibilities and Role' },
     { id: 'activity',      label: 'Activity'               },
     { id: 'history',       label: 'History'                },
   ];
@@ -689,6 +689,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                     <FormSelect value={formData.status} onChange={set('status')}>
                       {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                     </FormSelect>
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Age Category</FormLabel>
+                    <FormInput value={getAgeGroupLabel(formData.dateOfBirth)} readOnly />
                   </FormField>
                 </div>
               </EditSection>

@@ -70,7 +70,7 @@ const COMPLIANCE_CFG: Record<string, { dot: string; text: string; label: string 
 
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   const group = getAgeGroup(dateOfBirth);
-  return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
+  return <span className="text-sm font-normal text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
 const STATUS_CONFIG: Record<MemberStatus, { label: string; text: string; bg: string; border: string }> = {
@@ -278,7 +278,7 @@ export default function PendingApprovals() {
   // Source: all members; only pending-approval ones shown
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]     = useState<ViewMode>('table');
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => selectedRole === 'Shakha Admin' ? 'grid' : 'table');
   const [pageState, setPageState]   = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 

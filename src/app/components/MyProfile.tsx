@@ -690,7 +690,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     { id: 'organisation', label: 'Organisation'        },
     { id: 'compliance',   label: 'Compliance Details'  },
     ...(!isPostRegistration ? [
-      { id: 'roles' as ProfileTab, label: 'Roles & Responsibility' },
+      { id: 'roles' as ProfileTab, label: 'Responsibilities and Role' },
       { id: 'other' as ProfileTab, label: 'Other Information'      },
       { id: 'history' as ProfileTab, label: 'History'              },
     ] : []),
@@ -1231,7 +1231,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 {/* Current Sangh Responsibility */}
                 {!isPostRegistration && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                   <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibilities</h4>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -1262,7 +1262,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 {/* Previous Sangh Responsibility */}
                 {!isPostRegistration && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                   <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                    <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibilities</h4>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -1295,7 +1295,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   {/* Current MyHSS Role */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role</h4>
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role(s)</h4>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">

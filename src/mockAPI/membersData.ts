@@ -148,6 +148,7 @@ export interface ResponsibilityAssignment {
   sanghResponsibility: string;
   responsibilityType: ResponsibilityType;
   startDate?: string;
+  endDate?: string;
 }
 
 export interface Member {
@@ -210,6 +211,7 @@ export interface Member {
   dietaryRequirements?: DietaryRequirement[];
   dietaryOtherSpecify?: string;
   epiPen?: string;
+  allergiesDeclared?: boolean;
   allergies?: string;
   occupation?: string;
   spokenLanguages?: string[];
@@ -402,6 +404,10 @@ function withRegistrationFields(member: Member): Member {
   const guardianEmail = member.guardianEmail ?? (isMinor ? `guardian.${member.email}` : undefined);
   const guardianPhone = member.guardianPhone ?? (isMinor ? member.phone ?? '+44 7700 000000' : undefined);
   const ec = (!member.emergencyContactName && !isMinor) ? deterministicEC(member.id) : null;
+  const seededResponsibility = KARYAKARTA_ASSIGNMENTS[member.id];
+  const hasResponsibilityData = Boolean(
+    member.responsibilities?.length || member.responsibilityType || member.responsibilityLevel || seededResponsibility,
+  );
 
   return {
     ...member,
@@ -433,15 +439,18 @@ function withRegistrationFields(member: Member): Member {
     medicalInfoDetails: member.medicalInfoDetails ?? '',
     isFirstAider: member.isFirstAider ?? member.compliance.firstAid === 'Certified',
     dietaryRequirements: member.dietaryRequirements ?? [],
+    allergiesDeclared: member.allergiesDeclared ?? Boolean(member.allergies?.trim()),
     occupation: member.occupation ?? (member.memberType === 'adult' ? 'Professional' : 'Student'),
     spokenLanguages: member.spokenLanguages ?? ['English'],
     originatingStateIndia: member.originatingStateIndia ?? '',
-    responsibilityType: member.responsibilityType ?? KARYAKARTA_ASSIGNMENTS[member.id]?.type,
-    responsibilityLevel: member.responsibilityLevel ?? KARYAKARTA_ASSIGNMENTS[member.id]?.level,
-    previousResponsibilities: member.previousResponsibilities ?? [
+    responsibilityType: member.responsibilityType ?? seededResponsibility?.type,
+    responsibilityLevel: member.responsibilityLevel ?? seededResponsibility?.level,
+    responsibilityStartDate: member.responsibilityStartDate
+      ?? (seededResponsibility ? member.registrationDate.slice(0, 10) : undefined),
+    previousResponsibilities: member.previousResponsibilities ?? (hasResponsibilityData ? [
       { responsibilityType: 'Pramukh (Saha)', responsibilityLevel: 'Shakha / Activity center', startDate: '2022-04-01', endDate: '2023-03-31' },
       { responsibilityType: 'Toli', responsibilityLevel: 'Nagar / Town', startDate: '2023-04-01', endDate: '2024-03-31' },
-    ],
+    ] : []),
   };
 }
 
@@ -1108,4 +1117,3 @@ export const MEMBER_FILTER_OPTIONS: Record<string, string[]> = {
   'DBS Status':        ['Pending', 'Completed'],
   'First Aid Status':  ['Pending', 'Completed'],
 };
-

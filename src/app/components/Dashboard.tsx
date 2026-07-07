@@ -1414,7 +1414,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                             {sc.label}
                           </span>
                         </div>
-                        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex-shrink-0">
+                        <span className="text-xs font-normal text-neutral-700 dark:text-neutral-300 flex-shrink-0">
                           {getAgeGroupLabel(member.dateOfBirth)}
                         </span>
                       </div>
@@ -1522,7 +1522,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                          <span className="text-xs font-normal text-neutral-700 dark:text-neutral-300">
                             {getAgeGroupLabel(member.dateOfBirth)}
                           </span>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${sc.chipCls}`}>
@@ -1545,4 +1545,3 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
     </div>
   );
 }
-

@@ -73,13 +73,14 @@ import {
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import MemberEdit from './MemberEdit';
+import ResponsibilityManagement from './ResponsibilityManagement';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 
 type ViewMode = 'grid' | 'list' | 'table';
-type PageState = 'list' | 'detail' | 'edit';
+type PageState = 'list' | 'detail' | 'edit' | 'manage-responsibilities';
 
 // All admin roles with members listing access default to table view
 const TABLE_VIEW_DEFAULT_ROLES = [
@@ -144,7 +145,7 @@ function StatusBadge({ status }: { status: MemberStatus }) {
 
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   const group = getAgeGroup(dateOfBirth);
-  return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
+  return <span className="text-sm font-normal text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
 function RoleText({ role }: { role: string }) {
@@ -1463,6 +1464,16 @@ export default function MemberManagement({
 
   // â"€â"€ Sub-page rendering â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
+  if (pageState === 'manage-responsibilities') {
+    return (
+      <ResponsibilityManagement
+        members={members}
+        onBack={() => setPageState('list')}
+        onSave={(updatedMembers) => setMembers(updatedMembers)}
+      />
+    );
+  }
+
   if (pageState === 'detail' && selectedMember) {
     return (
       <>
@@ -1473,7 +1484,7 @@ export default function MemberManagement({
           onStatusChange={(action) => openStatusModal(selectedMember, action)}
           onDelete={() => openDeleteModal(selectedMember)}
           initialTab={resolvedInitialTab as any}
-          backLabel={karyakartasOnly ? 'Back to Roles and Responsibility' : 'Back to Members'}
+          backLabel={karyakartasOnly ? 'Back to Responsibilities and Role' : 'Back to Members'}
         />
         <StatusConfirmModal
           isOpen={statusModal.isOpen}
@@ -1531,11 +1542,11 @@ export default function MemberManagement({
 
         {/* PAGE HEADER */}
         <PageHeader
-          title={karyakartasOnly ? 'Roles and Responsibility' : 'Members'}
+          title={karyakartasOnly ? 'Responsibilities and Role' : 'Members'}
           subtitle={isSuperAdmin ? (karyakartasOnly ? 'Below is a list of all current members that have a Sangh Responsibility and/or a MyHSS Role' : 'Below is a list of all members for your Shakha / Nagar / Vibhag') : undefined}
           breadcrumbs={karyakartasOnly ? [
             { label: 'Members', href: '#' },
-            { label: 'Roles and Responsibility', current: true },
+            { label: 'Responsibilities and Role', current: true },
           ] : [
             { label: 'Members Management', href: '#' },
             { label: 'Members', current: true },
@@ -1623,6 +1634,11 @@ export default function MemberManagement({
               Add Member
             </PrimaryButton>
           )}
+          {isSuperAdmin && karyakartasOnly && (
+            <PrimaryButton onClick={() => setPageState('manage-responsibilities')}>
+              Manage
+            </PrimaryButton>
+          )}
           {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton
@@ -1641,7 +1657,7 @@ export default function MemberManagement({
           <SummaryWidgets
             title="Member Summary"
             widgets={karyakartasOnly ? [
-              { label: 'Total with Current Sangh Responsibility', value: members.filter(m => hasResponsibility(m) || (m.responsibilities && m.responsibilities.length > 0)).length, icon: 'Briefcase' },
+              { label: 'Total with Current Sangh Responsibilities', value: members.filter(m => hasResponsibility(m) || (m.responsibilities && m.responsibilities.length > 0)).length, icon: 'Briefcase' },
               { label: 'Total with current MyHSS Role',           value: members.filter(m => (m.adminRoles && m.adminRoles.length > 0) || !!m.adminRole).length,                    icon: 'Building2' },
             ] : [
               { label: 'Total Members',   value: members.length,                                      icon: 'Users' },
@@ -2058,4 +2074,3 @@ export default function MemberManagement({
     </div>
   );
 }
-

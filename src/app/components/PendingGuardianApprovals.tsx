@@ -67,7 +67,7 @@ function ComplianceBadge({ status }: { status: string }) {
 
 function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   const group = getAgeGroup(dateOfBirth);
-  return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
+  return <span className="text-sm font-normal text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
 const STATUS_CONFIG: Record<MemberStatus, { label: string; text: string; bg: string; border: string }> = {

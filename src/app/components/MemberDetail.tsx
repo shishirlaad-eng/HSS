@@ -212,7 +212,7 @@ function DietaryMultiSelect({
     if (!open) return;
     const updateRect = () => {
       const r = buttonRef.current?.getBoundingClientRect();
-      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+      if (r) setRect({ top: Math.max(8, r.top - 228), left: r.left, width: r.width });
     };
     updateRect();
     window.addEventListener('scroll', updateRect, true);
@@ -344,6 +344,7 @@ function EditableInfoItem({
   options,
   displayValue,
   textarea = false,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -353,13 +354,16 @@ function EditableInfoItem({
   options?: { value: string; label: string }[];
   displayValue?: React.ReactNode;
   textarea?: boolean;
+  required?: boolean;
 }) {
   if (!isEditing) {
     return <InfoItem label={label}>{displayValue ?? valueOrDash(value)}</InfoItem>;
   }
   return (
     <div>
-      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
+        {label}{required && <span className="text-error-600 ml-0.5">*</span>}
+      </label>
       {options ? (
         <FormSelect value={value} onChange={e => onChange(e.target.value)}>
           {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -523,6 +527,18 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     setForm(cur => ({ ...cur, compliance: { ...cur.compliance, [field]: value } }));
   };
 
+  const handleStartEditing = () => {
+    setForm(cur => ({
+      ...cur,
+      compliance: {
+        ...cur.compliance,
+        dbs: 'N/A',
+        safeguardingTraining: 'N/A',
+      },
+    }));
+    setIsEditing(true);
+  };
+
   const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
     setForm(cur => {
       const next = { ...cur, [field]: value };
@@ -565,6 +581,18 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   };
 
   const handleSave = () => {
+    if (form.medicalInfoDeclared && !form.medicalInfoDetails?.trim()) {
+      toast.error('Please state the medical details to be aware of.');
+      return;
+    }
+    if (form.allergiesDeclared && !form.allergies?.trim()) {
+      toast.error('Please state the allergies to be aware of.');
+      return;
+    }
+    if (form.allergiesDeclared && !['Yes', 'No'].includes(form.epiPen ?? '')) {
+      toast.error('Please select whether the member carries an EpiPen.');
+      return;
+    }
     setSavedForm(form);
     setIsEditing(false);
     toast.success('Member updated successfully.');
@@ -601,7 +629,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation',  label: 'Organisation'           },
     ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
-    { id: 'roles',         label: 'Roles & Responsibility' },
+    { id: 'roles',         label: 'Responsibilities and Role' },
     { id: 'other',         label: 'Other Information'      },
     ...(mode !== 'approval' ? [
       { id: 'activity' as Tab, label: 'Activity' },
@@ -800,7 +828,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </>
               ) : (
                 <>
-                  <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>
+                  <PrimaryButton icon={Edit} onClick={handleStartEditing}>
                     Edit Member
                   </PrimaryButton>
                   <button
@@ -933,12 +961,62 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Medical Details">
                   <EditableInfoItem
-                    label="Please state any medical details to be aware of"
-                    value={form.medicalInfoDetails ?? ''}
+                    label="Do you have any medical conditions?"
+                    value={form.medicalInfoDeclared ? 'Yes' : 'No'}
                     isEditing={isEditing}
-                    onChange={v => { setField('medicalInfoDetails', v); setField('medicalInfoDeclared', v.trim().length > 0); }}
-                    displayValue={valueOrDash(member.medicalInfoDetails)}
+                    onChange={v => {
+                      const hasMedicalConditions = v === 'Yes';
+                      setField('medicalInfoDeclared', hasMedicalConditions);
+                      if (!hasMedicalConditions) setField('medicalInfoDetails', '');
+                    }}
+                    options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                    required
                   />
+                  {form.medicalInfoDeclared && (
+                    <EditableInfoItem
+                      label="Please state any medical details to be aware of"
+                      value={form.medicalInfoDetails ?? ''}
+                      isEditing={isEditing}
+                      onChange={v => setField('medicalInfoDetails', v)}
+                      textarea
+                      required
+                    />
+                  )}
+                  <EditableInfoItem
+                    label="Do you have any allergies?"
+                    value={form.allergiesDeclared ? 'Yes' : 'No'}
+                    isEditing={isEditing}
+                    onChange={v => {
+                      const hasAllergies = v === 'Yes';
+                      setField('allergiesDeclared', hasAllergies);
+                      if (!hasAllergies) {
+                        setField('allergies', '');
+                        setField('epiPen', '');
+                      }
+                    }}
+                    options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                    required
+                  />
+                  {form.allergiesDeclared && (
+                    <>
+                      <EditableInfoItem
+                        label="Please state allergy details to be aware of"
+                        value={form.allergies ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('allergies', v)}
+                        textarea
+                        required
+                      />
+                      <EditableInfoItem
+                        label="Do you carry an EpiPen?"
+                        value={form.epiPen ?? ''}
+                        isEditing={isEditing}
+                        onChange={v => setField('epiPen', v)}
+                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                        required
+                      />
+                    </>
+                  )}
                   <div>
                     <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
                     {isEditing ? (
@@ -964,8 +1042,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       </p>
                     )}
                   </div>
-                  <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={form.epiPen ?? ''} isEditing={isEditing} onChange={v => setField('epiPen', v)} />
-                  <EditableInfoItem label="Any Allergies" value={form.allergies ?? ''} isEditing={isEditing} onChange={v => setField('allergies', v)} />
                 </InfoSection>
 
               </div>
@@ -991,7 +1067,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   onChange={v => setOrganisationField('country', v)}
                   options={MASTERS_CASCADE.countries.map(c => ({ value: c, label: c }))}
                 />
-                <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                 <EditableInfoItem
                   label="Vibhag"
                   value={form.region ?? ''}
@@ -1013,6 +1088,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   onChange={v => setOrganisationField('activityCentre', v)}
                   options={(form.town ? (MASTERS_CASCADE.centres[form.town] ?? []) : []).map(c => ({ value: c, label: c }))}
                 />
+                <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
               </InfoSection>
             )}
 
@@ -1029,13 +1105,20 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   {/* Current Sangh Responsibility */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibility</h4>
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibilities</h4>
                       {isEditing && (
                         <SecondaryButton icon={Plus} onClick={addResponsibility}>Add Responsibility</SecondaryButton>
                       )}
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
+                        <colgroup>
+                          <col style={{ width: '24%' }} />
+                          <col style={{ width: '24%' }} />
+                          <col style={{ width: '21%' }} />
+                          <col style={{ width: isEditing ? '25%' : '31%' }} />
+                          {isEditing && <col style={{ width: '6%' }} />}
+                        </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
                             <th className={TH}>Responsibility Level</th>
@@ -1101,10 +1184,16 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   {/* Previous Sangh Responsibility */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibility</h4>
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibilities</h4>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
+                        <colgroup>
+                          <col style={{ width: '24%' }} />
+                          <col style={{ width: '24%' }} />
+                          <col style={{ width: '21%' }} />
+                          <col style={{ width: '31%' }} />
+                        </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
                             <th className={TH}>Responsibility Level</th>
@@ -1139,7 +1228,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role</h4>
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role(s)</h4>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full">
@@ -1300,12 +1389,12 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <MiniField
                         label="DBS Status"
-                        value={form.compliance.dbs}
+                        value={form.compliance.dbs ?? 'N/A'}
                         isEditing={isEditing}
                         onChange={v => setComplianceField('dbs', v)}
                         options={[{ value: 'Approved', label: 'Approved' }, { value: 'Pending', label: 'Pending' }, { value: 'N/A', label: 'N/A' }]}
                       />
-                      {form.compliance.dbs !== 'N/A' && (
+                      {(form.compliance.dbs ?? 'N/A') !== 'N/A' && (
                         <>
                           <MiniField label="DBS Cert Number" value={form.dbsCertificateNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateNumber', v)} />
                           <MiniField
@@ -1320,7 +1409,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         </>
                       )}
                     </div>
-                    {form.compliance.dbs !== 'N/A' && (
+                    {(form.compliance.dbs ?? 'N/A') !== 'N/A' && (
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <MiniField
@@ -1644,10 +1733,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           return (
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                                <p className="text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">
                                   {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </p>
-                                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                  {' · '}
                                   {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </td>
