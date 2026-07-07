@@ -18,7 +18,7 @@ export interface Event {
   host: string;
   status: 'draft' | 'published' | 'active' | 'cancelled' | 'completed';
 
-  // Masters scope (used for Target Audience — Vibhaag/Nagar/Shakha)
+  // Masters scope (used for Target Audience — Vibhag/Nagar/Shakha)
   country: string;
   region: string;
   town: string;

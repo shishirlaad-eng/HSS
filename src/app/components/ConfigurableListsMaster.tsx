@@ -101,7 +101,7 @@ const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'spoken-languages':     makeItems('LNG', ['Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani', 'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other']),
   'role-types':           makeItems('ROT', ROLE_TYPE_OPTIONS),
   'responsibility-type':  makeItems('RST', ['Pramukh', 'Pramukh (Saha)', 'Toli']),
-  'responsibility-level': makeItems('RSL', ['Kendriya / National', 'Vibhaag / Region', 'Nagar / Town', 'Shakha / Activity Centre']),
+  'responsibility-level': makeItems('RSL', ['Kendriya / National', 'Vibhag / Region', 'Nagar / Town', 'Shakha / Activity Centre']),
   'first-aid-qual':       makeItems('FAQ', ['1-day First Aid', '3-day First Aid at Work', 'Doctor (GMC registered)', 'Nurse (NMC registered)', 'Paramedic (HCPC registered)']),
   'safeguarding-levels':  makeItems('SGL', ['Basic Awareness (Level 1)', 'Child Protection Intermediate (Level 2)', 'Child Protection Advanced (Level 3)', 'Lead Practitioner (Level 4)', 'Designated Safeguarding Lead (DSL)']),
   'shakha-types':         makeItems('SHT', ['Swayamsevak Shakha', 'Sewa Shakha', 'Parivaar Shakha', 'Milan', 'Sampark Kendra']),

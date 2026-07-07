@@ -881,7 +881,7 @@ function IncidentDetail({
 
 export default function IncidentManagement() {
   const { scope, selectedRole } = useRoleScope();
-  const canEdit = ['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Super Admin', 'Kendriya Admin'].includes(selectedRole);
+  const canEdit = ['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Super Admin', 'Kendriya Admin'].includes(selectedRole);
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
   const [incidents, setIncidents] = useState<FirstAidIncident[]>(mockIncidents);
@@ -921,7 +921,7 @@ export default function IncidentManagement() {
           case 'Incident Type': return f.values.includes(inc.incidentType);
           case 'Outcome':       return f.values.includes(inc.outcome);
           case 'Follow-up':     return f.values.includes(inc.followUpRequired ? 'Yes' : 'No');
-          case 'Vibhaag':       return f.values.includes(inc.region);
+          case 'Vibhag':       return f.values.includes(inc.region);
           case 'Nagar':         return f.values.includes(inc.town);
           case 'Shakha':        return f.values.includes(inc.activityCentre);
           default:              return true;
@@ -1120,7 +1120,7 @@ export default function IncidentManagement() {
     'Incident Type': [...INCIDENT_TYPES],
     'Outcome':       [...INCIDENT_OUTCOMES],
     'Follow-up':     ['Yes', 'No'],
-    ...(scope.showRegionFilter ? { 'Vibhaag': scopedFilterOptions.regionOptions } : {}),
+    ...(scope.showRegionFilter ? { 'Vibhag': scopedFilterOptions.regionOptions } : {}),
     ...(scope.showTownFilter   ? { 'Nagar':   scopedFilterOptions.townOptions   } : {}),
     ...(scope.showCentreFilter ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
   };

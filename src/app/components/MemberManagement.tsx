@@ -83,7 +83,7 @@ type PageState = 'list' | 'detail' | 'edit';
 
 // All admin roles with members listing access default to table view
 const TABLE_VIEW_DEFAULT_ROLES = [
-  'Super Admin', 'Kendriya Admin', 'Vibhaag Admin', 'Nagar Admin',
+  'Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin',
   'Shakha Admin', 'Event Admin', 'Reporting User', 'Shakha Operations',
 ];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
@@ -125,7 +125,7 @@ const QUALIFIED_FIRST_AIDER_ROLES = new Set([
   'Teen Member',
   'Shakha Admin',
   'Nagar Admin',
-  'Vibhaag Admin',
+  'Vibhag Admin',
   'Kendriya Admin',
 ]);
 
@@ -1285,7 +1285,7 @@ export default function MemberManagement({
             return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':
             return f.values.includes(m.country);
-          case 'Vibhaag':
+          case 'Vibhag':
             return f.values.includes(m.region);
           case 'Nagar':
             return f.values.includes(m.town);
@@ -1338,7 +1338,7 @@ export default function MemberManagement({
     const data = selectedIds.size > 0 ? sortedMembers.filter(m => selectedIds.has(m.id)) : sortedMembers;
     if (!data.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Membership ID,Name,Email,Phone,Status,Country,Vibhaag,Nagar,Shakha,Registration Date',
+      'Membership ID,Name,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
       ...data.map(m => `"${m.id}","${m.name}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${m.registrationDate}"`),
     ].join('\n');
     const a = document.createElement('a');
@@ -1446,6 +1446,7 @@ export default function MemberManagement({
           onStatusChange={(action) => openStatusModal(selectedMember, action)}
           onDelete={() => openDeleteModal(selectedMember)}
           initialTab={resolvedInitialTab as any}
+          backLabel={karyakartasOnly ? 'Back to Roles and Responsibility' : 'Back to Members'}
         />
         <StatusConfirmModal
           isOpen={statusModal.isOpen}
@@ -1533,7 +1534,7 @@ export default function MemberManagement({
                 'Gender':            MEMBER_FILTER_OPTIONS['Gender'],
                 'Responsibility':    MEMBER_FILTER_OPTIONS['Responsibility'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
-                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showRegionFilter   ? { 'Vibhag':         scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
                 ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
                 'DBS Status':        MEMBER_FILTER_OPTIONS['DBS Status'],

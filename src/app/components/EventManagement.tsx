@@ -694,13 +694,13 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
                   {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
                 </FormField>
                 <FormField>
-                  <FormLabel required>Vibhaag</FormLabel>
+                  <FormLabel required>Vibhag</FormLabel>
                   <FormSelect
                     value={form.region}
                     onChange={e => set('region', e.target.value)}
                     disabled={!form.country}
                   >
-                    <option value="">Select Vibhaag</option>
+                    <option value="">Select Vibhag</option>
                     {availableRegions.map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
@@ -971,7 +971,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             return f.values.some(v => v.toLowerCase() === event.paymentType);
           case 'Country':
             return f.values.includes(event.country);
-          case 'Vibhaag':
+          case 'Vibhag':
             return f.values.includes(event.region);
           case 'Nagar':
             return f.values.includes(event.town);
@@ -1276,7 +1276,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 filterOptions={{
                   ...EVENT_FILTER_BASE,
                   ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),
-                  ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                  ...(scope.showRegionFilter   ? { 'Vibhag':         scopedFilterOptions.regionOptions } : {}),
                   ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
                   ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
                 }}
@@ -1418,7 +1418,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="font-semibold text-sm text-neutral-900 dark:text-white truncate">{ev.name}</span>
+                              <span className="text-[16px] font-semibold text-neutral-900 dark:text-white truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{ev.name}</span>
                               <StatusBadge status={ev.status} />
                             </div>
                             <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 whitespace-nowrap">Not Yet Registered</span>
@@ -1455,7 +1455,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="font-semibold text-sm text-neutral-900 dark:text-white truncate">{ev.name}</span>
+                              <span className="text-[16px] font-semibold text-neutral-900 dark:text-white truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{ev.name}</span>
                               <StatusBadge status={ev.status} />
                             </div>
                             <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 whitespace-nowrap">Registered</span>

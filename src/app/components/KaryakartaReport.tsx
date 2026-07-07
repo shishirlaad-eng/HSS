@@ -184,7 +184,7 @@ export default function KaryakartaReport() {
     { name: 'Female', value: femaleCount, key: 'female' },
   ]), [maleCount, femaleCount]);
 
-  // By Vibhaag (region)
+  // By Vibhag (region)
   const byRegion = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach(m => { map[m.region] = (map[m.region] ?? 0) + 1; });
@@ -243,7 +243,7 @@ export default function KaryakartaReport() {
     }
 
     const filters: string[] = [];
-    if (filterRegion) filters.push(`Vibhaag: ${filterRegion}`);
+    if (filterRegion) filters.push(`Vibhag: ${filterRegion}`);
     if (filterTown)   filters.push(`Nagar: ${filterTown}`);
     if (filterCentre) filters.push(`Shakha: ${filterCentre}`);
     if (filterGender) filters.push(`Gender: ${filterGender}`);
@@ -264,7 +264,7 @@ export default function KaryakartaReport() {
       ['With Formal Responsibility', String(withFormalResponsibility)],
       [],
       ['KARYAKARTAS'],
-      ['Name', 'Vibhaag', 'Nagar', 'Shakha', 'Responsibility', 'Email', 'Contact Number'],
+      ['Name', 'Vibhag', 'Nagar', 'Shakha', 'Responsibility', 'Email', 'Contact Number'],
       ...filtered.map(m => [m.name, m.region, m.town, m.activityCentre, m.jobTitle, m.email, m.phone ?? '']),
     ];
 
@@ -289,7 +289,7 @@ export default function KaryakartaReport() {
         {/* Page Header */}
         <PageHeader
           title="Karyakarta Report"
-          subtitle="Members holding a Sangh Responsibility across Vibhaags, Nagars and Shakhas"
+          subtitle="Members holding a Sangh Responsibility across Vibhags, Nagars and Shakhas"
           breadcrumbs={[
             { label: 'Reports' },
             { label: 'Karyakarta Report', current: true },
@@ -304,13 +304,13 @@ export default function KaryakartaReport() {
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
-          {/* Vibhaag */}
+          {/* Vibhag */}
           <select
             value={filterRegion}
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
           >
-            <option value="">All Vibhaags</option>
+            <option value="">All Vibhags</option>
             {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
@@ -413,11 +413,11 @@ export default function KaryakartaReport() {
           <KpiCard label="With Formal Responsibility" value={withFormalResponsibility} icon={Briefcase} color="bg-success-500" sub="Responsibility type & level set" />
         </div>
 
-        {/* ── Row 1: Vibhaag + Gender ──────────────────────── */}
+        {/* ── Row 1: Vibhag + Gender ──────────────────────── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* By Vibhaag */}
-          <ChartCard title="Karyakartas by Vibhaag" subtitle="Distribution across regions">
+          {/* By Vibhag */}
+          <ChartCard title="Karyakartas by Vibhag" subtitle="Distribution across regions">
             <ResponsiveContainer width="100%" height={Math.max(180, byRegion.length * 36 + 40)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
@@ -518,7 +518,7 @@ export default function KaryakartaReport() {
         {/* ── Row 3: Responsibility Level + Top Responsibilities ── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <ChartCard title="Responsibility Level" subtitle="Kendriya / Vibhaag / Nagar / Shakha breakdown">
+          <ChartCard title="Responsibility Level" subtitle="Kendriya / Vibhag / Nagar / Shakha breakdown">
             <ResponsiveContainer width="100%" height={Math.max(180, byRespLevel.length * 36 + 40)}>
               <BarChart data={byRespLevel} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
@@ -555,7 +555,7 @@ export default function KaryakartaReport() {
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">
                     <th className="py-2 pr-4 font-medium">Name</th>
-                    <th className="py-2 pr-4 font-medium">Vibhaag</th>
+                    <th className="py-2 pr-4 font-medium">Vibhag</th>
                     <th className="py-2 pr-4 font-medium">Nagar</th>
                     <th className="py-2 pr-4 font-medium">Shakha</th>
                     <th className="py-2 pr-4 font-medium">Responsibility</th>

@@ -190,7 +190,7 @@ const mockCurrentMember = {
   memberId:            'HSS-00001',
   shakha:              'Harrow Activity Centre',
   town:                'Harrow',
-  vibhaag:             'London & South East',
+  vibhag:             'London & South East',
   sanghResponsibility: 'Ghatnayak',
   sanghResponsibility2:'Shakha Mukhya Shikshak',
   joinDate:            '2019-06-15',
@@ -478,7 +478,7 @@ function MemberDashboard({
                   <Globe2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Vibhag</p>
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.vibhaag}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.vibhag}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -1051,12 +1051,12 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
 
   // Hierarchy-scoped KPI section shown for these mid-tier admin roles
   const showHierarchyKpis =
-    selectedRole === 'Vibhaag Admin' ||
+    selectedRole === 'Vibhag Admin' ||
     selectedRole === 'Nagar Admin' ||
     selectedRole === 'Shakha Admin';
 
   // Hide org-structure cards that are redundant for the current role's scope
-  const hideRegions  = selectedRole === 'Vibhaag Admin' || selectedRole === 'Nagar Admin' || selectedRole === 'Shakha Admin';
+  const hideRegions  = selectedRole === 'Vibhag Admin' || selectedRole === 'Nagar Admin' || selectedRole === 'Shakha Admin';
   const hideTowns    = selectedRole === 'Nagar Admin' || selectedRole === 'Shakha Admin';
   const hideCentres  = selectedRole === 'Shakha Admin';
 
@@ -1113,7 +1113,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           scope.centre
             ? `Nagar: ${scope.town}`
             : scope.town && !scope.centre
-              ? `Vibhaag: ${scope.region}`
+              ? `Vibhag: ${scope.region}`
               : scope.region && !scope.town
                 ? `Country: ${scope.country}`
                 : scope.country && !scope.region
@@ -1142,7 +1142,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         />
         {!hideRegions && (
           <StatCard
-            label="Vibhaag"
+            label="Vibhag"
             labelClassName="text-[14px] font-bold"
             valueClassName="font-bold"
             value={regionsCount}
@@ -1157,7 +1157,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
             valueClassName="font-bold"
             value={townsCount}
             icon={MapPin}
-            trend={{ value: `Across ${regionsCount} vibhaags`, positive: true }}
+            trend={{ value: `Across ${regionsCount} vibhags`, positive: true }}
           />
         )}
         {!hideCentres && (

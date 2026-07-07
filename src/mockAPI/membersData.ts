@@ -3,7 +3,7 @@
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type MemberStatus = 'active' | 'pending' | 'pending-parental-consent' | 'inactive' | 'rejected';
-export type DBSStatus = 'Approved' | 'Pending';
+export type DBSStatus = 'Approved' | 'Pending' | 'N/A';
 export type CertStatus = 'Certified' | 'Expired' | 'N/A';
 export type ConsentStatus = 'n/a' | 'pending' | 'granted';
 export type Gender = 'male' | 'female';
@@ -12,7 +12,7 @@ export type MemberType = 'adult' | 'teen' | 'child';
 export type AgeGroup = 'bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha';
 export type DietaryRequirement = 'FODMAP' | 'Gluten-free' | 'No Onions Or Garlic' | 'Vegan';
 export type ResponsibilityType = 'Pramukh' | 'Pramukh (Saha)' | 'Toli';
-export type ResponsibilityLevel = 'Kendriya / National' | 'Vibhaag / Region' | 'Nagar / Town' | 'Shakha / Activity center';
+export type ResponsibilityLevel = 'Kendriya / National' | 'Vibhag / Region' | 'Nagar / Town' | 'Shakha / Activity center';
 
 export const DIETARY_REQUIREMENTS: DietaryRequirement[] = [
   'FODMAP',
@@ -29,7 +29,7 @@ export const RESPONSIBILITY_TYPE_OPTIONS: ResponsibilityType[] = [
 
 export const RESPONSIBILITY_LEVEL_OPTIONS: ResponsibilityLevel[] = [
   'Kendriya / National',
-  'Vibhaag / Region',
+  'Vibhag / Region',
   'Nagar / Town',
   'Shakha / Activity center',
 ];
@@ -72,7 +72,7 @@ export const KARYAKARTA_ASSIGNMENTS: Record<string, { type: ResponsibilityType; 
   // Harrow (London & South East â€” Regional / National / Super)
   'MBR-002': { type: 'Pramukh (Saha)', level: 'Nagar / Town' },
   // Birmingham (Midlands â€” National / Super)
-  'MBR-003': { type: 'Pramukh', level: 'Vibhaag / Region' },
+  'MBR-003': { type: 'Pramukh', level: 'Vibhag / Region' },
 };
 
 export const ROLE_TYPE_OPTIONS = [
@@ -533,7 +533,7 @@ const rawMockMembers: Member[] = [
     emergencyContactRelationship: 'Spouse',
     adminRoles: ['Shakha Admin', 'Reporting User', 'Shakha Operations'],
     responsibilities: [
-      { responsibilityLevel: 'Vibhaag / Region', sanghResponsibility: 'Shikshak', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
+      { responsibilityLevel: 'Vibhag / Region', sanghResponsibility: 'Shikshak', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
     ],
   },
   {
@@ -713,7 +713,7 @@ const rawMockMembers: Member[] = [
   { id:'WBL-004', memberType:'youth',  name:'Kavya Reddy',        email:'kavya.reddy@hssuk.org',        dateOfBirth:'2010-03-15', gender:'female', jobTitle:'Kishor(i)',              orgRole:'Youth Member',   country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2023-03-10T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Expired', parentalConsent:'granted'}, eventsAttended:2,  shakhaSessionsAttended:15 },
   { id:'WBL-005', memberType:'adult',  name:'Nikhil Joshi',       email:'nikhil.joshi@hssuk.org',       dateOfBirth:'1997-08-10', gender:'male',   jobTitle:'Sampark',                orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-07-08T11:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:7,  shakhaSessionsAttended:29 },
   { id:'WBL-006', memberType:'adult',  name:'Sneha Gupta',        email:'sneha.gupta@hssuk.org',        dateOfBirth:'1998-03-25', gender:'female', jobTitle:'Sewa',                   orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-02-14T09:30:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:4,  shakhaSessionsAttended:18 },
-  { id:'WBL-007', memberType:'adult',  name:'Amit Kumar',         email:'amit.kumar@hssuk.org',         dateOfBirth:'1968-07-22', gender:'male',   jobTitle:'Sanghchalak',            orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:12, shakhaSessionsAttended:48, adminRoles:['Regional Admin','Shakha Admin','Event Admin'], responsibilities:[{responsibilityLevel:'Vibhaag / Region',sanghResponsibility:'Sanghchalak',responsibilityType:'Pramukh',startDate:'2024-04-01'}] },
+  { id:'WBL-007', memberType:'adult',  name:'Amit Kumar',         email:'amit.kumar@hssuk.org',         dateOfBirth:'1968-07-22', gender:'male',   jobTitle:'Sanghchalak',            orgRole:'Volunteer',      country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2020-06-15T09:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:12, shakhaSessionsAttended:48, adminRoles:['Regional Admin','Shakha Admin','Event Admin'], responsibilities:[{responsibilityLevel:'Vibhag / Region',sanghResponsibility:'Sanghchalak',responsibilityType:'Pramukh',startDate:'2024-04-01'}] },
   { id:'WBL-008', memberType:'adult',  name:'Nisha Kapoor',       email:'nisha.kapoor@hssuk.org',       dateOfBirth:'1999-11-05', gender:'female', jobTitle:'Tarun(i)',               orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-08-25T10:30:00Z', compliance:{dbs:'Pending', firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:3,  shakhaSessionsAttended:12 },
   { id:'WBL-009', memberType:'adult',  name:'Rajesh Verma',       email:'rajesh.verma@hssuk.org',       dateOfBirth:'1970-04-09', gender:'male',   jobTitle:'Mukhya Shikshak',        orgRole:'Shakha Teacher', country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2021-01-20T10:00:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:15, shakhaSessionsAttended:52 },
   { id:'WBL-010', memberType:'adult',  name:'Pooja Shah',         email:'pooja.shah@hssuk.org',         dateOfBirth:'2000-07-14', gender:'female', jobTitle:'Sewa',                   orgRole:'Member',         country:'HSS UK', region:'London & South East', town:'Wembley', activityCentre:'Wembley Activity Centre', status:'active', registrationDate:'2022-02-14T09:30:00Z', compliance:{dbs:'Approved',firstAid:'Certified',parentalConsent:'n/a'}, eventsAttended:6,  shakhaSessionsAttended:24 },
@@ -919,7 +919,7 @@ export const MEMBER_FILTER_OPTIONS: Record<string, string[]> = {
   'Gender':            ['Male', 'Female'],
   'Responsibility':    [...ROLE_TYPE_OPTIONS],
   'Country':           MASTERS_CASCADE.countries,
-  'Vibhaag':           Object.keys(MASTERS_CASCADE.towns),
+  'Vibhag':           Object.keys(MASTERS_CASCADE.towns),
   'Nagar':             Object.values(MASTERS_CASCADE.towns).flat(),
   'Shakha':            Object.values(MASTERS_CASCADE.centres).flat(),
   'DBS Status':        ['Pending', 'Completed'],

@@ -44,7 +44,7 @@ const ALL_CENTRES  = Object.values(MASTERS_CASCADE.centres).flat();
 
 // ── Filter options for AdvancedSearchPanel ────────────────────
 const FILTER_OPTIONS: Record<string, string[]> = {
-  'Vibhaag':         ALL_REGIONS,
+  'Vibhag':         ALL_REGIONS,
   'Nagar':           ALL_TOWNS.sort(),
   'Shakha':          ALL_CENTRES.sort(),
   'Shakha Type':     [...SHAKHA_TYPES],
@@ -285,7 +285,7 @@ export default function AttendanceLog() {
       for (const f of filters) {
         if (!f.values.length) continue;
         switch (f.field) {
-          case 'Vibhaag':         if (!f.values.includes(r.region))                          return false; break;
+          case 'Vibhag':         if (!f.values.includes(r.region))                          return false; break;
           case 'Nagar':           if (!f.values.includes(r.town))                             return false; break;
           case 'Shakha':          if (!f.values.includes(r.activityCentre))                  return false; break;
           case 'Shakha Type':     if (!f.values.includes(r.shakhaType))                       return false; break;
@@ -417,7 +417,7 @@ export default function AttendanceLog() {
               filters={filters}
               onFiltersChange={f => { setFilters(f); setPage(1); }}
               filterOptions={{
-                ...(scope.showRegionFilter  ? { 'Vibhaag':         scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhag':         scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter    ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),
                 ...(scope.showCentreFilter  ? { 'Shakha':          scopedFilterOptions.centreOptions } : {}),
                 'Shakha Type':  FILTER_OPTIONS['Shakha Type'],

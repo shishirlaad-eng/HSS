@@ -941,7 +941,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
 
               <InfoSection title="Medical Details">
-                <EditableInfoItem label="Do you have any medical condition?" required value={profile.medicalInfoDeclared} isEditing={effectiveEditing} onChange={v => setField("medicalInfoDeclared", v)} />
+                <EditableInfoItem label="Please state any medical details to be aware of" required value={profile.medicalInfoDeclared} isEditing={effectiveEditing} onChange={v => setField("medicalInfoDeclared", v)} />
                 <div>
                   <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
                   {effectiveEditing ? (
@@ -1133,7 +1133,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   options={MASTERS_CASCADE.countries}
                 />
                 <EditableInfoItem
-                  label="Vibhaag" required
+                  label="Vibhag" required
                   value={profile.region}
                   isEditing={effectiveEditing}
                   onChange={value => setOrganisationField('region', value)}

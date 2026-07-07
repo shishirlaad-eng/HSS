@@ -360,9 +360,9 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                     {touched && errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
                   </FormField>
                   <FormField>
-                    <FormLabel required>Vibhaag</FormLabel>
+                    <FormLabel required>Vibhag</FormLabel>
                     <FormSelect value={formData.region} onChange={e => set('region', e.target.value)} disabled={!formData.country}>
-                      <option value="">Select Vibhaag</option>
+                      <option value="">Select Vibhag</option>
                       {availableRegions.map(r => <option key={r} value={r}>{r}</option>)}
                     </FormSelect>
                     {touched && errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}

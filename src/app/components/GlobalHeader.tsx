@@ -54,7 +54,7 @@ import {
 
 const ROLE_DISPLAY_LABELS: Record<string, string> = {
   'Kendriya Admin':   'Kendriya Admin',
-  'Vibhaag Admin':    'Vibhaag Admin',
+  'Vibhag Admin':    'Vibhag Admin',
   'Nagar Admin':      'Nagar Admin',
   'Shakha Admin':     'Shakha Admin',
   'Shakha Operations':'Shakha Operations',
@@ -66,7 +66,7 @@ const ROLE_DISPLAY_LABELS: Record<string, string> = {
 const MY_SHAKHA_DETAILS = {
   name:          "Wembley Activity Centre",
   shakhaType:    "Swayamsevak Shakha",
-  vibhaag:       "London & South East",
+  vibhag:       "London & South East",
   nagar:         "Wembley",
   addressLine1:  "12 Ealing Road",
   addressLine2:  "Wembley",
@@ -96,6 +96,7 @@ interface GlobalHeaderProps {
   selectedRole?: string;
   onRoleChange?: (role: string) => void;
   onLogout?: () => void;
+  isPostRegistration?: boolean;
 }
 
 export function GlobalHeader({
@@ -112,6 +113,7 @@ export function GlobalHeader({
   selectedRole = "Super Admin",
   onRoleChange,
   onLogout,
+  isPostRegistration = false,
 }: GlobalHeaderProps) {
   const { language: currentLanguage, setLanguage, t, languages } =
     useLanguage();
@@ -1666,7 +1668,7 @@ export function GlobalHeader({
             </div>
             <div>
               <p className="text-sm font-semibold text-neutral-900 dark:text-white">{MY_SHAKHA_DETAILS.name}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{MY_SHAKHA_DETAILS.shakhaType} · {MY_SHAKHA_DETAILS.nagar}, {MY_SHAKHA_DETAILS.vibhaag}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{MY_SHAKHA_DETAILS.shakhaType} · {MY_SHAKHA_DETAILS.nagar}, {MY_SHAKHA_DETAILS.vibhag}</p>
             </div>
           </div>
 

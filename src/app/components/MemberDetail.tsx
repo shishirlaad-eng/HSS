@@ -383,6 +383,7 @@ interface MemberDetailProps {
   onReject?: () => void;
   hideComplianceTab?: boolean;
   initialTab?: Tab;
+  backLabel?: string;
 }
 
 type Tab = 'personal' | 'guardian' | 'organisation' | 'compliance' | 'roles' | 'other' | 'activity' | 'history';
@@ -451,7 +452,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
   if (seed % 4 !== 1) {
     rows.push(
       { id: 'h-6a', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Responsibility',  oldValue: 'Shikshak',          newValue: 'Ghatnayak' },
-      { id: 'h-6b', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Vibhaag',          oldValue: 'North West',         newValue: 'London & South East' },
+      { id: 'h-6b', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Vibhag',          oldValue: 'North West',         newValue: 'London & South East' },
       { id: 'h-6c', timestamp: shift(seed % 20 + 30, 11, 0), changedBy: 'Admin', changedByName: 'Priya Sharma', role: 'Regional Admin', field: 'Activity Centre',  oldValue: 'Manchester Central', newValue: 'Harrow Activity Centre' },
     );
   }
@@ -461,7 +462,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab }: MemberDetailProps) {
+export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab, backLabel }: MemberDetailProps) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
 
   const [isEditing, setIsEditing]   = useState(false);
@@ -676,7 +677,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* Right: Action Buttons */}
             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <SecondaryButton icon={ArrowLeft} onClick={onBack}>
-                {mode === 'approval' ? 'Back to Pending Approvals' : 'Back to Members'}
+                {mode === 'approval' ? 'Back to Pending Approvals' : (backLabel ?? 'Back to Members')}
               </SecondaryButton>
 
               {mode === 'approval' && onApprove ? (
@@ -836,7 +837,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Medical Details">
                   <EditableInfoItem
-                    label="Do you have any medical condition?"
+                    label="Please state any medical details to be aware of"
                     value={form.medicalInfoDetails ?? ''}
                     isEditing={isEditing}
                     onChange={v => { setField('medicalInfoDetails', v); setField('medicalInfoDeclared', v.trim().length > 0); }}
@@ -896,7 +897,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 />
                 <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                 <EditableInfoItem
-                  label="Vibhaag"
+                  label="Vibhag"
                   value={form.region ?? ''}
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('region', v)}
@@ -1123,30 +1124,34 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         onChange={v => setComplianceField('safeguardingTraining', v)}
                         options={[{ value: 'Certified', label: 'Certified' }, { value: 'Expired', label: 'Expired' }, { value: 'N/A', label: 'N/A' }]}
                       />
-                      <MiniField
-                        label="Level of Training"
-                        value={form.safeguardingTrainingLevel ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('safeguardingTrainingLevel', v)}
-                        options={SAFEGUARDING_LEVEL_OPTIONS.map(o => ({ value: o, label: o }))}
-                      />
-                      <MiniField
-                        label="Date Completed"
-                        value={form.safeguardingTrainingDate ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('safeguardingTrainingDate', v)}
-                        type="date"
-                        displayValue={member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
-                      />
-                      <MiniField
-                        label="Expiry Date"
-                        value={form.safeguardingExpiry ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('safeguardingExpiry', v)}
-                        type="date"
-                        displayValue={member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
-                      />
-                      <MiniField label="Reference Number" value={form.safeguardingRef ?? ''} isEditing={isEditing} onChange={v => setField('safeguardingRef', v)} />
+                      {(form.compliance.safeguardingTraining ?? 'N/A') !== 'N/A' && (
+                        <>
+                          <MiniField
+                            label="Level of Training"
+                            value={form.safeguardingTrainingLevel ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('safeguardingTrainingLevel', v)}
+                            options={SAFEGUARDING_LEVEL_OPTIONS.map(o => ({ value: o, label: o }))}
+                          />
+                          <MiniField
+                            label="Date Completed"
+                            value={form.safeguardingTrainingDate ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('safeguardingTrainingDate', v)}
+                            type="date"
+                            displayValue={member.safeguardingTrainingDate ? formatDate(member.safeguardingTrainingDate) : '—'}
+                          />
+                          <MiniField
+                            label="Expiry Date"
+                            value={form.safeguardingExpiry ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('safeguardingExpiry', v)}
+                            type="date"
+                            displayValue={member.safeguardingExpiry ? formatDate(member.safeguardingExpiry) : '—'}
+                          />
+                          <MiniField label="Reference Number" value={form.safeguardingRef ?? ''} isEditing={isEditing} onChange={v => setField('safeguardingRef', v)} />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1163,42 +1168,50 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         value={form.compliance.dbs}
                         isEditing={isEditing}
                         onChange={v => setComplianceField('dbs', v)}
-                        options={[{ value: 'Approved', label: 'Approved' }, { value: 'Pending', label: 'Pending' }]}
+                        options={[{ value: 'Approved', label: 'Approved' }, { value: 'Pending', label: 'Pending' }, { value: 'N/A', label: 'N/A' }]}
                       />
-                      <MiniField label="DBS Cert Number" value={form.dbsCertificateNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateNumber', v)} />
-                      <MiniField
-                        label="DBS Cert Date"
-                        value={form.dbsCertificateDate ?? ''}
-                        isEditing={isEditing}
-                        onChange={v => setField('dbsCertificateDate', v)}
-                        type="date"
-                        displayValue={member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : '—'}
-                      />
-                      <MiniField label="DBS Cert File" value={form.dbsCertificateFile ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateFile', v)} />
+                      {form.compliance.dbs !== 'N/A' && (
+                        <>
+                          <MiniField label="DBS Cert Number" value={form.dbsCertificateNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateNumber', v)} />
+                          <MiniField
+                            label="DBS Cert Date"
+                            value={form.dbsCertificateDate ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('dbsCertificateDate', v)}
+                            type="date"
+                            displayValue={member.dbsCertificateDate ? formatDate(member.dbsCertificateDate) : '—'}
+                          />
+                          <MiniField label="DBS Cert File" value={form.dbsCertificateFile ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateFile', v)} />
+                        </>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <MiniField
-                        label="DBS Update Service"
-                        value={form.dbsUpdateService === true ? 'Yes' : 'No'}
-                        isEditing={isEditing}
-                        onChange={v => setField('dbsUpdateService', v === 'Yes')}
-                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
-                        displayValue={member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : '—'}
-                      />
-                      <MiniField label="DBS Update Service No." value={form.dbsUpdateServiceNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsUpdateServiceNumber', v)} />
-                      <MiniField
-                        label="Application Under Process"
-                        value={form.dbsAppUnderProcess === true ? 'Yes' : 'No'}
-                        isEditing={isEditing}
-                        onChange={v => setField('dbsAppUnderProcess', v === 'Yes')}
-                        options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
-                        displayValue={member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : '—'}
-                      />
-                      <MiniField label="Cert Received From" value={form.dbsCertificateReceivedFrom ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateReceivedFrom', v)} />
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <MiniField label="Verified By" value={form.dbsCheckedBy ?? ''} isEditing={isEditing} onChange={v => setField('dbsCheckedBy', v)} />
-                    </div>
+                    {form.compliance.dbs !== 'N/A' && (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <MiniField
+                            label="DBS Update Service"
+                            value={form.dbsUpdateService === true ? 'Yes' : 'No'}
+                            isEditing={isEditing}
+                            onChange={v => setField('dbsUpdateService', v === 'Yes')}
+                            options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                            displayValue={member.dbsUpdateService === true ? 'Yes' : member.dbsUpdateService === false ? 'No' : '—'}
+                          />
+                          <MiniField label="DBS Update Service No." value={form.dbsUpdateServiceNumber ?? ''} isEditing={isEditing} onChange={v => setField('dbsUpdateServiceNumber', v)} />
+                          <MiniField
+                            label="Application Under Process"
+                            value={form.dbsAppUnderProcess === true ? 'Yes' : 'No'}
+                            isEditing={isEditing}
+                            onChange={v => setField('dbsAppUnderProcess', v === 'Yes')}
+                            options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
+                            displayValue={member.dbsAppUnderProcess === true ? 'Yes' : member.dbsAppUnderProcess === false ? 'No' : '—'}
+                          />
+                          <MiniField label="Cert Received From" value={form.dbsCertificateReceivedFrom ?? ''} isEditing={isEditing} onChange={v => setField('dbsCertificateReceivedFrom', v)} />
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <MiniField label="Verified By" value={form.dbsCheckedBy ?? ''} isEditing={isEditing} onChange={v => setField('dbsCheckedBy', v)} />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

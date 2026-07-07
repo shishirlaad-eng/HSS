@@ -163,7 +163,7 @@ export function Sidebar({
     // 7. HSS (UK) Setup
     "masters-group":                  "HSS (UK) Setup",
     "country":                        "Countries",
-    "region":                         "Vibhaag",
+    "region":                         "Vibhag",
     "town":                           "Nagar",
     "centre":                         "Shakha",
 

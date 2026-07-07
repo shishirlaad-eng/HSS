@@ -324,7 +324,7 @@ export default function PendingApprovals() {
           case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
           case 'Gender':           return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':          return f.values.includes(m.country);
-          case 'Vibhaag':          return f.values.includes(m.region);
+          case 'Vibhag':          return f.values.includes(m.region);
           case 'Nagar':            return f.values.includes(m.town);
           case 'Shakha':           return f.values.includes(m.activityCentre);
           case 'DBS Status':       return f.values.some(v => v.toLowerCase() === m.compliance.dbs);
@@ -407,7 +407,7 @@ export default function PendingApprovals() {
 
   const handleExportCSV = () => {
     if (!sortedMembers.length) { toast.error('No data to export.'); return; }
-    const headers = ['Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Country', 'Vibhaag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
+    const headers = ['Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Country', 'Vibhag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
     const csv = [
       headers.join(','),
       ...sortedMembers.map(m => [
@@ -537,7 +537,7 @@ export default function PendingApprovals() {
                 'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
                 'Gender':           ['Male', 'Female'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries }              : {}),
-                ...(scope.showRegionFilter   ? { 'Vibhaag':         scopedFilterOptions.regionOptions }       : {}),
+                ...(scope.showRegionFilter   ? { 'Vibhag':         scopedFilterOptions.regionOptions }       : {}),
                 ...(scope.showTownFilter     ? { 'Nagar':           scopedFilterOptions.townOptions }         : {}),
                 ...(scope.showCentreFilter   ? { 'Shakha':          scopedFilterOptions.centreOptions }       : {}),
                 'DBS Status':       ['Pending', 'Completed'],

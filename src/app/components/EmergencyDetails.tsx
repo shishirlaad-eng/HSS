@@ -81,7 +81,7 @@ export default function EmergencyDetails({
         case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
         case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
         case 'Country':                return f.values.includes(m.country);
-        case 'Vibhaag':                return f.values.includes(m.region);
+        case 'Vibhag':                return f.values.includes(m.region);
         case 'Nagar':                  return f.values.includes(m.town);
         case 'Shakha':                 return f.values.includes(m.activityCentre);
         default:                       return true;
@@ -151,7 +151,7 @@ export default function EmergencyDetails({
                 'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
                 'Gender':                 ['Male', 'Female'],
                 ...(scope.showCountryFilter ? { 'Country': MASTERS_CASCADE.countries }        : {}),
-                ...(scope.showRegionFilter  ? { 'Vibhaag': scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhag': scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter    ? { 'Nagar':   scopedFilterOptions.townOptions }   : {}),
                 ...(scope.showCentreFilter  ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
               }}

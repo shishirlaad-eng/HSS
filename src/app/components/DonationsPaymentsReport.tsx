@@ -273,8 +273,8 @@ export default function DonationsPaymentsReport() {
       ['Total Cash Income', money(cashIncome)],
       ['Total Regular Standing Order Payments', money(standingOrderPayments)],
       [],
-      ['VIBHAAG BREAKDOWN'],
-      ['Vibhaag', 'Online Donations', 'Cash Income', 'Standing Order Payments', 'Total Income'],
+      ['VIBHAG BREAKDOWN'],
+      ['Vibhag', 'Online Donations', 'Cash Income', 'Standing Order Payments', 'Total Income'],
       ...regionData.map(r => [
         r.fullRegion,
         money(r.online),
@@ -397,7 +397,7 @@ export default function DonationsPaymentsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Financials by Region" subtitle="Income streams by Vibhaag">
+          <ChartCard title="Financials by Region" subtitle="Income streams by Vibhag">
             <ResponsiveContainer width="100%" height={Math.max(260, regionData.length * 42 + 60)}>
               <BarChart data={regionData} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />

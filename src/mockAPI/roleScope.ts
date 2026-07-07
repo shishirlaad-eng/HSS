@@ -50,7 +50,7 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
   },
 
   // Scoped to London & South East region (largest mock data set)
-  'Vibhaag Admin': {
+  'Vibhag Admin': {
     level: 'regional', country: 'HSS UK', region: 'London & South East',
     showCountryFilter: false, showRegionFilter: false,
     showTownFilter: true,     showCentreFilter: true,

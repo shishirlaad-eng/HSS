@@ -29,7 +29,7 @@ export interface MenuItem {
 
 // Masters sub-items hidden per role (mirrors SuperAdminMasters tab logic)
 const HIDDEN_MASTERS_BY_ROLE: Partial<Record<string, string[]>> = {
-  'Vibhaag Admin':  ['country', 'region', 'configurable-lists'],
+  'Vibhag Admin':  ['country', 'region', 'configurable-lists'],
   'Nagar Admin':    ['country', 'region', 'town'],
   'Shakha Admin':   ['country', 'region', 'town', 'centre'],
 };
@@ -94,7 +94,7 @@ export const getNavigationData = (
     },
 
     // ── 2. HSS (UK) Setup ────────────────────────────────────────
-    ...(['Super Admin', 'Vibhaag Admin'].includes(selectedRole) ? [{
+    ...(['Super Admin', 'Vibhag Admin'].includes(selectedRole) ? [{
       id: "masters-group",
       label: "HSS (UK) Setup",
       icon: Database,
@@ -195,7 +195,7 @@ export const getNavigationData = (
           onClick: () => onNavigate("attendance-log"),
           active: currentPage === "attendance-log",
         },
-        ...(['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
+        ...(['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
           id: "first-aid-incidents",
           label: "First Aid Incidents",
           onClick: () => onNavigate("first-aid-incidents"),

@@ -92,7 +92,7 @@ const CONTENT_CFG: Record<AnnouncementContent, { icon: typeof FileText; label: s
 
 const SCOPE_CFG: Record<AnnouncementScope, { icon: typeof Globe2; label: string; color: string }> = {
   national: { icon: Globe2,     label: 'National',        color: 'text-primary-600 dark:text-primary-400' },
-  region:   { icon: Map,        label: 'Vibhaag',         color: 'text-violet-600 dark:text-violet-400'   },
+  region:   { icon: Map,        label: 'Vibhag',         color: 'text-violet-600 dark:text-violet-400'   },
   town:     { icon: MapPin,     label: 'Nagar',           color: 'text-emerald-600 dark:text-emerald-400' },
   centre:   { icon: Building2,  label: 'Shakha',          color: 'text-amber-600 dark:text-amber-400'     },
 };
@@ -135,7 +135,7 @@ function formatDateTime(iso: string) {
 
 function scopeLabel(ann: Announcement) {
   if (ann.scope === 'national') return 'National';
-  if (ann.scope === 'region')   return ann.targetRegion ?? 'Vibhaag';
+  if (ann.scope === 'region')   return ann.targetRegion ?? 'Vibhag';
   if (ann.scope === 'town')     return ann.targetTown ?? 'Nagar';
   return ann.targetCentre ?? 'Shakha';
 }

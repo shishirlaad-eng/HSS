@@ -25,9 +25,10 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
 }
 
 function DBSBadge({ status }: { status: DBSStatus }) {
-  const cfg = status === 'Approved'
-    ? { text: 'Approved', chipCls: 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800' }
-    : { text: 'Pending',  chipCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' };
+  const cfg =
+    status === 'Approved' ? { text: 'Approved', chipCls: 'bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800' } :
+    status === 'Pending'  ? { text: 'Pending',  chipCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' } :
+                             { text: 'N/A',      chipCls: 'bg-neutral-50 text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800' };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.chipCls}`}>
       {cfg.text}
@@ -114,7 +115,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
         case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
         case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
         case 'Country':                return f.values.includes(m.country);
-        case 'Vibhaag':                return f.values.includes(m.region);
+        case 'Vibhag':                return f.values.includes(m.region);
         case 'Nagar':                  return f.values.includes(m.town);
         case 'Shakha':                 return f.values.includes(m.activityCentre);
         case 'DBS Status':             return f.values.some(v => v.toLowerCase() === m.compliance.dbs.toLowerCase());
@@ -181,10 +182,10 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                 'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
                 'Gender':                 ['Male', 'Female'],
                 ...(scope.showCountryFilter ? { 'Country': MASTERS_CASCADE.countries }        : {}),
-                ...(scope.showRegionFilter  ? { 'Vibhaag': scopedFilterOptions.regionOptions } : {}),
+                ...(scope.showRegionFilter  ? { 'Vibhag': scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter    ? { 'Nagar':   scopedFilterOptions.townOptions }   : {}),
                 ...(scope.showCentreFilter  ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
-                'DBS Status':             ['Approved', 'Pending'],
+                'DBS Status':             ['Approved', 'Pending', 'N/A'],
                 'First Aid Status':       ['Certified', 'Expired', 'N/A'],
                 'Safeguarding Status':    ['Certified', 'Expired', 'N/A'],
               }}

@@ -212,7 +212,7 @@ export const mockRoles: Role[] = [
   //    Attendance: full (session setup + mark/unmark + log)
   {
     id: "3",
-    name: "Vibhaag Admin",
+    name: "Vibhag Admin",
     code: "regional_head",
     description: "Regional-level admin. Views own region data and all towns/centres within it. No CRUD on members.",
     status: "active",

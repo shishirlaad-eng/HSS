@@ -63,7 +63,7 @@ const GENDER_OPTIONS = [
 
 const LEVEL_OPTIONS = [
   { value: 'Kendriya / National', label: 'Kendriya' },
-  { value: 'Vibhaag / Region', label: 'Vibhaag' },
+  { value: 'Vibhag / Region', label: 'Vibhag' },
   { value: 'Nagar / Town', label: 'Nagar' },
   { value: 'Shakha / Activity center', label: 'Shakha' },
 ] as const;
@@ -82,14 +82,14 @@ const STATUS_LABELS: Record<MemberStatus, string> = {
 
 const QUALIFIED_FIRST_AIDER_ROLES = new Set([
   'Super Admin', 'Member', 'Adult Member', 'Teen', 'Teen Member',
-  'Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Kendriya Admin',
+  'Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin',
 ]);
 
 function canAccessQualifiedFirstAider(selectedRole: string) {
   return QUALIFIED_FIRST_AIDER_ROLES.has(selectedRole);
 }
 
-const SAFEGUARDING_EDIT_ROLES = new Set(['Shakha Admin', 'Nagar Admin', 'Vibhaag Admin', 'Super Admin', 'Kendriya Admin']);
+const SAFEGUARDING_EDIT_ROLES = new Set(['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Super Admin', 'Kendriya Admin']);
 
 function canEditSafeguarding(selectedRole: string) {
   return SAFEGUARDING_EDIT_ROLES.has(selectedRole);
@@ -680,7 +680,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <EditSection title="Shakha Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Vibhaag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Vibhag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
