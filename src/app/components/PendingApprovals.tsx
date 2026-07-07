@@ -73,6 +73,23 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   return <span className="text-sm font-medium text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
+const STATUS_CONFIG: Record<MemberStatus, { label: string; text: string; bg: string; border: string }> = {
+  active:                    { label: 'Active',                   text: 'text-success-700 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/20', border: 'border-success-200 dark:border-success-800' },
+  pending:                   { label: 'Pending Approval',         text: 'text-amber-700 dark:text-amber-400',     bg: 'bg-amber-50 dark:bg-amber-950/20',     border: 'border-amber-200 dark:border-amber-800'     },
+  'pending-parental-consent':{ label: 'Pending Parental Consent', text: 'text-violet-700 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-950/20',   border: 'border-violet-200 dark:border-violet-800'   },
+  inactive:                  { label: 'Inactive',                 text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800',   border: 'border-neutral-200 dark:border-neutral-700' },
+  rejected:                  { label: 'Rejected',                 text: 'text-error-700 dark:text-error-400',     bg: 'bg-error-50 dark:bg-error-950/20',     border: 'border-error-200 dark:border-error-800'     },
+};
+
+function StatusBadge({ status }: { status: MemberStatus }) {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${cfg.bg} ${cfg.border} ${cfg.text} whitespace-nowrap`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function ComplianceBadge({ status }: { status: string }) {
   const cfg = COMPLIANCE_CFG[status] ?? { dot: 'bg-neutral-400', text: 'text-neutral-500 dark:text-neutral-400', label: status || 'N/A' };
   return (
@@ -776,11 +793,12 @@ export default function PendingApprovals() {
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {[
-                      { key: 'id',               label: 'Member ID' },
-                      { key: 'name',             label: 'Name' },
-                      { key: 'memberType',       label: 'Age Groups (years old)' },
-                      { key: 'mastersScope',     label: 'HSS (UK) Setup Scope' },
-                      { key: 'registrationDate', label: 'Waiting Since' },
+                      { key: 'id',        label: 'Member ID' },
+                      { key: 'name',      label: 'Name' },
+                      { key: 'memberType',label: 'Age Category' },
+                      { key: 'email',     label: 'Email Address' },
+                      { key: 'phone',     label: 'Contact Number' },
+                      { key: 'status',    label: 'Member Status' },
                     ].map(col => (
                       <th
                         key={col.key}
@@ -794,7 +812,6 @@ export default function PendingApprovals() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {paginatedMembers.length > 0 ? paginatedMembers.map(m => {
-                    const days = waitingDays(m.registrationDate);
                     return (
                       <tr
                         key={m.id}
@@ -808,30 +825,24 @@ export default function PendingApprovals() {
                           <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
                             {m.name}
                           </span>
-                          <span className="text-xs text-neutral-400 block truncate">{m.email}</span>
                         </td>
                         <td className="px-4 py-3.5">
                           <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
                         </td>
-                        <td className="px-4 py-3.5">
-                          <div className="text-xs text-neutral-600 dark:text-neutral-400 max-w-[200px]">
-                            <span className="font-medium text-neutral-700 dark:text-neutral-300 block truncate">{m.activityCentre}</span>
-                            <span className="text-neutral-400 block truncate">{m.town} · {m.region}</span>
-                          </div>
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.email}
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                          {m.phone || <span className="text-neutral-400">-</span>}
                         </td>
                         <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                              {new Date(m.registrationDate).toLocaleDateString('en-GB')}
-                            </span>
-                            <WaitingBadge days={days} />
-                          </div>
+                          <StatusBadge status={m.status} />
                         </td>
                       </tr>
                     );
                   }) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center">
+                      <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
