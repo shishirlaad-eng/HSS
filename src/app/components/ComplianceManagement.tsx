@@ -54,7 +54,7 @@ function fmtDate(date?: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+const TH = 'sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
 type SortCol =
@@ -376,7 +376,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               {pagedMembers.map(m => (
                 <tr
                   key={m.id}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                  className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                   onClick={() => onNavigateToMember?.(m.id)}
                 >
                   {activeTab === 'dbs' && (
@@ -384,21 +384,21 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
-                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><DBSBadge status={m.compliance.dbs} /></td>
                       <td className={TD}>
                         {m.dbsCertificateNumber
-                          ? <><span className="font-medium">{m.dbsCertificateNumber}</span>{m.dbsCertificateDate && <span className="block text-neutral-400">{fmtDate(m.dbsCertificateDate)}</span>}</>
+                          ? <><span className="font-medium">{m.dbsCertificateNumber}</span>{m.dbsCertificateDate && <span className="block text-xs text-neutral-400 dark:text-neutral-500">{fmtDate(m.dbsCertificateDate)}</span>}</>
                           : fmtDate(m.dbsCertificateDate)}
                       </td>
                       <td className={TD}>
                         {m.dbsUpdateService === true ? (
                           <span className="text-xs font-medium text-success-700 dark:text-success-400">Yes</span>
                         ) : (
-                          <span className="text-neutral-400 text-xs">No</span>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500">No</span>
                         )}
                       </td>
                     </>
@@ -408,7 +408,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
-                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
@@ -421,7 +421,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {m.id}
                       </td>
-                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.name}
                       </td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>

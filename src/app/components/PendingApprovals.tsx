@@ -821,10 +821,8 @@ export default function PendingApprovals() {
                         <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                           {m.id}
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors block truncate">
-                            {m.name}
-                          </span>
+                        <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
+                          {m.name}
                         </td>
                         <td className="px-4 py-3.5">
                           <AgeGroupBadge dateOfBirth={m.dateOfBirth} />

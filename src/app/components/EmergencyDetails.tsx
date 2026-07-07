@@ -3,13 +3,13 @@ import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertic
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
-import { mockMembers, Member, getAge, getAgeGroupLabel, AGE_GROUP_LABELS, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { mockMembers, Member, getAgeGroupLabel, AGE_GROUP_LABELS, MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 
 type SortCol = 'id' | 'name' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
 
-const TH_BASE = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
+const TH_BASE = 'sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
 function SortableTH({ col, label, sortCol, sortDir, onSort }: {
@@ -282,23 +282,15 @@ export default function EmergencyDetails({
                 ) : paged.map(m => (
                   <tr
                     key={m.id}
-                    className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                     onClick={() => onNavigateToMember?.(m.id)}
                   >
                     <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">{m.id}</td>
-                    <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.name}</td>
+                    <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">{m.name}</td>
                     <td className={TD}>
-                      <p className="text-xs font-medium text-neutral-900 dark:text-white">
-                        {new Date(m.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </p>
-                      <p className="text-[11px] text-neutral-400 mt-0.5">Age {getAge(m.dateOfBirth)}</p>
+                      {new Date(m.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className={TD}>
-                      <p className="text-xs font-medium text-neutral-900 dark:text-white">{dash(m.emergencyContactName)}</p>
-                      {m.emergencyContactRelationship && (
-                        <p className="text-[11px] text-neutral-400 mt-0.5">{m.emergencyContactRelationship}</p>
-                      )}
-                    </td>
+                    <td className={TD}>{dash(m.emergencyContactName)}</td>
                     <td className={TD}>
                       {m.emergencyContactPhone
                         ? <a href={`tel:${m.emergencyContactPhone}`} className="text-primary-600 dark:text-primary-400 hover:underline" onClick={e => e.stopPropagation()}>{m.emergencyContactPhone}</a>
