@@ -15,7 +15,7 @@ import {
 } from './hb/listing';
 import {
   FormModal, FormSection, FormField, FormLabel,
-  FormInput, FormSelect, StatusSlider
+  FormInput, FormSelect, StatusSlider, PhoneInput
 } from './hb/common';
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE } from '../../mockAPI/membersData';
@@ -1167,11 +1167,11 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                   </FormField>
                   <FormField>
                     <FormLabel>Phone</FormLabel>
-                    <FormInput
+                    <PhoneInput
                       value={activeItem.contactPhone ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, contactPhone: e.target.value })}
+                      onChange={v => setActiveItem({ ...activeItem, contactPhone: v })}
                       readOnly={modalMode === 'view'}
-                      placeholder="e.g. 07700 900111"
+                      placeholder="7700 900111"
                     />
                   </FormField>
                   <FormField>

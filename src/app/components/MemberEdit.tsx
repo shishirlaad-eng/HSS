@@ -20,7 +20,7 @@ import {
   Briefcase,
 } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
-import { FormField, FormInput, FormLabel, FormSelect, FormTextarea } from './hb/common';
+import { FormField, FormInput, FormLabel, FormSelect, FormTextarea, PhoneInput } from './hb/common';
 import {
   DBSStatus, CertStatus,
   DIETARY_REQUIREMENTS,
@@ -596,8 +596,8 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
               <EditSection title="Contact Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel required>Primary Contact Number</FormLabel><FormInput type="tel" value={formData.phone} onChange={set('phone')} /></FormField>
-                  <FormField><FormLabel>Secondary Contact Number</FormLabel><FormInput type="tel" value={formData.secondaryPhone} onChange={set('secondaryPhone')} /></FormField>
+                  <FormField><FormLabel required>Primary Contact Number</FormLabel><PhoneInput value={formData.phone} onChange={v => setFormData(prev => ({ ...prev, phone: v }))} /></FormField>
+                  <FormField><FormLabel>Secondary Contact Number</FormLabel><PhoneInput value={formData.secondaryPhone} onChange={v => setFormData(prev => ({ ...prev, secondaryPhone: v }))} /></FormField>
                   <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} /></FormField>
                   <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} /></FormField>
                   <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
@@ -611,7 +611,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
               <EditSection title="Emergency Contact Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} /></FormField>
-                  <FormField><FormLabel required>Contact Phone Number</FormLabel><FormInput type="tel" value={formData.emergencyContactPhone} onChange={set('emergencyContactPhone')} /></FormField>
+                  <FormField><FormLabel required>Contact Phone Number</FormLabel><PhoneInput value={formData.emergencyContactPhone} onChange={v => setFormData(prev => ({ ...prev, emergencyContactPhone: v }))} /></FormField>
                   <FormField><FormLabel required>Contact Email</FormLabel><FormInput type="email" value={formData.emergencyContactEmail} onChange={set('emergencyContactEmail')} /></FormField>
                   <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} /></FormField>
                 </div>
@@ -667,7 +667,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <EditSection title="Parent / Guardian Approval Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField><FormLabel required>Parent / Guardian Name</FormLabel><FormInput value={formData.guardianName} onChange={set('guardianName')} /></FormField>
-                <FormField><FormLabel required>Parent / Guardian Phone Number</FormLabel><FormInput type="tel" value={formData.guardianPhone} onChange={set('guardianPhone')} /></FormField>
+                <FormField><FormLabel required>Parent / Guardian Phone Number</FormLabel><PhoneInput value={formData.guardianPhone} onChange={v => setFormData(prev => ({ ...prev, guardianPhone: v }))} /></FormField>
                 <FormField><FormLabel required>Parent / Guardian Email</FormLabel><FormInput type="email" value={formData.guardianEmail} onChange={set('guardianEmail')} /></FormField>
                 <FormField><FormLabel required>Parent / Guardian Relationship</FormLabel><FormInput value={formData.guardianRelationship} onChange={set('guardianRelationship')} /></FormField>
               </div>

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from "./hb/listing";
-import { FormInput, FormSelect, FormTextarea } from "./hb/common/Form";
+import { FormInput, FormSelect, FormTextarea, PhoneInput } from "./hb/common/Form";
 import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
 import {
@@ -324,6 +324,7 @@ function EditableInfoItem({
   options,
   textarea = false,
   required = false,
+  phone = false,
 }: {
   label: string;
   value: string;
@@ -333,6 +334,7 @@ function EditableInfoItem({
   options?: string[];
   textarea?: boolean;
   required?: boolean;
+  phone?: boolean;
 }) {
   if (!isEditing) {
     return <InfoItem label={label} required={required}>{valueOrDash(value)}</InfoItem>;
@@ -348,6 +350,8 @@ function EditableInfoItem({
         </FormSelect>
       ) : textarea ? (
         <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+      ) : phone ? (
+        <PhoneInput value={value} onChange={onChange} />
       ) : (
         <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
       )}
@@ -885,7 +889,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
 
               <InfoSection title="Contact Details">
-                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}  type="tel" />
+                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}  phone />
                 <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}  type="email" />
                 <EditableInfoItem label="Building Name"   value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
                 <EditableInfoItem label="Town / City" required     value={profile.contactTownCity} isEditing={effectiveEditing} onChange={v => setField("contactTownCity", v)} />
@@ -898,7 +902,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 <div className="xl:col-span-2">
                   <InfoSection title="Parents / Guardian Details" cols={4}>
                     <EditableInfoItem label="Parent / Guardian Name" required         value={profile.guardianName}         isEditing={effectiveEditing} onChange={v => setField("guardianName", v)} />
-                    <EditableInfoItem label="Parent / Guardian Phone Number" required value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                    <EditableInfoItem label="Parent / Guardian Phone Number" required value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} phone />
                     <EditableInfoItem label="Parent / Guardian Email" required        value={profile.guardianEmail}        isEditing={effectiveEditing} onChange={v => setField("guardianEmail", v)} type="email" />
                     <EditableInfoItem label="Parent / Guardian Relationship" required value={profile.guardianRelationship} isEditing={effectiveEditing} onChange={v => setField("guardianRelationship", v)} options={["Parent", "Guardian"]} />
                   </InfoSection>
@@ -907,7 +911,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
 
               <InfoSection title="Emergency Contact Details">
                 <EditableInfoItem label="Contact Name" required         value={profile.emergencyContactName}         isEditing={effectiveEditing} onChange={v => setField("emergencyContactName", v)} />
-                <EditableInfoItem label="Contact Phone Number" required value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Contact Phone Number" required value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} phone />
                 <EditableInfoItem label="Contact Email" required        value={profile.emergencyContactEmail}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
                 <div>
                   <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
@@ -981,8 +985,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             <InfoSection title="Contact Information">
               <EditableInfoItem label="Primary Email Address" required    value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}           type="email" />
               <EditableInfoItem label="Secondary Email Address"  value={profile.secondaryEmail}  isEditing={effectiveEditing} onChange={v => setField("secondaryEmail", v)}  type="email" />
-              <EditableInfoItem label="Primary Contact Number" required   value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}           type="tel" />
-              <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={effectiveEditing} onChange={v => setField("secondaryPhone", v)}  type="tel" />
+              <EditableInfoItem label="Primary Contact Number" required   value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}           phone />
+              <EditableInfoItem label="Secondary Contact Number" value={profile.secondaryPhone}  isEditing={effectiveEditing} onChange={v => setField("secondaryPhone", v)}  phone />
               <EditableInfoItem label="Building Name"            value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
               <EditableInfoItem label="Address Line 1" required           value={profile.addressLine1}    isEditing={effectiveEditing} onChange={v => setField("addressLine1", v)} />
               <EditableInfoItem label="Address Line 2"           value={profile.addressLine2}    isEditing={effectiveEditing} onChange={v => setField("addressLine2", v)} />
@@ -996,7 +1000,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             <>
               <InfoSection title="Emergency Contact">
                 <EditableInfoItem label="Name"         value={profile.emergencyContactName}         isEditing={effectiveEditing} onChange={v => setField("emergencyContactName", v)} />
-                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} type="tel" />
+                <EditableInfoItem label="Phone"        value={profile.emergencyContactPhone}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactPhone", v)} phone />
                 <EditableInfoItem label="Email"        value={profile.emergencyContactEmail}        isEditing={effectiveEditing} onChange={v => setField("emergencyContactEmail", v)} type="email" />
                 <EditableInfoItem label="Relationship" value={profile.emergencyContactRelationship} isEditing={effectiveEditing} onChange={v => setField("emergencyContactRelationship", v)} />
               </InfoSection>
@@ -1004,7 +1008,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               {showGuardian && (
                 <InfoSection title="Parent / Guardian Approval Information">
                   <EditableInfoItem label="Parent / Guardian Name" required value={profile.guardianName}         isEditing={effectiveEditing} onChange={v => setField("guardianName", v)} />
-                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+                  <EditableInfoItem label="Phone"                  value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} phone />
                   <EditableInfoItem label="Email"                  value={profile.guardianEmail}        isEditing={effectiveEditing} onChange={v => setField("guardianEmail", v)} type="email" />
                   <EditableInfoItem label="Relationship"           value={profile.guardianRelationship} isEditing={effectiveEditing} onChange={v => setField("guardianRelationship", v)} />
                 </InfoSection>
@@ -1163,7 +1167,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {!isPostRegistration && activeTab === 'guardian' && showGuardian && (
             <InfoSection title="Approval Details" cols={4}>
               <EditableInfoItem label="Parent / Guardian Name" required         value={profile.guardianName}         isEditing={effectiveEditing} onChange={v => setField("guardianName", v)} />
-              <EditableInfoItem label="Parent / Guardian Phone Number" required value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} type="tel" />
+              <EditableInfoItem label="Parent / Guardian Phone Number" required value={profile.guardianPhone}        isEditing={effectiveEditing} onChange={v => setField("guardianPhone", v)} phone />
               <EditableInfoItem label="Parent / Guardian Email" required        value={profile.guardianEmail}        isEditing={effectiveEditing} onChange={v => setField("guardianEmail", v)} type="email" />
               <EditableInfoItem label="Parent / Guardian Relationship" required value={profile.guardianRelationship} isEditing={effectiveEditing} onChange={v => setField("guardianRelationship", v)} options={["Parent", "Guardian"]} />
             </InfoSection>

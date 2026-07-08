@@ -299,6 +299,12 @@ export interface AdvancedSearchPanelProps {
   
   /** Optional custom title (default: "Filter By") */
   title?: string;
+
+  /** Optional: how multiple filter rows combine. Omit to hide the AND/OR toggle. */
+  matchMode?: 'AND' | 'OR';
+
+  /** Optional: callback when the AND/OR toggle changes. Required if matchMode is set. */
+  onMatchModeChange?: (mode: 'AND' | 'OR') => void;
 }
 
 /**
@@ -314,7 +320,9 @@ export function AdvancedSearchPanel({
   onFiltersChange,
   filterOptions,
   onApply,
-  title = 'Filter By'
+  title = 'Filter By',
+  matchMode,
+  onMatchModeChange,
 }: AdvancedSearchPanelProps) {
   const [localFilters, setLocalFilters] = useState<FilterCondition[]>(filters);
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, 'field' | 'values' | null>>({});
@@ -467,7 +475,34 @@ export function AdvancedSearchPanel({
 
       {/* ==================== CONTENT ==================== */}
       <div className="p-4 overflow-visible">
-        
+
+        {/* Match Mode Toggle (AND / OR) */}
+        {matchMode && onMatchModeChange && (
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Match</span>
+            <label className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              <input
+                type="radio"
+                name="filter-match-mode"
+                checked={matchMode === 'AND'}
+                onChange={() => onMatchModeChange('AND')}
+                className="w-3.5 h-3.5 accent-primary-600 cursor-pointer"
+              />
+              All filters (AND)
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              <input
+                type="radio"
+                name="filter-match-mode"
+                checked={matchMode === 'OR'}
+                onChange={() => onMatchModeChange('OR')}
+                className="w-3.5 h-3.5 accent-primary-600 cursor-pointer"
+              />
+              Any filter (OR)
+            </label>
+          </div>
+        )}
+
         {/* Filter Rows */}
         {localFilters.length > 0 ? (
           <div className="space-y-2 mb-3">

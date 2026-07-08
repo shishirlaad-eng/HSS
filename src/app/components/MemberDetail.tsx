@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
-import { FormInput, FormSelect, FormTextarea } from './hb/common/Form';
+import { FormInput, FormSelect, FormTextarea, PhoneInput } from './hb/common/Form';
 import {
   Member,
   getAge,
@@ -345,6 +345,7 @@ function EditableInfoItem({
   displayValue,
   textarea = false,
   required = false,
+  phone = false,
 }: {
   label: string;
   value: string;
@@ -355,6 +356,7 @@ function EditableInfoItem({
   displayValue?: React.ReactNode;
   textarea?: boolean;
   required?: boolean;
+  phone?: boolean;
 }) {
   if (!isEditing) {
     return <InfoItem label={label}>{displayValue ?? valueOrDash(value)}</InfoItem>;
@@ -370,6 +372,8 @@ function EditableInfoItem({
         </FormSelect>
       ) : textarea ? (
         <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+      ) : phone ? (
+        <PhoneInput value={value} onChange={onChange} />
       ) : (
         <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
       )}
@@ -915,9 +919,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </InfoSection>
 
                 <InfoSection title="Contact Details">
-                  <EditableInfoItem label="Primary Contact Number" value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} type="tel" />
+                  <EditableInfoItem label="Primary Contact Number" value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone />
                   <EditableInfoItem label="Primary Email Address" value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
-                  <EditableInfoItem label="Secondary Contact Number" value={form.secondaryPhone ?? ''} isEditing={isEditing} onChange={v => setField('secondaryPhone', v)} type="tel" />
+                  <EditableInfoItem label="Secondary Contact Number" value={form.secondaryPhone ?? ''} isEditing={isEditing} onChange={v => setField('secondaryPhone', v)} phone />
                   <EditableInfoItem label="Secondary Email Address" value={form.secondaryEmail ?? ''} isEditing={isEditing} onChange={v => setField('secondaryEmail', v)} type="email" />
                   <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
                   <EditableInfoItem label="Town / City" value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
@@ -928,7 +932,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Emergency Contact Details">
                   <EditableInfoItem label="Contact Name" value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
-                  <EditableInfoItem label="Contact Phone Number" value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} type="tel" />
+                  <EditableInfoItem label="Contact Phone Number" value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone />
                   <EditableInfoItem label="Contact Email" value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
                   <div>
                     <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship</label>
@@ -1051,7 +1055,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {activeTab === 'guardian' && (
               <InfoSection title="Approval Details" cols={4}>
                 <EditableInfoItem label="Parent / Guardian Name" value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
-                <EditableInfoItem label="Parent / Guardian Phone Number" value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} type="tel" />
+                <EditableInfoItem label="Parent / Guardian Phone Number" value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} phone />
                 <EditableInfoItem label="Parent / Guardian Email" value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
                 <EditableInfoItem label="Parent / Guardian Relationship" value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} />
               </InfoSection>

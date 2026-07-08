@@ -14,6 +14,7 @@ export {
   FormInput,
   FormTextarea,
   FormTextArea,
+  PhoneInput,
   FormSelect,
   FormSelectTrigger,
   FormCard,

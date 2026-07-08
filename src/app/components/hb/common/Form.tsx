@@ -216,6 +216,64 @@ FormTextarea.displayName = "FormTextarea";
 
 export const FormTextArea = FormTextarea;
 
+// --- Phone Input (country code + number) ---
+
+export const COUNTRY_DIAL_CODES = [
+  { code: "+44",  label: "UK" },
+  { code: "+91",  label: "India" },
+  { code: "+1",   label: "USA" },
+  { code: "+1",   label: "Canada" },
+  { code: "+353", label: "Ireland" },
+  { code: "+254", label: "Kenya" },
+  { code: "+61",  label: "Australia" },
+  { code: "+971", label: "UAE" },
+] as const;
+
+function splitPhoneValue(value?: string): { dial: string; number: string } {
+  const v = (value ?? "").trim();
+  if (!v) return { dial: "+44", number: "" };
+  const match = v.match(/^(\+\d{1,4})\s*(.*)$/);
+  if (match && COUNTRY_DIAL_CODES.some(c => c.code === match[1])) {
+    return { dial: match[1], number: match[2] };
+  }
+  return { dial: "+44", number: v };
+}
+
+interface PhoneInputProps {
+  value?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  disabled?: boolean;
+}
+
+export function PhoneInput({ value, onChange, placeholder, readOnly, disabled }: PhoneInputProps) {
+  const { dial, number } = splitPhoneValue(value);
+  return (
+    <div className="flex gap-2">
+      <select
+        value={dial}
+        disabled={readOnly || disabled}
+        onChange={e => onChange(`${e.target.value} ${number}`.trim())}
+        className="h-10 w-[92px] flex-shrink-0 px-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-primary-500 dark:focus:border-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {COUNTRY_DIAL_CODES.map((c, i) => (
+          <option key={`${c.code}-${c.label}-${i}`} value={c.code}>{c.code} {c.label}</option>
+        ))}
+      </select>
+      <FormInput
+        type="tel"
+        value={number}
+        readOnly={readOnly}
+        disabled={disabled}
+        placeholder={placeholder}
+        onChange={e => onChange(`${dial} ${e.target.value}`.trim())}
+        className="flex-1"
+      />
+    </div>
+  );
+}
+
 export const FormSelect = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...props }, ref) => {
     return (

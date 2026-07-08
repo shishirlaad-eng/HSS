@@ -49,6 +49,7 @@ import {
   FormInput,
   FormSelect,
   FormTextarea,
+  PhoneInput,
 } from './hb/common';
 import {
   mockMembers,
@@ -604,12 +605,12 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Primary Contact Number</FormLabel>
-              <FormInput type="tel" value={form.phone} onChange={set('phone')} placeholder="+44 7700 000000" />
+              <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} placeholder="7700 000000" />
               {errors.phone && <p className="text-xs text-error-600 mt-1">{errors.phone}</p>}
             </FormField>
             <FormField>
               <FormLabel>Secondary Contact Number</FormLabel>
-              <FormInput type="tel" value={form.secondaryPhone} onChange={set('secondaryPhone')} placeholder="+44 7700 000001" />
+              <PhoneInput value={form.secondaryPhone} onChange={v => setForm(prev => ({ ...prev, secondaryPhone: v }))} placeholder="7700 000001" />
             </FormField>
             <FormField>
               <FormLabel>Building Name</FormLabel>
@@ -648,7 +649,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Contact Phone Number</FormLabel>
-              <FormInput type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder="+44 7700 000000" />
+              <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} placeholder="7700 000000" />
               {errors.emergencyContactPhone && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactPhone}</p>}
             </FormField>
             <FormField>
@@ -676,7 +677,7 @@ function AddMemberModal({
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Phone Number</FormLabel>
-                <FormInput type="tel" value={form.guardianPhone} onChange={set('guardianPhone')} placeholder="+44 7700 000000" />
+                <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} placeholder="7700 000000" />
                 {errors.guardianPhone && <p className="text-xs text-error-600 mt-1">{errors.guardianPhone}</p>}
               </FormField>
               <FormField>
@@ -1158,6 +1159,7 @@ export default function MemberManagement({
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [filterMatchMode, setFilterMatchMode] = useState<'AND' | 'OR'>('AND');
   const [showKaryakartasOnly, setShowKaryakartasOnly] = useState(karyakartasOnly);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -1297,8 +1299,7 @@ export default function MemberManagement({
         (m.emergencyContactName?.toLowerCase().includes(q) ?? false) ||
         (m.emergencyContactPhone?.toLowerCase().includes(q) ?? false);
 
-      const matchesFilters = filters.every((f) => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Status':
             return f.values.some(v => {
@@ -1330,7 +1331,14 @@ export default function MemberManagement({
           default:
             return true;
         }
-      });
+      };
+
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : filterMatchMode === 'OR'
+          ? activeFilters.some(evalFilter)
+          : activeFilters.every(evalFilter);
 
       const matchesRegDate = (() => {
         if (!regDateStart && !regDateEnd) return true;
@@ -1344,7 +1352,7 @@ export default function MemberManagement({
 
       return matchesSearch && matchesFilters && matchesRegDate && matchesKaryakarta;
     });
-  }, [scopedMembers, searchQuery, filters, regDateStart, regDateEnd, showKaryakartasOnly]);
+  }, [scopedMembers, searchQuery, filters, filterMatchMode, regDateStart, regDateEnd, showKaryakartasOnly]);
 
   const sortedMembers = useMemo(() => {
     return [...filteredMembers].sort((a, b) => {
@@ -1568,6 +1576,8 @@ export default function MemberManagement({
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
+              matchMode={filterMatchMode}
+              onMatchModeChange={setFilterMatchMode}
               filterOptions={{
                 'Status':            MEMBER_FILTER_OPTIONS['Status'],
                 'Age Groups (years old)': MEMBER_FILTER_OPTIONS['Age Groups (years old)'],
