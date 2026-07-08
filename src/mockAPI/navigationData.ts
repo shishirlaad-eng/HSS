@@ -121,7 +121,7 @@ export const getNavigationData = (
         },
         {
           id: "karyakartas",
-          label: "Roles and Responsibilities",
+          label: "Responsibilities and Role",
           onClick: () => onNavigate("karyakartas"),
           active: currentPage === "karyakartas",
         },

@@ -1634,7 +1634,7 @@ export default function MemberManagement({
               Add Member
             </PrimaryButton>
           )}
-          {isSuperAdmin && karyakartasOnly && (
+          {(isSuperAdmin || selectedRole === 'Shakha Admin') && karyakartasOnly && (
             <PrimaryButton onClick={() => setPageState('manage-responsibilities')}>
               Manage
             </PrimaryButton>

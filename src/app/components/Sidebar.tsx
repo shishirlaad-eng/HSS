@@ -136,7 +136,7 @@ export function Sidebar({
     // 2. Members Management
     "members-management-group":      "Members",
     "members":                        "All Members",
-    "karyakartas":                    "Roles and Responsibilities",
+    "karyakartas":                    "Responsibilities and Role",
     "compliance":                     "Compliance",
     "emergency-details":              "Emergency Details",
     "pending-approvals":              "Pending Karyawaha Approvals",

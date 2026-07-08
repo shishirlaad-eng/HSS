@@ -273,7 +273,7 @@ export default function PendingGuardianApprovals() {
 
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]   = useState<ViewMode>('table');
+  const [viewMode, setViewMode]   = useState<ViewMode>(() => selectedRole === 'Super Admin' ? 'table' : 'grid');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 

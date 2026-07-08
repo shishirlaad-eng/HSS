@@ -278,7 +278,7 @@ export default function PendingApprovals() {
   // Source: all members; only pending-approval ones shown
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]     = useState<ViewMode>(() => selectedRole === 'Shakha Admin' ? 'grid' : 'table');
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => selectedRole === 'Super Admin' ? 'table' : 'grid');
   const [pageState, setPageState]   = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
