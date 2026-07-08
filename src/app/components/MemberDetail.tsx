@@ -1010,7 +1010,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         required
                       />
                       <EditableInfoItem
-                        label="Do you carry an EpiPen?"
+                        label="Do you carry an EpiPen/Jext/Emerade?"
                         value={form.epiPen ?? ''}
                         isEditing={isEditing}
                         onChange={v => setField('epiPen', v)}
@@ -1118,8 +1118,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           <col style={{ width: '24%' }} />
                           <col style={{ width: '24%' }} />
                           <col style={{ width: '21%' }} />
-                          <col style={{ width: isEditing ? '25%' : '31%' }} />
-                          {isEditing && <col style={{ width: '6%' }} />}
+                          <col style={{ width: '31%' }} />
+                          {isEditing && <col style={{ width: '48px' }} />}
                         </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
@@ -1233,7 +1233,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Roles</h4>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
+                          <colgroup>
+                            <col style={{ width: '50%' }} />
+                            <col style={{ width: '50%' }} />
+                          </colgroup>
                           <thead>
                             <tr className="border-b border-neutral-100 dark:border-neutral-800">
                               <th className={TH}>MyHSS Role</th>
@@ -1255,7 +1259,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous MyHSS Roles</h4>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
+                          <colgroup>
+                            <col style={{ width: '50%' }} />
+                            <col style={{ width: '50%' }} />
+                          </colgroup>
                           <thead>
                             <tr className="border-b border-neutral-100 dark:border-neutral-800">
                               <th className={TH}>MyHSS Role</th>

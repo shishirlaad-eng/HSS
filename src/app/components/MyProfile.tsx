@@ -1294,7 +1294,13 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibilities</h4>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full table-fixed">
+                      <colgroup>
+                        <col style={{ width: '24%' }} />
+                        <col style={{ width: '24%' }} />
+                        <col style={{ width: '21%' }} />
+                        <col style={{ width: '31%' }} />
+                      </colgroup>
                       <thead>
                         <tr className="border-b border-neutral-100 dark:border-neutral-800">
                           <th className={TH}>Responsibility Level</th>
@@ -1325,7 +1331,13 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous Sangh Responsibilities</h4>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full table-fixed">
+                      <colgroup>
+                        <col style={{ width: '24%' }} />
+                        <col style={{ width: '24%' }} />
+                        <col style={{ width: '21%' }} />
+                        <col style={{ width: '31%' }} />
+                      </colgroup>
                       <thead>
                         <tr className="border-b border-neutral-100 dark:border-neutral-800">
                           <th className={TH}>Responsibility Level</th>
@@ -1358,7 +1370,11 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Roles</h4>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
+                        <colgroup>
+                          <col style={{ width: '50%' }} />
+                          <col style={{ width: '50%' }} />
+                        </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
                             <th className={TH}>MyHSS Role</th>
@@ -1385,7 +1401,11 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Previous MyHSS Roles</h4>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
+                        <colgroup>
+                          <col style={{ width: '50%' }} />
+                          <col style={{ width: '50%' }} />
+                        </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
                             <th className={TH}>MyHSS Role</th>
