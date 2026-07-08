@@ -906,14 +906,6 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === paginatedData.length && paginatedData.length > 0}
-                        onChange={e => setSelectedIds(e.target.checked ? new Set(paginatedData.map(i => i.id)) : new Set())}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                      />
-                    </th>
                     {visibleColumns.name && (
                       <th onClick={() => handleSort('name')} className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
                         {config.nameLabel} {renderSortIndicator('name')}
@@ -986,14 +978,6 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       onClick={() => { setActiveItem(item); setModalMode('view'); }}
                       className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
                     >
-                      <td className="px-4 py-3.5 w-12" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={() => toggleSelection(item.id)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 cursor-pointer"
-                        />
-                      </td>
                       {visibleColumns.name && (
                         <td className="px-6 py-3.5 text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</td>
                       )}
@@ -1051,7 +1035,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={masterColumns.length + 2} className="px-6 py-16 text-center text-sm text-neutral-500">
+                      <td colSpan={masterColumns.length + 1} className="px-6 py-16 text-center text-sm text-neutral-500">
                         No records found. Click {config.addLabel} to create.
                       </td>
                     </tr>

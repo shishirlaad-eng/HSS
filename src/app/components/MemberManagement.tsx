@@ -1205,6 +1205,7 @@ export default function MemberManagement({
     { key: 'email',      label: 'Email Address'  },
     { key: 'phone',      label: 'Contact Number' },
     { key: 'status',     label: 'Member Status'  },
+    { key: 'regDate',                        label: 'Registration Date'                 },
     { key: 'townCity',                       label: 'Town/City'                          },
     { key: 'emergencyContactName',           label: 'Emergency Contact Name'             },
     { key: 'emergencyContactPhone',           label: 'Emergency Contact Phone Number'    },
@@ -1230,6 +1231,7 @@ export default function MemberManagement({
       ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, regDate: true }
       : {
           id: true, name: true, memberType: true, email: true, phone: true, status: true,
+          regDate: true,
           townCity: false,
           emergencyContactName: false, emergencyContactPhone: false, emergencyContactEmail: false, emergencyContactRelationship: false,
           medicalDetails: false, dietaryRequirements: false, epiPen: false, allergies: false,
