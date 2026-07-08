@@ -677,6 +677,29 @@ export default function PendingGuardianApprovals() {
                     </div>
                   </div>
 
+                  {/* Approve / Reject footer — Super Admin only */}
+                  {isSuperAdmin && (
+                    <div
+                      className="pt-3 mt-3 border-t border-neutral-100 dark:border-neutral-800 flex gap-2"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => { setSelectedMember(m); openModal(m, 'approve'); }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => { setSelectedMember(m); openModal(m, 'reject'); }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        Reject
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               );
             }) : (

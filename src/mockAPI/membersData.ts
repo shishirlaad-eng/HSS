@@ -515,7 +515,6 @@ const rawMockMembers: Member[] = [
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sankhya', responsibilityType: 'Pramukh (Saha)', startDate: '2023-09-01' },
       { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Shikshak', responsibilityType: 'Toli', startDate: '2024-04-01' },
-      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sewa', responsibilityType: 'Pramukh', startDate: '2025-01-15' },
     ],
   },
   {
@@ -569,6 +568,9 @@ const rawMockMembers: Member[] = [
     compliance: { dbs: 'Pending', firstAid: 'Certified', parentalConsent: 'granted' },
     eventsAttended: 5,
     shakhaSessionsAttended: 18,
+    responsibilities: [
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Mukhya Shikshak', responsibilityType: 'Toli', startDate: '2024-06-01' },
+    ],
   },
   {
     id: 'MBR-005',
@@ -623,6 +625,9 @@ const rawMockMembers: Member[] = [
     emergencyContactRelationship: 'Father',
     eventsAttended: 0,
     shakhaSessionsAttended: 0,
+    responsibilities: [
+      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Shareerik', responsibilityType: 'Toli', startDate: '2025-05-01' },
+    ],
   },
   {
     id: 'MBR-007',
@@ -669,6 +674,9 @@ const rawMockMembers: Member[] = [
     firstAidRef: 'FA-2022-008',
     eventsAttended: 11,
     shakhaSessionsAttended: 44,
+    responsibilities: [
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Sewa', responsibilityType: 'Pramukh (Saha)', startDate: '2023-01-01' },
+    ],
   },
   {
     id: 'MBR-009',
@@ -693,6 +701,9 @@ const rawMockMembers: Member[] = [
     emergencyContactRelationship: 'Mother',
     eventsAttended: 0,
     shakhaSessionsAttended: 0,
+    responsibilities: [
+      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sampark', responsibilityType: 'Toli', startDate: '2025-03-01' },
+    ],
   },
   {
     id: 'MBR-010',
