@@ -633,7 +633,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation',  label: 'Organisation'           },
     ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
-    { id: 'roles',         label: 'Responsibilities and Role' },
+    { id: 'roles',         label: 'Responsibilities and Roles' },
     { id: 'other',         label: 'Other Information'      },
     ...(mode !== 'approval' ? [
       { id: 'activity' as Tab, label: 'Activity' },
@@ -921,8 +921,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <InfoSection title="Contact Details">
                   <EditableInfoItem label="Primary Contact Number" value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone />
                   <EditableInfoItem label="Primary Email Address" value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
-                  <EditableInfoItem label="Secondary Contact Number" value={form.secondaryPhone ?? ''} isEditing={isEditing} onChange={v => setField('secondaryPhone', v)} phone />
-                  <EditableInfoItem label="Secondary Email Address" value={form.secondaryEmail ?? ''} isEditing={isEditing} onChange={v => setField('secondaryEmail', v)} type="email" />
                   <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
                   <EditableInfoItem label="Town / City" value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
                   <EditableInfoItem label="Address Line 1" value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} />
@@ -1232,7 +1230,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role(s)</h4>
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Roles</h4>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full">

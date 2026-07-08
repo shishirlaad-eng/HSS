@@ -697,7 +697,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     { id: 'organisation', label: 'Organisation'        },
     { id: 'compliance',   label: 'Compliance Details'  },
     ...(!isPostRegistration ? [
-      { id: 'roles' as ProfileTab, label: 'Responsibilities and Role' },
+      { id: 'roles' as ProfileTab, label: 'Responsibilities and Roles' },
       { id: 'other' as ProfileTab, label: 'Other Information'      },
       { id: 'history' as ProfileTab, label: 'History'              },
     ] : []),
@@ -790,19 +790,23 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             {/* Row 1 — Name | Role | Age badge | Status badge — all inline */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <h1 className="text-[32px] font-semibold text-neutral-900 dark:text-white">{valueOrDash(fullName)}</h1>
-              <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
-                {getAgeGroupLabel(profile.dateOfBirth)}
-              </span>
-              {pendingTransfer ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
-                  <span className="text-[#d97706]">Pending Approval</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
-                  <span className="text-success-700 dark:text-success-400">Active &amp; Approved</span>
-                </span>
+              {!(isPostRegistration || isUnderReview) && (
+                <>
+                  <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309] border border-[#fcd34d]">
+                    {getAgeGroupLabel(profile.dateOfBirth)}
+                  </span>
+                  {pendingTransfer ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs bg-[#fffbeb] border-[#fde68a]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#F9B03D]" />
+                      <span className="text-[#d97706]">Pending Approval</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
+                      <span className="text-success-700 dark:text-success-400">Active &amp; Approved</span>
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1351,7 +1355,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   {/* Current MyHSS Role */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Role(s)</h4>
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current MyHSS Roles</h4>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">

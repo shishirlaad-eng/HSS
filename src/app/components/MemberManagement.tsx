@@ -1494,7 +1494,7 @@ export default function MemberManagement({
           onStatusChange={(action) => openStatusModal(selectedMember, action)}
           onDelete={() => openDeleteModal(selectedMember)}
           initialTab={resolvedInitialTab as any}
-          backLabel={karyakartasOnly ? 'Back to Responsibilities and Role' : 'Back to Members'}
+          backLabel={karyakartasOnly ? 'Back to Responsibilities and Roles' : 'Back to Members'}
         />
         <StatusConfirmModal
           isOpen={statusModal.isOpen}
@@ -1550,13 +1550,14 @@ export default function MemberManagement({
     <div className="p-6 bg-transparent dark:bg-neutral-950">
       <div className="max-w-[100%] mx-auto">
 
-        {/* PAGE HEADER */}
+        {/* PAGE HEADER — sticky so it stays visible while the list scrolls */}
+        <div className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
-          title={karyakartasOnly ? 'Responsibilities and Role' : 'Members'}
+          title={karyakartasOnly ? 'Responsibilities and Roles' : 'Members'}
           subtitle={isSuperAdmin ? (karyakartasOnly ? 'Below is a list of all current members that have a Sangh Responsibility and/or a MyHSS Role' : 'Below is a list of all members for your Shakha / Nagar / Vibhag') : undefined}
           breadcrumbs={karyakartasOnly ? [
             { label: 'Members', href: '#' },
-            { label: 'Responsibilities and Role', current: true },
+            { label: 'Responsibilities and Roles', current: true },
           ] : [
             { label: 'Members Management', href: '#' },
             { label: 'Members', current: true },
@@ -1663,6 +1664,7 @@ export default function MemberManagement({
 
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
+        </div>
 
         {/* SUMMARY WIDGETS */}
         {showSummary && (
