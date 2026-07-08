@@ -25,7 +25,7 @@ const SHARED_FIELDS = [
   'buildingName', 'addressLine1', 'addressLine2', 'contactTownCity', 'postCode',
   'emergencyContactName', 'emergencyContactPhone', 'emergencyContactEmail', 'emergencyContactRelationship',
   'occupation', 'spokenLanguages', 'originatingStateIndia', 'additionalNotes',
-  'dietaryRequirements', 'dietaryOtherSpecify', 'epiPen', 'allergies', 'medicalInfoDeclared', 'medicalInfoDetails',
+  'dietaryRequirements', 'dietaryOtherSpecify', 'epiPen', 'allergies', 'allergiesDeclared', 'medicalInfoDeclared', 'medicalInfoDetails',
 ] as const;
 
 const DIETARY_MULTISELECT_OPTIONS = [
@@ -102,6 +102,7 @@ interface MemberProfileForm {
   medicalInfoDetails: string;
   epiPen: string;
   allergies: string;
+  allergiesDeclared: string;
   isFirstAider: string;
   firstAidQualificationLevel: string;
   firstAidQualificationExpiryDate: string;
@@ -171,6 +172,7 @@ const ADULT_MEMBER_PROFILE: MemberProfileForm = {
   medicalInfoDetails: "",
   epiPen: "No",
   allergies: "",
+  allergiesDeclared: "No",
   isFirstAider: "Yes",
   firstAidQualificationLevel: "1-day First Aid qualification",
   firstAidQualificationExpiryDate: "2026-09-15",
@@ -237,6 +239,7 @@ function getDefaultMemberProfile(selectedRole: string): MemberProfileForm {
       medicalInfoDetails: "",
       epiPen: "No",
       allergies: "",
+      allergiesDeclared: "No",
       isFirstAider: "No",
       firstAidQualificationLevel: "",
       firstAidQualificationExpiryDate: "",
@@ -945,7 +948,58 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
 
               <InfoSection title="Medical Details">
-                <EditableInfoItem label="Please state any medical details to be aware of" required value={profile.medicalInfoDeclared} isEditing={effectiveEditing} onChange={v => setField("medicalInfoDeclared", v)} />
+                <EditableInfoItem
+                  label="Do you have any medical conditions?"
+                  required
+                  value={profile.medicalInfoDeclared}
+                  isEditing={effectiveEditing}
+                  onChange={v => {
+                    setField("medicalInfoDeclared", v);
+                    if (v !== "Yes") setField("medicalInfoDetails", "");
+                  }}
+                  options={["No", "Yes"]}
+                />
+                {profile.medicalInfoDeclared === "Yes" && (
+                  <EditableInfoItem
+                    label="Please state any medical details to be aware of"
+                    required
+                    value={profile.medicalInfoDetails}
+                    isEditing={effectiveEditing}
+                    onChange={v => setField("medicalInfoDetails", v)}
+                    textarea
+                  />
+                )}
+                <EditableInfoItem
+                  label="Do you have any allergies?"
+                  required
+                  value={profile.allergiesDeclared}
+                  isEditing={effectiveEditing}
+                  onChange={v => {
+                    setField("allergiesDeclared", v);
+                    if (v !== "Yes") { setField("allergies", ""); setField("epiPen", ""); }
+                  }}
+                  options={["No", "Yes"]}
+                />
+                {profile.allergiesDeclared === "Yes" && (
+                  <>
+                    <EditableInfoItem
+                      label="Please state allergy details to be aware of"
+                      required
+                      value={profile.allergies}
+                      isEditing={effectiveEditing}
+                      onChange={v => setField("allergies", v)}
+                      textarea
+                    />
+                    <EditableInfoItem
+                      label="Do you carry an EpiPen/Jext/Emerade?"
+                      required
+                      value={profile.epiPen}
+                      isEditing={effectiveEditing}
+                      onChange={v => setField("epiPen", v)}
+                      options={["No", "Yes"]}
+                    />
+                  </>
+                )}
                 <div>
                   <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Special Dietary Requirements</label>
                   {effectiveEditing ? (
@@ -973,8 +1027,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     </p>
                   )}
                 </div>
-                <EditableInfoItem label="Do you carry an EpiPen/Jext/Emerade?" value={profile.epiPen}    isEditing={effectiveEditing} onChange={v => setField("epiPen", v)}    options={["No", "Yes"]} />
-                <EditableInfoItem label="Any Allergies"           value={profile.allergies} isEditing={effectiveEditing} onChange={v => setField("allergies", v)} />
               </InfoSection>
 
             </div>
