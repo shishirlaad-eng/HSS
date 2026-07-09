@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Sessions (Shakha Table)
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,7 +13,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing/PageHeader';
-import { PrimaryButton } from './hb/listing';
+import { PrimaryButton, DateRangeFilter } from './hb/listing';
 import CreateSession from './CreateSession';
 import SessionDetail from './SessionDetail';
 import { mockSessions, ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
@@ -27,6 +27,10 @@ const MONTH_NAMES     = ['January','February','March','April','May','June','July
 
 function isoDate(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function statusColor(status: ShakhaSession['status']) {
@@ -87,6 +91,11 @@ export default function Sessions() {
   const [filterRegion, setFilterRegion]   = useState('');
   const [filterTown,   setFilterTown]     = useState('');
   const [filterCentre, setFilterCentre]   = useState('');
+  const [dateFrom,       setDateFrom]       = useState('');
+  const [dateTo,         setDateTo]         = useState('');
+  const [dateRangeLabel, setDateRangeLabel] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
   const [selectedSession, setSelectedSession] = useState<ShakhaSession | null>(null);
   const [createDate,      setCreateDate]      = useState<string | null>(null);
   const [editSession,     setEditSession]     = useState<ShakhaSession | null>(null);
@@ -186,15 +195,19 @@ export default function Sessions() {
     const base = browse ? sessions : scopedSessions;
     return base
       .filter(s => {
-        const d = new Date(s.date);
-        if (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth) return false;
+        if (dateFrom) {
+          if (s.date < dateFrom || s.date > (dateTo || dateFrom)) return false;
+        } else {
+          const d = new Date(s.date);
+          if (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth) return false;
+        }
         if (filterRegion && s.region !== filterRegion) return false;
         if (filterTown   && s.town   !== filterTown)   return false;
         if (filterCentre && s.activityCentre !== filterCentre) return false;
         return true;
       })
       .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-  }, [browse, sessions, scopedSessions, viewYear, viewMonth, filterRegion, filterTown, filterCentre]);
+  }, [browse, sessions, scopedSessions, viewYear, viewMonth, filterRegion, filterTown, filterCentre, dateFrom, dateTo]);
 
   const todayIso = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
   const activeFilters = [filterRegion, filterTown, filterCentre].filter(Boolean).length;
@@ -295,6 +308,51 @@ export default function Sessions() {
         >
           Today
         </button>
+        <div className="relative ml-2" ref={dateFilterRef}>
+          <button
+            onClick={() => setShowDateFilter(open => !open)}
+            title="Filter by Shakha date"
+            className={`h-9 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              dateFrom
+                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            {dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo || dateFrom)}`) : 'Shakha Date'}
+            {dateFrom && (
+              <span
+                role="button"
+                onClick={event => {
+                  event.stopPropagation();
+                  setDateFrom('');
+                  setDateTo('');
+                  setDateRangeLabel('');
+                }}
+                className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+              >
+                <X className="w-3 h-3" />
+              </span>
+            )}
+          </button>
+          <DateRangeFilter
+            isOpen={showDateFilter}
+            onClose={() => setShowDateFilter(false)}
+            startDate={dateFrom}
+            endDate={dateTo}
+            onApply={(start, end, label) => {
+              setDateFrom(start);
+              setDateTo(end);
+              setDateRangeLabel(label || '');
+              if (start) {
+                const d = new Date(start);
+                setViewYear(d.getFullYear());
+                setViewMonth(d.getMonth());
+              }
+            }}
+            title="Shakha Date Range"
+          />
+        </div>
       </div>
 
       {/* ── Location filter bar ── */}

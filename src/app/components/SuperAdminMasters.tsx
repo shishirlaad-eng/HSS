@@ -985,7 +985,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.code}</td>
                       )}
                       {masterType !== 'country' && !isStandaloneMaster && visibleColumns.countryName && (
-                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.countryName}</td>
+                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{item.countryName}</td>
                       )}
                       {(masterType === 'town' || masterType === 'centre') && visibleColumns.regionName && (
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.regionName}</td>
@@ -997,7 +997,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.contactName}</td>
                       )}
                       {masterType === 'centre' && visibleColumns.contactPhone && (
-                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.contactPhone}</td>
+                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{item.contactPhone}</td>
                       )}
                       {masterType === 'centre' && visibleColumns.contactEmail && (
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.contactEmail}</td>

@@ -581,27 +581,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     });
   };
 
-  const addResponsibility = () => {
-    setForm(cur => ({
-      ...cur,
-      responsibilities: [
-        ...(cur.responsibilities ?? []),
-        { responsibilityLevel: RESPONSIBILITY_LEVEL_OPTIONS[0], sanghResponsibility: '', responsibilityType: RESPONSIBILITY_TYPE_OPTIONS[0], startDate: '' },
-      ],
-    }));
-  };
-
   const updateResponsibility = (index: number, key: keyof ResponsibilityAssignment, value: string) => {
     setForm(cur => ({
       ...cur,
       responsibilities: (cur.responsibilities ?? []).map((r, i) => i === index ? { ...r, [key]: value } as ResponsibilityAssignment : r),
-    }));
-  };
-
-  const removeResponsibility = (index: number) => {
-    setForm(cur => ({
-      ...cur,
-      responsibilities: (cur.responsibilities ?? []).filter((_, i) => i !== index),
     }));
   };
 
@@ -1159,9 +1142,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Current Sangh Responsibilities</h4>
-                      {isEditing && (
-                        <SecondaryButton icon={Plus} onClick={addResponsibility}>Add Responsibility</SecondaryButton>
-                      )}
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full table-fixed">
@@ -1170,7 +1150,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           <col style={{ width: '24%' }} />
                           <col style={{ width: '21%' }} />
                           <col style={{ width: '31%' }} />
-                          {isEditing && <col style={{ width: '48px' }} />}
                         </colgroup>
                         <thead>
                           <tr className="border-b border-neutral-100 dark:border-neutral-800">
@@ -1178,7 +1157,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             <th className={TH}>Responsibility</th>
                             <th className={TH}>Responsibility Type</th>
                             <th className={TH}>Start Date</th>
-                            {isEditing && <th className={TH}></th>}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1205,15 +1183,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                                   <td className="px-4 py-2.5">
                                     <FormInput type="date" value={r.startDate ?? ''} onChange={e => updateResponsibility(i, 'startDate', e.target.value)} />
                                   </td>
-                                  <td className="px-4 py-2.5">
-                                    <button type="button" onClick={() => removeResponsibility(i)} className="w-8 h-8 flex items-center justify-center rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/30 transition-colors" aria-label={`Remove responsibility ${i + 1}`}>
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </td>
                                 </tr>
                               ))
                             ) : (
-                              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities — click "Add Responsibility" to add one</td></tr>
+                              <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-neutral-400">No current responsibilities</td></tr>
                             )
                           ) : (
                             form.responsibilities && form.responsibilities.length > 0 ? (
@@ -1601,19 +1574,19 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     )}
                   </div>
                   <div className="overflow-x-auto slim-scroll">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-sm border-collapse">
                       <thead>
-                        <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Date</th>
-                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Type</th>
-                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event / Shakha</th>
-                          <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Centre</th>
+                        <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Date</th>
+                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Type</th>
+                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Event / Shakha</th>
+                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Centre</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
                         {!isInFirst20 || filteredActivity.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="px-6 py-12 text-center">
+                            <td colSpan={4} className="px-4 py-8 text-center">
                               <div className="flex flex-col items-center gap-2">
                                 <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
                                 <p className="text-xs text-neutral-500 dark:text-neutral-500">
@@ -1626,17 +1599,16 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           const d = new Date(row.date);
                           return (
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
-                              <td className="px-6 py-3 whitespace-nowrap">
-                                <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
                                   {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </p>
-                                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                  {' · '}
                                   {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </td>
-                              <td className="px-6 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.type}</td>
-                              <td className="px-6 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.name}</td>
-                              <td className="px-6 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.centre}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">{row.type}</td>
+                              <td className="px-4 py-3 text-[14px] font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.name}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.centre}</td>
                             </tr>
                           );
                         })}
@@ -1672,9 +1644,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                     <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                       {formatDate(member.registrationDate)}
-                    </p>
-                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                      {new Date(member.registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500 ml-1.5">
+                        {new Date(member.registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </p>
                   </div>
 
@@ -1771,7 +1743,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             return (
                               <th
                                 key={col.key}
-                                className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                                 onClick={() => {
                                   if (historySortCol === col.key) setHistorySortDir(d => d === 'asc' ? 'desc' : 'asc');
                                   else { setHistorySortCol(col.key); setHistorySortDir('asc'); }
@@ -1794,19 +1766,19 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           return (
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <p className="text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">
+                                <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
                                   {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                   {' · '}
                                   {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <p className="text-xs font-medium text-neutral-900 dark:text-white">{row.changedByName}</p>
+                                <p className="text-[14px] text-neutral-900 dark:text-white">{row.changedByName}</p>
                               </td>
-                              <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{row.role}</td>
-                              <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white whitespace-nowrap">{row.field}</td>
-                              <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
-                              <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">{row.role}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">{row.field}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white">{row.oldValue}</td>
+                              <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white">{row.newValue}</td>
                             </tr>
                           );
                         })}

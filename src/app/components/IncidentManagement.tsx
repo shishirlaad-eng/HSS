@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Pencil,
@@ -226,9 +227,10 @@ function MemberAutocomplete({
   placeholder?: string;
   onChange: (name: string, member: MemberList[number] | null) => void;
 }) {
-  const [query, setQuery]   = useState(value);
-  const [open, setOpen]     = useState(false);
+  const [query, setQuery]     = useState(value);
+  const [focused, setFocused] = useState(false);
   const ref                  = useRef<HTMLDivElement>(null);
+  const menuRef               = useRef<HTMLDivElement>(null);
   const selfTyping           = useRef(false);   // true while we caused the value change
 
   // Only sync inward when the parent resets the field (not echoing our own typing back)
@@ -238,7 +240,10 @@ function MemberAutocomplete({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      const insideField = !!ref.current?.contains(target);
+      const insideMenu = !!menuRef.current?.contains(target);
+      if (!insideField && !insideMenu) setFocused(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -251,6 +256,33 @@ function MemberAutocomplete({
     [query, members],
   );
 
+  const open = focused && suggestions.length > 0;
+
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const update = () => {
+      const r = ref.current?.getBoundingClientRect();
+      if (!r) return;
+      const dropdownHeight = 240;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const openUp = spaceBelow < dropdownHeight && r.top > spaceBelow;
+      setRect({
+        top: openUp ? Math.max(8, r.top - dropdownHeight - 4) : r.bottom + 4,
+        left: r.left,
+        width: r.width,
+      });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
   const baseCls = `w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
     error
       ? 'border-red-400 dark:border-red-600 focus:ring-red-400/30'
@@ -260,7 +292,6 @@ function MemberAutocomplete({
   const handleType = (text: string) => {
     selfTyping.current = true;
     setQuery(text);
-    setOpen(true);
     onChange(text, null);
     // release guard after parent re-render has settled
     requestAnimationFrame(() => { selfTyping.current = false; });
@@ -269,7 +300,7 @@ function MemberAutocomplete({
   const handleSelect = (m: MemberList[number]) => {
     selfTyping.current = true;
     setQuery(m.name);
-    setOpen(false);
+    setFocused(false);
     onChange(m.name, m);
     requestAnimationFrame(() => { selfTyping.current = false; });
   };
@@ -289,10 +320,14 @@ function MemberAutocomplete({
         placeholder={placeholder ?? 'Type to search members…'}
         className={baseCls}
         onChange={e => handleType(e.target.value)}
-        onFocus={() => { if (query.trim().length >= 1) setOpen(true); }}
+        onFocus={() => setFocused(true)}
       />
-      {open && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
           {suggestions.map(m => (
             <button
               key={m.id}
@@ -308,7 +343,8 @@ function MemberAutocomplete({
               <span className="text-xs font-mono text-neutral-400 ml-3 flex-shrink-0">{m.id}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -482,7 +518,7 @@ function IncidentForm({
             <input type="text" value={form.incidentSite} onChange={e => set('incidentSite', e.target.value)} placeholder="e.g. sports hall, car park…" className={fieldCls(false)} />
           </div>
 
-          <div>
+          <div className={scopeCentre ? '' : 'md:col-span-2'}>
             <MemberAutocomplete
               label="Person in Charge of Session"
               value={form.sessionPersonInCharge}

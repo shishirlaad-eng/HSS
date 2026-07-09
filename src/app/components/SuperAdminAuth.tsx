@@ -308,14 +308,23 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                 </div>
 
                 <div className="pt-2">
-                  <PrimaryButton 
-                    type="submit" 
-                    className="w-full justify-center py-2.5 font-medium" 
+                  <PrimaryButton
+                    type="submit"
+                    className="w-full justify-center py-2.5 font-medium"
                     disabled={isLoading}
                   >
                     {isLoading ? "Loading..." : "Login"}
                   </PrimaryButton>
                 </div>
+
+                <p className="text-center text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-600">
+                  This site is protected by reCAPTCHA v3 and the Google{' '}
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-600 dark:hover:text-neutral-400">Privacy Policy</a>
+                  {' '}and{' '}
+                  <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-600 dark:hover:text-neutral-400">Terms of Service</a>
+                  {' '}apply.
+                </p>
+
                 <div className="pt-2">
                   <button
                     type="button"
