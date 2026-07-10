@@ -1172,6 +1172,43 @@ export default function MemberManagement({
 
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const [tableHeadTop, setTableHeadTop] = useState(53);
+
+  // tableScrollRef has overflow-x-auto, which forces the browser to also treat it as the
+  // scroll container for position:sticky (overflow-x != visible forces overflow-y to auto
+  // per the CSS overflow spec). So the <th> "top" offset must be measured relative to that
+  // div's own (scroll-moving) position, not the viewport — recompute on every scroll.
+  useEffect(() => {
+    const headerEl = stickyHeaderRef.current;
+    const wrapperEl = tableScrollRef.current;
+    if (!headerEl || !wrapperEl) return;
+    let raf = 0;
+    const measure = () => {
+      const headerBottom = headerEl.getBoundingClientRect().bottom;
+      const wrapperTop = wrapperEl.getBoundingClientRect().top;
+      setTableHeadTop(headerBottom - wrapperTop);
+    };
+    measure();
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        measure();
+        raf = 0;
+      });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(headerEl);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', measure);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   // Registration date range filter
   const [regDateStart,  setRegDateStart]  = useState('');
@@ -1553,7 +1590,7 @@ export default function MemberManagement({
       <div className="max-w-[100%] mx-auto">
 
         {/* PAGE HEADER — sticky so it stays visible while the list scrolls */}
-        <div className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title={karyakartasOnly ? 'Responsibilities and Roles' : 'Members'}
           subtitle={isSuperAdmin ? (karyakartasOnly ? 'Below is a list of all current members that have a Sangh Responsibility and/or a MyHSS Role' : 'Below is a list of all members for your Shakha / Nagar / Vibhag') : undefined}
@@ -1816,12 +1853,12 @@ export default function MemberManagement({
         {/* â"€â"€ TABLE VIEW â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
-            <div className="overflow-x-auto slim-scroll">
+            <div ref={tableScrollRef} className="overflow-x-auto slim-scroll">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     {!isSuperAdmin && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
+                      <th style={{ top: tableHeadTop }} className="sticky z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">
                         <input type="checkbox"
                           checked={selectedIds.size === paginatedMembers.length && paginatedMembers.length > 0}
                           onChange={e => setSelectedIds(e.target.checked ? new Set(paginatedMembers.map(m => m.id)) : new Set())}
@@ -1833,7 +1870,8 @@ export default function MemberManagement({
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
+                        style={{ top: tableHeadTop }}
+                        className="sticky z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap"
                       >
                         {col.label}{renderSortArrow(col.key)}
                       </th>
