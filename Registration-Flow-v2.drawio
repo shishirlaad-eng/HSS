@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="claude" version="24.0.0">
+  <diagram name="Registration Flow v2 (status + flags)" id="regflow-v2-annot">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="4350" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="START" value="&lt;b&gt;Start&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1a1a2e;strokeColor=#e94560;fontColor=#ffffff;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="64" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="CREATE" value="&lt;b&gt;1. Create account&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=false&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="208" width="240" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="VSEND" value="&lt;b&gt;1A. Send email verification link&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=false&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;fontColor=#78350f;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="352" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="EDLV" value="&lt;b&gt;Email delivered?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="497" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="VOK" value="&lt;b&gt;1B. Verified?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="626" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="LOGIN" value="&lt;b&gt;2. Log in, personal info&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="854" width="240" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="ONB" value="&lt;b&gt;3. Onboarding message&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="998" width="240" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="PROFILE" value="&lt;b&gt;4. Complete profile (age captured)&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1142" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="AGEBAND" value="&lt;b&gt;4A. Age band?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1286" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="GDT" value="&lt;b&gt;4B. Teen: guardian details&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true, capturing guardian_details&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fb923c;fontColor=#7c2d12;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1526" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="GDC" value="&lt;b&gt;4B. Child: guardian/parent details&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true, capturing guardian_details&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fb923c;fontColor=#7c2d12;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1526" width="340" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="SAVE" value="&lt;b&gt;5. Save progress&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="1702" width="240" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="SUBMIT" value="&lt;b&gt;6. Submit for approval&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true, submission_count+=1&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="1846" width="240" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="ROUTE" value="&lt;b&gt;7. Age-based routing&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1990" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="PA1" value="&lt;b&gt;7A. PENDING_APPROVAL&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_APPROVAL&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9ca3af;fontColor=#374151;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="2246" width="220" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="PGA1" value="&lt;b&gt;7B. PENDING_GUARDIAN_APPROVAL&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_GUARDIAN_APPROVAL&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9ca3af;fontColor=#374151;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="2246" width="260" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="MATCH" value="&lt;b&gt;7C. Email matches existing member?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="2230" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="PPC1" value="&lt;b&gt;7D. PENDING_PARENTAL_CONSENT (EXISTING_MEMBER)&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_PARENTAL_CONSENT&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true, guardian_link_type=EXISTING_MEMBER&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9ca3af;fontColor=#374151;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="2470" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="CCHILD" value="&lt;b&gt;7E. Create child profile, assign email as parent id&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;guardian_link_type=NEW_CLAIM, guardian_email_claimed=false&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="2470" width="340" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="PPC2" value="&lt;b&gt;7F. PENDING_PARENTAL_CONSENT (NEW_CLAIM)&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_PARENTAL_CONSENT&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;guardian_link_type=NEW_CLAIM, guardian_email_claimed=false&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9ca3af;fontColor=#374151;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="2646" width="340" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="GL1" value="&lt;b&gt;8A. Send link, valid 7d, reminder day 4&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_GUARDIAN_APPROVAL&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;consent_link_sent_at set, expires 7d&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;fontColor=#78350f;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="520" y="2806" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="GL2" value="&lt;b&gt;8B. Send link, valid 7d, reminder day 4&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_PARENTAL_CONSENT&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;consent_link_sent_at set, expires 7d&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;fontColor=#78350f;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="820" y="2806" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="GL3" value="&lt;b&gt;8C. Send claim+consent link, valid 14d, reminder day 7&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_PARENTAL_CONSENT&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;consent_link_sent_at set, expires 14d&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;fontColor=#78350f;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="2838" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="GREV" value="&lt;b&gt;9. Guardian/parent reviews (Super Admin can act if unable)&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="3014" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="REJ1" value="&lt;b&gt;9B. REJECTED (rejected_by=GUARDIAN)&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REJECTED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;rejected_by=GUARDIAN, reason required&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#ef4444;fontColor=#991b1b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="3286" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ESC" value="&lt;b&gt;9C. Escalate to Super Admin queue&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_GUARDIAN_APPROVAL / PENDING_PARENTAL_CONSENT&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;escalated_to_super_admin=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fb923c;fontColor=#7c2d12;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="3286" width="300" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="PA2" value="&lt;b&gt;10. PENDING_APPROVAL&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: PENDING_APPROVAL&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true, GUARDIAN_APPROVED&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9ca3af;fontColor=#374151;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="3462" width="260" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="AREV" value="&lt;b&gt;11. Admin reviews (Vibhaag / Nagar / Shakha / Kendriya / Super Admin)&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="3638" width="220" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ACT1" value="&lt;b&gt;11A. ACTIVE&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: ACTIVE&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;email_verified=true&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1a1a2e;strokeColor=#e94560;fontColor=#ffffff;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="3910" width="160" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="REJ2" value="&lt;b&gt;11B. REJECTED (rejected_by=ADMIN)&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REJECTED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;rejected_by=ADMIN, reason required&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#ef4444;fontColor=#991b1b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="3910" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="EDIT1" value="&lt;b&gt;13A. Member edits and resubmits&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;submission_count+=1, email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="3462" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="EDIT2" value="&lt;b&gt;13B. Member edits and resubmits&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: REGISTERED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;submission_count+=1, email_verified=true&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;fontColor=#1e40af;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="4086" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="INACT" value="&lt;b&gt;12A. Post-activation deactivation&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: INACTIVE&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;deactivated_at set&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#9ca3af;fontColor=#4b5563;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="3910" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="DEL" value="&lt;b&gt;12B. Retention / erasure&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px' color='#555555'&gt;Status: DELETED&lt;/font&gt;&lt;br&gt;&lt;font style='font-size:9px' color='#777777'&gt;deleted_at set&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#9ca3af;fontColor=#4b5563;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="4038" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="START" target="CREATE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="CREATE" target="VSEND">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="VSEND" target="EDLV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3b" value="Bounced / send failed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="EDLV" target="VSEND">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3c" value="Delivered" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="EDLV" target="VOK">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="VOK" target="VSEND">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="VOK" target="LOGIN">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="LOGIN" target="ONB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="ONB" target="PROFILE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PROFILE" target="AGEBAND">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Adult 18+" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="AGEBAND" target="SAVE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Teen 13-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="AGEBAND" target="GDT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="Child 0-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="AGEBAND" target="GDC">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GDT" target="SAVE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GDC" target="SAVE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="SAVE" target="SUBMIT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="SUBMIT" target="ROUTE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="Adult 18+" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="ROUTE" target="PA1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="Teen 13-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="ROUTE" target="PGA1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="Child 0-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="ROUTE" target="MATCH">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="MATCH" target="PPC1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="MATCH" target="CCHILD">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="CCHILD" target="PPC2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PGA1" target="GL1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PPC1" target="GL2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PPC2" target="GL3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GL1" target="GREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GL2" target="GREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GL3" target="GREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" value="Guardian Approved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GREV" target="PA2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" value="Reject" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GREV" target="REJ1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" value="No response by expiry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="GREV" target="ESC">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;dashed=1;strokeColor=#9ca3af;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="ESC" target="GREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PA1" target="AREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="PA2" target="AREV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" value="Approve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="AREV" target="ACT1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" value="Reject" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="AREV" target="REJ2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="REJ1" target="EDIT1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e38" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;dashed=1;strokeColor=#9ca3af;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="EDIT1" target="ROUTE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="REJ2" target="EDIT2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;dashed=1;strokeColor=#9ca3af;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="EDIT2" target="ROUTE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" value="Admin deactivates (later)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;dashed=1;strokeColor=#9ca3af;" edge="1" parent="1" source="ACT1" target="INACT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" value="Retention / erasure (later)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;dashed=1;strokeColor=#9ca3af;" edge="1" parent="1" source="ACT1" target="DEL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

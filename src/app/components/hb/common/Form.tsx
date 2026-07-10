@@ -245,17 +245,22 @@ interface PhoneInputProps {
   placeholder?: string;
   readOnly?: boolean;
   disabled?: boolean;
+  error?: boolean;
 }
 
-export function PhoneInput({ value, onChange, placeholder, readOnly, disabled }: PhoneInputProps) {
+export function PhoneInput({ value, onChange, placeholder, readOnly, disabled, error }: PhoneInputProps) {
   const { dial, number } = splitPhoneValue(value);
+  const errorRing = error ? "border-error-400 dark:border-error-600 focus:ring-error-400/30" : "";
   return (
     <div className="flex gap-2">
       <select
         value={dial}
         disabled={readOnly || disabled}
         onChange={e => onChange(`${e.target.value} ${number}`.trim())}
-        className="h-10 w-[92px] flex-shrink-0 px-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-primary-500 dark:focus:border-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={cn(
+          "h-10 w-[92px] flex-shrink-0 px-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-primary-500 dark:focus:border-primary-600 disabled:opacity-50 disabled:cursor-not-allowed",
+          errorRing
+        )}
       >
         {COUNTRY_DIAL_CODES.map((c, i) => (
           <option key={`${c.code}-${c.label}-${i}`} value={c.code}>{c.code} {c.label}</option>
@@ -268,7 +273,7 @@ export function PhoneInput({ value, onChange, placeholder, readOnly, disabled }:
         disabled={disabled}
         placeholder={placeholder}
         onChange={e => onChange(`${dial} ${e.target.value}`.trim())}
-        className="flex-1"
+        className={cn("flex-1", errorRing)}
       />
     </div>
   );

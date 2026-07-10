@@ -292,10 +292,12 @@ function InfoSection({ title, children, className = '', cols = 2 }: { title: str
 
 
 
-function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+function InfoItem({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">{label}</label>
+      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
+        {label}{required && <span className="text-error-600 ml-0.5">*</span>}
+      </label>
       <div className="text-sm text-neutral-900 dark:text-white font-medium">{children}</div>
     </div>
   );
@@ -309,6 +311,7 @@ function MiniField({
   type = 'text',
   options,
   displayValue,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -317,11 +320,14 @@ function MiniField({
   type?: string;
   options?: { value: string; label: string }[];
   displayValue?: React.ReactNode;
+  required?: boolean;
 }) {
   const inputCls = 'w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white';
   return (
     <div>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+        {label}{required && <span className="text-error-600 ml-0.5">*</span>}
+      </p>
       {!isEditing ? (
         <p className="text-sm font-medium text-neutral-900 dark:text-white">{displayValue ?? valueOrDash(value)}</p>
       ) : options ? (
@@ -346,6 +352,7 @@ function EditableInfoItem({
   textarea = false,
   required = false,
   phone = false,
+  error = false,
 }: {
   label: string;
   value: string;
@@ -357,25 +364,27 @@ function EditableInfoItem({
   textarea?: boolean;
   required?: boolean;
   phone?: boolean;
+  error?: boolean;
 }) {
   if (!isEditing) {
-    return <InfoItem label={label}>{displayValue ?? valueOrDash(value)}</InfoItem>;
+    return <InfoItem label={label} required={required}>{displayValue ?? valueOrDash(value)}</InfoItem>;
   }
+  const errCls = error ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
   return (
     <div>
       <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
         {label}{required && <span className="text-error-600 ml-0.5">*</span>}
       </label>
       {options ? (
-        <FormSelect value={value} onChange={e => onChange(e.target.value)}>
+        <FormSelect value={value} onChange={e => onChange(e.target.value)} className={errCls}>
           {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </FormSelect>
       ) : textarea ? (
-        <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+        <FormTextarea value={value} onChange={e => onChange(e.target.value)} className={errCls} />
       ) : phone ? (
-        <PhoneInput value={value} onChange={onChange} />
+        <PhoneInput value={value} onChange={onChange} error={error} />
       ) : (
-        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
+        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} className={errCls} />
       )}
     </div>
   );
@@ -537,6 +546,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   const [form, setForm]             = useState<Member>(member);
   const [savedForm, setSavedForm]   = useState<Member>(member);
   const [selectedAddress, setSelectedAddress] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setForm(member);
@@ -546,6 +556,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
   const setField = (field: keyof Member, value: string | boolean | string[]) => {
     setForm(cur => ({ ...cur, [field]: value }));
+    if (fieldErrors[field as string]) setFieldErrors(prev => ({ ...prev, [field as string]: false }));
   };
 
   const setComplianceField = (field: 'dbs' | 'firstAid' | 'safeguardingTraining', value: string) => {
@@ -589,18 +600,78 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   };
 
   const handleSave = () => {
+    const isEmail = (v?: string) => !!v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    const formIsMinor = ['child', 'teen'].includes(getAgeCategory(form.dateOfBirth));
+
+    if (!form.firstName?.trim() || !form.surname?.trim() || !form.gender || !form.dateOfBirth) {
+      setFieldErrors(prev => ({
+        ...prev,
+        firstName: !form.firstName?.trim(),
+        surname: !form.surname?.trim(),
+        gender: !form.gender,
+        dateOfBirth: !form.dateOfBirth,
+      }));
+      toast.error('First name, surname, gender and date of birth are required.');
+      return;
+    }
+    if (!form.phone?.trim() || !isEmail(form.email)) {
+      setFieldErrors(prev => ({ ...prev, phone: !form.phone?.trim(), email: !isEmail(form.email) }));
+      toast.error('A valid contact number and email address are required.');
+      return;
+    }
+    if (!form.postCode?.trim() || !form.addressLine1?.trim() || !form.contactTownCity?.trim()) {
+      setFieldErrors(prev => ({
+        ...prev,
+        postCode: !form.postCode?.trim(),
+        addressLine1: !form.addressLine1?.trim(),
+        contactTownCity: !form.contactTownCity?.trim(),
+      }));
+      toast.error('Post code, address line 1 and town / city are required.');
+      return;
+    }
+    if (!form.emergencyContactName?.trim() || !form.emergencyContactPhone?.trim() || !isEmail(form.emergencyContactEmail) || !form.emergencyContactRelationship?.trim()) {
+      setFieldErrors(prev => ({
+        ...prev,
+        emergencyContactName: !form.emergencyContactName?.trim(),
+        emergencyContactPhone: !form.emergencyContactPhone?.trim(),
+        emergencyContactEmail: !isEmail(form.emergencyContactEmail),
+        emergencyContactRelationship: !form.emergencyContactRelationship?.trim(),
+      }));
+      toast.error('Emergency contact details are required.');
+      return;
+    }
+    if (formIsMinor && (!form.guardianName?.trim() || !form.guardianPhone?.trim() || !isEmail(form.guardianEmail) || !form.guardianRelationship?.trim())) {
+      setFieldErrors(prev => ({
+        ...prev,
+        guardianName: !form.guardianName?.trim(),
+        guardianPhone: !form.guardianPhone?.trim(),
+        guardianEmail: !isEmail(form.guardianEmail),
+        guardianRelationship: !form.guardianRelationship?.trim(),
+      }));
+      toast.error('Parent / guardian details are required for child and teen members.');
+      return;
+    }
+    if (!form.region || !form.town || !form.activityCentre) {
+      setFieldErrors(prev => ({ ...prev, region: !form.region, town: !form.town, activityCentre: !form.activityCentre }));
+      toast.error('Vibhag, Nagar and Shakha are required.');
+      return;
+    }
     if (form.medicalInfoDeclared && !form.medicalInfoDetails?.trim()) {
+      setFieldErrors(prev => ({ ...prev, medicalInfoDetails: true }));
       toast.error('Please state the medical details to be aware of.');
       return;
     }
     if (form.allergiesDeclared && !form.allergies?.trim()) {
+      setFieldErrors(prev => ({ ...prev, allergies: true }));
       toast.error('Please state the allergies to be aware of.');
       return;
     }
     if (form.allergiesDeclared && !['Yes', 'No'].includes(form.epiPen ?? '')) {
+      setFieldErrors(prev => ({ ...prev, epiPen: true }));
       toast.error('Please select whether the member carries an EpiPen.');
       return;
     }
+    setFieldErrors({});
     setSavedForm(form);
     setIsEditing(false);
     toast.success('Member updated successfully.');
@@ -898,20 +969,22 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
                 <InfoSection title="Personal Details">
-                  <EditableInfoItem label="First Name" value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} />
+                  <EditableInfoItem label="First Name" required value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} />
                   <InfoItem label="Membership ID">{member.id}</InfoItem>
                   <EditableInfoItem label="Middle Name" value={form.middleName ?? ''} isEditing={isEditing} onChange={v => setField('middleName', v)} />
                   <EditableInfoItem
                     label="Gender"
+                    required
                     value={form.gender}
                     isEditing={isEditing}
                     onChange={v => setField('gender', v)}
                     options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]}
                     displayValue={<span className="capitalize">{valueOrDash(member.gender)}</span>}
                   />
-                  <EditableInfoItem label="Surname" value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} />
+                  <EditableInfoItem label="Surname" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} />
                   <EditableInfoItem
                     label="Date of Birth"
+                    required
                     value={form.dateOfBirth}
                     isEditing={isEditing}
                     onChange={v => setField('dateOfBirth', v)}
@@ -923,10 +996,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 </InfoSection>
 
                 <InfoSection title="Contact Details">
-                  <EditableInfoItem label="Contact Number" value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone />
-                  <EditableInfoItem label="Email Address" value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
+                  <EditableInfoItem label="Contact Number" required value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone />
+                  <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
                   <EditableInfoItem
                     label="Post Code"
+                    required
                     value={form.postCode ?? ''}
                     isEditing={isEditing}
                     onChange={v => { setField('postCode', v); setSelectedAddress(''); }}
@@ -957,17 +1031,17 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                   )}
                   <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
-                  <EditableInfoItem label="Address Line 1" value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} />
+                  <EditableInfoItem label="Address Line 1" required value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} />
                   <EditableInfoItem label="Address Line 2" value={form.addressLine2 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine2', v)} />
-                  <EditableInfoItem label="Town / City" value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
+                  <EditableInfoItem label="Town / City" required value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
                 </InfoSection>
 
                 <InfoSection title="Emergency Contact Details">
-                  <EditableInfoItem label="Contact Name" value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
-                  <EditableInfoItem label="Contact Phone Number" value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone />
-                  <EditableInfoItem label="Contact Email" value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
+                  <EditableInfoItem label="Contact Name" required value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
+                  <EditableInfoItem label="Contact Phone Number" required value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone />
+                  <EditableInfoItem label="Contact Email" required value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
                   <div>
-                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship</label>
+                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship<span className="text-error-600 ml-0.5">*</span></label>
                     {isEditing ? (
                       <div className="space-y-2">
                         <FormSelect
@@ -1016,6 +1090,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       onChange={v => setField('medicalInfoDetails', v)}
                       textarea
                       required
+                      error={fieldErrors.medicalInfoDetails}
                     />
                   )}
                   <EditableInfoItem
@@ -1042,6 +1117,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         onChange={v => setField('allergies', v)}
                         textarea
                         required
+                        error={fieldErrors.allergies}
                       />
                       <EditableInfoItem
                         label="Do you carry an EpiPen/Jext/Emerade?"
@@ -1050,6 +1126,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         onChange={v => setField('epiPen', v)}
                         options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
                         required
+                        error={fieldErrors.epiPen}
                       />
                     </>
                   )}
@@ -1086,10 +1163,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── PARENT / GUARDIAN TAB ──────────────────────── */}
             {activeTab === 'guardian' && (
               <InfoSection title="Approval Details" cols={4}>
-                <EditableInfoItem label="Parent / Guardian Name" value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
-                <EditableInfoItem label="Parent / Guardian Phone Number" value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} phone />
-                <EditableInfoItem label="Parent / Guardian Email" value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
-                <EditableInfoItem label="Parent / Guardian Relationship" value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} />
+                <EditableInfoItem label="Parent / Guardian Name" required value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
+                <EditableInfoItem label="Parent / Guardian Phone Number" required value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} phone />
+                <EditableInfoItem label="Parent / Guardian Email" required value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
+                <EditableInfoItem label="Parent / Guardian Relationship" required value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} />
               </InfoSection>
             )}
 
@@ -1105,6 +1182,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 />
                 <EditableInfoItem
                   label="Vibhag"
+                  required
                   value={form.region ?? ''}
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('region', v)}
@@ -1112,6 +1190,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 />
                 <EditableInfoItem
                   label="Nagar"
+                  required
                   value={form.town ?? ''}
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('town', v)}
@@ -1119,6 +1198,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 />
                 <EditableInfoItem
                   label="Shakha"
+                  required
                   value={form.activityCentre ?? ''}
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('activityCentre', v)}
@@ -1156,7 +1236,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             <th className={TH}>Responsibility Level</th>
                             <th className={TH}>Responsibility</th>
                             <th className={TH}>Responsibility Type</th>
-                            <th className={TH}>Start Date</th>
+                            <th className={TH}>From – To</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1333,6 +1413,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     <div className="px-5 py-4 grid grid-cols-2 gap-4">
                       <MiniField
                         label="Qualified First Aider"
+                        required
                         value={form.isFirstAider ? 'Yes' : 'No'}
                         isEditing={isEditing}
                         onChange={v => setField('isFirstAider', v === 'Yes')}
@@ -1658,14 +1739,12 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
                     </div>
                     {approvedDate ? (
-                      <>
-                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                          {formatDate(approvedDate)}
-                        </p>
-                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                        {formatDate(approvedDate)}
+                        <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500 ml-1.5">
                           {new Date(approvedDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </>
+                        </span>
+                      </p>
                     ) : (
                       <p className="text-sm font-semibold text-neutral-400 dark:text-neutral-600">Pending</p>
                     )}

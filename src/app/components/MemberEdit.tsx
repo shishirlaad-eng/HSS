@@ -293,6 +293,9 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
     { id: 'history',       label: 'History'                },
   ];
 
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
   const set = (key: keyof MemberForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const value = e.target.value;
@@ -303,6 +306,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         if (key === 'town') { next.activityCentre = ''; }
         return next;
       });
+      if (errors[key]) setErrors(prev => ({ ...prev, [key]: false }));
     };
 
   const toggleDietaryRequirement = (value: DietaryRequirement) => {
@@ -358,29 +362,62 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
   const handleSave = async () => {
     const fullName = buildName(formData.firstName, formData.middleName, formData.surname);
     if (!formData.firstName.trim() || !formData.surname.trim() || !fullName) {
+      setErrors(prev => ({ ...prev, firstName: !formData.firstName.trim(), surname: !formData.surname.trim() }));
       toast.error('First name and surname are required.'); return;
     }
     if (!formData.email.trim() || !validEmail(formData.email) || !validEmail(formData.secondaryEmail)) {
+      setErrors(prev => ({ ...prev, email: !formData.email.trim() || !validEmail(formData.email), secondaryEmail: !validEmail(formData.secondaryEmail) }));
       toast.error('Enter valid email details.'); return;
     }
     if (!formData.phone.trim() || !formData.addressLine1.trim() || !formData.contactTownCity.trim() || !formData.postCode.trim()) {
+      setErrors(prev => ({
+        ...prev,
+        phone: !formData.phone.trim(),
+        addressLine1: !formData.addressLine1.trim(),
+        contactTownCity: !formData.contactTownCity.trim(),
+        postCode: !formData.postCode.trim(),
+      }));
       toast.error('Primary contact number and address details are required.'); return;
     }
     if (!formData.emergencyContactName.trim() || !formData.emergencyContactPhone.trim() || !formData.emergencyContactEmail.trim() || !formData.emergencyContactRelationship.trim()) {
+      setErrors(prev => ({
+        ...prev,
+        emergencyContactName: !formData.emergencyContactName.trim(),
+        emergencyContactPhone: !formData.emergencyContactPhone.trim(),
+        emergencyContactEmail: !formData.emergencyContactEmail.trim(),
+        emergencyContactRelationship: !formData.emergencyContactRelationship.trim(),
+      }));
       toast.error('Emergency contact details are required.'); return;
     }
     if (!validEmail(formData.emergencyContactEmail)) {
+      setErrors(prev => ({ ...prev, emergencyContactEmail: true }));
       toast.error('Enter a valid emergency contact email.'); return;
     }
     if (isMinor && (!formData.guardianName.trim() || !formData.guardianPhone.trim() || !formData.guardianEmail.trim() || !formData.guardianRelationship.trim())) {
+      setErrors(prev => ({
+        ...prev,
+        guardianName: !formData.guardianName.trim(),
+        guardianPhone: !formData.guardianPhone.trim(),
+        guardianEmail: !formData.guardianEmail.trim(),
+        guardianRelationship: !formData.guardianRelationship.trim(),
+      }));
       toast.error('Parent / guardian approval details are required for child and teen members.'); return;
     }
     if (isMinor && !validEmail(formData.guardianEmail)) {
+      setErrors(prev => ({ ...prev, guardianEmail: true }));
       toast.error('Enter a valid parent / guardian email.'); return;
     }
     if (!formData.country || !formData.region || !formData.town || !formData.activityCentre) {
+      setErrors(prev => ({
+        ...prev,
+        country: !formData.country,
+        region: !formData.region,
+        town: !formData.town,
+        activityCentre: !formData.activityCentre,
+      }));
       toast.error('Organisation mapping fields are required.'); return;
     }
+    setErrors({});
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 900));
@@ -581,11 +618,11 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <>
               <EditSection title="Personal Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} /></FormField>
+                  <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} className={errCls('firstName')} /></FormField>
                   <FormField><FormLabel>Membership ID</FormLabel><FormInput value={member.id} readOnly /></FormField>
                   <FormField><FormLabel>Middle Name</FormLabel><FormInput value={formData.middleName} onChange={set('middleName')} /></FormField>
                   <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} /></FormField>
+                  <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} className={errCls('surname')} /></FormField>
                   <FormField>
                     <FormLabel required>Date of Birth</FormLabel>
                     <FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} />
@@ -596,24 +633,24 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
 
               <EditSection title="Contact Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel required>Primary Contact Number</FormLabel><PhoneInput value={formData.phone} onChange={v => setFormData(prev => ({ ...prev, phone: v }))} /></FormField>
+                  <FormField><FormLabel required>Primary Contact Number</FormLabel><PhoneInput value={formData.phone} onChange={v => { setFormData(prev => ({ ...prev, phone: v })); if (errors.phone) setErrors(prev => ({ ...prev, phone: false })); }} error={!!errors.phone} /></FormField>
                   <FormField><FormLabel>Secondary Contact Number</FormLabel><PhoneInput value={formData.secondaryPhone} onChange={v => setFormData(prev => ({ ...prev, secondaryPhone: v }))} /></FormField>
-                  <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} /></FormField>
-                  <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} /></FormField>
+                  <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} className={errCls('email')} /></FormField>
+                  <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} className={errCls('secondaryEmail')} /></FormField>
                   <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
-                  <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} /></FormField>
-                  <FormField><FormLabel required>Address Line 1</FormLabel><FormInput value={formData.addressLine1} onChange={set('addressLine1')} /></FormField>
-                  <FormField><FormLabel required>Post Code</FormLabel><FormInput value={formData.postCode} onChange={set('postCode')} /></FormField>
+                  <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} className={errCls('contactTownCity')} /></FormField>
+                  <FormField><FormLabel required>Address Line 1</FormLabel><FormInput value={formData.addressLine1} onChange={set('addressLine1')} className={errCls('addressLine1')} /></FormField>
+                  <FormField><FormLabel required>Post Code</FormLabel><FormInput value={formData.postCode} onChange={set('postCode')} className={errCls('postCode')} /></FormField>
                   <FormField><FormLabel>Address Line 2</FormLabel><FormInput value={formData.addressLine2} onChange={set('addressLine2')} /></FormField>
                 </div>
               </EditSection>
 
               <EditSection title="Emergency Contact Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} /></FormField>
-                  <FormField><FormLabel required>Contact Phone Number</FormLabel><PhoneInput value={formData.emergencyContactPhone} onChange={v => setFormData(prev => ({ ...prev, emergencyContactPhone: v }))} /></FormField>
-                  <FormField><FormLabel required>Contact Email</FormLabel><FormInput type="email" value={formData.emergencyContactEmail} onChange={set('emergencyContactEmail')} /></FormField>
-                  <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} /></FormField>
+                  <FormField><FormLabel required>Contact Name</FormLabel><FormInput value={formData.emergencyContactName} onChange={set('emergencyContactName')} className={errCls('emergencyContactName')} /></FormField>
+                  <FormField><FormLabel required>Contact Phone Number</FormLabel><PhoneInput value={formData.emergencyContactPhone} onChange={v => { setFormData(prev => ({ ...prev, emergencyContactPhone: v })); if (errors.emergencyContactPhone) setErrors(prev => ({ ...prev, emergencyContactPhone: false })); }} error={!!errors.emergencyContactPhone} /></FormField>
+                  <FormField><FormLabel required>Contact Email</FormLabel><FormInput type="email" value={formData.emergencyContactEmail} onChange={set('emergencyContactEmail')} className={errCls('emergencyContactEmail')} /></FormField>
+                  <FormField><FormLabel required>Contact Relationship</FormLabel><FormInput value={formData.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} className={errCls('emergencyContactRelationship')} /></FormField>
                 </div>
               </EditSection>
 
@@ -666,10 +703,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
           {activeTab === 'guardian' && isMinor && (
             <EditSection title="Parent / Guardian Approval Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField><FormLabel required>Parent / Guardian Name</FormLabel><FormInput value={formData.guardianName} onChange={set('guardianName')} /></FormField>
-                <FormField><FormLabel required>Parent / Guardian Phone Number</FormLabel><PhoneInput value={formData.guardianPhone} onChange={v => setFormData(prev => ({ ...prev, guardianPhone: v }))} /></FormField>
-                <FormField><FormLabel required>Parent / Guardian Email</FormLabel><FormInput type="email" value={formData.guardianEmail} onChange={set('guardianEmail')} /></FormField>
-                <FormField><FormLabel required>Parent / Guardian Relationship</FormLabel><FormInput value={formData.guardianRelationship} onChange={set('guardianRelationship')} /></FormField>
+                <FormField><FormLabel required>Parent / Guardian Name</FormLabel><FormInput value={formData.guardianName} onChange={set('guardianName')} className={errCls('guardianName')} /></FormField>
+                <FormField><FormLabel required>Parent / Guardian Phone Number</FormLabel><PhoneInput value={formData.guardianPhone} onChange={v => { setFormData(prev => ({ ...prev, guardianPhone: v })); if (errors.guardianPhone) setErrors(prev => ({ ...prev, guardianPhone: false })); }} error={!!errors.guardianPhone} /></FormField>
+                <FormField><FormLabel required>Parent / Guardian Email</FormLabel><FormInput type="email" value={formData.guardianEmail} onChange={set('guardianEmail')} className={errCls('guardianEmail')} /></FormField>
+                <FormField><FormLabel required>Parent / Guardian Relationship</FormLabel><FormInput value={formData.guardianRelationship} onChange={set('guardianRelationship')} className={errCls('guardianRelationship')} /></FormField>
               </div>
             </EditSection>
           )}
@@ -679,10 +716,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <>
               <EditSection title="Shakha Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Vibhag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')} className={errCls('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Vibhag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country} className={errCls('region')}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region} className={errCls('town')}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town} className={errCls('activityCentre')}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
                   <FormField>
                     <FormLabel>Member Status</FormLabel>

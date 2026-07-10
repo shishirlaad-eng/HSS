@@ -345,9 +345,11 @@ function EditableInfoItem({
   onChange,
   type = "text",
   options,
+  placeholderOption,
   textarea = false,
   required = false,
   phone = false,
+  error = false,
 }: {
   label: string;
   value: string;
@@ -355,28 +357,32 @@ function EditableInfoItem({
   onChange: (value: string) => void;
   type?: string;
   options?: string[];
+  placeholderOption?: string;
   textarea?: boolean;
   required?: boolean;
   phone?: boolean;
+  error?: boolean;
 }) {
   if (!isEditing) {
     return <InfoItem label={label} required={required}>{valueOrDash(value)}</InfoItem>;
   }
+  const errCls = error ? "border-error-400 dark:border-error-600 focus:ring-error-400/30" : "";
   return (
     <div>
       <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
         {label}{required && <span className="text-error-500 ml-0.5">*</span>}
       </label>
       {options ? (
-        <FormSelect value={value} onChange={e => onChange(e.target.value)}>
+        <FormSelect value={value} onChange={e => onChange(e.target.value)} className={errCls}>
+          {placeholderOption && <option value="">{placeholderOption}</option>}
           {options.map(o => <option key={o} value={o}>{o}</option>)}
         </FormSelect>
       ) : textarea ? (
-        <FormTextarea value={value} onChange={e => onChange(e.target.value)} />
+        <FormTextarea value={value} onChange={e => onChange(e.target.value)} className={errCls} />
       ) : phone ? (
-        <PhoneInput value={value} onChange={onChange} />
+        <PhoneInput value={value} onChange={onChange} error={error} />
       ) : (
-        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} />
+        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} className={errCls} />
       )}
     </div>
   );
@@ -545,14 +551,25 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
       activityCentre: scope.centre || defaultProfile.activityCentre,
     };
     const shared = loadSharedProfile();
-    if (typeof window === "undefined") return { ...defaultProfile, ...shared, ...approvedLocation };
-    const saved = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`);
-    if (!saved) return { ...defaultProfile, ...shared, ...approvedLocation };
-    try {
-      return { ...defaultProfile, ...JSON.parse(saved), ...shared, ...approvedLocation };
-    } catch {
-      return { ...defaultProfile, ...shared, ...approvedLocation };
+    const saved = typeof window !== "undefined" ? localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:${selectedRole}`) : null;
+    let result: MemberProfileForm;
+    if (!saved) {
+      result = { ...defaultProfile, ...shared, ...approvedLocation };
+    } else {
+      try {
+        result = { ...defaultProfile, ...JSON.parse(saved), ...shared, ...approvedLocation };
+      } catch {
+        result = { ...defaultProfile, ...shared, ...approvedLocation };
+      }
     }
+    // Registration flow always forces a fresh, deliberate choice for these — never inherit
+    // a stale "No" from a previously saved draft or a shared value from another role.
+    if (isPostRegistration) {
+      result.medicalInfoDeclared = '';
+      result.allergiesDeclared = '';
+      result.isFirstAider = '';
+    }
+    return result;
   };
 
   const [profile, setProfile] = useState<MemberProfileForm>(loadProfile);
@@ -561,6 +578,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [postRegEditing, setPostRegEditing] = useState(isPostRegistration);
   const effectiveEditing = !isUnderReview && (isEditing || postRegEditing);
   const [selectedAddress, setSelectedAddress] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [historyPage, setHistoryPage] = useState(1);
@@ -630,6 +648,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
       }
       return next;
     });
+    if (fieldErrors[field as string]) setFieldErrors(prev => ({ ...prev, [field as string]: false }));
   };
 
   const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
@@ -650,6 +669,61 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   };
 
   const handleSave = () => {
+    const isEmail = (v?: string) => !!v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+    if (!profile.firstName?.trim() || !profile.surname?.trim() || !profile.gender || !profile.dateOfBirth) {
+      setFieldErrors(prev => ({
+        ...prev,
+        firstName: !profile.firstName?.trim(),
+        surname: !profile.surname?.trim(),
+        gender: !profile.gender,
+        dateOfBirth: !profile.dateOfBirth,
+      }));
+      toast.error('First name, surname, gender and date of birth are required.');
+      return;
+    }
+    if (!profile.phone?.trim() || !isEmail(profile.email)) {
+      setFieldErrors(prev => ({ ...prev, phone: !profile.phone?.trim(), email: !isEmail(profile.email) }));
+      toast.error('A valid contact number and email address are required.');
+      return;
+    }
+    if (!profile.postCode?.trim() || !profile.addressLine1?.trim() || !profile.contactTownCity?.trim()) {
+      setFieldErrors(prev => ({
+        ...prev,
+        postCode: !profile.postCode?.trim(),
+        addressLine1: !profile.addressLine1?.trim(),
+        contactTownCity: !profile.contactTownCity?.trim(),
+      }));
+      toast.error('Post code, address line 1 and town / city are required.');
+      return;
+    }
+    if (!profile.emergencyContactName?.trim() || !profile.emergencyContactPhone?.trim() || !isEmail(profile.emergencyContactEmail)) {
+      setFieldErrors(prev => ({
+        ...prev,
+        emergencyContactName: !profile.emergencyContactName?.trim(),
+        emergencyContactPhone: !profile.emergencyContactPhone?.trim(),
+        emergencyContactEmail: !isEmail(profile.emergencyContactEmail),
+      }));
+      toast.error('Emergency contact details are required.');
+      return;
+    }
+    if (showGuardian && (!profile.guardianName?.trim() || !profile.guardianPhone?.trim() || !isEmail(profile.guardianEmail) || !profile.guardianRelationship?.trim())) {
+      setFieldErrors(prev => ({
+        ...prev,
+        guardianName: !profile.guardianName?.trim(),
+        guardianPhone: !profile.guardianPhone?.trim(),
+        guardianEmail: !isEmail(profile.guardianEmail),
+        guardianRelationship: !profile.guardianRelationship?.trim(),
+      }));
+      toast.error('Parent / guardian details are required.');
+      return;
+    }
+    if (!profile.region || !profile.town || !profile.activityCentre) {
+      setFieldErrors(prev => ({ ...prev, region: !profile.region, town: !profile.town, activityCentre: !profile.activityCentre }));
+      toast.error('Vibhag, Nagar and Shakha are required.');
+      return;
+    }
+    setFieldErrors({});
     const organisationChanged = profile.activityCentre !== savedProfile.activityCentre;
     if (organisationChanged) {
       const destination = getLocationForCentre(profile.activityCentre);
@@ -696,6 +770,21 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     toast.success(organisationChanged
       ? "Profile updated and Shakha transfer submitted for approval."
       : "Profile updated successfully.");
+  };
+
+  const validateComplianceForSubmit = () => {
+    if (!isPostRegistration) return true;
+    const missing: string[] = [];
+    const errs: Record<string, boolean> = {};
+    if (!profile.isFirstAider) { missing.push('"Are you a first aider for HSS?"'); errs.isFirstAider = true; }
+    if (!profile.medicalInfoDeclared) { missing.push('"Do you have any medical conditions?"'); errs.medicalInfoDeclared = true; }
+    if (!profile.allergiesDeclared) { missing.push('"Do you have any allergies?"'); errs.allergiesDeclared = true; }
+    if (missing.length) {
+      setFieldErrors(prev => ({ ...prev, ...errs }));
+      toast.error(`Please select an option for: ${missing.join(', ')}.`);
+      return false;
+    }
+    return true;
   };
 
   const handleCancel = () => {
@@ -838,12 +927,12 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {isUnderReview ? null : isPostRegistration && postRegEditing ? (
             <>
               <SecondaryButton icon={Save} onClick={() => { handleSave(); setPostRegEditing(false); }}>Save as Draft</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
             </>
           ) : isPostRegistration && !postRegEditing ? (
             <>
               <SecondaryButton icon={Edit} onClick={() => setPostRegEditing(true)}>Edit Profile</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
             </>
           ) : isEditing ? (
             <>
@@ -1014,6 +1103,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     if (v !== "Yes") setField("medicalInfoDetails", "");
                   }}
                   options={["No", "Yes"]}
+                  placeholderOption={isPostRegistration ? "Select option" : undefined}
+                  error={fieldErrors.medicalInfoDeclared}
                 />
                 {profile.medicalInfoDeclared === "Yes" && (
                   <EditableInfoItem
@@ -1035,6 +1126,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     if (v !== "Yes") { setField("allergies", ""); setField("epiPen", ""); }
                   }}
                   options={["No", "Yes"]}
+                  placeholderOption={isPostRegistration ? "Select option" : undefined}
+                  error={fieldErrors.allergiesDeclared}
                 />
                 {profile.allergiesDeclared === "Yes" && (
                   <>
@@ -1130,7 +1223,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               {/* First Aid + Safeguarding — full width */}
               <div className="space-y-5">
                 <InfoSection title="First Aid" cols={4}>
-                  <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} />
+                  <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} placeholderOption={isPostRegistration ? "Select option" : undefined} error={fieldErrors.isFirstAider} />
                   {profile.isFirstAider === "Yes" && (
                     <>
                       <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
@@ -1495,9 +1588,11 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     </div>
                     <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Date</span>
                   </div>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{formatDate(registrationDate)}</p>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                    {new Date(registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                    {formatDate(registrationDate)}
+                    <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500 ml-1.5">
+                      {new Date(registrationDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </p>
                 </div>
 
@@ -1509,12 +1604,12 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Approved Date</span>
                   </div>
                   {approvedDate ? (
-                    <>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">{formatDate(approvedDate)}</p>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {formatDate(approvedDate)}
+                      <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500 ml-1.5">
                         {new Date(approvedDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </>
+                      </span>
+                    </p>
                   ) : (
                     <p className="text-sm font-semibold text-neutral-400 dark:text-neutral-600">Pending</p>
                   )}
@@ -1591,7 +1686,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                           return (
                             <th
                               key={col.key}
-                              className="px-4 py-2.5 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                              className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                               onClick={() => {
                                 if (historySortCol === col.key) setHistorySortDir(d => d === 'asc' ? 'desc' : 'asc');
                                 else { setHistorySortCol(col.key); setHistorySortDir('asc'); }
@@ -1614,18 +1709,17 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                         return (
                           <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <p className="text-xs font-medium text-neutral-900 dark:text-white">
+                              <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
                                 {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              </p>
-                              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                {' · '}
                                 {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-neutral-900 dark:text-white">{row.user}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-xs text-neutral-600 dark:text-neutral-400">{row.role}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-neutral-900 dark:text-white">{row.field}</td>
-                            <td className="px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">{row.oldValue}</td>
-                            <td className="px-4 py-3 text-xs font-medium text-neutral-900 dark:text-white">{row.newValue}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-[14px] text-neutral-900 dark:text-white">{row.user}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-[14px] text-neutral-900 dark:text-white">{row.role}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-[14px] text-neutral-900 dark:text-white">{row.field}</td>
+                            <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white">{row.oldValue}</td>
+                            <td className="px-4 py-3 text-[14px] text-neutral-900 dark:text-white">{row.newValue}</td>
                           </tr>
                         );
                       })}

@@ -380,6 +380,8 @@ function AddMemberModal({
   const townOptions   = form.region  ? (MASTERS_CASCADE.towns[form.region]     ?? []) : [];
   const centreOptions = form.town    ? (MASTERS_CASCADE.centres[form.town]      ?? []) : [];
 
+  const errCls = (has?: string) => has ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
   const set = (key: keyof AddMemberForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const val = e.target.value;
@@ -557,7 +559,7 @@ function AddMemberModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>First Name</FormLabel>
-              <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" />
+              <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" className={errCls(errors.firstName)} />
               {errors.firstName && <p className="text-xs text-error-600 mt-1">{errors.firstName}</p>}
             </FormField>
             <FormField>
@@ -566,12 +568,12 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Last Name</FormLabel>
-              <FormInput value={form.lastName} onChange={set('lastName')} placeholder="Last name" />
+              <FormInput value={form.lastName} onChange={set('lastName')} placeholder="Last name" className={errCls(errors.lastName)} />
               {errors.lastName && <p className="text-xs text-error-600 mt-1">{errors.lastName}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Date of Birth</FormLabel>
-              <FormInput type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} />
+              <FormInput type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} className={errCls(errors.dateOfBirth)} />
               {errors.dateOfBirth && <p className="text-xs text-error-600 mt-1">{errors.dateOfBirth}</p>}
               {calcAge !== null && (
                 <p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} years</span></p>
@@ -579,7 +581,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Gender</FormLabel>
-              <FormSelect value={form.gender} onChange={set('gender')}>
+              <FormSelect value={form.gender} onChange={set('gender')} className={errCls(errors.gender)}>
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -595,17 +597,17 @@ function AddMemberModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>Primary Email Address</FormLabel>
-              <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" />
+              <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" className={errCls(errors.email)} />
               {errors.email && <p className="text-xs text-error-600 mt-1">{errors.email}</p>}
             </FormField>
             <FormField>
               <FormLabel>Secondary Email Address</FormLabel>
-              <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" />
+              <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" className={errCls(errors.secondaryEmail)} />
               {errors.secondaryEmail && <p className="text-xs text-error-600 mt-1">{errors.secondaryEmail}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Primary Contact Number</FormLabel>
-              <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} placeholder="7700 000000" />
+              <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} placeholder="7700 000000" error={!!errors.phone} />
               {errors.phone && <p className="text-xs text-error-600 mt-1">{errors.phone}</p>}
             </FormField>
             <FormField>
@@ -618,7 +620,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Address Line</FormLabel>
-              <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line" />
+              <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line" className={errCls(errors.addressLine1)} />
               {errors.addressLine1 && <p className="text-xs text-error-600 mt-1">{errors.addressLine1}</p>}
             </FormField>
             <FormField>
@@ -627,12 +629,12 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Town / City</FormLabel>
-              <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" />
+              <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" className={errCls(errors.contactTownCity)} />
               {errors.contactTownCity && <p className="text-xs text-error-600 mt-1">{errors.contactTownCity}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Post Code</FormLabel>
-              <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" />
+              <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" className={errCls(errors.postCode)} />
               {errors.postCode && <p className="text-xs text-error-600 mt-1">{errors.postCode}</p>}
             </FormField>
           </div>
@@ -644,22 +646,22 @@ function AddMemberModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>Contact Name</FormLabel>
-              <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" />
+              <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" className={errCls(errors.emergencyContactName)} />
               {errors.emergencyContactName && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactName}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Phone Number</FormLabel>
-              <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} placeholder="7700 000000" />
+              <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} placeholder="7700 000000" error={!!errors.emergencyContactPhone} />
               {errors.emergencyContactPhone && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactPhone}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Email</FormLabel>
-              <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" />
+              <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" className={errCls(errors.emergencyContactEmail)} />
               {errors.emergencyContactEmail && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactEmail}</p>}
             </FormField>
             <FormField>
               <FormLabel required>Contact Relationship</FormLabel>
-              <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="Relationship" />
+              <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="Relationship" className={errCls(errors.emergencyContactRelationship)} />
               {errors.emergencyContactRelationship && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactRelationship}</p>}
             </FormField>
           </div>
@@ -672,22 +674,22 @@ function AddMemberModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField>
                 <FormLabel required>Parent / Guardian Name</FormLabel>
-                <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" />
+                <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" className={errCls(errors.guardianName)} />
                 {errors.guardianName && <p className="text-xs text-error-600 mt-1">{errors.guardianName}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Phone Number</FormLabel>
-                <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} placeholder="7700 000000" />
+                <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} placeholder="7700 000000" error={!!errors.guardianPhone} />
                 {errors.guardianPhone && <p className="text-xs text-error-600 mt-1">{errors.guardianPhone}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Email</FormLabel>
-                <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" />
+                <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" className={errCls(errors.guardianEmail)} />
                 {errors.guardianEmail && <p className="text-xs text-error-600 mt-1">{errors.guardianEmail}</p>}
               </FormField>
               <FormField>
                 <FormLabel required>Parent / Guardian Relationship</FormLabel>
-                <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" />
+                <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" className={errCls(errors.guardianRelationship)} />
                 {errors.guardianRelationship && <p className="text-xs text-error-600 mt-1">{errors.guardianRelationship}</p>}
               </FormField>
             </div>
@@ -761,7 +763,7 @@ function AddMemberModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>Country / Organisation</FormLabel>
-              <FormSelect value={form.country} onChange={set('country')}>
+              <FormSelect value={form.country} onChange={set('country')} className={errCls(errors.country)}>
                 <option value="">Select country</option>
                 {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
               </FormSelect>
@@ -769,7 +771,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Vibhag (Region)</FormLabel>
-              <FormSelect value={form.region} onChange={set('region')} disabled={!form.country}>
+              <FormSelect value={form.region} onChange={set('region')} disabled={!form.country} className={errCls(errors.region)}>
                 <option value="">{form.country ? 'Select region' : 'Select country first'}</option>
                 {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
               </FormSelect>
@@ -777,7 +779,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Nagar (Town)</FormLabel>
-              <FormSelect value={form.town} onChange={set('town')} disabled={!form.region}>
+              <FormSelect value={form.town} onChange={set('town')} disabled={!form.region} className={errCls(errors.town)}>
                 <option value="">{form.region ? 'Select town' : 'Select region first'}</option>
                 {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
               </FormSelect>
@@ -785,7 +787,7 @@ function AddMemberModal({
             </FormField>
             <FormField>
               <FormLabel required>Shakha (Branch)</FormLabel>
-              <FormSelect value={form.activityCentre} onChange={set('activityCentre')} disabled={!form.town}>
+              <FormSelect value={form.activityCentre} onChange={set('activityCentre')} disabled={!form.town} className={errCls(errors.activityCentre)}>
                 <option value="">{form.town ? 'Select shakha' : 'Select town first'}</option>
                 {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </FormSelect>

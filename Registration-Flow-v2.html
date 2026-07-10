@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Member Registration Flow v2 — Draft / Brainstorm</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; padding: 32px 24px 80px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  .badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
+  .subtitle { color: #4b5563; font-size: 14px; margin-bottom: 28px; max-width: 760px; }
+  .diagram-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 28px; }
+  .diagram-card h2 { font-size: 17px; margin-bottom: 4px; }
+  .diagram-card .desc { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+  .mermaid { display: flex; justify-content: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 20px; font-size: 13px; color: #374151; }
+  .legend div { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  footer { color: #9ca3af; font-size: 12px; margin-top: 20px; }
+  #detailed-flow-card { position: relative; overflow: visible; }
+  .sticky-note { position: absolute; width: 148px; background: #fef08a; border: 1px solid #eac83a; box-shadow: 3px 4px 8px rgba(0,0,0,0.18); padding: 14px 12px 12px; font-size: 12px; line-height: 1.45; color: #713f12; transform: rotate(-3deg); border-radius: 1px; opacity: 0; transition: opacity 0.25s ease; z-index: 5; }
+  .sticky-note::before { content: ''; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); width: 15px; height: 15px; background: radial-gradient(circle at 35% 35%, #f87171, #b91c1c); border-radius: 50%; box-shadow: 0 2px 3px rgba(0,0,0,0.35); }
+  .sticky-note::after { content: ''; position: absolute; bottom: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 0 16px 16px; border-color: transparent transparent rgba(0,0,0,0.12) transparent; }
+  .sticky-note b { font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Member Registration Flow — v2 (draft)</h1>
+  <div class="badge">Working brainstorm — not published to frd/05-members.md</div>
+  <p class="subtitle">Revises the uploaded flow to a three-way age split (Child 0-12 / Teen 13-17 / Adult 18+), adds the Child email-matching branch, an explicit GUARDIAN_APPROVED status, guardian-approval expiry/escalation, and rejected_by tracking. Full reasoning in Registration-Status-Flow-Brainstorm.md.</p>
+
+  <div class="diagram-card">
+    <h2>Status state machine — overview</h2>
+    <div class="desc">The eight statuses plus the new fields that replace what used to be encoded into status names.</div>
+    <pre class="mermaid">
+flowchart TD
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+  classDef rejected fill:#fef2f2,stroke:#ef4444,color:#991b1b,font-weight:bold
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+
+  REG["REGISTERED<br/>email_verified: bool"]:::status
+  REG --> AGE{Age band?}:::decision
+  AGE -->|Adult 18plus| PA["PENDING_APPROVAL"]:::status
+  AGE -->|Teen 13-17| PGA["PENDING_GUARDIAN_APPROVAL"]:::status
+  AGE -->|Child 0-12| PPC["PENDING_PARENTAL_CONSENT"]:::status
+
+  PGA -->|Guardian Approved| PA
+  PPC -->|Guardian Approved| PA
+
+  PA -->|Admin approves| ACT(["ACTIVE"]):::terminal
+  PA -->|Admin rejects| REJ["REJECTED<br/>rejected_by / reason"]:::rejected
+  PGA -->|Guardian rejects| REJ
+  PPC -->|Guardian rejects| REJ
+
+  REJ -->|Edit and resubmit| REG
+  ACT -->|Admin deactivates| INACT["INACTIVE"]:::status
+  ACT -->|Retention or erasure| DEL["DELETED"]:::status
+    </pre>
+  </div>
+
+  <div class="diagram-card" id="detailed-flow-card">
+    <h2>Detailed registration flow — with status and flags per step</h2>
+    <div class="desc">Each box shows the process step, the member's status at that point, and the field(s) that change. Decision diamonds don't carry a status of their own.</div>
+    <div class="sticky-note" id="stickyAgeband">Parent / guardian box toggle <b>On</b></div>
+    <pre class="mermaid">
+flowchart TD
+  classDef action   fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+  classDef status   fill:#fff,stroke:#e5e7eb,color:#374151,font-weight:bold
+  classDef decision fill:#fef3c7,stroke:#f59e0b,color:#92400e,font-weight:bold
+  classDef email    fill:#fffbeb,stroke:#d97706,color:#78350f
+  classDef rejected fill:#fef2f2,stroke:#ef4444,color:#991b1b,font-weight:bold
+  classDef terminal fill:#1a1a2e,stroke:#e94560,color:#fff
+  classDef guardian fill:#fff7ed,stroke:#fb923c,color:#7c2d12
+
+  START(["Start"]):::terminal --> CREATE["1. Create account<br/>Status: REGISTERED<br/>Flag: email_verified=false"]:::action
+  CREATE --> VSEND["1A. Send email verification link<br/>Status: REGISTERED<br/>Flag: email_verified=false"]:::email
+  VSEND --> EDLV{"Email delivered?"}:::decision
+  EDLV -->|Bounced / send failed| VSEND
+  EDLV -->|Delivered| VOK{"1B. Verified?"}:::decision
+  VOK -->|No| VSEND
+  VOK -->|Yes| LOGIN["2. Log in, personal info<br/>Status: REGISTERED<br/>Flag: email_verified=true"]:::action
+  LOGIN --> ONB["3. Onboarding message<br/>Status: REGISTERED<br/>Flag: email_verified=true"]:::action
+  ONB --> PROFILE["4. Complete profile, age captured<br/>Status: REGISTERED<br/>Flag: email_verified=true"]:::action
+  PROFILE --> AGEBAND{"4A. Age band?"}:::decision
+
+  AGEBAND -->|Adult 18plus| SAVE["5. Save progress<br/>Status: REGISTERED<br/>Flag: email_verified=true"]:::action
+  AGEBAND -->|Teen 13-17| GDET["4B. Guardian details<br/>Status: REGISTERED<br/>Flag: email_verified=true, capturing guardian_details"]:::guardian
+  AGEBAND -->|Child 0-12| GDET
+  GDET --> SAVE
+
+  SAVE --> SUBMIT["6. Submit for approval<br/>Status: REGISTERED<br/>Flag: email_verified=true, submission_count+=1"]:::action
+  SUBMIT --> ROUTE{"7. Age-based routing"}:::decision
+
+  ROUTE -->|Adult 18plus| PA1["7A. PENDING_APPROVAL<br/>Status: PENDING_APPROVAL<br/>Flag: email_verified=true"]:::status
+  ROUTE -->|Teen 13-17| PGA1["7B. PENDING_GUARDIAN_APPROVAL<br/>Status: PENDING_GUARDIAN_APPROVAL<br/>Flag: email_verified=true"]:::status
+  ROUTE -->|Child 0-12| MATCH{"7C. Email matches existing member?"}:::decision
+
+  MATCH -->|Yes| PPC1["7D. PENDING_PARENTAL_CONSENT<br/>Status: PENDING_PARENTAL_CONSENT<br/>Flag: guardian_link_type=EXISTING_MEMBER"]:::status
+  MATCH -->|No| CCHILD["7E. Create child profile, assign email as parent id<br/>Status: REGISTERED<br/>Flag: guardian_link_type=NEW_CLAIM, guardian_email_claimed=false"]:::action
+  CCHILD --> PPC2["7F. PENDING_PARENTAL_CONSENT<br/>Status: PENDING_PARENTAL_CONSENT<br/>Flag: guardian_link_type=NEW_CLAIM, guardian_email_claimed=false"]:::status
+
+  PGA1 --> GL1["8A. Send link, valid 7d, reminder day 4<br/>Status: PENDING_GUARDIAN_APPROVAL<br/>Flag: consent_link_sent_at set"]:::email
+  PPC1 --> GL2["8B. Send link, valid 7d, reminder day 4<br/>Status: PENDING_PARENTAL_CONSENT<br/>Flag: consent_link_sent_at set"]:::email
+  PPC2 --> GL3["8C. Send claim+consent link, valid 14d, reminder day 7<br/>Status: PENDING_PARENTAL_CONSENT<br/>Flag: consent_link_sent_at set"]:::email
+
+  GL1 --> GREV{"9. Guardian reviews, Super Admin can act if unable"}:::decision
+  GL2 --> GREV
+  GL3 --> GREV
+
+  GREV -->|Guardian Approved| PA2["10. PENDING_APPROVAL<br/>Status: PENDING_APPROVAL<br/>Flag: email_verified=true, GUARDIAN_APPROVED"]:::status
+  GREV -->|Reject| REJ1["9B. REJECTED<br/>Status: REJECTED<br/>Flag: rejected_by=GUARDIAN, reason required"]:::rejected
+  GREV -->|No response by expiry| ESC["9C. Escalate to Super Admin queue<br/>Status: unchanged<br/>Flag: escalated_to_super_admin=true"]:::guardian
+  ESC --> GREV
+
+  PA1 --> AREV{"11. Admin reviews"}:::decision
+  PA2 --> AREV
+  AREV -->|Approve| ACT1(["11A. ACTIVE<br/>Status: ACTIVE<br/>Flag: email_verified=true"]):::terminal
+  AREV -->|Reject| REJ2["11B. REJECTED<br/>Status: REJECTED<br/>Flag: rejected_by=ADMIN, reason required"]:::rejected
+
+  ACT1 -.-> INACT["12A. Post-activation deactivation<br/>Status: INACTIVE<br/>Flag: deactivated_at set"]:::status
+  ACT1 -.-> DEL["12B. Retention / erasure<br/>Status: DELETED<br/>Flag: deleted_at set"]:::status
+
+  REJ1 --> EDIT1["13A. Member edits and resubmits<br/>Status: REGISTERED<br/>Flag: submission_count+=1, email_verified=true"]:::action
+  REJ2 --> EDIT2["13B. Member edits and resubmits<br/>Status: REGISTERED<br/>Flag: submission_count+=1, email_verified=true"]:::action
+  EDIT1 -.-> ROUTE
+  EDIT2 -.-> ROUTE
+    </pre>
+  </div>
+
+  <div class="diagram-card">
+    <h2>Legend</h2>
+    <div class="legend">
+      <div><span class="swatch" style="background:#eff6ff;border:1px solid #3b82f6;"></span>Process / action</div>
+      <div><span class="swatch" style="background:#fef3c7;border:1px solid #f59e0b;"></span>Decision point</div>
+      <div><span class="swatch" style="background:#fff;border:1px solid #e5e7eb;"></span>Status value</div>
+      <div><span class="swatch" style="background:#fff7ed;border:1px solid #fb923c;"></span>Guardian / parent path</div>
+      <div><span class="swatch" style="background:#fffbeb;border:1px solid #d97706;"></span>Email notification</div>
+      <div><span class="swatch" style="background:#fef2f2;border:1px solid #ef4444;"></span>Rejected</div>
+      <div><span class="swatch" style="background:#1a1a2e;"></span>Start / terminal outcome</div>
+      <div>Dashed arrow = resubmission loop</div>
+    </div>
+  </div>
+
+  <footer>Draft generated during a product brainstorming session — see Registration-Status-Flow-Brainstorm.md for full write-up. Not synced to the Google Doc.</footer>
+</div>
+<script>
+  mermaid.initialize({ startOnLoad: false, theme: 'base', flowchart: { curve: 'basis' } });
+
+  function positionStickyNote() {
+    var card = document.getElementById('detailed-flow-card');
+    var note = document.getElementById('stickyAgeband');
+    var target = document.querySelector('[id^="flowchart-AGEBAND-"]');
+    if (!card || !note || !target) return;
+    var cardRect = card.getBoundingClientRect();
+    var nodeRect = target.getBoundingClientRect();
+    var top = nodeRect.top - cardRect.top + (nodeRect.height / 2) - (note.offsetHeight / 2);
+    var left = nodeRect.right - cardRect.left + 28;
+    note.style.top = top + 'px';
+    note.style.left = left + 'px';
+    note.style.opacity = '1';
+  }
+
+  mermaid.run().then(function () {
+    positionStickyNote();
+    var resizeTimer;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(positionStickyNote, 150);
+    });
+  });
+</script>
+</body>
+</html>

@@ -381,6 +381,20 @@ const EC_SURNAMES = [
   'Chopra','Khanna','Arora','Sethi','Tandon','Bajaj','Bhatt','Desai','Lal','Saxena',
 ];
 const EC_RELATIONSHIPS = ['Spouse','Parent','Sibling','Partner','Uncle','Aunt','Cousin','Friend'];
+const FILLER_INDIA_STATES = ['Gujarat','Maharashtra','Punjab','Tamil Nadu','Kerala','Rajasthan','Uttar Pradesh','Karnataka','West Bengal','Delhi'];
+const FILLER_NOTES = [
+  'Active volunteer, regularly attends Shakha activities.',
+  'Enjoys community events and helps with event setup.',
+  'Reliable member, punctual for all sessions.',
+  'Keen participant in cultural programmes.',
+  'Supports younger members during training sessions.',
+];
+
+function hashId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return hash;
+}
 
 function deterministicEC(id: string): { name: string; phone: string; email: string; relationship: string } {
   let hash = 0;
@@ -397,32 +411,43 @@ function deterministicEC(id: string): { name: string; phone: string; email: stri
   };
 }
 
+function fillerPhone(seed: string): string {
+  const hash = hashId(seed);
+  const digits = String((hash % 90000000) + 10000000);
+  return `+44 77${digits.slice(0, 2)} ${digits.slice(2)}`;
+}
+
 function withRegistrationFields(member: Member): Member {
   const nameParts = splitMemberName(member.name);
   const isMinor = member.memberType === 'teen' || member.memberType === 'child';
   const guardianName = member.guardianName ?? (isMinor ? `Parent of ${member.name}` : undefined);
   const guardianEmail = member.guardianEmail ?? (isMinor ? `guardian.${member.email}` : undefined);
-  const guardianPhone = member.guardianPhone ?? (isMinor ? member.phone ?? '+44 7700 000000' : undefined);
+  const guardianPhone = member.guardianPhone ?? (isMinor ? member.phone ?? fillerPhone(`${member.id}:guardian`) : undefined);
   const ec = (!member.emergencyContactName && !isMinor) ? deterministicEC(member.id) : null;
   const seededResponsibility = KARYAKARTA_ASSIGNMENTS[member.id];
   const hasResponsibilityData = Boolean(
     member.responsibilities?.length || member.responsibilityType || member.responsibilityLevel || seededResponsibility,
   );
+  const hash = hashId(member.id);
+  const resolvedSafeguarding = member.compliance.safeguardingTraining
+    ?? (member.id.charCodeAt(member.id.length - 1) % 3 !== 0 ? 'Certified' : 'Expired');
+  const regYear = member.registrationDate.slice(0, 4);
 
   return {
     ...member,
     firstName: member.firstName ?? nameParts.firstName,
     middleName: member.middleName ?? nameParts.middleName,
     surname: member.surname ?? nameParts.surname,
-    secondaryEmail: member.secondaryEmail ?? '',
-    secondaryPhone: member.secondaryPhone ?? '',
-    buildingName: member.buildingName ?? '',
+    phone: member.phone ?? fillerPhone(`${member.id}:phone`),
+    secondaryEmail: member.secondaryEmail ?? `${member.email.split('@')[0]}.alt@example.com`,
+    secondaryPhone: member.secondaryPhone ?? fillerPhone(`${member.id}:secondary`),
+    buildingName: member.buildingName ?? `${member.town} Community House`,
     addressLine1: member.addressLine1 ?? `${member.activityCentre.replace(' Activity Centre', '')} Community Hall`,
-    addressLine2: member.addressLine2 ?? '',
+    addressLine2: member.addressLine2 ?? `Flat ${(hash % 20) + 1}`,
     contactTownCity: member.contactTownCity ?? member.town,
     postCode: member.postCode ?? 'AB1 2CD',
     emergencyContactName: member.emergencyContactName ?? guardianName ?? ec?.name ?? 'Emergency Contact',
-    emergencyContactPhone: member.emergencyContactPhone ?? guardianPhone ?? ec?.phone ?? member.phone ?? '+44 7700 000000',
+    emergencyContactPhone: member.emergencyContactPhone ?? guardianPhone ?? ec?.phone ?? member.phone ?? fillerPhone(`${member.id}:emergency`),
     emergencyContactEmail: member.emergencyContactEmail ?? guardianEmail ?? ec?.email ?? member.email,
     emergencyContactRelationship: member.emergencyContactRelationship ?? (isMinor ? 'Parent / Guardian' : ec?.relationship ?? 'Family'),
     guardianName,
@@ -432,9 +457,31 @@ function withRegistrationFields(member: Member): Member {
     compliance: {
       ...member.compliance,
       // Deterministic mock: ~2/3 of members have completed safeguarding training
-      safeguardingTraining: member.compliance.safeguardingTraining
-        ?? (member.id.charCodeAt(member.id.length - 1) % 3 !== 0 ? 'Certified' : 'Expired'),
+      safeguardingTraining: resolvedSafeguarding,
     },
+    ...(member.compliance.dbs === 'Approved' ? {
+      dbsRef: member.dbsRef ?? `DBS-${regYear}-${String(hash % 900 + 100)}`,
+      dbsCertificateNumber: member.dbsCertificateNumber ?? String(100000000000 + (hash % 900000000000)),
+      dbsCertificateDate: member.dbsCertificateDate ?? member.registrationDate.slice(0, 10),
+      dbsCertificateFile: member.dbsCertificateFile ?? `dbs_${member.id.toLowerCase()}.pdf`,
+      dbsCertificateReceivedFrom: member.dbsCertificateReceivedFrom ?? 'Disclosure and Barring Service',
+      dbsUpdateService: member.dbsUpdateService ?? (hash % 2 === 0),
+      dbsUpdateServiceNumber: member.dbsUpdateServiceNumber ?? ((member.dbsUpdateService ?? (hash % 2 === 0)) ? `US-${regYear}-${String(hash % 90000 + 10000)}` : undefined),
+      dbsUpdateServiceCheckDate: member.dbsUpdateServiceCheckDate ?? ((member.dbsUpdateService ?? (hash % 2 === 0)) ? member.registrationDate.slice(0, 10) : undefined),
+      dbsAppUnderProcess: member.dbsAppUnderProcess ?? false,
+      dbsCheckedBy: member.dbsCheckedBy ?? 'Ramesh Patel (Karyawaha)',
+    } : {}),
+    ...((member.isFirstAider ?? member.compliance.firstAid === 'Certified') ? {
+      firstAidRef: member.firstAidRef ?? `FA-${regYear}-${String(hash % 900 + 100)}`,
+      firstAidQualificationLevel: member.firstAidQualificationLevel ?? FIRST_AID_QUALIFICATION_OPTIONS[hash % FIRST_AID_QUALIFICATION_OPTIONS.length],
+      firstAidQualificationExpiryDate: member.firstAidQualificationExpiryDate ?? '2027-06-30',
+    } : {}),
+    ...(resolvedSafeguarding === 'Certified' ? {
+      safeguardingRef: member.safeguardingRef ?? `SG-${regYear}-${String(hash % 900 + 100)}`,
+      safeguardingTrainingLevel: member.safeguardingTrainingLevel ?? SAFEGUARDING_LEVEL_OPTIONS[hash % SAFEGUARDING_LEVEL_OPTIONS.length],
+      safeguardingTrainingDate: member.safeguardingTrainingDate ?? member.registrationDate.slice(0, 10),
+      safeguardingExpiry: member.safeguardingExpiry ?? '2027-03-31',
+    } : {}),
     medicalInfoDeclared: member.medicalInfoDeclared ?? false,
     medicalInfoDetails: member.medicalInfoDetails ?? '',
     isFirstAider: member.isFirstAider ?? member.compliance.firstAid === 'Certified',
@@ -442,7 +489,8 @@ function withRegistrationFields(member: Member): Member {
     allergiesDeclared: member.allergiesDeclared ?? Boolean(member.allergies?.trim()),
     occupation: member.occupation ?? (member.memberType === 'adult' ? 'Professional' : 'Student'),
     spokenLanguages: member.spokenLanguages ?? ['English'],
-    originatingStateIndia: member.originatingStateIndia ?? '',
+    originatingStateIndia: member.originatingStateIndia ?? FILLER_INDIA_STATES[hash % FILLER_INDIA_STATES.length],
+    additionalNotes: member.additionalNotes ?? FILLER_NOTES[hash % FILLER_NOTES.length],
     responsibilityType: member.responsibilityType ?? seededResponsibility?.type,
     responsibilityLevel: member.responsibilityLevel ?? seededResponsibility?.level,
     responsibilityStartDate: member.responsibilityStartDate
