@@ -1818,7 +1818,7 @@ export default function MemberManagement({
         {/* â"€â"€ TABLE VIEW â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
-            <div className="overflow-visible slim-scroll">
+            <div className="sticky-table-scroll slim-scroll">
               <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">

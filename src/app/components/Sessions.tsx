@@ -439,7 +439,7 @@ export default function Sessions() {
       </div>
 
       {/* ── Table ── */}
-      <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-visible bg-white dark:bg-neutral-950">
+      <div className="sticky-table-scroll slim-scroll border border-neutral-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-950">
         <table className="w-full min-w-max text-sm border-collapse">
           <thead>
             <tr className="border-b border-neutral-200 dark:border-neutral-800">

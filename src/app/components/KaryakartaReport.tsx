@@ -553,7 +553,7 @@ export default function KaryakartaReport() {
         {/* ── Row 4: Karyakarta List ────────────────────────── */}
         <div className="mt-6">
           <ChartCard title="Karyakarta List" subtitle="Members holding a Sangh Responsibility matching the current filters">
-            <div className="overflow-visible slim-scroll">
+            <div className="sticky-table-scroll slim-scroll">
               <table className="w-full min-w-max text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">

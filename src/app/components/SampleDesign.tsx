@@ -930,7 +930,7 @@ export default function SampleDesign() {
         {/* ========== TABLE VIEW ========== */}
         {viewMode === 'table' && (
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible">
-            <div className="overflow-visible slim-scroll">
+            <div className="sticky-table-scroll slim-scroll">
               <table className="w-full min-w-max">
                 <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                   <tr>

@@ -441,7 +441,7 @@ export default function SystemNotifications() {
         {/* ========== DATA TABLE VIEW (STICKY HEADER SCROLLING LAYOUT) ========== */}
         {viewMode === 'table' && (
           <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-visible slim-scroll">
+            <div className="sticky-table-scroll slim-scroll">
               <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">

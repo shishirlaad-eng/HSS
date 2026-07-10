@@ -261,7 +261,7 @@ export default function EmergencyDetails({
 
         {viewMode === 'table' && (
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible">
-          <div className="overflow-visible slim-scroll">
+          <div className="sticky-table-scroll slim-scroll">
             <table className="w-full min-w-max">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
