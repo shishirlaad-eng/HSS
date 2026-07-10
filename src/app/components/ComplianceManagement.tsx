@@ -14,7 +14,7 @@ import {
   CertStatus,
   MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
-import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton } from './hb/listing';
+import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 
 type ComplianceTab = 'dbs' | 'firstAid' | 'safeguarding';
@@ -92,6 +92,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('table');
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const handleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -173,8 +174,8 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   ];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 pt-6">
+    <div className="sticky-listing-table flex flex-col h-full" style={stickyTableStyle}>
+      <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 px-6 pt-6 pb-1">
         <PageHeader
           title="Compliance"
           subtitle={selectedRole === 'Super Admin' ? 'Below is a list of all members that have undertaken compliance requirements to run Shakha activities' : undefined}
@@ -338,8 +339,8 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
 
       {/* Table */}
       {viewMode === 'table' && (
-      <div className="flex-1 overflow-auto p-6">
-        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+      <div className="p-6">
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible">
           <table className="w-full">
             <thead>
               {activeTab === 'dbs' && (

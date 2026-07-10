@@ -39,6 +39,7 @@ import {
   ColumnVisibilityPanel,
   SummaryWidgets,
   DateRangeFilter,
+  useStickyListingHeader,
   type ColumnConfig,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
@@ -1172,27 +1173,7 @@ export default function MemberManagement({
 
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
-  const stickyHeaderRef = useRef<HTMLDivElement>(null);
-  const [tableHeadTop, setTableHeadTop] = useState(53);
-
-  useEffect(() => {
-    const headerEl = stickyHeaderRef.current;
-    if (!headerEl) return;
-
-    const measure = () => {
-      setTableHeadTop(53 + headerEl.getBoundingClientRect().height);
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(headerEl);
-    window.addEventListener('resize', measure);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
+  const { stickyHeaderRef, tableHeadTop, stickyTableStyle } = useStickyListingHeader();
 
   // Registration date range filter
   const [regDateStart,  setRegDateStart]  = useState('');
@@ -1570,7 +1551,7 @@ export default function MemberManagement({
   // â"€â"€ Listing â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
         {/* PAGE HEADER — sticky so the member context and controls stay visible while the list scrolls */}

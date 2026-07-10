@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   SearchBar, Pagination, IconButton, ViewModeSwitcher,
-  PrimaryButton, SummaryWidgets,
+  PrimaryButton, SummaryWidgets, useStickyListingHeader,
 } from './hb/listing';
 import {
   FormModal, FormSection, FormField, FormLabel, FormInput, StatusSlider,
@@ -138,6 +138,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
   const [sortField,    setSortField]    = useState<'name' | 'status' | 'lastUpdated'>('name');
   const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('asc');
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const [showSummary,  setShowSummary]  = useState(false);
 
   const [modalMode,    setModalMode]    = useState<'create' | 'edit' | 'view' | null>(null);
@@ -293,7 +294,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex gap-0 mt-4">
+    <div className="sticky-listing-table flex gap-0 mt-4" style={stickyTableStyle}>
 
       {/* ── LEFT SIDEBAR ────────────────────────────────────────────────────── */}
       <div className="w-56 flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 pr-4 mr-6">
@@ -323,7 +324,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
       <div className="flex-1 min-w-0">
 
         {/* Sub-header */}
-        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 flex items-center justify-between mb-4 gap-4 flex-wrap pb-1">
           <div>
             <h3 className="text-sm font-bold text-neutral-900 dark:text-white">{meta.label}</h3>
             <p className="text-xs text-neutral-500 mt-0.5">
@@ -443,9 +444,9 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
 
         {/* ── TABLE ─────────────────────────────────────────────────────────── */}
         {viewMode === 'table' && (
-          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible bg-white dark:bg-neutral-950 shadow-sm">
+            <div className="overflow-visible slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">

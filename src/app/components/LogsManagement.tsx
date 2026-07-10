@@ -38,6 +38,7 @@ import {
   ColumnVisibilityPanel,
   ViewModeSwitcher,
   SummaryWidgets,
+  useStickyListingHeader,
   type ColumnConfig,
   type FilterCondition
 } from './hb/listing';
@@ -138,6 +139,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
@@ -547,8 +549,9 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   };
 
   return (
-    <div className="p-6 min-h-screen animate-in fade-in duration-500">
+    <div className="sticky-listing-table p-6 min-h-screen animate-in fade-in duration-500" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto space-y-6">
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-1">
         <PageHeader
           title={config.title}
           subtitle={config.subtitle}
@@ -601,6 +604,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             onChange={setViewMode}
           />
         </PageHeader>
+        </div>
 
         {/* SUMMARY WIDGETS */}
         {showSummary && (
@@ -767,9 +771,9 @@ export default function LogsManagement({ type }: LogsManagementProps) {
 
         {/* TABLE VIEW */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
-              <table className="w-full text-left border-collapse">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible shadow-sm">
+            <div className="overflow-visible slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     {!isSuperAdmin && (

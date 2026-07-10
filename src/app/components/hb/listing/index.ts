@@ -30,6 +30,7 @@ export { DateRangeFilter } from './DateRangeFilter';
 export { Pagination } from './Pagination';
 export { SummaryWidgets } from './SummaryWidgets';
 export { ColumnVisibilityPanel } from './ColumnVisibilityPanel';
+export { useStickyListingHeader } from './useStickyListingHeader';
 export type { ViewMode } from './ViewModeSwitcher';
 export type { StatusOption } from './StatusFilter';
 export type { FilterCondition } from './FilterPopup';

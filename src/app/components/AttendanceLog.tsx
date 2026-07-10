@@ -29,6 +29,7 @@ import {
   SummaryWidgets,
   FilterChips,
   DateRangeFilter,
+  useStickyListingHeader,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import { mockSessions, SHAKHA_TYPES, getSessionShakhaType } from '../../mockAPI/attendanceData';
@@ -237,6 +238,7 @@ export default function AttendanceLog() {
   const [dateRangeLabel,     setDateRangeLabel]     = useState('');
   const [showDateFilter,     setShowDateFilter]     = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const [showSummary,        setShowSummary]        = useState(true);
   const [sortKey,            setSortKey]            = useState<SortKey>('date');
   const [sortDir,            setSortDir]            = useState<SortDir>('desc');
@@ -393,10 +395,11 @@ export default function AttendanceLog() {
   };
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
         {/* ── PAGE HEADER ── */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title={scope.selfOnly ? "My Attendance" : "Sankhya Log"}
           subtitle={scope.selfOnly ? "Your Personal Attendance Record" : "Complete record of member Sankhya across all Shakha gatherings."}
@@ -488,6 +491,7 @@ export default function AttendanceLog() {
             />
           )}
         </PageHeader>
+        </div>
 
         {/* ── SUMMARY WIDGETS ── */}
         {showSummary && (
@@ -511,9 +515,9 @@ export default function AttendanceLog() {
         />
 
         {/* ── TABLE ── */}
-        <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-          <div className="overflow-x-auto slim-scroll">
-            <table className="w-full text-sm">
+        <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-visible bg-white dark:bg-neutral-950 shadow-sm">
+          <div className="overflow-visible slim-scroll">
+            <table className="w-full min-w-max text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                   {!scope.selfOnly && (
