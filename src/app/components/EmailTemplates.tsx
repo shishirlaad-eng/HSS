@@ -34,12 +34,13 @@ import {
   ColumnVisibilityPanel,
   type ColumnConfig
 } from './hb/listing';
-import { 
-  FormSection, 
-  FormField, 
-  FormLabel, 
-  FormInput, 
-  FormSelect 
+import {
+  FormSection,
+  FormField,
+  FormLabel,
+  FormInput,
+  FormSelect,
+  ErrorText,
 } from './hb/common/Form';
 import { toast } from 'sonner';
 
@@ -270,13 +271,27 @@ export default function EmailTemplates() {
       content: '<h2>Hello {user_name},</h2>\n<p>Enter your customized email message here...</p>'
     });
     setIsEditing(true);
+    setTemplateErrors({});
   };
+
+  const [templateErrors, setTemplateErrors] = useState<Record<string, boolean>>({});
+  const nameRef = useRef<HTMLInputElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
 
   const handleSaveTemplate = () => {
     if (!activeTemplate || !activeTemplate.name || !activeTemplate.subject) {
+      const errs = {
+        name: !activeTemplate?.name,
+        subject: !activeTemplate?.subject,
+      };
+      setTemplateErrors(errs);
       toast.error('Please enter valid template name and subject.');
+      const el = errs.name ? nameRef.current : subjectRef.current;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
       return;
     }
+    setTemplateErrors({});
 
     const exists = templates.some(t => t.id === activeTemplate.id);
     if (exists) {
@@ -420,19 +435,25 @@ export default function EmailTemplates() {
                 <FormField>
                   <FormLabel required>Template Name</FormLabel>
                   <FormInput
+                    ref={nameRef}
                     value={activeTemplate.name}
-                    onChange={e => setActiveTemplate({...activeTemplate, name: e.target.value})}
+                    onChange={e => { setActiveTemplate({...activeTemplate, name: e.target.value}); setTemplateErrors(prev => ({ ...prev, name: false })); }}
                     placeholder="e.g. Welcome Message"
+                    className={templateErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{templateErrors.name && 'Template name is required.'}</ErrorText>
                 </FormField>
 
                 <FormField>
                   <FormLabel required>Subject Line</FormLabel>
                   <FormInput
+                    ref={subjectRef}
                     value={activeTemplate.subject}
-                    onChange={e => setActiveTemplate({...activeTemplate, subject: e.target.value})}
+                    onChange={e => { setActiveTemplate({...activeTemplate, subject: e.target.value}); setTemplateErrors(prev => ({ ...prev, subject: false })); }}
                     placeholder="Subject header..."
+                    className={templateErrors.subject ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{templateErrors.subject && 'Subject line is required.'}</ErrorText>
                   <p className="mt-1 text-[10px] text-neutral-400">Supports variable replacements like {"{company_name}"}</p>
                 </FormField>
 
@@ -708,7 +729,7 @@ export default function EmailTemplates() {
                           title="Actions"
                           menuItems={[
                             { icon: Eye, label: 'Preview Split View', onClick: () => { setActiveTemplate(item); setIsEditing(false); } },
-                            { icon: Edit, label: 'Edit Custom Layout', onClick: () => { setActiveTemplate(item); setIsEditing(true); } },
+                            { icon: Edit, label: 'Edit Custom Layout', onClick: () => { setActiveTemplate(item); setIsEditing(true); setTemplateErrors({}); } },
                             { divider: true },
                             { icon: Trash2, label: 'Delete Template', onClick: () => handleDelete(item.id) },
                           ]}
@@ -795,7 +816,7 @@ export default function EmailTemplates() {
                       title="Actions"
                       menuItems={[
                         { icon: Eye, label: 'Preview Split View', onClick: () => { setActiveTemplate(item); setIsEditing(false); } },
-                        { icon: Edit, label: 'Edit Custom Layout', onClick: () => { setActiveTemplate(item); setIsEditing(true); } },
+                        { icon: Edit, label: 'Edit Custom Layout', onClick: () => { setActiveTemplate(item); setIsEditing(true); setTemplateErrors({}); } },
                         { divider: true },
                         { icon: Trash2, label: 'Delete Template', onClick: () => handleDelete(item.id) },
                       ]}
@@ -953,7 +974,7 @@ export default function EmailTemplates() {
                             <IconButton
                               icon={Edit}
                               borderless={true}
-                              onClick={() => { setActiveTemplate(item); setIsEditing(true); }}
+                              onClick={() => { setActiveTemplate(item); setIsEditing(true); setTemplateErrors({}); }}
                               title="Edit Custom Layout"
                             />
                             <IconButton

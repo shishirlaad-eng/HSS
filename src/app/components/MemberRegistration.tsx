@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ArrowLeft, ShieldCheck, UserPlus } from 'lucide-react';
 import myHssLogo from '../../assets/brand/hss/logos/my-hss-logo.png';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import {
   FormField,
   FormInput,
   FormLabel,
+  ErrorText,
 } from './hb/common';
 import { PrimaryButton } from './hb/listing';
 
@@ -25,22 +26,22 @@ const EMPTY_FORM: RegistrationForm = {
   confirmPassword: '',
 };
 
-function ErrorText({ children }: { children?: string }) {
-  if (!children) return null;
-  return <p className="text-xs text-[#BC0F1C] mt-1">{children}</p>;
-}
+const FIELD_ORDER: (keyof RegistrationForm)[] = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
 
 export default function MemberRegistration({ onBackToLogin, onRegistrationComplete }: { onBackToLogin: () => void; onRegistrationComplete?: (role: 'Adult Member' | 'Teen Member') => void }) {
   const [form, setForm] = useState<RegistrationForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const set = (key: keyof RegistrationForm) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm(prev => ({ ...prev, [key]: e.target.value }));
       setErrors(prev => ({ ...prev, [key]: undefined }));
     };
+
+  const errCls = (key: keyof RegistrationForm) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
   const validate = () => {
     const e: Partial<Record<keyof RegistrationForm, string>> = {};
@@ -53,12 +54,22 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
     if (!form.confirmPassword)  e.confirmPassword = 'Please confirm your password.';
     else if (form.password && form.confirmPassword !== form.password) e.confirmPassword = 'Passwords do not match.';
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return e;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validate()) return;
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      toast.error('Please fill in all required fields.');
+      const firstKey = FIELD_ORDER.find(k => errs[k]);
+      const el = firstKey ? fieldRefs.current[firstKey] : null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+      return;
+    }
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 800));
     setIsSubmitting(false);
@@ -114,28 +125,28 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <div className="grid grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>First Name</FormLabel>
-              <FormInput value={form.firstName} onChange={set('firstName')} placeholder="e.g. Arjun" />
+              <FormInput ref={el => { fieldRefs.current.firstName = el; }} value={form.firstName} onChange={set('firstName')} placeholder="e.g. Arjun" className={errCls('firstName')} />
               <ErrorText>{errors.firstName}</ErrorText>
             </FormField>
             <FormField>
               <FormLabel required>Last Name</FormLabel>
-              <FormInput value={form.lastName} onChange={set('lastName')} placeholder="e.g. Sharma" />
+              <FormInput ref={el => { fieldRefs.current.lastName = el; }} value={form.lastName} onChange={set('lastName')} placeholder="e.g. Sharma" className={errCls('lastName')} />
               <ErrorText>{errors.lastName}</ErrorText>
             </FormField>
           </div>
           <FormField>
             <FormLabel required>Email</FormLabel>
-            <FormInput type="email" value={form.email} onChange={set('email')} placeholder="e.g. arjun@email.com" />
+            <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={form.email} onChange={set('email')} placeholder="e.g. arjun@email.com" className={errCls('email')} />
             <ErrorText>{errors.email}</ErrorText>
           </FormField>
           <FormField>
             <FormLabel required>Password</FormLabel>
-            <FormInput type="password" value={form.password} onChange={set('password')} placeholder="Min. 8 characters" />
+            <FormInput ref={el => { fieldRefs.current.password = el; }} type="password" value={form.password} onChange={set('password')} placeholder="Min. 8 characters" className={errCls('password')} />
             <ErrorText>{errors.password}</ErrorText>
           </FormField>
           <FormField>
             <FormLabel required>Confirm Password</FormLabel>
-            <FormInput type="password" value={form.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter your password" />
+            <FormInput ref={el => { fieldRefs.current.confirmPassword = el; }} type="password" value={form.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter your password" className={errCls('confirmPassword')} />
             <ErrorText>{errors.confirmPassword}</ErrorText>
           </FormField>
         </div>

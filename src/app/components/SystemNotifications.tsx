@@ -24,14 +24,15 @@ import {
   type ColumnConfig
 } from './hb/listing';
 import { 
-  FormModal, 
-  FormSection, 
+  FormModal,
+  FormSection,
   FormGrid,
-  FormField, 
-  FormLabel, 
-  FormInput, 
+  FormField,
+  FormLabel,
+  FormInput,
   FormSelect,
-  StatusSlider
+  StatusSlider,
+  ErrorText,
 } from './hb/common';
 import { toast } from 'sonner';
 
@@ -211,11 +212,21 @@ export default function SystemNotifications() {
     setModalMode('create');
   };
 
+  const [notifErrors, setNotifErrors] = useState<Record<string, boolean>>({});
+  const titleRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
   const handleSaveNotification = () => {
     if (!activeItem || !activeItem.title || !activeItem.message) {
+      const errs = { title: !activeItem?.title, message: !activeItem?.message };
+      setNotifErrors(errs);
       toast.error('Please fill in required notification fields.');
+      const el = errs.title ? titleRef.current : messageRef.current;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
       return;
     }
+    setNotifErrors({});
 
     const saved = activeItem as NotificationItem;
     if (modalMode === 'create') {
@@ -619,7 +630,7 @@ export default function SystemNotifications() {
         {/* ========== INTEGRATED ENTERPRISE FORM MODAL ========== */}
         <FormModal
           isOpen={modalMode !== null}
-          onClose={() => { setModalMode(null); setActiveItem(null); }}
+          onClose={() => { setModalMode(null); setActiveItem(null); setNotifErrors({}); }}
           title={modalMode === 'create' ? 'Broadcast Notification Workspace' : modalMode === 'edit' ? `Edit Broadcast Schema ${activeItem?.id}` : `Broadcast Overview: ${activeItem?.title}`}
           maxWidth="max-w-xl"
         >
@@ -630,11 +641,14 @@ export default function SystemNotifications() {
                   <FormField>
                     <FormLabel required={modalMode !== 'view'}>Broadcast Title</FormLabel>
                     <FormInput
+                      ref={titleRef}
                       value={activeItem.title || ''}
-                      onChange={e => setActiveItem({...activeItem, title: e.target.value})}
+                      onChange={e => { setActiveItem({...activeItem, title: e.target.value}); setNotifErrors(prev => ({ ...prev, title: false })); }}
                       readOnly={modalMode === 'view'}
                       placeholder="Enter prominent broadcast topic..."
+                      className={notifErrors.title ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                     />
+                    <ErrorText>{notifErrors.title && 'Broadcast title is required.'}</ErrorText>
                   </FormField>
                 </FormGrid>
               </FormSection>
@@ -681,13 +695,17 @@ export default function SystemNotifications() {
                 <FormField>
                   <FormLabel required={modalMode !== 'view'}>Broadcast Copy</FormLabel>
                   <textarea
+                    ref={messageRef}
                     value={activeItem.message || ''}
-                    onChange={e => setActiveItem({...activeItem, message: e.target.value})}
+                    onChange={e => { setActiveItem({...activeItem, message: e.target.value}); setNotifErrors(prev => ({ ...prev, message: false })); }}
                     readOnly={modalMode === 'view'}
                     rows={4}
-                    className="w-full p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-primary-500 resize-none leading-relaxed"
+                    className={`w-full p-3 bg-white dark:bg-neutral-900 border rounded-lg text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-primary-500 resize-none leading-relaxed ${
+                      notifErrors.message ? 'border-error-400 dark:border-error-600' : 'border-neutral-200 dark:border-neutral-800'
+                    }`}
                     placeholder="Enter explicit multi-line directive..."
                   />
+                  <ErrorText>{notifErrors.message && 'Broadcast copy is required.'}</ErrorText>
                 </FormField>
               </FormSection>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus,
@@ -38,6 +38,7 @@ import { mockMembers } from '../../mockAPI/membersData';
 import { mockSessions, ShakhaSession } from '../../mockAPI/attendanceData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { ErrorText } from './hb/common';
 import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'list' | 'table';
@@ -210,15 +211,7 @@ function memberAddress(m: typeof mockMembers[number]): string {
 
 type MemberList = typeof mockMembers;
 
-function MemberAutocomplete({
-  label,
-  value,
-  members,
-  required,
-  error,
-  placeholder,
-  onChange,
-}: {
+const MemberAutocomplete = forwardRef<HTMLInputElement, {
   label: string;
   value: string;
   members: MemberList;
@@ -226,7 +219,15 @@ function MemberAutocomplete({
   error?: boolean;
   placeholder?: string;
   onChange: (name: string, member: MemberList[number] | null) => void;
-}) {
+}>(function MemberAutocomplete({
+  label,
+  value,
+  members,
+  required,
+  error,
+  placeholder,
+  onChange,
+}, forwardedRef) {
   const [query, setQuery]     = useState(value);
   const [focused, setFocused] = useState(false);
   const ref                  = useRef<HTMLDivElement>(null);
@@ -315,6 +316,7 @@ function MemberAutocomplete({
         }
       </label>
       <input
+        ref={forwardedRef}
         type="text"
         value={query}
         placeholder={placeholder ?? 'Type to search members…'}
@@ -322,6 +324,7 @@ function MemberAutocomplete({
         onChange={e => handleType(e.target.value)}
         onFocus={() => setFocused(true)}
       />
+      <ErrorText>{error && `${label} is required.`}</ErrorText>
       {open && rect && createPortal(
         <div
           ref={menuRef}
@@ -348,7 +351,7 @@ function MemberAutocomplete({
       )}
     </div>
   );
-}
+});
 
 // ── Create / Edit form ────────────────────────────────────────
 
@@ -415,9 +418,27 @@ function IncidentForm({
 
   const hasErrors = Object.values(errors).some(Boolean);
 
+  // Tab-order of validated fields, top-to-bottom / left-to-right as laid out on screen.
+  const FIELD_ORDER: (keyof typeof errors)[] = [
+    'dateTime', 'incidentType', 'incidentDescription',
+    'casualtyName',
+    'firstAiderName', 'outcome', 'firstAidGiven',
+    'reportedBy',
+  ];
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
   const handleSubmit = () => {
     setTouched(true);
-    if (hasErrors) return;
+    if (hasErrors) {
+      toast.error('Please fill in all required fields.');
+      const firstErrorKey = FIELD_ORDER.find(k => errors[k]);
+      const el = firstErrorKey ? fieldRefs.current[firstErrorKey] : null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+      return;
+    }
     onSave(form);
   };
 
@@ -470,21 +491,24 @@ function IncidentForm({
               Date & Time <span className="text-red-500">*</span>
             </label>
             <input
+              ref={el => { fieldRefs.current.dateTime = el; }}
               type="datetime-local"
               value={form.dateTime}
               onChange={e => set('dateTime', e.target.value)}
               className={fieldCls(errors.dateTime)}
             />
+            <ErrorText>{touched && errors.dateTime && 'Date & time is required.'}</ErrorText>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Incident Type <span className="text-red-500">*</span>
             </label>
-            <select value={form.incidentType} onChange={e => set('incidentType', e.target.value as IncidentType)} className={fieldCls(errors.incidentType)}>
+            <select ref={el => { fieldRefs.current.incidentType = el; }} value={form.incidentType} onChange={e => set('incidentType', e.target.value as IncidentType)} className={fieldCls(errors.incidentType)}>
               <option value="">Select type…</option>
               {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+            <ErrorText>{touched && errors.incidentType && 'Incident type is required.'}</ErrorText>
           </div>
 
           <div>
@@ -539,7 +563,8 @@ function IncidentForm({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Incident Description <span className="text-red-500">*</span>
             </label>
-            <textarea rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened and precisely where…" className={fieldCls(errors.incidentDescription)} />
+            <textarea ref={el => { fieldRefs.current.incidentDescription = el; }} rows={3} value={form.incidentDescription} onChange={e => set('incidentDescription', e.target.value)} placeholder="Describe what happened and precisely where…" className={fieldCls(errors.incidentDescription)} />
+            <ErrorText>{touched && errors.incidentDescription && 'Incident description is required.'}</ErrorText>
           </div>
         </div>
       </Card>
@@ -549,6 +574,7 @@ function IncidentForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div className="sm:col-span-2">
             <MemberAutocomplete
+              ref={el => { fieldRefs.current.casualtyName = el; }}
               label="Casualty Name"
               value={form.casualtyName}
               members={activeMembers}
@@ -588,6 +614,7 @@ function IncidentForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <MemberAutocomplete
+              ref={el => { fieldRefs.current.firstAiderName = el; }}
               label="First Aider Name"
               value={form.firstAiderName}
               members={activeMembers}
@@ -601,17 +628,19 @@ function IncidentForm({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Outcome <span className="text-red-500">*</span>
             </label>
-            <select value={form.outcome} onChange={e => set('outcome', e.target.value as IncidentOutcome)} className={fieldCls(errors.outcome)}>
+            <select ref={el => { fieldRefs.current.outcome = el; }} value={form.outcome} onChange={e => set('outcome', e.target.value as IncidentOutcome)} className={fieldCls(errors.outcome)}>
               <option value="">Select outcome…</option>
               {INCIDENT_OUTCOMES.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
+            <ErrorText>{touched && errors.outcome && 'Outcome is required.'}</ErrorText>
           </div>
 
           <div className="sm:col-span-2 md:col-span-4">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               First Aid Given <span className="text-red-500">*</span>
             </label>
-            <textarea rows={3} value={form.firstAidGiven} onChange={e => set('firstAidGiven', e.target.value)} placeholder="Describe treatment administered…" className={fieldCls(errors.firstAidGiven)} />
+            <textarea ref={el => { fieldRefs.current.firstAidGiven = el; }} rows={3} value={form.firstAidGiven} onChange={e => set('firstAidGiven', e.target.value)} placeholder="Describe treatment administered…" className={fieldCls(errors.firstAidGiven)} />
+            <ErrorText>{touched && errors.firstAidGiven && 'First aid given is required.'}</ErrorText>
           </div>
 
           <div className="sm:col-span-2 md:col-span-4">
@@ -644,6 +673,7 @@ function IncidentForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <MemberAutocomplete
+              ref={el => { fieldRefs.current.reportedBy = el; }}
               label="Reported By"
               value={form.reportedBy}
               members={activeMembers}
@@ -715,13 +745,6 @@ function IncidentForm({
           </div>
         </div>
       </Card>
-
-      {touched && hasErrors && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          Please fill in all required fields.
-        </div>
-      )}
 
       <div className="flex justify-end gap-3 pt-2">
         <button onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">

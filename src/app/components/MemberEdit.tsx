@@ -365,6 +365,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       setErrors(prev => ({ ...prev, firstName: !formData.firstName.trim(), surname: !formData.surname.trim() }));
       toast.error('First name and surname are required.'); return;
     }
+    if (!formData.gender || !formData.dateOfBirth) {
+      setErrors(prev => ({ ...prev, gender: !formData.gender, dateOfBirth: !formData.dateOfBirth }));
+      toast.error('Gender and date of birth are required.'); return;
+    }
     if (!formData.email.trim() || !validEmail(formData.email) || !validEmail(formData.secondaryEmail)) {
       setErrors(prev => ({ ...prev, email: !formData.email.trim() || !validEmail(formData.email), secondaryEmail: !validEmail(formData.secondaryEmail) }));
       toast.error('Enter valid email details.'); return;
@@ -416,6 +420,10 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
         activityCentre: !formData.activityCentre,
       }));
       toast.error('Organisation mapping fields are required.'); return;
+    }
+    if (!formData.orgRole.trim()) {
+      setErrors(prev => ({ ...prev, orgRole: true }));
+      toast.error('Organisational role is required.'); return;
     }
     setErrors({});
     setIsSaving(true);
@@ -621,11 +629,11 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField><FormLabel required>First Name</FormLabel><FormInput value={formData.firstName} onChange={set('firstName')} className={errCls('firstName')} /></FormField>
                   <FormField><FormLabel>Membership ID</FormLabel><FormInput value={member.id} readOnly /></FormField>
                   <FormField><FormLabel>Middle Name</FormLabel><FormInput value={formData.middleName} onChange={set('middleName')} /></FormField>
-                  <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
+                  <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')} className={errCls('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} className={errCls('surname')} /></FormField>
                   <FormField>
                     <FormLabel required>Date of Birth</FormLabel>
-                    <FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} />
+                    <FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} className={errCls('dateOfBirth')} />
                     <p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} yrs — {getAgeGroupLabel(formData.dateOfBirth)}</span></p>
                   </FormField>
                 </div>
@@ -720,7 +728,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField><FormLabel required>Vibhag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country} className={errCls('region')}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region} className={errCls('town')}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town} className={errCls('activityCentre')}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} /></FormField>
+                  <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} className={errCls('orgRole')} /></FormField>
                   <FormField>
                     <FormLabel>Member Status</FormLabel>
                     <FormSelect value={formData.status} onChange={set('status')}>

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ArrowLeft, Save, Globe, MapPin, Ticket } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import { Event, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
@@ -96,6 +96,31 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
     });
   };
 
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
+  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'paymentType', 'priceCategories'];
+  const FIELD_TAB: Record<string, CreateTab> = {
+    name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
+    venueAddress: 'location', onlineUrl: 'location',
+    country: 'audience', region: 'audience', town: 'audience', activityCentre: 'audience',
+    paymentType: 'payment', priceCategories: 'payment',
+  };
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const focusFirstError = (errs: Record<string, string>) => {
+    const firstKey = FIELD_ORDER.find(k => errs[k]);
+    if (!firstKey) return;
+    const tab = FIELD_TAB[firstKey];
+    if (tab && tab !== activeTab) setActiveTab(tab);
+    setTimeout(() => {
+      const el = fieldRefs.current[firstKey];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 60);
+  };
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!formData.name.trim())         errs.name           = 'This field is required.';
@@ -119,7 +144,7 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
       if (start >= end) errs.endDate = 'Start Date/Time must be earlier than End Date/Time.';
     }
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return errs;
   };
 
   const buildPayload = (status: 'draft' | 'published'): Partial<Event> => {
@@ -156,7 +181,12 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
 
   const handleSaveDraft = async () => {
     setTouched(true);
-    if (!validate()) return;
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      toast.error('Please fill in all required fields.');
+      focusFirstError(errs);
+      return;
+    }
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -233,11 +263,13 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                     <FormField>
                       <FormLabel required>Karyakram Title</FormLabel>
                       <FormInput
+                        ref={el => { fieldRefs.current.name = el; }}
                         value={formData.name}
                         onChange={e => set('name', e.target.value)}
                         placeholder="Enter Karyakram title"
+                        className={errCls('name')}
                       />
-                      {touched && errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
+                      <ErrorText>{touched && errors.name}</ErrorText>
                     </FormField>
                   </div>
                   <div className="md:col-span-2">
@@ -270,23 +302,23 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormField>
                     <FormLabel required>Start Date</FormLabel>
-                    <FormInput type="date" value={formData.startDate} onChange={e => set('startDate', e.target.value)} />
-                    {touched && errors.startDate && <p className="text-xs text-error-600 mt-1">{errors.startDate}</p>}
+                    <FormInput ref={el => { fieldRefs.current.startDate = el; }} type="date" value={formData.startDate} onChange={e => set('startDate', e.target.value)} className={errCls('startDate')} />
+                    <ErrorText>{touched && errors.startDate}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Start Time</FormLabel>
-                    <FormInput type="time" value={formData.startTime} onChange={e => set('startTime', e.target.value)} />
-                    {touched && errors.startTime && <p className="text-xs text-error-600 mt-1">{errors.startTime}</p>}
+                    <FormInput ref={el => { fieldRefs.current.startTime = el; }} type="time" value={formData.startTime} onChange={e => set('startTime', e.target.value)} className={errCls('startTime')} />
+                    <ErrorText>{touched && errors.startTime}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>End Date</FormLabel>
-                    <FormInput type="date" value={formData.endDate} onChange={e => set('endDate', e.target.value)} />
-                    {touched && errors.endDate && <p className="text-xs text-error-600 mt-1">{errors.endDate}</p>}
+                    <FormInput ref={el => { fieldRefs.current.endDate = el; }} type="date" value={formData.endDate} onChange={e => set('endDate', e.target.value)} className={errCls('endDate')} />
+                    <ErrorText>{touched && errors.endDate}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>End Time</FormLabel>
-                    <FormInput type="time" value={formData.endTime} onChange={e => set('endTime', e.target.value)} />
-                    {touched && errors.endTime && <p className="text-xs text-error-600 mt-1">{errors.endTime}</p>}
+                    <FormInput ref={el => { fieldRefs.current.endTime = el; }} type="time" value={formData.endTime} onChange={e => set('endTime', e.target.value)} className={errCls('endTime')} />
+                    <ErrorText>{touched && errors.endTime}</ErrorText>
                   </FormField>
                 </div>
               </Card>
@@ -325,21 +357,25 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                     <FormField>
                       <FormLabel required>Venue Address</FormLabel>
                       <FormInput
+                        ref={el => { fieldRefs.current.venueAddress = el; }}
                         value={formData.venueAddress}
                         onChange={e => set('venueAddress', e.target.value)}
                         placeholder="Enter full venue address"
+                        className={errCls('venueAddress')}
                       />
-                      {touched && errors.venueAddress && <p className="text-xs text-error-600 mt-1">{errors.venueAddress}</p>}
+                      <ErrorText>{touched && errors.venueAddress}</ErrorText>
                     </FormField>
                   ) : (
                     <FormField>
                       <FormLabel required>Online Call URL</FormLabel>
                       <FormInput
+                        ref={el => { fieldRefs.current.onlineUrl = el; }}
                         value={formData.onlineUrl}
                         onChange={e => set('onlineUrl', e.target.value)}
                         placeholder="e.g. https://meet.hssuk.org/your-karyakram"
+                        className={errCls('onlineUrl')}
                       />
-                      {touched && errors.onlineUrl && <p className="text-xs text-error-600 mt-1">{errors.onlineUrl}</p>}
+                      <ErrorText>{touched && errors.onlineUrl}</ErrorText>
                     </FormField>
                   )}
                 </div>
@@ -353,35 +389,35 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormField>
                     <FormLabel required>Country</FormLabel>
-                    <FormSelect value={formData.country} onChange={e => set('country', e.target.value)}>
+                    <FormSelect ref={el => { fieldRefs.current.country = el; }} value={formData.country} onChange={e => set('country', e.target.value)} className={errCls('country')}>
                       <option value="">Select Country</option>
                       {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
                     </FormSelect>
-                    {touched && errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
+                    <ErrorText>{touched && errors.country}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Vibhag</FormLabel>
-                    <FormSelect value={formData.region} onChange={e => set('region', e.target.value)} disabled={!formData.country}>
+                    <FormSelect ref={el => { fieldRefs.current.region = el; }} value={formData.region} onChange={e => set('region', e.target.value)} disabled={!formData.country} className={errCls('region')}>
                       <option value="">Select Vibhag</option>
                       {availableRegions.map(r => <option key={r} value={r}>{r}</option>)}
                     </FormSelect>
-                    {touched && errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
+                    <ErrorText>{touched && errors.region}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Nagar</FormLabel>
-                    <FormSelect value={formData.town} onChange={e => set('town', e.target.value)} disabled={!formData.region}>
+                    <FormSelect ref={el => { fieldRefs.current.town = el; }} value={formData.town} onChange={e => set('town', e.target.value)} disabled={!formData.region} className={errCls('town')}>
                       <option value="">Select Nagar</option>
                       {availableTowns.map(t => <option key={t} value={t}>{t}</option>)}
                     </FormSelect>
-                    {touched && errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
+                    <ErrorText>{touched && errors.town}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Shakha</FormLabel>
-                    <FormSelect value={formData.activityCentre} onChange={e => set('activityCentre', e.target.value)} disabled={!formData.town}>
+                    <FormSelect ref={el => { fieldRefs.current.activityCentre = el; }} value={formData.activityCentre} onChange={e => set('activityCentre', e.target.value)} disabled={!formData.town} className={errCls('activityCentre')}>
                       <option value="">Select Shakha</option>
                       {availableCentres.map(c => <option key={c} value={c}>{c}</option>)}
                     </FormSelect>
-                    {touched && errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
+                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
                   </FormField>
                 </div>
               </Card>
@@ -485,20 +521,20 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                 <div className="space-y-4">
                   <FormField>
                     <FormLabel required>Payment Type</FormLabel>
-                    <FormSelect value={formData.paymentType} onChange={e => set('paymentType', e.target.value)}>
+                    <FormSelect ref={el => { fieldRefs.current.paymentType = el; }} value={formData.paymentType} onChange={e => set('paymentType', e.target.value)} className={errCls('paymentType')}>
                       <option value="free">Free</option>
                       <option value="paid">Paid</option>
                     </FormSelect>
-                    {touched && errors.paymentType && <p className="text-xs text-error-600 mt-1">{errors.paymentType}</p>}
+                    <ErrorText>{touched && errors.paymentType}</ErrorText>
                   </FormField>
                   {formData.paymentType === 'paid' && (
-                    <div>
+                    <div ref={el => { fieldRefs.current.priceCategories = el; }}>
                       <FormLabel required>Price Categories</FormLabel>
                       <PriceCategoriesEditor
                         categories={formData.priceCategories}
                         onChange={cats => set('priceCategories', cats)}
                       />
-                      {touched && errors.priceCategories && <p className="text-xs text-error-600 mt-1">{errors.priceCategories}</p>}
+                      <ErrorText>{touched && errors.priceCategories}</ErrorText>
                     </div>
                   )}
                 </div>

@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { 
-  ArrowLeft, 
-  Save, 
+import { useState, useRef } from 'react';
+import {
+  ArrowLeft,
+  Save,
   User as UserIcon,
   Mail,
   Shield,
   AlertCircle
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormSection, FormField, FormLabel, FormInput, StatusSlider } from './hb/common';
+import { FormSection, FormField, FormLabel, FormInput, StatusSlider, ErrorText } from './hb/common';
 import { User } from '../../mockAPI/usersData';
 import { toast } from 'sonner';
 
@@ -17,6 +17,8 @@ interface UserEditProps {
   onBack: () => void;
 }
 
+const validEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v);
+
 export default function UserEdit({ user, onBack }: UserEditProps) {
   const [formData, setFormData] = useState({
     name: user.name,
@@ -24,8 +26,26 @@ export default function UserEdit({ user, onBack }: UserEditProps) {
     status: user.status as 'active' | 'inactive',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
   const handleSave = async () => {
+    const errs = {
+      name: !formData.name.trim(),
+      email: !formData.email.trim() || !validEmail(formData.email),
+    };
+    if (errs.name || errs.email) {
+      setErrors(errs);
+      toast.error('Please fill in all required fields.');
+      const el = errs.name ? nameRef.current : emailRef.current;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
+      return;
+    }
+    setErrors({});
     setIsSaving(true);
     // Simulate API call
     try {
@@ -78,20 +98,26 @@ export default function UserEdit({ user, onBack }: UserEditProps) {
                 <FormField>
                   <FormLabel required>Full Name</FormLabel>
                   <FormInput
+                    ref={nameRef}
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setErrors(prev => ({ ...prev, name: false })); }}
                     placeholder="Enter full name"
+                    className={errCls('name')}
                   />
+                  <ErrorText>{errors.name && 'Full name is required.'}</ErrorText>
                 </FormField>
 
                 <FormField>
                   <FormLabel required>Email Address</FormLabel>
                   <FormInput
+                    ref={emailRef}
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setErrors(prev => ({ ...prev, email: false })); }}
                     placeholder="Enter email address"
+                    className={errCls('email')}
                   />
+                  <ErrorText>{errors.email && 'Enter a valid email address.'}</ErrorText>
                 </FormField>
               </div>
             </div>

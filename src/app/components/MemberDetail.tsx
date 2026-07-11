@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
-import { FormInput, FormSelect, FormTextarea, PhoneInput } from './hb/common/Form';
+import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText } from './hb/common/Form';
 import {
   Member,
   getAge,
@@ -353,6 +353,7 @@ function EditableInfoItem({
   required = false,
   phone = false,
   error = false,
+  errorMessage,
 }: {
   label: string;
   value: string;
@@ -365,6 +366,7 @@ function EditableInfoItem({
   required?: boolean;
   phone?: boolean;
   error?: boolean;
+  errorMessage?: string;
 }) {
   if (!isEditing) {
     return <InfoItem label={label} required={required}>{displayValue ?? valueOrDash(value)}</InfoItem>;
@@ -386,6 +388,7 @@ function EditableInfoItem({
       ) : (
         <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} className={errCls} />
       )}
+      <ErrorText>{error && (errorMessage ?? 'This field is required.')}</ErrorText>
     </div>
   );
 }
@@ -590,6 +593,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
       }
       return next;
     });
+    if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: false }));
   };
 
   const updateResponsibility = (index: number, key: keyof ResponsibilityAssignment, value: string) => {
@@ -969,7 +973,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
                 <InfoSection title="Personal Details">
-                  <EditableInfoItem label="First Name" required value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} />
+                  <EditableInfoItem label="First Name" required value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} error={fieldErrors.firstName} errorMessage="First name is required." />
                   <InfoItem label="Membership ID">{member.id}</InfoItem>
                   <EditableInfoItem label="Middle Name" value={form.middleName ?? ''} isEditing={isEditing} onChange={v => setField('middleName', v)} />
                   <EditableInfoItem
@@ -980,8 +984,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     onChange={v => setField('gender', v)}
                     options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]}
                     displayValue={<span className="capitalize">{valueOrDash(member.gender)}</span>}
+                    error={fieldErrors.gender}
+                    errorMessage="Gender is required."
                   />
-                  <EditableInfoItem label="Surname" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} />
+                  <EditableInfoItem label="Surname" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} error={fieldErrors.surname} errorMessage="Surname is required." />
                   <EditableInfoItem
                     label="Date of Birth"
                     required
@@ -990,20 +996,24 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     onChange={v => setField('dateOfBirth', v)}
                     type="date"
                     displayValue={<>{formatDate(member.dateOfBirth)}<span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {age})</span></>}
+                    error={fieldErrors.dateOfBirth}
+                    errorMessage="Date of birth is required."
                   />
                   <InfoItem label="Full Name">{member.name}</InfoItem>
                   <InfoItem label="Age Group"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                 </InfoSection>
 
                 <InfoSection title="Contact Details">
-                  <EditableInfoItem label="Contact Number" required value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone />
-                  <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" />
+                  <EditableInfoItem label="Contact Number" required value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone error={fieldErrors.phone} errorMessage="Contact number is required." />
+                  <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
                   <EditableInfoItem
                     label="Post Code"
                     required
                     value={form.postCode ?? ''}
                     isEditing={isEditing}
                     onChange={v => { setField('postCode', v); setSelectedAddress(''); }}
+                    error={fieldErrors.postCode}
+                    errorMessage="Post code is required."
                   />
                   {isEditing && (
                     <div>
@@ -1031,15 +1041,15 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                   )}
                   <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
-                  <EditableInfoItem label="Address Line 1" required value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} />
+                  <EditableInfoItem label="Address Line 1" required value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} error={fieldErrors.addressLine1} errorMessage="Address line 1 is required." />
                   <EditableInfoItem label="Address Line 2" value={form.addressLine2 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine2', v)} />
-                  <EditableInfoItem label="Town / City" required value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} />
+                  <EditableInfoItem label="Town / City" required value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} error={fieldErrors.contactTownCity} errorMessage="Town / city is required." />
                 </InfoSection>
 
                 <InfoSection title="Emergency Contact Details">
-                  <EditableInfoItem label="Contact Name" required value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} />
-                  <EditableInfoItem label="Contact Phone Number" required value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone />
-                  <EditableInfoItem label="Contact Email" required value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" />
+                  <EditableInfoItem label="Contact Name" required value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} error={fieldErrors.emergencyContactName} errorMessage="Contact name is required." />
+                  <EditableInfoItem label="Contact Phone Number" required value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone error={fieldErrors.emergencyContactPhone} errorMessage="Contact phone number is required." />
+                  <EditableInfoItem label="Contact Email" required value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" error={fieldErrors.emergencyContactEmail} errorMessage="Enter a valid contact email address." />
                   <div>
                     <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship<span className="text-error-600 ml-0.5">*</span></label>
                     {isEditing ? (
@@ -1047,6 +1057,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         <FormSelect
                           value={RELATIONSHIP_OPTIONS.includes(form.emergencyContactRelationship ?? '') ? form.emergencyContactRelationship : 'Other'}
                           onChange={e => setField('emergencyContactRelationship', e.target.value === 'Other' ? '' : e.target.value)}
+                          className={fieldErrors.emergencyContactRelationship ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                         >
                           <option value="Spouse">Spouse</option>
                           <option value="Sibling">Sibling</option>
@@ -1060,8 +1071,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             placeholder="Please specify"
                             value={form.emergencyContactRelationship ?? ''}
                             onChange={e => setField('emergencyContactRelationship', e.target.value)}
+                            className={fieldErrors.emergencyContactRelationship ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                           />
                         )}
+                        <ErrorText>{fieldErrors.emergencyContactRelationship && 'Contact relationship is required.'}</ErrorText>
                       </div>
                     ) : (
                       <p className="text-sm text-neutral-900 dark:text-white font-medium">{valueOrDash(member.emergencyContactRelationship)}</p>
@@ -1091,6 +1104,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                       textarea
                       required
                       error={fieldErrors.medicalInfoDetails}
+                      errorMessage="Please state the medical details to be aware of."
                     />
                   )}
                   <EditableInfoItem
@@ -1118,6 +1132,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         textarea
                         required
                         error={fieldErrors.allergies}
+                        errorMessage="Please state the allergies to be aware of."
                       />
                       <EditableInfoItem
                         label="Do you carry an EpiPen/Jext/Emerade?"
@@ -1127,6 +1142,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
                         required
                         error={fieldErrors.epiPen}
+                        errorMessage="Please select whether the member carries an EpiPen."
                       />
                     </>
                   )}
@@ -1163,10 +1179,10 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── PARENT / GUARDIAN TAB ──────────────────────── */}
             {activeTab === 'guardian' && (
               <InfoSection title="Approval Details" cols={4}>
-                <EditableInfoItem label="Parent / Guardian Name" required value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} />
-                <EditableInfoItem label="Parent / Guardian Phone Number" required value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} phone />
-                <EditableInfoItem label="Parent / Guardian Email" required value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" />
-                <EditableInfoItem label="Parent / Guardian Relationship" required value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} />
+                <EditableInfoItem label="Parent / Guardian Name" required value={form.guardianName ?? ''} isEditing={isEditing} onChange={v => setField('guardianName', v)} error={fieldErrors.guardianName} errorMessage="Parent / guardian name is required." />
+                <EditableInfoItem label="Parent / Guardian Phone Number" required value={form.guardianPhone ?? ''} isEditing={isEditing} onChange={v => setField('guardianPhone', v)} phone error={fieldErrors.guardianPhone} errorMessage="Parent / guardian phone number is required." />
+                <EditableInfoItem label="Parent / Guardian Email" required value={form.guardianEmail ?? ''} isEditing={isEditing} onChange={v => setField('guardianEmail', v)} type="email" error={fieldErrors.guardianEmail} errorMessage="Enter a valid parent / guardian email." />
+                <EditableInfoItem label="Parent / Guardian Relationship" required value={form.guardianRelationship ?? ''} isEditing={isEditing} onChange={v => setField('guardianRelationship', v)} options={[{ value: 'Parent', label: 'Parent' }, { value: 'Guardian', label: 'Guardian' }]} error={fieldErrors.guardianRelationship} errorMessage="Parent / guardian relationship is required." />
               </InfoSection>
             )}
 
@@ -1187,6 +1203,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('region', v)}
                   options={(form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : []).map(r => ({ value: r, label: r }))}
+                  error={fieldErrors.region}
+                  errorMessage="Vibhag is required."
                 />
                 <EditableInfoItem
                   label="Nagar"
@@ -1195,6 +1213,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('town', v)}
                   options={(form.region ? (MASTERS_CASCADE.towns[form.region] ?? []) : []).map(t => ({ value: t, label: t }))}
+                  error={fieldErrors.town}
+                  errorMessage="Nagar is required."
                 />
                 <EditableInfoItem
                   label="Shakha"
@@ -1203,6 +1223,8 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   isEditing={isEditing}
                   onChange={v => setOrganisationField('activityCentre', v)}
                   options={(form.town ? (MASTERS_CASCADE.centres[form.town] ?? []) : []).map(c => ({ value: c, label: c }))}
+                  error={fieldErrors.activityCentre}
+                  errorMessage="Shakha is required."
                 />
                 <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
               </InfoSection>

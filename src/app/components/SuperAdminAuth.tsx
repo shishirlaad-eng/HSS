@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FormLabel,
   FormInput,
   FormCard,
-  FormField
+  FormField,
+  ErrorText
 } from "./hb/common";
 import { PrimaryButton } from "./hb/listing";
 import { Mail, Lock, KeyRound, UserPlus } from "lucide-react";
@@ -52,8 +53,18 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
-  // Error state
-  const [errorMsg, setErrorMsg] = useState("");
+  // Error state — per-field, keyed by a screen-scoped field name
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const otpRef = useRef<HTMLInputElement>(null);
+  const forgotEmailRef = useRef<HTMLInputElement>(null);
+  const resetOtpRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+  const clearError = (key: string) => setErrors(prev => (prev[key] ? { ...prev, [key]: false } : prev));
 
   // Cooldown effect
   useEffect(() => {
@@ -66,16 +77,20 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
+    setErrors({});
     if (!email.match(/^\S+@\S+\.\S+$/)) {
-      setErrorMsg("Enter a valid email address.");
+      setErrors({ loginEmail: true });
+      toast.error("Enter a valid email address.");
+      emailRef.current?.focus();
       return;
     }
     if (!password) {
-      setErrorMsg("Password is required.");
+      setErrors({ loginPassword: true });
+      toast.error("Password is required.");
+      passwordRef.current?.focus();
       return;
     }
-    
+
     // If this device is already trusted for this email, skip OTP
     if (getTrustedDeviceEmail() === email) {
       setIsLoading(true);
@@ -99,12 +114,14 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
 
   const handleVerifyOTP = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
+    setErrors({});
     if (otp.length !== 6 || !/^\d+$/.test(otp)) {
-      setErrorMsg("Enter the 6-digit OTP.");
+      setErrors({ otp: true });
+      toast.error("Enter the 6-digit OTP.");
+      otpRef.current?.focus();
       return;
     }
-    
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -120,12 +137,14 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
 
   const handleSendResetOTP = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
+    setErrors({});
     if (!email.match(/^\S+@\S+\.\S+$/)) {
-      setErrorMsg("Enter a valid email address.");
+      setErrors({ forgotEmail: true });
+      toast.error("Enter a valid email address.");
+      forgotEmailRef.current?.focus();
       return;
     }
-    
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -136,21 +155,27 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
 
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
+    setErrors({});
     if (otp.length !== 6 || !/^\d+$/.test(otp)) {
-      setErrorMsg("Enter the 6-digit OTP.");
+      setErrors({ resetOtp: true });
+      toast.error("Enter the 6-digit OTP.");
+      resetOtpRef.current?.focus();
       return;
     }
     const policyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
     if (!policyRegex.test(newPassword)) {
-      setErrorMsg("Password does not meet policy.");
+      setErrors({ newPassword: true });
+      toast.error("Password does not meet policy.");
+      newPasswordRef.current?.focus();
       return;
     }
     if (newPassword !== confirmPassword) {
-      setErrorMsg("Passwords do not match.");
+      setErrors({ confirmPassword: true });
+      toast.error("Passwords do not match.");
+      confirmPasswordRef.current?.focus();
       return;
     }
-    
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -180,7 +205,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
             <MemberRegistration
               onBackToLogin={() => {
                 setCurrentScreen("login");
-                setErrorMsg("");
+                setErrors({});
               }}
               onRegistrationComplete={onRegisterSuccess}
             />
@@ -237,12 +262,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
         <div className="w-full lg:w-3/5 flex items-center justify-center p-8 bg-white dark:bg-neutral-950">
           <div className="w-full max-w-md">
           <FormCard className="shadow-lg !p-8">
-            {errorMsg && (
-              <div className="mb-6 p-3 bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 text-sm rounded-lg border border-error-200 dark:border-error-800 text-center">
-                {errorMsg}
-              </div>
-            )}
-
             {currentScreen === "login" && (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
@@ -265,38 +284,42 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     <FormLabel htmlFor="email" required>Email</FormLabel>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <FormInput 
-                        id="email" 
-                        type="email" 
-                        className="pl-9" 
-                        placeholder="admin@company.com" 
+                      <FormInput
+                        ref={emailRef}
+                        id="email"
+                        type="email"
+                        className={`pl-9 ${errCls('loginEmail')}`}
+                        placeholder="admin@company.com"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={e => { setEmail(e.target.value); clearError('loginEmail'); }}
                         disabled={isLoading}
                       />
                     </div>
+                    <ErrorText>{errors.loginEmail && 'Enter a valid email address.'}</ErrorText>
                   </FormField>
 
                   <FormField>
                     <FormLabel htmlFor="password" required>Password</FormLabel>
                     <div className="relative">
                       <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <FormInput 
-                        id="password" 
-                        type="password" 
-                        className="pl-9" 
-                        placeholder="••••••••" 
+                      <FormInput
+                        ref={passwordRef}
+                        id="password"
+                        type="password"
+                        className={`pl-9 ${errCls('loginPassword')}`}
+                        placeholder="••••••••"
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => { setPassword(e.target.value); clearError('loginPassword'); }}
                         disabled={isLoading}
                       />
                     </div>
+                    <ErrorText>{errors.loginPassword && 'Password is required.'}</ErrorText>
                     <div className="mt-2 text-right">
                       <button 
                         type="button" 
                         onClick={() => {
                           setCurrentScreen("forgot");
-                          setErrorMsg("");
+                          setErrors({});
                         }} 
                         className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium transition-colors"
                         disabled={isLoading}
@@ -330,7 +353,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     type="button"
                     onClick={() => {
                       setCurrentScreen("register");
-                      setErrorMsg("");
+                      setErrors({});
                     }}
                     disabled={isLoading}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
@@ -353,17 +376,19 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                   <FormLabel htmlFor="otp" required>OTP</FormLabel>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                    <FormInput 
-                      id="otp" 
-                      type="text" 
-                      maxLength={6} 
-                      className="pl-9 tracking-[0.5em] text-center text-lg font-medium" 
-                      placeholder="------" 
+                    <FormInput
+                      ref={otpRef}
+                      id="otp"
+                      type="text"
+                      maxLength={6}
+                      className={`pl-9 tracking-[0.5em] text-center text-lg font-medium ${errCls('otp')}`}
+                      placeholder="------"
                       value={otp}
-                      onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                      onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); clearError('otp'); }}
                       disabled={isLoading}
                     />
                   </div>
+                  <ErrorText>{errors.otp && 'Enter the 6-digit OTP.'}</ErrorText>
                 </FormField>
 
                 {/* Remember device checkbox */}
@@ -421,16 +446,18 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                   <FormLabel htmlFor="forgot-email" required>Email</FormLabel>
                   <div className="relative">
                     <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                    <FormInput 
-                      id="forgot-email" 
-                      type="email" 
-                      className="pl-9" 
-                      placeholder="admin@company.com" 
+                    <FormInput
+                      ref={forgotEmailRef}
+                      id="forgot-email"
+                      type="email"
+                      className={`pl-9 ${errCls('forgotEmail')}`}
+                      placeholder="admin@company.com"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => { setEmail(e.target.value); clearError('forgotEmail'); }}
                       disabled={isLoading}
                     />
                   </div>
+                  <ErrorText>{errors.forgotEmail && 'Enter a valid email address.'}</ErrorText>
                 </FormField>
 
                 <div className="pt-2">
@@ -448,7 +475,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     type="button"
                     onClick={() => {
                       setCurrentScreen("login");
-                      setErrorMsg("");
+                      setErrors({});
                     }}
                     disabled={isLoading}
                     className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -471,33 +498,37 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     <FormLabel htmlFor="reset-otp" required>OTP</FormLabel>
                     <div className="relative">
                       <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <FormInput 
-                        id="reset-otp" 
-                        type="text" 
-                        maxLength={6} 
-                        className="pl-9 tracking-[0.5em] text-center text-lg font-medium" 
-                        placeholder="------" 
+                      <FormInput
+                        ref={resetOtpRef}
+                        id="reset-otp"
+                        type="text"
+                        maxLength={6}
+                        className={`pl-9 tracking-[0.5em] text-center text-lg font-medium ${errCls('resetOtp')}`}
+                        placeholder="------"
                         value={otp}
-                        onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                        onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); clearError('resetOtp'); }}
                         disabled={isLoading}
                       />
                     </div>
+                    <ErrorText>{errors.resetOtp && 'Enter the 6-digit OTP.'}</ErrorText>
                   </FormField>
 
                   <FormField>
                     <FormLabel htmlFor="new-password" required>New Password</FormLabel>
                     <div className="relative">
                       <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <FormInput 
-                        id="new-password" 
-                        type="password" 
-                        className="pl-9" 
-                        placeholder="••••••••" 
+                      <FormInput
+                        ref={newPasswordRef}
+                        id="new-password"
+                        type="password"
+                        className={`pl-9 ${errCls('newPassword')}`}
+                        placeholder="••••••••"
                         value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
+                        onChange={e => { setNewPassword(e.target.value); clearError('newPassword'); }}
                         disabled={isLoading}
                       />
                     </div>
+                    <ErrorText>{errors.newPassword && 'Password does not meet policy.'}</ErrorText>
                     <p className="text-xs text-neutral-500 mt-1.5 leading-relaxed">
                       Use at least 12 characters with uppercase, lowercase, number, and special character.
                     </p>
@@ -507,16 +538,18 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     <FormLabel htmlFor="confirm-password" required>Confirm Password</FormLabel>
                     <div className="relative">
                       <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <FormInput 
-                        id="confirm-password" 
-                        type="password" 
-                        className="pl-9" 
-                        placeholder="••••••••" 
+                      <FormInput
+                        ref={confirmPasswordRef}
+                        id="confirm-password"
+                        type="password"
+                        className={`pl-9 ${errCls('confirmPassword')}`}
+                        placeholder="••••••••"
                         value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
+                        onChange={e => { setConfirmPassword(e.target.value); clearError('confirmPassword'); }}
                         disabled={isLoading}
                       />
                     </div>
+                    <ErrorText>{errors.confirmPassword && 'Passwords do not match.'}</ErrorText>
                   </FormField>
                 </div>
 
@@ -535,7 +568,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                     type="button"
                     onClick={() => {
                       setCurrentScreen("login");
-                      setErrorMsg("");
+                      setErrors({});
                     }}
                     disabled={isLoading}
                     className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"

@@ -48,6 +48,7 @@ import {
   FormLabel,
   FormInput,
   StatusSlider,
+  ErrorText,
 } from './hb/common';
 import { mockRoles, availableModules, Role, ModulePermission } from '../../mockAPI/rolesData';
 import { toast } from 'sonner';
@@ -157,11 +158,13 @@ export default function RoleManagement() {
   const handleCreate = () => {
     setSelectedRole(null);
     setIsEditing(true);
+    setRoleErrors({});
   };
 
   const handleEdit = (role: Role) => {
     setSelectedRole(role);
     setIsEditing(true);
+    setRoleErrors({});
   };
 
   const handleClone = (role: Role) => {
@@ -173,6 +176,7 @@ export default function RoleManagement() {
     };
     setSelectedRole(clonedRole);
     setIsEditing(true);
+    setRoleErrors({});
     toast.info(`Cloning role: ${role.name}`);
   };
 
@@ -182,13 +186,31 @@ export default function RoleManagement() {
     }
   };
 
+  const [roleErrors, setRoleErrors] = useState<Record<string, boolean>>({});
+  const roleNameRef = useRef<HTMLInputElement>(null);
+  const roleCodeRef = useRef<HTMLInputElement>(null);
+
   const handleSave = () => {
+    const errs = {
+      name: !formData.name.trim(),
+      code: !formData.code.trim(),
+    };
+    if (errs.name || errs.code) {
+      setRoleErrors(errs);
+      toast.error('Please fill in all required fields.');
+      const el = errs.name ? roleNameRef.current : roleCodeRef.current;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
+      return;
+    }
+    setRoleErrors({});
     toast.success(`Role ${selectedRole?.id ? 'updated' : 'created'} successfully.`);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    setRoleErrors({});
   };
 
   const togglePermission = (moduleId: string, actionId: string) => {
@@ -618,19 +640,25 @@ export default function RoleManagement() {
                 <FormField>
                   <FormLabel required>Role Name</FormLabel>
                   <FormInput
+                    ref={roleNameRef}
                     placeholder="Enter role name"
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    onChange={e => { setFormData({ ...formData, name: e.target.value }); setRoleErrors(prev => ({ ...prev, name: false })); }}
+                    className={roleErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{roleErrors.name && 'Role name is required.'}</ErrorText>
                 </FormField>
 
                 <FormField>
                   <FormLabel required>Role Code</FormLabel>
                   <FormInput
+                    ref={roleCodeRef}
                     placeholder="e.g. manager_level_1"
                     value={formData.code}
-                    onChange={e => setFormData({ ...formData, code: e.target.value })}
+                    onChange={e => { setFormData({ ...formData, code: e.target.value }); setRoleErrors(prev => ({ ...prev, code: false })); }}
+                    className={roleErrors.code ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{roleErrors.code && 'Role code is required.'}</ErrorText>
                 </FormField>
 
                 <FormField>

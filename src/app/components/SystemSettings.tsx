@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Shield, 
   Palette, 
@@ -23,15 +23,16 @@ import {
   PrimaryButton, 
   SecondaryButton 
 } from './hb/listing';
-import { 
-  FormCard, 
-  FormField, 
-  FormLabel, 
-  FormInput, 
-  FormGrid, 
+import {
+  FormCard,
+  FormField,
+  FormLabel,
+  FormInput,
+  FormGrid,
   FormSection,
   FormSelect,
-  FormTextarea
+  FormTextarea,
+  ErrorText,
 } from './hb/common/Form';
 import { toast } from 'sonner';
 
@@ -78,7 +79,57 @@ export default function SystemSettings() {
     iosUpdateMessage: 'Important updates are available for your iOS device to improve performance.'
   });
 
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
+  const FIELD_ORDER = ['companyName', 'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword', 'senderName', 'senderEmail', 'address', 'adminEmail', 'maxLoginAttempts', 'sessionTimeout', 'androidVersion', 'iosVersion'];
+  const FIELD_TAB: Record<string, 'general' | 'mobile'> = {
+    companyName: 'general', smtpHost: 'general', smtpPort: 'general', smtpUsername: 'general', smtpPassword: 'general',
+    senderName: 'general', senderEmail: 'general', address: 'general', adminEmail: 'general',
+    maxLoginAttempts: 'general', sessionTimeout: 'general',
+    androidVersion: 'mobile', iosVersion: 'mobile',
+  };
+
+  const validate = () => {
+    const errs: Record<string, boolean> = {};
+    if (!settings.companyName.trim())  errs.companyName = true;
+    if (!settings.smtpHost.trim())     errs.smtpHost = true;
+    if (!settings.smtpPort.trim())     errs.smtpPort = true;
+    if (!settings.smtpUsername.trim()) errs.smtpUsername = true;
+    if (!settings.smtpPassword.trim()) errs.smtpPassword = true;
+    if (!settings.senderName.trim())   errs.senderName = true;
+    if (!settings.senderEmail.trim())  errs.senderEmail = true;
+    if (!settings.address.trim())      errs.address = true;
+    if (!settings.adminEmail.trim())   errs.adminEmail = true;
+    if (!settings.maxLoginAttempts || settings.maxLoginAttempts < 1) errs.maxLoginAttempts = true;
+    if (!settings.sessionTimeout || settings.sessionTimeout < 1)     errs.sessionTimeout = true;
+    if (!settings.androidVersion.trim()) errs.androidVersion = true;
+    if (!settings.iosVersion.trim())     errs.iosVersion = true;
+    return errs;
+  };
+
   const handleSave = async () => {
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      toast.error('Please fill in all required fields.');
+      const firstKey = FIELD_ORDER.find(k => errs[k]);
+      if (firstKey) {
+        const tab = FIELD_TAB[firstKey];
+        if (tab !== activeTab) setActiveTab(tab);
+        setTimeout(() => {
+          const el = fieldRefs.current[firstKey];
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.focus();
+          }
+        }, 60);
+      }
+      return;
+    }
+    setErrors({});
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -151,11 +202,14 @@ export default function SystemSettings() {
                   <FormGrid cols={2}>
                     <FormField>
                       <FormLabel required>Company Name</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.companyName = el; }}
                         value={settings.companyName}
-                        onChange={(e) => setSettings({...settings, companyName: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, companyName: e.target.value}); setErrors(prev => ({ ...prev, companyName: false })); }}
                         placeholder="e.g. Hindu Swayamsevak Sangh UK"
+                        className={errCls('companyName')}
                       />
+                      <ErrorText>{errors.companyName && 'Company name is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel>Copyright Text</FormLabel>
@@ -211,32 +265,44 @@ export default function SystemSettings() {
                   <FormGrid cols={2}>
                     <FormField>
                       <FormLabel required>SMTP Host</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.smtpHost = el; }}
                         value={settings.smtpHost}
-                        onChange={(e) => setSettings({...settings, smtpHost: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, smtpHost: e.target.value}); setErrors(prev => ({ ...prev, smtpHost: false })); }}
+                        className={errCls('smtpHost')}
                       />
+                      <ErrorText>{errors.smtpHost && 'SMTP host is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>SMTP Port</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.smtpPort = el; }}
                         value={settings.smtpPort}
-                        onChange={(e) => setSettings({...settings, smtpPort: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, smtpPort: e.target.value}); setErrors(prev => ({ ...prev, smtpPort: false })); }}
+                        className={errCls('smtpPort')}
                       />
+                      <ErrorText>{errors.smtpPort && 'SMTP port is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>SMTP Username</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.smtpUsername = el; }}
                         value={settings.smtpUsername}
-                        onChange={(e) => setSettings({...settings, smtpUsername: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, smtpUsername: e.target.value}); setErrors(prev => ({ ...prev, smtpUsername: false })); }}
+                        className={errCls('smtpUsername')}
                       />
+                      <ErrorText>{errors.smtpUsername && 'SMTP username is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>SMTP Password</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.smtpPassword = el; }}
                         type="password"
                         value={settings.smtpPassword}
-                        onChange={(e) => setSettings({...settings, smtpPassword: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, smtpPassword: e.target.value}); setErrors(prev => ({ ...prev, smtpPassword: false })); }}
+                        className={errCls('smtpPassword')}
                       />
+                      <ErrorText>{errors.smtpPassword && 'SMTP password is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>Encryption Type</FormLabel>
@@ -256,17 +322,23 @@ export default function SystemSettings() {
                   <FormGrid cols={2}>
                     <FormField>
                       <FormLabel required>Sender Name</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.senderName = el; }}
                         value={settings.senderName}
-                        onChange={(e) => setSettings({...settings, senderName: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, senderName: e.target.value}); setErrors(prev => ({ ...prev, senderName: false })); }}
+                        className={errCls('senderName')}
                       />
+                      <ErrorText>{errors.senderName && 'Sender name is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>Sender Email Address</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.senderEmail = el; }}
                         value={settings.senderEmail}
-                        onChange={(e) => setSettings({...settings, senderEmail: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, senderEmail: e.target.value}); setErrors(prev => ({ ...prev, senderEmail: false })); }}
+                        className={errCls('senderEmail')}
                       />
+                      <ErrorText>{errors.senderEmail && 'Sender email is required.'}</ErrorText>
                     </FormField>
                   </FormGrid>
                 </FormSection>
@@ -283,19 +355,25 @@ export default function SystemSettings() {
                     <div className="col-span-2">
                       <FormField>
                         <FormLabel required>Address</FormLabel>
-                        <FormTextarea 
+                        <FormTextarea
+                          ref={el => { fieldRefs.current.address = el; }}
                           rows={3}
                           value={settings.address}
-                          onChange={(e) => setSettings({...settings, address: e.target.value})}
+                          onChange={(e) => { setSettings({...settings, address: e.target.value}); setErrors(prev => ({ ...prev, address: false })); }}
+                          className={errCls('address')}
                         />
+                        <ErrorText>{errors.address && 'Address is required.'}</ErrorText>
                       </FormField>
                     </div>
                     <FormField>
                       <FormLabel required>Admin Email Address</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.adminEmail = el; }}
                         value={settings.adminEmail}
-                        onChange={(e) => setSettings({...settings, adminEmail: e.target.value})}
+                        onChange={(e) => { setSettings({...settings, adminEmail: e.target.value}); setErrors(prev => ({ ...prev, adminEmail: false })); }}
+                        className={errCls('adminEmail')}
                       />
+                      <ErrorText>{errors.adminEmail && 'Admin email is required.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel>Contact Number</FormLabel>
@@ -380,19 +458,25 @@ export default function SystemSettings() {
                   <FormGrid cols={2}>
                     <FormField>
                       <FormLabel required>Maximum Login Attempts</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.maxLoginAttempts = el; }}
                         type="number"
                         value={settings.maxLoginAttempts}
-                        onChange={(e) => setSettings({...settings, maxLoginAttempts: parseInt(e.target.value)})}
+                        onChange={(e) => { setSettings({...settings, maxLoginAttempts: parseInt(e.target.value)}); setErrors(prev => ({ ...prev, maxLoginAttempts: false })); }}
+                        className={errCls('maxLoginAttempts')}
                       />
+                      <ErrorText>{errors.maxLoginAttempts && 'Enter a valid number.'}</ErrorText>
                     </FormField>
                     <FormField>
                       <FormLabel required>Session Timeout (Minutes)</FormLabel>
-                      <FormInput 
+                      <FormInput
+                        ref={el => { fieldRefs.current.sessionTimeout = el; }}
                         type="number"
                         value={settings.sessionTimeout}
-                        onChange={(e) => setSettings({...settings, sessionTimeout: parseInt(e.target.value)})}
+                        onChange={(e) => { setSettings({...settings, sessionTimeout: parseInt(e.target.value)}); setErrors(prev => ({ ...prev, sessionTimeout: false })); }}
+                        className={errCls('sessionTimeout')}
                       />
+                      <ErrorText>{errors.sessionTimeout && 'Enter a valid number.'}</ErrorText>
                     </FormField>
                   </FormGrid>
                 </FormSection>
@@ -411,11 +495,14 @@ export default function SystemSettings() {
                     <FormGrid cols={2}>
                       <FormField>
                         <FormLabel required>Android App Version</FormLabel>
-                        <FormInput 
+                        <FormInput
+                          ref={el => { fieldRefs.current.androidVersion = el; }}
                           value={settings.androidVersion}
-                          onChange={(e) => setSettings({...settings, androidVersion: e.target.value})}
+                          onChange={(e) => { setSettings({...settings, androidVersion: e.target.value}); setErrors(prev => ({ ...prev, androidVersion: false })); }}
                           placeholder="e.g. 1.0.0"
+                          className={errCls('androidVersion')}
                         />
+                        <ErrorText>{errors.androidVersion && 'Android app version is required.'}</ErrorText>
                       </FormField>
                       <div className="flex items-center justify-between p-4 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
                         <div className="space-y-0.5">
@@ -450,11 +537,14 @@ export default function SystemSettings() {
                     <FormGrid cols={2}>
                       <FormField>
                         <FormLabel required>iOS App Version</FormLabel>
-                        <FormInput 
+                        <FormInput
+                          ref={el => { fieldRefs.current.iosVersion = el; }}
                           value={settings.iosVersion}
-                          onChange={(e) => setSettings({...settings, iosVersion: e.target.value})}
+                          onChange={(e) => { setSettings({...settings, iosVersion: e.target.value}); setErrors(prev => ({ ...prev, iosVersion: false })); }}
                           placeholder="e.g. 1.0.0"
+                          className={errCls('iosVersion')}
                         />
+                        <ErrorText>{errors.iosVersion && 'iOS app version is required.'}</ErrorText>
                       </FormField>
                       <div className="flex items-center justify-between p-4 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
                         <div className="space-y-0.5">

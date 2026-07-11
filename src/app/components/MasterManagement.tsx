@@ -28,14 +28,15 @@ import {
   SummaryWidgets,
   type ColumnConfig
 } from './hb/listing';
-import { 
-  FormModal, 
-  FormSection, 
-  FormField, 
-  FormLabel, 
-  FormInput, 
+import {
+  FormModal,
+  FormSection,
+  FormField,
+  FormLabel,
+  FormInput,
   FormSelect,
-  StatusSlider
+  StatusSlider,
+  ErrorText,
 } from './hb/common';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -390,11 +391,18 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
     setModalMode('create');
   };
 
+  const [nameError, setNameError] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+
   const handleSaveItem = () => {
     if (!activeItem || !activeItem.name) {
+      setNameError(true);
       toast.error('Please complete required fields.');
+      nameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nameRef.current?.focus();
       return;
     }
+    setNameError(false);
 
     const savedItem = activeItem as MasterItem;
     
@@ -972,7 +980,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
         {/* ========== CRUD FORM MODAL ========== */}
         <FormModal
           isOpen={modalMode !== null}
-          onClose={() => { setModalMode(null); setActiveItem(null); }}
+          onClose={() => { setModalMode(null); setActiveItem(null); setNameError(false); }}
           title={modalMode === 'create' ? `Add New ${config.title}` : modalMode === 'edit' ? `Edit Record ${activeItem?.id}` : `View Details: ${activeItem?.name}`}
           maxWidth="max-w-lg"
         >
@@ -982,11 +990,14 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                 <FormField>
                   <FormLabel required={modalMode !== 'view'}>{config.nameLabel}</FormLabel>
                   <FormInput
+                    ref={nameRef}
                     value={activeItem.name || ''}
-                    onChange={e => setActiveItem({...activeItem, name: e.target.value})}
+                    onChange={e => { setActiveItem({...activeItem, name: e.target.value}); setNameError(false); }}
                     readOnly={modalMode === 'view'}
                     placeholder={`Enter ${masterType} name`}
+                    className={nameError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{nameError && 'This field is required.'}</ErrorText>
                 </FormField>
               </FormSection>
 

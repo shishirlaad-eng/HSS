@@ -110,6 +110,11 @@ export function FormLabel({ children, required, className, htmlFor }: FormLabelP
   );
 }
 
+export function ErrorText({ children }: { children?: string | false }) {
+  if (!children) return null;
+  return <p className="text-xs text-[#BC0F1C] mt-1">{children}</p>;
+}
+
 interface FormGridProps {
   children: React.ReactNode;
   cols?: 1 | 2 | 3 | 4;

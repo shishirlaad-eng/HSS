@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Save, 
@@ -8,7 +8,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormTextarea } from './hb/common/Form';
+import { FormField, FormLabel, FormTextarea, ErrorText } from './hb/common/Form';
 import { StaticPage } from '../../mockAPI/staticPagesData';
 import { toast } from 'sonner';
 
@@ -43,10 +43,15 @@ export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
     return null;
   };
 
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+
   const handleSave = async () => {
     const validationError = validateContent(content);
     if (validationError) {
       setError(validationError);
+      toast.error(validationError);
+      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      contentRef.current?.focus();
       return;
     }
 
@@ -114,17 +119,21 @@ export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
               </div>
 
               <div className="space-y-4">
-                <FormTextarea
-                  label="Content"
-                  value={content}
-                  onChange={setContent}
-                  placeholder="Enter page content here..."
-                  rows={20}
-                  error={error || (validationError && content.length > 0 ? validationError : undefined)}
-                  required
-                  className="font-sans leading-relaxed text-base"
-                />
-                
+                <FormField>
+                  <FormLabel required>Content</FormLabel>
+                  <FormTextarea
+                    ref={contentRef}
+                    value={content}
+                    onChange={(e) => { setContent(e.target.value); setError(null); }}
+                    placeholder="Enter page content here..."
+                    rows={20}
+                    className={`font-sans leading-relaxed text-base ${
+                      (error || (validationError && content.length > 0)) ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''
+                    }`}
+                  />
+                  <ErrorText>{error || (validationError && content.length > 0 ? validationError : undefined)}</ErrorText>
+                </FormField>
+
                 <div className="flex justify-between items-center text-xs text-neutral-400">
                   <span>Minimum 20 characters required</span>
                   <span className={content.length > 20000 ? "text-error-500" : ""}>
@@ -141,14 +150,16 @@ export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-6">Page Metadata</h3>
               
               <div className="space-y-5">
-                <FormField label="Page Name">
+                <FormField>
+                  <FormLabel>Page Name</FormLabel>
                   <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-sm text-neutral-600 dark:text-neutral-400 font-medium">
                     <FileText className="w-4 h-4 text-neutral-400" />
                     {page.name}
                   </div>
                 </FormField>
 
-                <FormField label="System Slug">
+                <FormField>
+                  <FormLabel>System Slug</FormLabel>
                   <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-sm text-neutral-500 dark:text-neutral-500 font-mono">
                     <Globe className="w-4 h-4 text-neutral-400" />
                     /{page.slug}

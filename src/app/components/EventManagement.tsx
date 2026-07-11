@@ -58,6 +58,7 @@ import {
   FormInput,
   FormGrid,
   FormSelect,
+  ErrorText,
 } from './hb/common';
 import { mockEvents, mockParticipants, Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
@@ -423,10 +424,28 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
     return errs;
   };
 
+  const errCls = (key: string) => errors[key as keyof CreateErrors] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
+  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'country', 'region', 'town', 'activityCentre'];
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const focusFirstError = (errs: CreateErrors) => {
+    const firstKey = FIELD_ORDER.find(k => errs[k as keyof CreateErrors]);
+    const el = firstKey ? fieldRefs.current[firstKey] : null;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+    }
+  };
+
   const handleSave = async () => {
     setTouched(true);
     const errs = validate(form);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      toast.error('Please fill in all required fields.');
+      focusFirstError(errs);
+      return;
+    }
     setIsLoading(true);
     try {
       await new Promise(r => setTimeout(r, 800));
@@ -479,11 +498,13 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
             <FormField className="md:col-span-2">
               <FormLabel required>Karyakram Title</FormLabel>
               <FormInput
+                ref={el => { fieldRefs.current.name = el; }}
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder="Enter Karyakram title"
+                className={errCls('name')}
               />
-              {errors.name && <p className="text-xs text-error-600 mt-1">{errors.name}</p>}
+              <ErrorText>{errors.name}</ErrorText>
             </FormField>
             <FormField className="md:col-span-2">
               <FormLabel>Karyakram Description</FormLabel>
@@ -543,21 +564,25 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
               <FormField>
                 <FormLabel required>Venue Address</FormLabel>
                 <FormInput
+                  ref={el => { fieldRefs.current.venueAddress = el; }}
                   value={form.venueAddress}
                   onChange={e => set('venueAddress', e.target.value)}
                   placeholder="Enter full venue address"
+                  className={errCls('venueAddress')}
                 />
-                {errors.venueAddress && <p className="text-xs text-error-600 mt-1">{errors.venueAddress}</p>}
+                <ErrorText>{errors.venueAddress}</ErrorText>
               </FormField>
             ) : (
               <FormField>
                 <FormLabel required>Online Call URL</FormLabel>
                 <FormInput
+                  ref={el => { fieldRefs.current.onlineUrl = el; }}
                   value={form.onlineUrl}
                   onChange={e => set('onlineUrl', e.target.value)}
                   placeholder="e.g. https://meet.hssuk.org/your-karyakram"
+                  className={errCls('onlineUrl')}
                 />
-                {errors.onlineUrl && <p className="text-xs text-error-600 mt-1">{errors.onlineUrl}</p>}
+                <ErrorText>{errors.onlineUrl}</ErrorText>
               </FormField>
             )}
           </div>
@@ -572,38 +597,46 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
             <FormField>
               <FormLabel required>Start Date</FormLabel>
               <FormInput
+                ref={el => { fieldRefs.current.startDate = el; }}
                 type="date"
                 value={form.startDate}
                 onChange={e => set('startDate', e.target.value)}
+                className={errCls('startDate')}
               />
-              {errors.startDate && <p className="text-xs text-error-600 mt-1">{errors.startDate}</p>}
+              <ErrorText>{errors.startDate}</ErrorText>
             </FormField>
             <FormField>
               <FormLabel required>Start Time</FormLabel>
               <FormInput
+                ref={el => { fieldRefs.current.startTime = el; }}
                 type="time"
                 value={form.startTime}
                 onChange={e => set('startTime', e.target.value)}
+                className={errCls('startTime')}
               />
-              {errors.startTime && <p className="text-xs text-error-600 mt-1">{errors.startTime}</p>}
+              <ErrorText>{errors.startTime}</ErrorText>
             </FormField>
             <FormField>
               <FormLabel required>End Date</FormLabel>
               <FormInput
+                ref={el => { fieldRefs.current.endDate = el; }}
                 type="date"
                 value={form.endDate}
                 onChange={e => set('endDate', e.target.value)}
+                className={errCls('endDate')}
               />
-              {errors.endDate && <p className="text-xs text-error-600 mt-1">{errors.endDate}</p>}
+              <ErrorText>{errors.endDate}</ErrorText>
             </FormField>
             <FormField>
               <FormLabel required>End Time</FormLabel>
               <FormInput
+                ref={el => { fieldRefs.current.endTime = el; }}
                 type="time"
                 value={form.endTime}
                 onChange={e => set('endTime', e.target.value)}
+                className={errCls('endTime')}
               />
-              {errors.endTime && <p className="text-xs text-error-600 mt-1">{errors.endTime}</p>}
+              <ErrorText>{errors.endTime}</ErrorText>
             </FormField>
           </FormGrid>
         </div>
@@ -617,24 +650,26 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
             <FormField>
               <FormLabel required>Payment Type</FormLabel>
               <FormSelect
+                ref={el => { fieldRefs.current.paymentType = el; }}
                 value={form.paymentType}
                 onChange={e => set('paymentType', e.target.value)}
+                className={errCls('paymentType')}
               >
                 <option value="">Select Payment Type</option>
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
               </FormSelect>
-              {errors.paymentType && <p className="text-xs text-error-600 mt-1">{errors.paymentType}</p>}
+              <ErrorText>{errors.paymentType}</ErrorText>
             </FormField>
           </FormGrid>
           {form.paymentType === 'paid' && (
-            <div className="mt-3">
+            <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-3">
               <FormLabel required>Price Categories</FormLabel>
               <PriceCategoriesEditor
                 categories={form.priceCategories}
                 onChange={cats => set('priceCategories', cats)}
               />
-              {errors.priceCategories && <p className="text-xs text-error-600 mt-1">{errors.priceCategories}</p>}
+              <ErrorText>{errors.priceCategories}</ErrorText>
             </div>
           )}
         </div>
@@ -683,57 +718,65 @@ function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
                 <FormField>
                   <FormLabel required>Country</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.country = el; }}
                     value={form.country}
                     onChange={e => set('country', e.target.value)}
+                    className={errCls('country')}
                   >
                     <option value="">Select Country</option>
                     {MASTERS_CASCADE.countries.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </FormSelect>
-                  {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
+                  <ErrorText>{errors.country}</ErrorText>
                 </FormField>
                 <FormField>
                   <FormLabel required>Vibhag</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.region = el; }}
                     value={form.region}
                     onChange={e => set('region', e.target.value)}
                     disabled={!form.country}
+                    className={errCls('region')}
                   >
                     <option value="">Select Vibhag</option>
                     {availableRegions.map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </FormSelect>
-                  {errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
+                  <ErrorText>{errors.region}</ErrorText>
                 </FormField>
                 <FormField>
                   <FormLabel required>Nagar</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.town = el; }}
                     value={form.town}
                     onChange={e => set('town', e.target.value)}
                     disabled={!form.region}
+                    className={errCls('town')}
                   >
                     <option value="">Select Nagar</option>
                     {availableTowns.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </FormSelect>
-                  {errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
+                  <ErrorText>{errors.town}</ErrorText>
                 </FormField>
                 <FormField>
                   <FormLabel required>Shakha</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.activityCentre = el; }}
                     value={form.activityCentre}
                     onChange={e => set('activityCentre', e.target.value)}
                     disabled={!form.town}
+                    className={errCls('activityCentre')}
                   >
                     <option value="">Select Shakha</option>
                     {availableCentres.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </FormSelect>
-                  {errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
+                  <ErrorText>{errors.activityCentre}</ErrorText>
                 </FormField>
               </FormGrid>
             </div>

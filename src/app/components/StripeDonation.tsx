@@ -14,6 +14,7 @@ import {
   Landmark,
 } from 'lucide-react';
 import hssLogoColour from '../../assets/brand/hss/logos/hss-logo-colour.png';
+import { toast } from 'sonner';
 
 // ── Preset amounts ────────────────────────────────────────────
 const PRESET_AMOUNTS = [5, 10, 25, 50, 100, 250];
@@ -89,6 +90,8 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
   const [success, setSuccess]   = useState(false);
 
   const cardRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const FIELD_ORDER = ['amount', 'email', 'card', 'expiry', 'cvc', 'name'];
 
   const amount = customAmount !== '' ? parseFloat(customAmount) : (selectedPreset ?? 0);
   const brand  = detectBrand(cardNumber);
@@ -111,7 +114,16 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length) {
+      toast.error('Please fill in all required fields.');
+      const firstKey = FIELD_ORDER.find(k => errs[k]);
+      const el = firstKey ? fieldRefs.current[firstKey] : null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+      return;
+    }
 
     setLoading(true);
     setTimeout(() => {
@@ -196,6 +208,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
               customAmount={customAmount}
               amount={amount}
               amountError={errors.amount}
+              inputRef={el => { fieldRefs.current.amount = el; }}
               onPresetSelect={(amt) => {
                 setSelectedPreset(amt);
                 setCustomAmount('');
@@ -269,6 +282,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                 <div>
                   <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Email address</label>
                   <input
+                    ref={el => { fieldRefs.current.email = el; }}
                     type="email"
                     placeholder="you@example.com"
                     value={email}
@@ -286,7 +300,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                   <div className="relative">
                     <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
-                      ref={cardRef}
+                      ref={el => { cardRef.current = el; fieldRefs.current.card = el; }}
                       type="text"
                       inputMode="numeric"
                       placeholder="1234 5678 9012 3456"
@@ -308,6 +322,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                   <div>
                     <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Expiry date</label>
                     <input
+                      ref={el => { fieldRefs.current.expiry = el; }}
                       type="text"
                       inputMode="numeric"
                       placeholder="MM / YY"
@@ -323,6 +338,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                     <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">CVC / CVV</label>
                     <div className="relative">
                       <input
+                        ref={el => { fieldRefs.current.cvc = el; }}
                         type="text"
                         inputMode="numeric"
                         placeholder="•••"
@@ -341,6 +357,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                 <div>
                   <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Cardholder name</label>
                   <input
+                    ref={el => { fieldRefs.current.name = el; }}
                     type="text"
                     placeholder="Name as it appears on card"
                     value={name}
@@ -477,6 +494,7 @@ function AmountSelector({
   amountError,
   onPresetSelect,
   onCustomAmountChange,
+  inputRef,
 }: {
   selectedPreset: number | null;
   customAmount: string;
@@ -484,6 +502,7 @@ function AmountSelector({
   amountError?: string;
   onPresetSelect: (amount: number) => void;
   onCustomAmountChange: (value: string) => void;
+  inputRef?: (el: HTMLInputElement | null) => void;
 }) {
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm">
@@ -509,6 +528,7 @@ function AmountSelector({
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium text-sm">£</span>
         <input
+          ref={inputRef}
           type="number"
           min="1"
           placeholder="Other amount"

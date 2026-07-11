@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   MoreVertical,
   Eye,
@@ -180,6 +180,7 @@ function RejectReasonModal({
   const [touched, setTouched] = useState(false);
   const isValid   = reason.trim().length > 0;
   const showError = touched && !isValid;
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) setTouched(false);
@@ -189,7 +190,10 @@ function RejectReasonModal({
 
   const handleConfirm = () => {
     setTouched(true);
-    if (isValid) onConfirm();
+    if (isValid) { onConfirm(); return; }
+    toast.error('Rejection reason is required.');
+    reasonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    reasonRef.current?.focus();
   };
 
   return (
@@ -218,6 +222,7 @@ function RejectReasonModal({
             Rejection Reason <span className="text-[#BC0F1C]">*</span>
           </label>
           <textarea
+            ref={reasonRef}
             value={reason}
             onChange={e => onReasonChange(e.target.value)}
             onBlur={() => setTouched(true)}

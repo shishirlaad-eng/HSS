@@ -11,6 +11,7 @@ export {
   FormGrid, 
   FormFooter, 
   FormField,
+  ErrorText,
   FormInput,
   FormTextarea,
   FormTextArea,

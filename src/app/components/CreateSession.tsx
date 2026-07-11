@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Create Session (full page, HB template style)
 // ─────────────────────────────────────────────────────────────
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   ArrowLeft,
   Save,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
 import {
   ShakhaSession,
   AttendanceRecord,
@@ -182,7 +182,21 @@ export default function CreateSession({
     if (!isEditMode && isRecurring && form.repeatUntil && form.repeatUntil < form.date)
                               e.repeatUntil    = 'Repeat until must be on or after the start date.';
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return e;
+  };
+
+  const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+
+  const FIELD_ORDER = ['date', 'startTime', 'endTime', 'shakhaType', 'region', 'town', 'activityCentre', 'repeatUntil'];
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const focusFirstError = (errs: Record<string, string>) => {
+    const firstKey = FIELD_ORDER.find(k => errs[k]);
+    const el = firstKey ? fieldRefs.current[firstKey] : null;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+    }
   };
 
   // ── Build sessions ─────────────────────────────────────────
@@ -251,7 +265,12 @@ export default function CreateSession({
   // ── Submit ─────────────────────────────────────────────────
   const handleCreate = () => {
     setTouched(true);
-    if (!validate()) return;
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      toast.error('Please fill in all required fields.');
+      focusFirstError(errs);
+      return;
+    }
     setSaving(true);
     setTimeout(() => {
       if (isEditMode && sessionToEdit && onUpdate) {
@@ -345,32 +364,38 @@ export default function CreateSession({
                   <FormField>
                     <FormLabel required>Date</FormLabel>
                     <FormInput
+                      ref={el => { fieldRefs.current.date = el; }}
                       type="date"
                       value={form.date}
                       onChange={e => setField('date', e.target.value)}
+                      className={errCls('date')}
                     />
-                    {touched && errors.date && <p className="text-xs text-error-600 mt-1">{errors.date}</p>}
+                    <ErrorText>{touched && errors.date}</ErrorText>
                   </FormField>
                 </div>
 
                 <FormField>
                   <FormLabel required>Start Time</FormLabel>
                   <FormInput
+                    ref={el => { fieldRefs.current.startTime = el; }}
                     type="time"
                     value={form.startTime}
                     onChange={e => setField('startTime', e.target.value)}
+                    className={errCls('startTime')}
                   />
-                  {touched && errors.startTime && <p className="text-xs text-error-600 mt-1">{errors.startTime}</p>}
+                  <ErrorText>{touched && errors.startTime}</ErrorText>
                 </FormField>
 
                 <FormField>
                   <FormLabel required>End Time</FormLabel>
                   <FormInput
+                    ref={el => { fieldRefs.current.endTime = el; }}
                     type="time"
                     value={form.endTime}
                     onChange={e => setField('endTime', e.target.value)}
+                    className={errCls('endTime')}
                   />
-                  {touched && errors.endTime && <p className="text-xs text-error-600 mt-1">{errors.endTime}</p>}
+                  <ErrorText>{touched && errors.endTime}</ErrorText>
                 </FormField>
 
               </div>
@@ -383,13 +408,15 @@ export default function CreateSession({
                 <FormField>
                   <FormLabel required>Shakha Type</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.shakhaType = el; }}
                     value={form.shakhaType}
                     onChange={e => setField('shakhaType', e.target.value)}
+                    className={errCls('shakhaType')}
                   >
                     <option value="">Select shakha type…</option>
                     {SHAKHA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </FormSelect>
-                  {touched && errors.shakhaType && <p className="text-xs text-error-600 mt-1">{errors.shakhaType}</p>}
+                  <ErrorText>{touched && errors.shakhaType}</ErrorText>
                 </FormField>
 
                 <FormField>
@@ -412,40 +439,46 @@ export default function CreateSession({
                 <FormField>
                   <FormLabel required>Region</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.region = el; }}
                     value={form.region}
                     onChange={e => handleRegionChange(e.target.value)}
+                    className={errCls('region')}
                   >
                     <option value="">Select region…</option>
                     {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </FormSelect>
-                  {touched && errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
+                  <ErrorText>{touched && errors.region}</ErrorText>
                 </FormField>
 
                 <FormField>
                   <FormLabel required>Town</FormLabel>
                   <FormSelect
+                    ref={el => { fieldRefs.current.town = el; }}
                     value={form.town}
                     onChange={e => handleTownChange(e.target.value)}
                     disabled={!form.region}
+                    className={errCls('town')}
                   >
                     <option value="">Select town…</option>
                     {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
                   </FormSelect>
-                  {touched && errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
+                  <ErrorText>{touched && errors.town}</ErrorText>
                 </FormField>
 
                 <div className="md:col-span-2">
                   <FormField>
                     <FormLabel required>Activity Centre</FormLabel>
                     <FormSelect
+                      ref={el => { fieldRefs.current.activityCentre = el; }}
                       value={form.activityCentre}
                       onChange={e => setField('activityCentre', e.target.value)}
                       disabled={!form.town}
+                      className={errCls('activityCentre')}
                     >
                       <option value="">Select activity centre…</option>
                       {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
                     </FormSelect>
-                    {touched && errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
+                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
                   </FormField>
                 </div>
 
@@ -502,12 +535,14 @@ export default function CreateSession({
                     <FormField>
                       <FormLabel required>Repeat Until</FormLabel>
                       <FormInput
+                        ref={el => { fieldRefs.current.repeatUntil = el; }}
                         type="date"
                         value={form.repeatUntil}
                         min={form.date}
                         onChange={e => setField('repeatUntil', e.target.value)}
+                        className={errCls('repeatUntil')}
                       />
-                      {touched && errors.repeatUntil && <p className="text-xs text-error-600 mt-1">{errors.repeatUntil}</p>}
+                      <ErrorText>{touched && errors.repeatUntil}</ErrorText>
                       {recurringPreviewCount > 0 && (
                         <p className="text-xs text-primary-600 dark:text-primary-400 mt-1.5 font-medium">
                           {recurringPreviewCount} Shakha{recurringPreviewCount !== 1 ? 's' : ''} will be created

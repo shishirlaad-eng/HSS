@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Eye, Edit, Trash2, Plus, RefreshCw, MoreVertical,
   Globe, MapPin, Map, Building2, Tags, AlertTriangle,
@@ -15,7 +15,7 @@ import {
 } from './hb/listing';
 import {
   FormModal, FormSection, FormField, FormLabel,
-  FormInput, FormSelect, StatusSlider, PhoneInput
+  FormInput, FormSelect, StatusSlider, PhoneInput, ErrorText,
 } from './hb/common';
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE } from '../../mockAPI/membersData';
@@ -453,23 +453,43 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     setModalMode('create');
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const countryRef = useRef<HTMLSelectElement>(null);
+  const regionRef  = useRef<HTMLSelectElement>(null);
+  const townRef    = useRef<HTMLSelectElement>(null);
+  const nameRef    = useRef<HTMLInputElement>(null);
+
+  const focusField = (ref: React.RefObject<HTMLElement>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ref.current?.focus();
+  };
+
   const handleSaveItem = () => {
-    if (!activeItem?.name?.trim()) {
-      toast.error(`${config.nameLabel} is required.`);
-      return;
-    }
-    if (masterType !== 'country' && !isStandaloneMaster && !activeItem.countryName) {
+    if (masterType !== 'country' && !isStandaloneMaster && !activeItem?.countryName) {
+      setFieldErrors({ countryName: true });
       toast.error('Country is required.');
+      focusField(countryRef);
       return;
     }
-    if ((masterType === 'town' || masterType === 'centre') && !activeItem.regionName) {
+    if ((masterType === 'town' || masterType === 'centre') && !activeItem?.regionName) {
+      setFieldErrors({ regionName: true });
       toast.error('Vibhag is required.');
+      focusField(regionRef);
       return;
     }
-    if (masterType === 'centre' && !activeItem.townName) {
+    if (masterType === 'centre' && !activeItem?.townName) {
+      setFieldErrors({ townName: true });
       toast.error('Nagar is required.');
+      focusField(townRef);
       return;
     }
+    if (!activeItem?.name?.trim()) {
+      setFieldErrors({ name: true });
+      toast.error(`${config.nameLabel} is required.`);
+      focusField(nameRef);
+      return;
+    }
+    setFieldErrors({});
 
     const savedItem = { ...activeItem, lastUpdated: new Date().toISOString().split('T')[0] } as MasterItem;
 
@@ -1067,7 +1087,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         ══════════════════════════════════════════════════════════════════ */}
         {masterType !== 'configurable-lists' && <FormModal
           isOpen={modalMode !== null}
-          onClose={() => { setModalMode(null); setActiveItem(null); }}
+          onClose={() => { setModalMode(null); setActiveItem(null); setFieldErrors({}); }}
           title={
             modalMode === 'create' ? config.addLabel :
             modalMode === 'edit'   ? `Edit ${config.title}` :
@@ -1087,13 +1107,16 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput value={activeItem.countryName ?? ''} readOnly />
                     ) : (
                       <FormSelect
+                        ref={countryRef}
                         value={activeItem.countryName ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, countryName: e.target.value, regionName: '', townName: '' })}
+                        onChange={e => { setActiveItem({ ...activeItem, countryName: e.target.value, regionName: '', townName: '' }); setFieldErrors(prev => ({ ...prev, countryName: false })); }}
+                        className={fieldErrors.countryName ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                       >
                         <option value="">Select Country</option>
                         {countryOptions.map(n => <option key={n} value={n}>{n}</option>)}
                       </FormSelect>
                     )}
+                    <ErrorText>{fieldErrors.countryName && 'Country is required.'}</ErrorText>
                   </FormField>
                 </FormSection>
               )}
@@ -1107,14 +1130,17 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput value={activeItem.regionName ?? ''} readOnly />
                     ) : (
                       <FormSelect
+                        ref={regionRef}
                         value={activeItem.regionName ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, regionName: e.target.value, townName: '' })}
+                        onChange={e => { setActiveItem({ ...activeItem, regionName: e.target.value, townName: '' }); setFieldErrors(prev => ({ ...prev, regionName: false })); }}
                         disabled={!activeItem.countryName}
+                        className={fieldErrors.regionName ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                       >
                         <option value="">Select Vibhag</option>
                         {formRegionOptions.map(n => <option key={n} value={n}>{n}</option>)}
                       </FormSelect>
                     )}
+                    <ErrorText>{fieldErrors.regionName && 'Vibhag is required.'}</ErrorText>
                   </FormField>
                 </FormSection>
               )}
@@ -1128,14 +1154,17 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput value={activeItem.townName ?? ''} readOnly />
                     ) : (
                       <FormSelect
+                        ref={townRef}
                         value={activeItem.townName ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, townName: e.target.value })}
+                        onChange={e => { setActiveItem({ ...activeItem, townName: e.target.value }); setFieldErrors(prev => ({ ...prev, townName: false })); }}
                         disabled={!activeItem.regionName}
+                        className={fieldErrors.townName ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                       >
                         <option value="">Select Nagar</option>
                         {formTownOptions.map(n => <option key={n} value={n}>{n}</option>)}
                       </FormSelect>
                     )}
+                    <ErrorText>{fieldErrors.townName && 'Nagar is required.'}</ErrorText>
                   </FormField>
                 </FormSection>
               )}
@@ -1145,11 +1174,14 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 <FormField>
                   <FormLabel required={modalMode !== 'view'}>{config.nameLabel}</FormLabel>
                   <FormInput
+                    ref={nameRef}
                     value={activeItem.name ?? ''}
-                    onChange={e => setActiveItem({ ...activeItem, name: e.target.value })}
+                    onChange={e => { setActiveItem({ ...activeItem, name: e.target.value }); setFieldErrors(prev => ({ ...prev, name: false })); }}
                     readOnly={modalMode === 'view'}
                     placeholder={`Enter ${config.title.toLowerCase()} name`}
+                    className={fieldErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{fieldErrors.name && `${config.nameLabel} is required.`}</ErrorText>
                 </FormField>
               </FormSection>
 
@@ -1263,7 +1295,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-end gap-2 mt-6">
                 <button
                   type="button"
-                  onClick={() => { setModalMode(null); setActiveItem(null); }}
+                  onClick={() => { setModalMode(null); setActiveItem(null); setFieldErrors({}); }}
                   className="px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                 >
                   {modalMode === 'view' ? 'Close' : 'Cancel'}

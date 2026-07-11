@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Plus, Save, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, Pagination, PrimaryButton, SecondaryButton } from './hb/listing';
-import { FormInput, FormSelect } from './hb/common';
+import { FormInput, FormSelect, ErrorText } from './hb/common';
 import {
   Member, ResponsibilityAssignment, RESPONSIBILITY_LEVEL_OPTIONS,
   RESPONSIBILITY_TYPE_OPTIONS, ROLE_TYPE_OPTIONS,
@@ -67,23 +67,61 @@ export default function ResponsibilityManagement({ members, onBack, onSave }: {
 
   useEffect(() => setCurrentPage(1), [query, vibhagFilter, nagarFilter, shakhaFilter, itemsPerPage]);
 
+  const [rowErrors, setRowErrors] = useState<Record<string, Record<string, boolean>>>({});
+  const cellRefs = useRef<Record<string, HTMLElement | null>>({});
+  const ROW_FIELD_ORDER = ['responsibilityLevel', 'sanghResponsibility', 'responsibilityType', 'startDate'] as const;
+
   const updateRow = (memberId: string, index: number, key: keyof DraftAssignment, value: string) => {
     setDrafts(current => ({ ...current, [memberId]: current[memberId].map((row, i) => i === index ? { ...row, [key]: value } : row) }));
+    const rowKey = `${memberId}::${index}`;
+    setRowErrors(current => current[rowKey] ? { ...current, [rowKey]: { ...current[rowKey], [key]: false } } : current);
   };
   const addRow = (memberId: string) => setDrafts(current => ({
     ...current, [memberId]: [emptyAssignment(), ...current[memberId]],
   }));
 
+  const focusInvalidRow = (memberId: string, index: number, field: string) => {
+    const memberPos = visibleMembers.findIndex(m => m.id === memberId);
+    const targetPage = itemsPerPage === 0 ? 1 : Math.floor(memberPos / itemsPerPage) + 1;
+    if (targetPage !== currentPage) setCurrentPage(targetPage);
+    setTimeout(() => {
+      const el = cellRefs.current[`${memberId}::${index}::${field}`];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 80);
+  };
+
   const saveAll = () => {
+    setRowErrors({});
     for (const member of members) {
-      const rows = (drafts[member.id] ?? []).filter(row =>
+      const allRows = drafts[member.id] ?? [];
+      const rows = allRows.filter(row =>
         row.responsibilityLevel || row.sanghResponsibility || row.responsibilityType || row.startDate || row.endDate);
       for (const row of rows) {
         if (!row.responsibilityLevel || !row.sanghResponsibility || !row.responsibilityType || !row.startDate) {
-          toast.error(`${member.name}: partially completed responsibility rows cannot be saved.`); return;
+          const index = allRows.indexOf(row);
+          const rowKey = `${member.id}::${index}`;
+          setRowErrors(current => ({
+            ...current,
+            [rowKey]: {
+              responsibilityLevel: !row.responsibilityLevel,
+              sanghResponsibility: !row.sanghResponsibility,
+              responsibilityType: !row.responsibilityType,
+              startDate: !row.startDate,
+            },
+          }));
+          toast.error(`${member.name}: partially completed responsibility rows cannot be saved.`);
+          const firstField = ROW_FIELD_ORDER.find(f => !row[f as keyof DraftAssignment]) ?? 'responsibilityLevel';
+          focusInvalidRow(member.id, index, firstField);
+          return;
         }
         if (row.endDate && row.endDate < row.startDate) {
-          toast.error(`${member.name}: End Date cannot be before Start Date.`); return;
+          const index = allRows.indexOf(row);
+          toast.error(`${member.name}: End Date cannot be before Start Date.`);
+          focusInvalidRow(member.id, index, 'endDate');
+          return;
         }
       }
       const activeKeys = rows.filter(row => !row.endDate).map(row =>
@@ -156,17 +194,34 @@ export default function ResponsibilityManagement({ members, onBack, onSave }: {
                 </button>
               </td>
             </tr>
-            {rows.map((row, index) => <tr key={`${member.id}-${index}`} className={row.endDate ? 'bg-neutral-50/70 dark:bg-neutral-900/30' : ''}>
-              <td className={td}><FormSelect value={row.responsibilityLevel} onChange={e => updateRow(member.id, index, 'responsibilityLevel', e.target.value)}><option value="">Select level</option>{RESPONSIBILITY_LEVEL_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect></td>
-              <td className={td}><FormSelect value={row.sanghResponsibility} onChange={e => updateRow(member.id, index, 'sanghResponsibility', e.target.value)}><option value="">Select responsibility</option>{ROLE_TYPE_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect></td>
-              <td className={td}><FormSelect value={row.responsibilityType} onChange={e => updateRow(member.id, index, 'responsibilityType', e.target.value)}><option value="">Select type</option>{RESPONSIBILITY_TYPE_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect></td>
-              <td className={td}><FormInput type="date" value={row.startDate ?? ''} onChange={e => updateRow(member.id, index, 'startDate', e.target.value)} /></td>
-              <td className={td}><FormInput type="date" min={row.startDate} value={row.endDate ?? ''} onChange={e => updateRow(member.id, index, 'endDate', e.target.value)} /></td>
+            {rows.map((row, index) => {
+              const rowKey = `${member.id}::${index}`;
+              const err = rowErrors[rowKey] ?? {};
+              const errCls = (field: string) => err[field] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+              return <tr key={`${member.id}-${index}`} className={row.endDate ? 'bg-neutral-50/70 dark:bg-neutral-900/30' : ''}>
+              <td className={td}>
+                <FormSelect ref={el => { cellRefs.current[`${rowKey}::responsibilityLevel`] = el; }} value={row.responsibilityLevel} onChange={e => updateRow(member.id, index, 'responsibilityLevel', e.target.value)} className={errCls('responsibilityLevel')}><option value="">Select level</option>{RESPONSIBILITY_LEVEL_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect>
+                <ErrorText>{err.responsibilityLevel && 'Required.'}</ErrorText>
+              </td>
+              <td className={td}>
+                <FormSelect ref={el => { cellRefs.current[`${rowKey}::sanghResponsibility`] = el; }} value={row.sanghResponsibility} onChange={e => updateRow(member.id, index, 'sanghResponsibility', e.target.value)} className={errCls('sanghResponsibility')}><option value="">Select responsibility</option>{ROLE_TYPE_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect>
+                <ErrorText>{err.sanghResponsibility && 'Required.'}</ErrorText>
+              </td>
+              <td className={td}>
+                <FormSelect ref={el => { cellRefs.current[`${rowKey}::responsibilityType`] = el; }} value={row.responsibilityType} onChange={e => updateRow(member.id, index, 'responsibilityType', e.target.value)} className={errCls('responsibilityType')}><option value="">Select type</option>{RESPONSIBILITY_TYPE_OPTIONS.map(v => <option key={v}>{v}</option>)}</FormSelect>
+                <ErrorText>{err.responsibilityType && 'Required.'}</ErrorText>
+              </td>
+              <td className={td}>
+                <FormInput ref={el => { cellRefs.current[`${rowKey}::startDate`] = el; }} type="date" value={row.startDate ?? ''} onChange={e => updateRow(member.id, index, 'startDate', e.target.value)} className={errCls('startDate')} />
+                <ErrorText>{err.startDate && 'Required.'}</ErrorText>
+              </td>
+              <td className={td}><FormInput ref={el => { cellRefs.current[`${rowKey}::endDate`] = el; }} type="date" min={row.startDate} value={row.endDate ?? ''} onChange={e => updateRow(member.id, index, 'endDate', e.target.value)} /></td>
               <td className={td}>{row._isNew
                 ? <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">New</span>
                 : <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${row.endDate ? 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300' : 'bg-success-50 text-success-700 dark:bg-success-950/30 dark:text-success-300'}`}>{row.endDate ? 'Ended' : 'Active'}</span>}
               </td>
-            </tr>)}
+            </tr>;
+            })}
           </Fragment>;
         })}
       </tbody></table>

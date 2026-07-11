@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Plus, Eye, Edit, Trash2, MoreVertical, AlertTriangle,
   ToggleLeft, ToggleRight, RefreshCw,
@@ -10,7 +10,7 @@ import {
   PrimaryButton, SummaryWidgets,
 } from './hb/listing';
 import {
-  FormModal, FormSection, FormField, FormLabel, FormInput, StatusSlider,
+  FormModal, FormSection, FormField, FormLabel, FormInput, StatusSlider, ErrorText,
 } from './hb/common';
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
@@ -22,6 +22,8 @@ export type ListKey =
   | 'age-groups'
   | 'dietary-requirements'
   | 'spoken-languages'
+  | 'occupation'
+  | 'contact-relationship'
   | 'role-types'
   | 'responsibility-type'
   | 'responsibility-level'
@@ -48,6 +50,8 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
       { key: 'age-groups',            label: 'Age Groups',            idPrefix: 'AGE' },
       { key: 'dietary-requirements',  label: 'Dietary Requirements',  idPrefix: 'DIT' },
       { key: 'spoken-languages',      label: 'Spoken Languages',      idPrefix: 'LNG' },
+      { key: 'occupation',            label: 'Occupation',            idPrefix: 'OCC' },
+      { key: 'contact-relationship',  label: 'Contact Relationship',  idPrefix: 'REL' },
     ],
   },
   {
@@ -99,6 +103,8 @@ const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'age-groups':           makeItems('AGE', ['Bal (0–5)', 'Shishu (6–11)', 'Kishor (12–16)', 'Tarun (17–30)', 'Yuva (30–60)', 'Jyestha (60+)']),
   'dietary-requirements': makeItems('DIT', ['Coeliac', 'Gluten-free', 'Vegan', 'Lacto (allows dairy)', 'Paleo Diet', 'Ketogenic (low carbohydrate, high fat)', 'Low GI (limits carbohydrate intake)', 'FODMAP', 'No Onions or Garlic', 'Other - With box to specify']),
   'spoken-languages':     makeItems('LNG', ['Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani', 'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other']),
+  'occupation':           makeItems('OCC', ['Student', 'Employed - Full Time', 'Employed - Part Time', 'Self-Employed', 'Retired', 'Unemployed', 'Homemaker', 'Other']),
+  'contact-relationship': makeItems('REL', ['Spouse', 'Sibling', 'Parent', 'Child', 'Other - With box to specify']),
   'role-types':           makeItems('ROT', ROLE_TYPE_OPTIONS),
   'responsibility-type':  makeItems('RST', ['Pramukh', 'Pramukh (Saha)', 'Toli']),
   'responsibility-level': makeItems('RSL', ['Kendriya / National', 'Vibhag / Region', 'Nagar / Town', 'Shakha / Activity Centre']),
@@ -196,8 +202,18 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
     setModalMode('create');
   };
 
+  const [nameError, setNameError] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+
   const handleSave = () => {
-    if (!activeItem?.name?.trim()) { toast.error('Name is required.'); return; }
+    if (!activeItem?.name?.trim()) {
+      setNameError(true);
+      toast.error('Name is required.');
+      nameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nameRef.current?.focus();
+      return;
+    }
+    setNameError(false);
     const saved = { ...activeItem, lastUpdated: new Date().toISOString().split('T')[0] } as ConfigItem;
     if (modalMode === 'create') {
       setItems(prev => [...prev, saved]);
@@ -536,7 +552,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
         {/* ── CRUD MODAL ────────────────────────────────────────────────────── */}
         <FormModal
           isOpen={modalMode !== null}
-          onClose={() => { setModalMode(null); setActiveItem(null); }}
+          onClose={() => { setModalMode(null); setActiveItem(null); setNameError(false); }}
           title={
             modalMode === 'create' ? `Add ${meta.label} Item` :
             modalMode === 'edit'   ? 'Edit Item' :
@@ -550,11 +566,14 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
                 <FormField>
                   <FormLabel required={modalMode !== 'view'}>Name</FormLabel>
                   <FormInput
+                    ref={nameRef}
                     value={activeItem.name ?? ''}
-                    onChange={e => setActiveItem({ ...activeItem, name: e.target.value })}
+                    onChange={e => { setActiveItem({ ...activeItem, name: e.target.value }); setNameError(false); }}
                     readOnly={modalMode === 'view'}
                     placeholder="Enter item name"
+                    className={nameError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
+                  <ErrorText>{nameError && 'Name is required.'}</ErrorText>
                 </FormField>
               </FormSection>
               <FormSection>
