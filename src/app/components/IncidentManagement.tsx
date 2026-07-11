@@ -24,6 +24,7 @@ import {
   ViewModeSwitcher,
   Pagination,
   AdvancedSearchPanel,
+  useStickyListingHeader,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import {
@@ -947,6 +948,7 @@ export default function IncidentManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selected, setSelected] = useState<FirstAidIncident | null>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -1211,9 +1213,10 @@ export default function IncidentManagement() {
   );
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="First Aid Incidents"
           subtitle="Record and manage first aid incidents attributed to Shakha sessions."
@@ -1251,6 +1254,7 @@ export default function IncidentManagement() {
           )}
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
+        </div>
 
         {/* ── GRID ──────────────────────────────────────────────── */}
         {viewMode === 'grid' && (
@@ -1349,9 +1353,9 @@ export default function IncidentManagement() {
 
         {/* ── TABLE ─────────────────────────────────────────────── */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible shadow-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {['ID', 'Date', 'Casualty', 'Shakha', 'Type', 'Outcome', 'First Aider', 'Follow-up', ''].map(h => (

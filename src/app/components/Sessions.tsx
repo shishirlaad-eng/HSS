@@ -13,7 +13,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing/PageHeader';
-import { PrimaryButton, DateRangeFilter } from './hb/listing';
+import { PrimaryButton, DateRangeFilter, useStickyListingHeader } from './hb/listing';
 import CreateSession from './CreateSession';
 import SessionDetail from './SessionDetail';
 import { mockSessions, ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
@@ -96,6 +96,7 @@ export default function Sessions() {
   const [dateRangeLabel, setDateRangeLabel] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const [selectedSession, setSelectedSession] = useState<ShakhaSession | null>(null);
   const [createDate,      setCreateDate]      = useState<string | null>(null);
   const [editSession,     setEditSession]     = useState<ShakhaSession | null>(null);
@@ -261,7 +262,8 @@ export default function Sessions() {
   }
 
   return (
-    <div className="p-6">
+    <div className="sticky-listing-table p-6" style={stickyTableStyle}>
+      <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-1">
       <PageHeader
         title="Shakha"
         subtitle={isMemberRole ? undefined : "View and manage recurring Shakha gatherings"}
@@ -284,6 +286,7 @@ export default function Sessions() {
           </PrimaryButton>
         )}
       </PageHeader>
+      </div>
 
       {/* ── Month navigation bar ── */}
       <div className="flex items-center gap-2 mb-3">
@@ -436,8 +439,8 @@ export default function Sessions() {
       </div>
 
       {/* ── Table ── */}
-      <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-neutral-950">
-        <table className="w-full text-sm border-collapse">
+      <div className="sticky-table-scroll slim-scroll border border-neutral-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-950">
+        <table className="w-full min-w-max text-sm border-collapse">
           <thead>
             <tr className="border-b border-neutral-200 dark:border-neutral-800">
               <th className={TH}>Date</th>

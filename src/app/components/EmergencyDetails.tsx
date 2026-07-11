@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { mockMembers, Member, getAgeGroupLabel, AGE_GROUP_LABELS, MASTERS_CASCADE } from '../../mockAPI/membersData';
-import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton } from './hb/listing';
+import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 
 type SortCol = 'id' | 'name' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
@@ -54,6 +54,7 @@ export default function EmergencyDetails({
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('table');
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const handleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -124,8 +125,9 @@ export default function EmergencyDetails({
   };
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="Emergency Details"
           subtitle={selectedRole === 'Super Admin' ? 'Below is a list of emergency contact and medical details for all members' : undefined}
@@ -168,6 +170,7 @@ export default function EmergencyDetails({
           />
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
+        </div>
 
         {showSummary && (
           <div className="mb-6">
@@ -257,9 +260,9 @@ export default function EmergencyDetails({
         )}
 
         {viewMode === 'table' && (
-        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible">
+          <div className="sticky-table-scroll slim-scroll">
+            <table className="w-full min-w-max">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
                   <SortableTH col="id"                  label="Member ID"           sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />

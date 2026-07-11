@@ -26,6 +26,7 @@ import {
   PrimaryButton,
   ColumnVisibilityPanel,
   SummaryWidgets,
+  useStickyListingHeader,
   type ColumnConfig
 } from './hb/listing';
 import {
@@ -99,6 +100,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   // Sorting state
   const [sortField, setSortField] = useState<string>('name');
@@ -462,9 +464,10 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
   const IconComponent = config.icon;
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
         {/* PAGE HEADER */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title={config.title}
           subtitle={config.subtitle}
@@ -513,6 +516,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
             />
           </div>
         </PageHeader>
+        </div>
 
         {/* SUMMARY WIDGETS */}
         {showSummary && (
@@ -754,10 +758,9 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
 
         {/* ========== DATA TABLE VIEW (STICKY HEADER SCROLLING LAYOUT) ========== */}
         {viewMode === 'table' && (
-          <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            {/* Scrollable container enforces sticky header */}
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
-              <table className="w-full text-left border-collapse">
+          <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible bg-white dark:bg-neutral-950 shadow-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {/* Standardized Checkbox inside FIRST column */}

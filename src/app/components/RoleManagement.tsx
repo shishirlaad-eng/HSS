@@ -40,6 +40,7 @@ import {
   SecondaryButton,
   ColumnVisibilityPanel,
   SummaryWidgets,
+  useStickyListingHeader,
   type ColumnConfig
 } from './hb/listing';
 import {
@@ -81,6 +82,7 @@ export default function RoleManagement() {
   // Column Visibility State
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const roleColumns: ColumnConfig[] = [
     { key: 'name', label: 'Role Name' },
     { key: 'code', label: 'Role Code' },
@@ -364,6 +366,7 @@ export default function RoleManagement() {
   const renderListing = () => (
     <div className="space-y-6">
       {/* Header */}
+      <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-1">
       <PageHeader
         title="Roles and Responsibility"
       >
@@ -408,6 +411,7 @@ export default function RoleManagement() {
           onChange={setViewMode}
         />
       </PageHeader>
+      </div>
 
       {/* SUMMARY WIDGETS */}
       {showSummary && (
@@ -494,9 +498,9 @@ export default function RoleManagement() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-          <div className="overflow-x-auto slim-scroll">
-            <table className="w-full text-left border-collapse">
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible shadow-sm">
+          <div className="sticky-table-scroll slim-scroll">
+            <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                   {!isSuperAdmin && (
@@ -796,7 +800,7 @@ export default function RoleManagement() {
   };
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
       <div className="max-w-full mx-auto">
         {isEditing ? renderForm() : renderListing()}
       </div>

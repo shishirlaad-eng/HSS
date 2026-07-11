@@ -10,7 +10,7 @@ import ConfigurableListsMaster from './ConfigurableListsMaster';
 import {
   PageHeader, SearchBar, Pagination, IconButton,
   ViewModeSwitcher, PrimaryButton, AdvancedSearchPanel,
-  SummaryWidgets,
+  SummaryWidgets, useStickyListingHeader,
   type ColumnConfig, type FilterCondition
 } from './hb/listing';
 import {
@@ -155,6 +155,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   // ── Data ───────────────────────────────────────────────────────────────────
   const [countries,  setCountries]  = useState<MasterItem[]>(initialCountries);
@@ -632,10 +633,11 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
 
   // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
         {/* ── PAGE HEADER ─────────────────────────────────────────────────── */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title={config.title}
           subtitle={config.subtitle}
@@ -687,6 +689,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
             </div>
           </div>}
         </PageHeader>
+        </div>
 
         {/* ── SUB-SECTION TABS ────────────────────────────────────────────── */}
         <div className="flex gap-0 mt-4 border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
@@ -921,9 +924,9 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
             TABLE VIEW
         ══════════════════════════════════════════════════════════════════ */}
         {masterType !== 'configurable-lists' && viewMode === 'table' && (
-          <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950 shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-340px)]">
-              <table className="w-full text-left border-collapse">
+          <div className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible bg-white dark:bg-neutral-950 shadow-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {visibleColumns.name && (

@@ -18,6 +18,7 @@ import {
   SearchBar,
   ViewModeSwitcher,
   ColumnVisibilityPanel,
+  useStickyListingHeader,
   type ColumnConfig
 } from './hb/listing';
 import { ReadOnlyBanner } from './hb/common/ReadOnlyBanner';
@@ -40,6 +41,7 @@ export default function StaticPages() {
   // Column Visibility State
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const pageColumns: ColumnConfig[] = [
     { key: 'id', label: 'Page Id' },
     { key: 'name', label: 'Page Name' },
@@ -135,9 +137,10 @@ export default function StaticPages() {
   }
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
         {/* PAGE HEADER */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="Static Pages"
           breadcrumbs={[
@@ -175,6 +178,7 @@ export default function StaticPages() {
             />
           </div>
         </PageHeader>
+        </div>
 
         {/* SYSTEM NOTICE BANNER */}
         <ReadOnlyBanner 
@@ -311,9 +315,9 @@ export default function StaticPages() {
 
         {/* DATA TABLE VIEW */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
-              <table className="w-full text-left border-collapse">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible shadow-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                     <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">

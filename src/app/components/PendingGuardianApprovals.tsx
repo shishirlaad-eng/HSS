@@ -27,6 +27,7 @@ import {
   Pagination,
   AdvancedSearchPanel,
   SummaryWidgets,
+  useStickyListingHeader,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import {
@@ -281,6 +282,7 @@ export default function PendingGuardianApprovals() {
   const [viewMode, setViewMode]   = useState<ViewMode>(() => selectedRole === 'Super Admin' ? 'table' : 'grid');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const [searchQuery, setSearchQuery]               = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -521,10 +523,11 @@ export default function PendingGuardianApprovals() {
   // ── Listing ─────────────────────────────────────────────────
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
         {/* PAGE HEADER */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="Pending Parent/Guardian Approvals"
           subtitle={selectedRole === 'Super Admin' ? 'Below is a list of Teen (13-17) users who are pending their nominated Parent/Guardian for approval' : 'Teen member registrations awaiting parental / guardian consent. Super admin can approve on behalf of the guardian.'}
@@ -569,6 +572,7 @@ export default function PendingGuardianApprovals() {
           />
           <ViewModeSwitcher currentMode={viewMode} onChange={setViewMode} />
         </PageHeader>
+        </div>
 
         {/* SUMMARY WIDGETS */}
         {showSummary && (
@@ -715,9 +719,9 @@ export default function PendingGuardianApprovals() {
 
         {/* ── TABLE VIEW ───────────────────────────────────────── */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
-              <table className="w-full text-left border-collapse">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible shadow-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {[

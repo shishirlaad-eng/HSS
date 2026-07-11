@@ -32,6 +32,7 @@ import {
   SearchBar, 
   Pagination,
   ColumnVisibilityPanel,
+  useStickyListingHeader,
   type ColumnConfig
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
@@ -205,6 +206,7 @@ export default function SampleDesign() {
   // Column Visibility State
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const employeeColumns: ColumnConfig[] = [
     { key: 'id', label: 'Employee Id' },
     { key: 'name', label: 'Full Name' },
@@ -551,9 +553,10 @@ export default function SampleDesign() {
   }
 
   return (
-    <div className="px-6 py-8 bg-white dark:bg-neutral-950">
+    <div className="sticky-listing-table px-6 py-8 bg-white dark:bg-neutral-950" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
         {/* ========== PAGE HEADER ========== */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="Employee Management"
           breadcrumbs={[
@@ -611,6 +614,7 @@ export default function SampleDesign() {
             />
           </div>
         </PageHeader>
+        </div>
 
         {/* ========== SUMMARY WIDGETS ========== */}
         {showSummary && (
@@ -925,9 +929,9 @@ export default function SampleDesign() {
 
         {/* ========== TABLE VIEW ========== */}
         {viewMode === 'table' && (
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto overflow-y-auto slim-scroll max-h-[calc(100vh-320px)]">
-              <table className="w-full">
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-visible">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max">
                 <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                   <tr>
                     <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 w-12 border-b border-neutral-200 dark:border-neutral-800">

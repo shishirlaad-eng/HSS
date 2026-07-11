@@ -10,7 +10,7 @@ import {
   Award, Users, Briefcase,
   Download, SlidersHorizontal, X,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination } from './hb/listing';
+import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
 import {
   mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE,
   RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS,
@@ -132,6 +132,7 @@ export default function KaryakartaReport() {
   // ── List pagination ──────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
   const townOptions   = filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [];
@@ -283,10 +284,11 @@ export default function KaryakartaReport() {
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
+    <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
       <div className="max-w-[100%] mx-auto">
 
         {/* Page Header */}
+        <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
           title="Karyakarta Report"
           subtitle="Members holding a Sangh Responsibility across Vibhags, Nagars and Shakhas"
@@ -299,6 +301,7 @@ export default function KaryakartaReport() {
             Export CSV
           </PrimaryButton>
         </PageHeader>
+        </div>
 
         {/* ── Filter Bar ──────────────────────────────────── */}
         <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -550,8 +553,8 @@ export default function KaryakartaReport() {
         {/* ── Row 4: Karyakarta List ────────────────────────── */}
         <div className="mt-6">
           <ChartCard title="Karyakarta List" subtitle="Members holding a Sangh Responsibility matching the current filters">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="sticky-table-scroll slim-scroll">
+              <table className="w-full min-w-max text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">
                     <th className="py-2 pr-4 font-medium">Name</th>
