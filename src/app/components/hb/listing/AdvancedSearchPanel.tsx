@@ -268,11 +268,13 @@ import { X, Plus, ChevronDown, Check } from 'lucide-react';
  * @property id - Unique identifier for the filter
  * @property field - The field name to filter on (e.g., "Job Status", "Department")
  * @property values - Array of selected values for this field
+ * @property logicOp - How this row combines with the PREVIOUS row ('AND' | 'OR'). Ignored on the first row. Defaults to 'AND'.
  */
 export interface FilterCondition {
   id: string;
   field: string;
   values: string[];
+  logicOp?: 'AND' | 'OR';
 }
 
 /**
@@ -300,11 +302,8 @@ export interface AdvancedSearchPanelProps {
   /** Optional custom title (default: "Filter By") */
   title?: string;
 
-  /** Optional: how multiple filter rows combine. Omit to hide the AND/OR toggle. */
-  matchMode?: 'AND' | 'OR';
-
-  /** Optional: callback when the AND/OR toggle changes. Required if matchMode is set. */
-  onMatchModeChange?: (mode: 'AND' | 'OR') => void;
+  /** Optional: show a per-row AND/OR toggle between filter rows, each independently switchable. */
+  showMatchModeToggle?: boolean;
 }
 
 /**
@@ -321,8 +320,7 @@ export function AdvancedSearchPanel({
   filterOptions,
   onApply,
   title = 'Filter By',
-  matchMode,
-  onMatchModeChange,
+  showMatchModeToggle = false,
 }: AdvancedSearchPanelProps) {
   const [localFilters, setLocalFilters] = useState<FilterCondition[]>(filters);
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, 'field' | 'values' | null>>({});
@@ -412,6 +410,15 @@ export function AdvancedSearchPanel({
   };
 
   /**
+   * Change how this row combines with the row before it (AND / OR) — independent per row
+   */
+  const handleLogicOpChange = (id: string, logicOp: 'AND' | 'OR') => {
+    setLocalFilters(localFilters.map(f =>
+      f.id === id ? { ...f, logicOp } : f
+    ));
+  };
+
+  /**
    * Toggle a value in the multi-select (What) dropdown
    */
   const handleValueToggle = (id: string, value: string) => {
@@ -476,39 +483,13 @@ export function AdvancedSearchPanel({
       {/* ==================== CONTENT ==================== */}
       <div className="p-4 overflow-visible">
 
-        {/* Match Mode Toggle (AND / OR) */}
-        {matchMode && onMatchModeChange && (
-          <div className="flex items-center gap-4 mb-3">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Match</span>
-            <label className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-              <input
-                type="radio"
-                name="filter-match-mode"
-                checked={matchMode === 'AND'}
-                onChange={() => onMatchModeChange('AND')}
-                className="w-3.5 h-3.5 accent-primary-600 cursor-pointer"
-              />
-              All filters (AND)
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-              <input
-                type="radio"
-                name="filter-match-mode"
-                checked={matchMode === 'OR'}
-                onChange={() => onMatchModeChange('OR')}
-                className="w-3.5 h-3.5 accent-primary-600 cursor-pointer"
-              />
-              Any filter (OR)
-            </label>
-          </div>
-        )}
-
         {/* Filter Rows */}
         {localFilters.length > 0 ? (
           <div className="space-y-2 mb-3">
             {localFilters.map((filter, index) => (
-              <div key={filter.id} className="flex items-start gap-2">
-                
+              <div key={filter.id}>
+              <div className="flex items-start gap-2">
+
                 {/* WHERE DROPDOWN - Field Selection */}
                 <div className="flex-1 relative">
                   {index === 0 && (
@@ -602,6 +583,43 @@ export function AdvancedSearchPanel({
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* AND / OR CONNECTOR — between this row and the next, independent per junction */}
+              {index < localFilters.length - 1 && showMatchModeToggle && (() => {
+                const nextFilter = localFilters[index + 1];
+                const nextOp = nextFilter.logicOp ?? 'AND';
+                return (
+                  <div className="flex items-center gap-2 py-2">
+                    <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="flex items-center rounded-full border border-neutral-200 dark:border-neutral-800 overflow-hidden text-[11px] font-medium flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleLogicOpChange(nextFilter.id, 'AND')}
+                        className={`px-2.5 py-1 transition-colors ${
+                          nextOp === 'AND'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-white dark:bg-neutral-950 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                      >
+                        AND
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleLogicOpChange(nextFilter.id, 'OR')}
+                        className={`px-2.5 py-1 transition-colors border-l border-neutral-200 dark:border-neutral-800 ${
+                          nextOp === 'OR'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-white dark:bg-neutral-950 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                      >
+                        OR
+                      </button>
+                    </div>
+                    <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
+                  </div>
+                );
+              })()}
               </div>
             ))}
           </div>

@@ -1162,7 +1162,6 @@ export default function MemberManagement({
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
-  const [filterMatchMode, setFilterMatchMode] = useState<'AND' | 'OR'>('AND');
   const [showKaryakartasOnly, setShowKaryakartasOnly] = useState(karyakartasOnly);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -1338,11 +1337,14 @@ export default function MemberManagement({
       };
 
       const activeFilters = filters.filter(f => f.values.length > 0);
+      // Each row combines with the accumulated result using its OWN logicOp (independent per row),
+      // not a single global AND/OR — matches the per-junction toggle in AdvancedSearchPanel.
       const matchesFilters = activeFilters.length === 0
         ? true
-        : filterMatchMode === 'OR'
-          ? activeFilters.some(evalFilter)
-          : activeFilters.every(evalFilter);
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
 
       const matchesRegDate = (() => {
         if (!regDateStart && !regDateEnd) return true;
@@ -1356,7 +1358,7 @@ export default function MemberManagement({
 
       return matchesSearch && matchesFilters && matchesRegDate && matchesKaryakarta;
     });
-  }, [scopedMembers, searchQuery, filters, filterMatchMode, regDateStart, regDateEnd, showKaryakartasOnly]);
+  }, [scopedMembers, searchQuery, filters, regDateStart, regDateEnd, showKaryakartasOnly]);
 
   const sortedMembers = useMemo(() => {
     return [...filteredMembers].sort((a, b) => {
@@ -1581,8 +1583,7 @@ export default function MemberManagement({
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
-              matchMode={filterMatchMode}
-              onMatchModeChange={setFilterMatchMode}
+              showMatchModeToggle
               filterOptions={{
                 'Status':            MEMBER_FILTER_OPTIONS['Status'],
                 'Age Groups (years old)': MEMBER_FILTER_OPTIONS['Age Groups (years old)'],
