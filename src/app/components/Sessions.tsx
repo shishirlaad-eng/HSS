@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Sessions (Shakha Table)
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, Fragment } from 'react';
 import {
-  ChevronLeft,
+  ChevronDown,
   ChevronRight,
   Users,
   Filter,
@@ -13,7 +13,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing/PageHeader';
-import { PrimaryButton, DateRangeFilter, useStickyListingHeader } from './hb/listing';
+import { PrimaryButton, DateRangeFilter, useStickyListingHeader, Pagination } from './hb/listing';
 import CreateSession from './CreateSession';
 import SessionDetail from './SessionDetail';
 import { mockSessions, ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
@@ -23,7 +23,6 @@ import { filterByScope } from '../../mockAPI/roleScope';
 
 // ── Helpers ──────────────────────────────────────────────────
 const DAY_NAMES_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTH_NAMES     = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function isoDate(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -31,6 +30,10 @@ function isoDate(y: number, m: number, d: number) {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatMonthName(monthKey: string) {
+  return new Date(monthKey + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long' });
 }
 
 function statusColor(status: ShakhaSession['status']) {
@@ -85,8 +88,10 @@ export default function Sessions() {
   const isShakhaAdmin = selectedRole === 'Shakha Admin';
   const canManageShakha = !isMemberRole && atp.canView && atp.canAdd;
 
-  const [viewYear,  setViewYear]  = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-based
+  const [page,     setPage]     = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [collapsedYears,  setCollapsedYears]  = useState<Set<string>>(new Set());
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
 
   const [filterRegion, setFilterRegion]   = useState('');
   const [filterTown,   setFilterTown]     = useState('');
@@ -186,43 +191,90 @@ export default function Sessions() {
   const showRegionSelect = browse || scope.showRegionFilter;
   const showTownSelect   = browse || scope.showTownFilter;
   const showCentreSelect = browse || scope.showCentreFilter;
-  const showFilterBar    = showRegionSelect || showTownSelect || showCentreSelect;
 
-  const handleRegionChange = (v: string) => { setFilterRegion(v); setFilterTown(''); setFilterCentre(''); };
-  const handleTownChange   = (v: string) => { setFilterTown(v);   setFilterCentre(''); };
+  const handleRegionChange = (v: string) => { setFilterRegion(v); setFilterTown(''); setFilterCentre(''); setPage(1); };
+  const handleTownChange   = (v: string) => { setFilterTown(v);   setFilterCentre(''); setPage(1); };
 
-  // Filtered + sorted sessions for current month
+  // Filtered + sorted sessions (all-time, newest first — grouped by year/month below)
   const filteredSessions = useMemo(() => {
     const base = browse ? sessions : scopedSessions;
     return base
       .filter(s => {
         if (dateFrom) {
           if (s.date < dateFrom || s.date > (dateTo || dateFrom)) return false;
-        } else {
-          const d = new Date(s.date);
-          if (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth) return false;
         }
         if (filterRegion && s.region !== filterRegion) return false;
         if (filterTown   && s.town   !== filterTown)   return false;
         if (filterCentre && s.activityCentre !== filterCentre) return false;
         return true;
       })
-      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-  }, [browse, sessions, scopedSessions, viewYear, viewMonth, filterRegion, filterTown, filterCentre, dateFrom, dateTo]);
+      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
+  }, [browse, sessions, scopedSessions, filterRegion, filterTown, filterCentre, dateFrom, dateTo]);
 
   const todayIso = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
   const activeFilters = [filterRegion, filterTown, filterCentre].filter(Boolean).length;
 
-  // ── Month navigation ──────────────────────────────────────
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
+  // ── Pagination ──────────────────────────────────────────────
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filteredSessions.length / pageSize));
+  const paginatedSessions = pageSize === 0 ? filteredSessions : filteredSessions.slice((page - 1) * pageSize, page * pageSize);
+
+  // ── Year/Month grouping (same pattern as Attendance Log) ───
+  const monthTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    filteredSessions.forEach(s => {
+      const monthKey = s.date.slice(0, 7);
+      totals.set(monthKey, (totals.get(monthKey) ?? 0) + 1);
+    });
+    return totals;
+  }, [filteredSessions]);
+
+  const yearTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    filteredSessions.forEach(s => {
+      const yearKey = s.date.slice(0, 4);
+      totals.set(yearKey, (totals.get(yearKey) ?? 0) + 1);
+    });
+    return totals;
+  }, [filteredSessions]);
+
+  const groupedPaginated = useMemo(() => {
+    const yearMap = new Map<string, Map<string, ShakhaSession[]>>();
+    paginatedSessions.forEach(s => {
+      const yearKey  = s.date.slice(0, 4);
+      const monthKey = s.date.slice(0, 7);
+      if (!yearMap.has(yearKey)) yearMap.set(yearKey, new Map());
+      const monthMap = yearMap.get(yearKey)!;
+      if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
+      monthMap.get(monthKey)!.push(s);
+    });
+    return Array.from(yearMap.entries()).map(([year, monthMap]) => ({
+      year,
+      totalEntries: yearTotals.get(year) ?? 0,
+      months: Array.from(monthMap.entries()).map(([month, entries]) => ({
+        month,
+        entries,
+        totalEntries: monthTotals.get(month) ?? 0,
+      })),
+    }));
+  }, [paginatedSessions, monthTotals, yearTotals]);
+
+  const toggleYear = (year: string) => {
+    setCollapsedYears(prev => {
+      const next = new Set(prev);
+      next.has(year) ? next.delete(year) : next.add(year);
+      return next;
+    });
   };
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
+
+  const toggleMonth = (month: string) => {
+    setCollapsedMonths(prev => {
+      const next = new Set(prev);
+      next.has(month) ? next.delete(month) : next.add(month);
+      return next;
+    });
   };
-  const goToday = () => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); };
+
+  const colCount = 4 + ((scope.showRegionFilter || scope.showTownFilter) ? 1 : 0) + (scope.showTownFilter ? 1 : 0) + 2;
 
   // ── Sub-pages ─────────────────────────────────────────────
   if (editSession && canManageShakha) {
@@ -288,138 +340,111 @@ export default function Sessions() {
       </PageHeader>
       </div>
 
-      {/* ── Month navigation bar ── */}
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          onClick={prevMonth}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <span className="text-sm font-semibold text-neutral-900 dark:text-white min-w-[160px] text-center">
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </span>
-        <button
-          onClick={nextMonth}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <button
-          onClick={goToday}
-          className="ml-1 px-3 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Today
-        </button>
-        <div className="relative ml-2" ref={dateFilterRef}>
-          <button
-            onClick={() => setShowDateFilter(open => !open)}
-            title="Filter by Shakha date"
-            className={`h-9 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
-              dateFrom
-                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
-                : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            }`}
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            {dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo || dateFrom)}`) : 'Shakha Date'}
-            {dateFrom && (
-              <span
-                role="button"
-                onClick={event => {
-                  event.stopPropagation();
-                  setDateFrom('');
-                  setDateTo('');
-                  setDateRangeLabel('');
-                }}
-                className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
-              >
-                <X className="w-3 h-3" />
-              </span>
-            )}
-          </button>
-          <DateRangeFilter
-            isOpen={showDateFilter}
-            onClose={() => setShowDateFilter(false)}
-            startDate={dateFrom}
-            endDate={dateTo}
-            onApply={(start, end, label) => {
-              setDateFrom(start);
-              setDateTo(end);
-              setDateRangeLabel(label || '');
-              if (start) {
-                const d = new Date(start);
-                setViewYear(d.getFullYear());
-                setViewMonth(d.getMonth());
-              }
-            }}
-            title="Shakha Date Range"
-          />
-        </div>
-      </div>
-
-      {/* ── Location filter bar ── */}
-      {showFilterBar && (
-        <div className="flex flex-wrap items-end gap-3 mb-4 p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-          <Filter className="w-4 h-4 text-neutral-400 self-center mt-4 flex-shrink-0" />
-          {browse && (
-            <p className="w-full text-xs text-neutral-500 dark:text-neutral-400 -mb-1">
-              Pick a Region, Nagar and Shakha to find another Shakha you'd like to attend, then open it to request to join.
-            </p>
-          )}
-          {showRegionSelect && (
-            <div className="flex flex-col gap-1 min-w-[180px] flex-1">
-              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Region</label>
-              <select
-                value={filterRegion}
-                onChange={e => handleRegionChange(e.target.value)}
-                className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">All Regions</option>
-                {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-          )}
-          {showTownSelect && (
-            <div className="flex flex-col gap-1 min-w-[160px] flex-1">
-              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Town</label>
-              <select
-                value={filterTown}
-                onChange={e => handleTownChange(e.target.value)}
-                disabled={showRegionSelect && !filterRegion}
-                className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">All Towns</option>
-                {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-          )}
-          {showCentreSelect && (
-            <div className="flex flex-col gap-1 min-w-[200px] flex-1">
-              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Activity Centre</label>
-              <select
-                value={filterCentre}
-                onChange={e => setFilterCentre(e.target.value)}
-                disabled={showTownSelect && !filterTown}
-                className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">All Centres</option>
-                {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          )}
-          {activeFilters > 0 ? (
+      {/* ── Filter bar (Shakha Date + Region/Town/Activity Centre) ── */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+        <Filter className="w-4 h-4 text-neutral-400 self-center mt-4 flex-shrink-0" />
+        {browse && (
+          <p className="w-full text-xs text-neutral-500 dark:text-neutral-400 -mb-1">
+            Pick a Region, Nagar and Shakha to find another Shakha you'd like to attend, then open it to request to join.
+          </p>
+        )}
+        <div className="flex flex-col gap-1 min-w-[180px] flex-1">
+          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Shakha Date</label>
+          <div className="relative" ref={dateFilterRef}>
             <button
-              onClick={() => { setFilterRegion(''); setFilterTown(''); setFilterCentre(''); }}
-              className="h-9 px-4 text-xs font-medium text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 rounded-lg hover:bg-error-50 dark:hover:bg-error-950 transition-colors self-end"
+              onClick={() => setShowDateFilter(open => !open)}
+              title="Filter by Shakha date"
+              className={`w-full h-9 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                dateFrom
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              }`}
             >
-              Clear
+              <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{dateFrom ? (dateRangeLabel || `${formatDate(dateFrom)} - ${formatDate(dateTo || dateFrom)}`) : 'All Dates'}</span>
+              {dateFrom && (
+                <span
+                  role="button"
+                  onClick={event => {
+                    event.stopPropagation();
+                    setDateFrom('');
+                    setDateTo('');
+                    setDateRangeLabel('');
+                    setPage(1);
+                  }}
+                  className="ml-auto text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 flex-shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
             </button>
-          ) : (
-            <div className="h-9 w-16 self-end" />
-          )}
+            <DateRangeFilter
+              isOpen={showDateFilter}
+              onClose={() => setShowDateFilter(false)}
+              startDate={dateFrom}
+              endDate={dateTo}
+              onApply={(start, end, label) => {
+                setDateFrom(start);
+                setDateTo(end);
+                setDateRangeLabel(label || '');
+                setPage(1);
+              }}
+              title="Shakha Date Range"
+            />
+          </div>
         </div>
-      )}
+        {showRegionSelect && (
+          <div className="flex flex-col gap-1 min-w-[180px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Region</label>
+            <select
+              value={filterRegion}
+              onChange={e => handleRegionChange(e.target.value)}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Regions</option>
+              {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        )}
+        {showTownSelect && (
+          <div className="flex flex-col gap-1 min-w-[160px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Town</label>
+            <select
+              value={filterTown}
+              onChange={e => handleTownChange(e.target.value)}
+              disabled={showRegionSelect && !filterRegion}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Towns</option>
+              {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+        {showCentreSelect && (
+          <div className="flex flex-col gap-1 min-w-[200px] flex-1">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Activity Centre</label>
+            <select
+              value={filterCentre}
+              onChange={e => { setFilterCentre(e.target.value); setPage(1); }}
+              disabled={showTownSelect && !filterTown}
+              className="h-9 px-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Centres</option>
+              {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+        {activeFilters > 0 || dateFrom ? (
+          <button
+            onClick={() => { setFilterRegion(''); setFilterTown(''); setFilterCentre(''); setDateFrom(''); setDateTo(''); setDateRangeLabel(''); setPage(1); }}
+            className="h-9 px-4 text-xs font-medium text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 rounded-lg hover:bg-error-50 dark:hover:bg-error-950 transition-colors self-end"
+          >
+            Clear
+          </button>
+        ) : (
+          <div className="h-9 w-16 self-end" />
+        )}
+      </div>
 
       {/* ── Legend + count ── */}
       <div className="flex items-center gap-4 mb-3">
@@ -434,7 +459,7 @@ export default function Sessions() {
           </div>
         ))}
         <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">
-          {filteredSessions.length} Shakha{filteredSessions.length !== 1 ? 's' : ''} in {MONTH_NAMES[viewMonth]}
+          {filteredSessions.length} Shakha{filteredSessions.length !== 1 ? 's' : ''} total
         </span>
       </div>
 
@@ -454,14 +479,14 @@ export default function Sessions() {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-            {filteredSessions.length === 0 && (
+            {paginatedSessions.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-16 text-center">
+                <td colSpan={colCount} className="py-16 text-center">
                   <CalendarDays className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">No Shakha sessions in {MONTH_NAMES[viewMonth]} {viewYear}</p>
+                  <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">No Shakha sessions found</p>
                   {canManageShakha && (
                     <button
-                      onClick={() => setCreateDate(isoDate(viewYear, viewMonth, 1))}
+                      onClick={() => setCreateDate(isoDate(today.getFullYear(), today.getMonth(), today.getDate()))}
                       className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -470,84 +495,153 @@ export default function Sessions() {
                   )}
                 </td>
               </tr>
-            )}
-            {filteredSessions.map(s => {
-              const isToday   = s.date === todayIso;
-              const rate      = attendanceRate(s);
-              const present   = s.attendanceRecords.filter(r => r.status === 'present').length;
-              const total     = s.attendanceRecords.length;
-              const dateObj   = new Date(s.date + 'T00:00:00');
-              const dayName   = DAY_NAMES_FULL[dateObj.getDay()];
-              const [y, mo, d] = s.date.split('-');
-              const displayDate = `${d}/${mo}/${y}`;
-
-              return (
-                <tr
-                  key={s.id}
-                  onClick={() => setSelectedSession(s)}
-                  className={`cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
-                    isToday ? 'bg-primary-50/30 dark:bg-primary-950/10' : ''
-                  }`}
-                >
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {isToday && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
-                      )}
-                      <span className={`text-sm font-medium ${isToday ? 'text-primary-700 dark:text-primary-400' : 'text-neutral-900 dark:text-white'}`}>
-                        {displayDate}
+            ) : groupedPaginated.map(({ year, months, totalEntries: yearTotal }) => (
+              <Fragment key={`${page}-${year}`}>
+                {/* ── Year header ── */}
+                <tr>
+                  <td colSpan={colCount} className="p-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleYear(year)}
+                      aria-expanded={!collapsedYears.has(year)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-primary-700 dark:bg-primary-950 hover:bg-primary-800 dark:hover:bg-primary-900 text-left transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        {collapsedYears.has(year)
+                          ? <ChevronRight className="w-4 h-4 text-white/80" />
+                          : <ChevronDown className="w-4 h-4 text-white/80" />
+                        }
+                        <span className="text-sm font-bold text-white tracking-wide">{year}</span>
                       </span>
-                      {isToday && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400">
-                          Today
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{dayName}</td>
-                  <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 whitespace-nowrap font-medium">
-                    {s.startTime}–{s.endTime}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">
-                    {s.activityCentre.replace(' Activity Centre', '')}
-                  </td>
-                  {(scope.showRegionFilter || scope.showTownFilter) && (
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
-                  )}
-                  {scope.showTownFilter && (
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
-                  )}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
-                      {statusLabel(s.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {total === 0 ? (
-                      <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                          {present}/{total}
-                        </span>
-                        {rate !== null && (
-                          <span className={`text-xs font-medium ${
-                            rate >= 75 ? 'text-success-600 dark:text-success-400' :
-                            rate >= 50 ? 'text-amber-600 dark:text-amber-400' :
-                            'text-error-600 dark:text-error-400'
-                          }`}>
-                            ({rate}%)
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      <span className="text-xs font-medium text-white/60">
+                        {yearTotal} {yearTotal === 1 ? 'Shakha' : 'Shakhas'}
+                      </span>
+                    </button>
                   </td>
                 </tr>
-              );
-            })}
+                {/* ── Month groups within year ── */}
+                {!collapsedYears.has(year) && months.map(({ month, entries, totalEntries }) => (
+                  <Fragment key={month}>
+                    <tr>
+                      <td colSpan={colCount} className="p-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleMonth(month)}
+                          aria-expanded={!collapsedMonths.has(month)}
+                          className="w-full flex items-center justify-between gap-3 pl-8 pr-4 py-3 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-y border-neutral-200 dark:border-neutral-800 text-left transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            {collapsedMonths.has(month)
+                              ? <ChevronRight className="w-4 h-4 text-neutral-500" />
+                              : <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            }
+                            <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                            <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                              {formatMonthName(month)}
+                            </span>
+                          </span>
+                          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                            {entries.length === totalEntries
+                              ? `${totalEntries} ${totalEntries === 1 ? 'Shakha' : 'Shakhas'}`
+                              : `${entries.length} on this page · ${totalEntries} total`
+                            }
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                    {!collapsedMonths.has(month) && entries.map(s => {
+                      const isToday   = s.date === todayIso;
+                      const rate      = attendanceRate(s);
+                      const present   = s.attendanceRecords.filter(r => r.status === 'present').length;
+                      const total     = s.attendanceRecords.length;
+                      const dateObj   = new Date(s.date + 'T00:00:00');
+                      const dayName   = DAY_NAMES_FULL[dateObj.getDay()];
+                      const [y, mo, d] = s.date.split('-');
+                      const displayDate = `${d}/${mo}/${y}`;
+
+                      return (
+                        <tr
+                          key={s.id}
+                          onClick={() => setSelectedSession(s)}
+                          className={`cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
+                            isToday ? 'bg-primary-50/30 dark:bg-primary-950/10' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              {isToday && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
+                              )}
+                              <span className={`text-sm font-medium ${isToday ? 'text-primary-700 dark:text-primary-400' : 'text-neutral-900 dark:text-white'}`}>
+                                {displayDate}
+                              </span>
+                              {isToday && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400">
+                                  Today
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{dayName}</td>
+                          <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 whitespace-nowrap font-medium">
+                            {s.startTime}–{s.endTime}
+                          </td>
+                          <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">
+                            {s.activityCentre.replace(' Activity Centre', '')}
+                          </td>
+                          {(scope.showRegionFilter || scope.showTownFilter) && (
+                            <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
+                          )}
+                          {scope.showTownFilter && (
+                            <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
+                          )}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
+                              {statusLabel(s.status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {total === 0 ? (
+                              <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                                <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                                  {present}/{total}
+                                </span>
+                                {rate !== null && (
+                                  <span className={`text-xs font-medium ${
+                                    rate >= 75 ? 'text-success-600 dark:text-success-400' :
+                                    rate >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                                    'text-error-600 dark:text-error-400'
+                                  }`}>
+                                    ({rate}%)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </Fragment>
+                ))}
+              </Fragment>
+            ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {filteredSessions.length > 0 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={filteredSessions.length}
+            itemsPerPage={pageSize}
+            onPageChange={setPage}
+            onItemsPerPageChange={(n) => { setPageSize(n); setPage(1); }}
+          />
+        )}
       </div>
     </div>
   );

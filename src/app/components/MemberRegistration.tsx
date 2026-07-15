@@ -28,7 +28,7 @@ const EMPTY_FORM: RegistrationForm = {
 
 const FIELD_ORDER: (keyof RegistrationForm)[] = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
 
-export default function MemberRegistration({ onBackToLogin, onRegistrationComplete }: { onBackToLogin: () => void; onRegistrationComplete?: (role: 'Adult Member' | 'Teen Member') => void }) {
+export default function MemberRegistration({ onBackToLogin, onRegistrationComplete, onAccountCreated }: { onBackToLogin: () => void; onRegistrationComplete?: (role: 'Adult Member' | 'Teen Member') => void; onAccountCreated?: (data: { firstName: string; lastName: string; email: string }) => void }) {
   const [form, setForm] = useState<RegistrationForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,6 +73,10 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 800));
     setIsSubmitting(false);
+    if (onAccountCreated) {
+      onAccountCreated({ firstName: form.firstName, lastName: form.lastName, email: form.email });
+      return;
+    }
     if (onRegistrationComplete) {
       onRegistrationComplete('Adult Member');
       return;
@@ -115,8 +119,8 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <div className="inline-flex items-center justify-center rounded-xl px-5 py-3 mb-4" style={{ backgroundColor: '#172E4D' }}>
             <img src={myHssLogo} alt="My HSS" className="h-10 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Create Account</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Register for HSS UK membership.</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{onAccountCreated ? 'Create Child Account' : 'Create Account'}</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{onAccountCreated ? 'Enter Parent Details' : 'Register for HSS UK membership.'}</p>
         </div>
       </div>
 
@@ -160,7 +164,7 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
             Cancel
           </button>
           <PrimaryButton type="submit" disabled={isSubmitting} className="justify-center">
-            {isSubmitting ? 'Submitting…' : 'Create Account'}
+            {isSubmitting ? 'Submitting…' : onAccountCreated ? 'Submit' : 'Create Account'}
           </PrimaryButton>
         </div>
       </form>

@@ -58,6 +58,18 @@ export interface AttendanceRecord {
 // ── Helper ────────────────────────────────────────────────────
 function d(date: string) { return date; }
 
+// The Shakha type is a property of the Shakha (Activity Centre) entity itself,
+// set when that Shakha is created in Masters — never chosen per-session.
+export function getShakhaTypeForCentre(activityCentre: string): ShakhaType | '—' {
+  if (activityCentre.includes('Wembley')) return 'Swayamsevak Shakha';
+  if (activityCentre.includes('Harrow')) return 'Parivaar Shakha';
+  if (activityCentre.includes('Birmingham')) return 'Parivaar Shakha';
+  if (activityCentre.includes('Manchester')) return 'Sewa Shakha';
+  if (activityCentre.includes('Leeds')) return 'Milan';
+  if (activityCentre.includes('Edinburgh')) return 'Sampark Kendra';
+  return '—';
+}
+
 export function getSessionShakhaType(session: ShakhaSession): ShakhaType | '—' {
   if (session.shakhaType) return session.shakhaType;
 
@@ -65,14 +77,7 @@ export function getSessionShakhaType(session: ShakhaSession): ShakhaType | '—'
   const titleSuffix = titleParts.length > 1 ? titleParts[titleParts.length - 1] : '';
   if ((SHAKHA_TYPES as readonly string[]).includes(titleSuffix)) return titleSuffix as ShakhaType;
 
-  if (session.activityCentre.includes('Wembley')) return 'Swayamsevak Shakha';
-  if (session.activityCentre.includes('Harrow')) return 'Parivaar Shakha';
-  if (session.activityCentre.includes('Birmingham')) return 'Parivaar Shakha';
-  if (session.activityCentre.includes('Manchester')) return 'Sewa Shakha';
-  if (session.activityCentre.includes('Leeds')) return 'Milan';
-  if (session.activityCentre.includes('Edinburgh')) return 'Sampark Kendra';
-
-  return '—';
+  return getShakhaTypeForCentre(session.activityCentre);
 }
 
 // ── Mock Sessions (May–June 2026, spread across centres) ─────

@@ -19,8 +19,8 @@ import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/com
 import {
   ShakhaSession,
   AttendanceRecord,
-  SHAKHA_TYPES,
   UTSAV_OPTIONS,
+  getShakhaTypeForCentre,
 } from '../../mockAPI/attendanceData';
 import {
   MASTERS_CASCADE,
@@ -28,6 +28,7 @@ import {
   getAgeGroup,
 } from '../../mockAPI/membersData';
 import { applyMemberCentreOverrides } from '../../mockAPI/shakhaTransferData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -94,11 +95,14 @@ function buildAttendanceRecordsForCentre(activityCentre: string): AttendanceReco
 
 // ── Section card header ────────────────────────────────────────
 
-function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+function SectionHeader({ icon: Icon, title, right }: { icon: React.ElementType; title: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-      <Icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-      {title}
+    <div className="flex items-center justify-between gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+        {title}
+      </div>
+      {right}
     </div>
   );
 }
@@ -119,6 +123,10 @@ export default function CreateSession({
   onUpdate?: (id: string, updates: Partial<ShakhaSession>) => void;
 }) {
   const isEditMode = !!sessionToEdit;
+  const { scope } = useRoleScope();
+  const showRegionSelect = scope.showRegionFilter;
+  const showTownSelect   = scope.showTownFilter;
+
   const [form, setForm]     = useState<CreateForm>(
     sessionToEdit
       ? {
@@ -133,7 +141,13 @@ export default function CreateSession({
           recurDays:      [],
           repeatUntil:    '',
         }
-      : EMPTY_FORM(initialDate)
+      : {
+          ...EMPTY_FORM(initialDate),
+          region:         showRegionSelect ? '' : (scope.region ?? ''),
+          town:           showTownSelect   ? '' : (scope.town ?? ''),
+          activityCentre: scope.showCentreFilter ? '' : (scope.centre ?? ''),
+          shakhaType:     scope.showCentreFilter ? '' : getShakhaTypeForCentre(scope.centre ?? ''),
+        }
   );
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -159,24 +173,28 @@ export default function CreateSession({
   };
 
   const handleRegionChange = (v: string) => {
-    setForm(f => ({ ...f, region: v, town: '', activityCentre: '' }));
+    setForm(f => ({ ...f, region: v, town: '', activityCentre: '', shakhaType: '' }));
   };
   const handleTownChange = (v: string) => {
-    setForm(f => ({ ...f, town: v, activityCentre: '' }));
+    setForm(f => ({ ...f, town: v, activityCentre: '', shakhaType: '' }));
+  };
+  const handleCentreChange = (v: string) => {
+    setForm(f => ({ ...f, activityCentre: v, shakhaType: getShakhaTypeForCentre(v) }));
   };
 
   // ── Validation ─────────────────────────────────────────────
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.date)           e.date           = 'This field is required.';
-    if (!form.startTime)      e.startTime      = 'This field is required.';
-    if (!form.endTime)        e.endTime        = 'This field is required.';
-    if (form.startTime && form.endTime && form.endTime <= form.startTime)
-                              e.endTime        = 'End time must be after start time.';
+    if (isEditMode) {
+      if (!form.startTime) e.startTime = 'This field is required.';
+      if (!form.endTime)   e.endTime   = 'This field is required.';
+      if (form.startTime && form.endTime && form.endTime <= form.startTime)
+                            e.endTime  = 'End time must be after start time.';
+    }
     if (!form.region)         e.region         = 'This field is required.';
     if (!form.town)           e.town           = 'This field is required.';
     if (!form.activityCentre) e.activityCentre = 'This field is required.';
-    if (!form.shakhaType)     e.shakhaType     = 'This field is required.';
     if (!isEditMode && isRecurring && !form.repeatUntil)
                               e.repeatUntil    = 'Repeat until date is required for recurring Shakhas.';
     if (!isEditMode && isRecurring && form.repeatUntil && form.repeatUntil < form.date)
@@ -187,7 +205,7 @@ export default function CreateSession({
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['date', 'startTime', 'endTime', 'shakhaType', 'region', 'town', 'activityCentre', 'repeatUntil'];
+  const FIELD_ORDER = ['date', 'startTime', 'endTime', 'region', 'town', 'activityCentre', 'repeatUntil'];
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const focusFirstError = (errs: Record<string, string>) => {
@@ -359,20 +377,27 @@ export default function CreateSession({
               <SectionHeader icon={Calendar} title="Shakha Details" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* Date — full width */}
-                <div className="md:col-span-2">
-                  <FormField>
-                    <FormLabel required>Date</FormLabel>
-                    <FormInput
-                      ref={el => { fieldRefs.current.date = el; }}
-                      type="date"
-                      value={form.date}
-                      onChange={e => setField('date', e.target.value)}
-                      className={errCls('date')}
-                    />
-                    <ErrorText>{touched && errors.date}</ErrorText>
-                  </FormField>
-                </div>
+                <FormField>
+                  <FormLabel required>Date</FormLabel>
+                  <FormInput
+                    ref={el => { fieldRefs.current.date = el; }}
+                    type="date"
+                    value={form.date}
+                    onChange={e => setField('date', e.target.value)}
+                    className={errCls('date')}
+                  />
+                  <ErrorText>{touched && errors.date}</ErrorText>
+                </FormField>
+
+                <FormField>
+                  <FormLabel>Utsav</FormLabel>
+                  <FormSelect
+                    value={form.utsav}
+                    onChange={e => setField('utsav', e.target.value)}
+                  >
+                    {UTSAV_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </FormSelect>
+                </FormField>
 
                 <FormField>
                   <FormLabel required>Start Time</FormLabel>
@@ -401,93 +426,92 @@ export default function CreateSession({
               </div>
             </div>
 
-            {/* ── Card: Shakha Type ────────────────────────── */}
+            {/* ── Card: Select Shakha ───────────────────────── */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={Tag} title="Shakha Details" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField>
-                  <FormLabel required>Shakha Type</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.shakhaType = el; }}
-                    value={form.shakhaType}
-                    onChange={e => setField('shakhaType', e.target.value)}
-                    className={errCls('shakhaType')}
-                  >
-                    <option value="">Select shakha type…</option>
-                    {SHAKHA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </FormSelect>
-                  <ErrorText>{touched && errors.shakhaType}</ErrorText>
-                </FormField>
-
-                <FormField>
-                  <FormLabel>Utsav</FormLabel>
-                  <FormSelect
-                    value={form.utsav}
-                    onChange={e => setField('utsav', e.target.value)}
-                  >
-                    {UTSAV_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                  </FormSelect>
-                </FormField>
-              </div>
-            </div>
-
-            {/* ── Card: Location ───────────────────────────── */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={MapPin} title="Location" />
+              <SectionHeader icon={MapPin} title="Select Shakha" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <FormField>
-                  <FormLabel required>Region</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.region = el; }}
-                    value={form.region}
-                    onChange={e => handleRegionChange(e.target.value)}
-                    className={errCls('region')}
-                  >
-                    <option value="">Select region…</option>
-                    {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                  </FormSelect>
-                  <ErrorText>{touched && errors.region}</ErrorText>
-                </FormField>
-
-                <FormField>
-                  <FormLabel required>Town</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.town = el; }}
-                    value={form.town}
-                    onChange={e => handleTownChange(e.target.value)}
-                    disabled={!form.region}
-                    className={errCls('town')}
-                  >
-                    <option value="">Select town…</option>
-                    {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                  </FormSelect>
-                  <ErrorText>{touched && errors.town}</ErrorText>
-                </FormField>
-
-                <div className="md:col-span-2">
+                {showRegionSelect && (
                   <FormField>
-                    <FormLabel required>Activity Centre</FormLabel>
+                    <FormLabel required>Region</FormLabel>
                     <FormSelect
-                      ref={el => { fieldRefs.current.activityCentre = el; }}
-                      value={form.activityCentre}
-                      onChange={e => setField('activityCentre', e.target.value)}
-                      disabled={!form.town}
-                      className={errCls('activityCentre')}
+                      ref={el => { fieldRefs.current.region = el; }}
+                      value={form.region}
+                      onChange={e => handleRegionChange(e.target.value)}
+                      className={errCls('region')}
                     >
-                      <option value="">Select activity centre…</option>
-                      {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">Select region…</option>
+                      {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
                     </FormSelect>
-                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
+                    <ErrorText>{touched && errors.region}</ErrorText>
                   </FormField>
-                </div>
+                )}
+
+                {showTownSelect && (
+                  <FormField>
+                    <FormLabel required>Town</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.town = el; }}
+                      value={form.town}
+                      onChange={e => handleTownChange(e.target.value)}
+                      disabled={!form.region}
+                      className={errCls('town')}
+                    >
+                      <option value="">Select town…</option>
+                      {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </FormSelect>
+                    <ErrorText>{touched && errors.town}</ErrorText>
+                  </FormField>
+                )}
+
+                {scope.showCentreFilter ? (
+                  <div className={showRegionSelect || showTownSelect ? 'md:col-span-2' : undefined}>
+                    <FormField>
+                      <FormLabel required>Shakha</FormLabel>
+                      <FormSelect
+                        ref={el => { fieldRefs.current.activityCentre = el; }}
+                        value={form.activityCentre}
+                        onChange={e => handleCentreChange(e.target.value)}
+                        disabled={!form.town}
+                        className={errCls('activityCentre')}
+                      >
+                        <option value="">Select Shakha…</option>
+                        {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                      </FormSelect>
+                      <ErrorText>{touched && errors.activityCentre}</ErrorText>
+                    </FormField>
+                  </div>
+                ) : (
+                  <FormField>
+                    <FormLabel>Shakha</FormLabel>
+                    <p className="h-10 flex items-center px-3 text-sm text-neutral-900 dark:text-white bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                      {form.activityCentre || '—'}
+                    </p>
+                  </FormField>
+                )}
 
               </div>
             </div>
 
             {/* ── Card: Recurrence ─────────────────────────── */}
             {!isEditMode && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={RefreshCw} title="Recurrence" />
+              <SectionHeader
+                icon={RefreshCw}
+                title="Recurrence"
+                right={
+                  <div className="w-48 flex-shrink-0">
+                    <FormInput
+                      ref={el => { fieldRefs.current.repeatUntil = el; }}
+                      type="date"
+                      value={form.repeatUntil}
+                      min={form.date}
+                      disabled={!isRecurring}
+                      onChange={e => setField('repeatUntil', e.target.value)}
+                      className={`h-9 text-sm ${errCls('repeatUntil')}`}
+                    />
+                  </div>
+                }
+              />
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
                 Select days to create recurring Shakhas, or leave all unchecked for a one-off Shakha.
@@ -528,28 +552,14 @@ export default function CreateSession({
                 })}
               </div>
 
-              {/* Repeat Until — only when days are selected */}
               {isRecurring && (
-                <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField>
-                      <FormLabel required>Repeat Until</FormLabel>
-                      <FormInput
-                        ref={el => { fieldRefs.current.repeatUntil = el; }}
-                        type="date"
-                        value={form.repeatUntil}
-                        min={form.date}
-                        onChange={e => setField('repeatUntil', e.target.value)}
-                        className={errCls('repeatUntil')}
-                      />
-                      <ErrorText>{touched && errors.repeatUntil}</ErrorText>
-                      {recurringPreviewCount > 0 && (
-                        <p className="text-xs text-primary-600 dark:text-primary-400 mt-1.5 font-medium">
-                          {recurringPreviewCount} Shakha{recurringPreviewCount !== 1 ? 's' : ''} will be created
-                        </p>
-                      )}
-                    </FormField>
-                  </div>
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                  <ErrorText>{touched && errors.repeatUntil}</ErrorText>
+                  {recurringPreviewCount > 0 && (
+                    <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                      {recurringPreviewCount} Shakha{recurringPreviewCount !== 1 ? 's' : ''} will be created
+                    </p>
+                  )}
                 </div>
               )}
             </div>}

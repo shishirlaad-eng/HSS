@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Session Detail (full page, HB template style)
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -11,7 +11,6 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  RefreshCw,
   TrendingUp,
   Search,
   X,
@@ -21,9 +20,13 @@ import {
   UserPlus,
   Trash2,
   Pencil,
+  Info,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton } from './hb/listing';
-import { ShakhaSession, AttendanceRecord, getSessionShakhaType } from '../../mockAPI/attendanceData';
+import { ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
 import { mockMembers, ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
@@ -77,117 +80,52 @@ function SectionHeader({ icon: Icon, title, count }: {
   );
 }
 
-function MemberRow({
-  record,
-  attendanceCount,
-  isGuest,
-  postCode,
-  isExpanded,
-  onToggleExpand,
-  onMark,
-}: {
-  record: AttendanceRecord;
-  attendanceCount: number;
-  isGuest: boolean;
-  postCode?: string;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  onMark?: (status: AttendanceRecord['status']) => void;
-}) {
-  const initials = record.memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+function StatusBadge({ status }: { status: AttendanceRecord['status'] }) {
+  if (status === 'present') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400 border border-success-200 dark:border-success-800">
+        <CheckCircle2 className="w-3 h-3" /> Present
+      </span>
+    );
+  }
+  if (status === 'absent') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error-50 text-error-700 dark:bg-error-950 dark:text-error-400 border border-error-200 dark:border-error-800">
+        <XCircle className="w-3 h-3" /> Absent
+      </span>
+    );
+  }
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-      {/* Attendance count badge */}
-      <div className="flex-shrink-0 w-8 text-center">
-        <span
-          className="inline-block min-w-[1.5rem] px-1 py-0.5 rounded text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 leading-none"
-          title={`${attendanceCount} Shakha${attendanceCount !== 1 ? 's' : ''} attended`}
-        >
-          {attendanceCount}
-        </span>
-      </div>
-
-      {/* Avatar */}
-      <div className="relative flex-shrink-0">
-        <button
-          type="button"
-          onClick={onToggleExpand}
-          title="Show post code"
-          className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center hover:ring-2 hover:ring-primary-300 dark:hover:ring-primary-700 transition-all"
-        >
-          <span className="text-xs font-bold text-primary-700 dark:text-primary-300">{initials}</span>
-        </button>
-        {isExpanded && (
-          <div className="absolute left-0 top-9 z-10 whitespace-nowrap rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-md px-2.5 py-1.5">
-            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Post Code</p>
-            <p className="text-xs font-semibold text-neutral-900 dark:text-white">{postCode ?? '—'}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Name + meta */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{record.memberName}</p>
-          {isGuest && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 flex-shrink-0">
-              Guest
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-          {record.jobTitle} · {record.ageCategory} · {record.gender}
-        </p>
-      </div>
-
-      {/* Mark buttons */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => onMark?.('present')}
-          disabled={!onMark}
-          title="Mark present"
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-            record.status === 'present'
-              ? 'bg-success-100 text-success-700 dark:bg-success-950 dark:text-success-400'
-              : 'text-neutral-400 hover:text-success-600 hover:bg-success-50 dark:hover:bg-success-950'
-          } disabled:cursor-default`}
-        >
-          <CheckCircle2 className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onMark?.('absent')}
-          disabled={!onMark}
-          title="Mark absent"
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-            record.status === 'absent'
-              ? 'bg-error-100 text-error-700 dark:bg-error-950 dark:text-error-400'
-              : 'text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950'
-          } disabled:cursor-default`}
-        >
-          <XCircle className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
+      Awaiting
+    </span>
   );
 }
 
-// ── Attendance group header ────────────────────────────────────
+// ── Sortable table header ───────────────────────────────────────
 
-function GroupHeader({ icon: Icon, iconClass, label, count }: {
-  icon: React.ElementType;
-  iconClass: string;
-  label: string;
-  count: number;
+type AttendanceSortKey = 'attendanceCount' | 'memberName' | 'jobTitle' | 'ageCategory' | 'gender' | 'status';
+type SortDir = 'asc' | 'desc';
+
+function SortTh({ label, sortKey, current, dir, onSort, align }: {
+  label: string; sortKey: AttendanceSortKey; current: AttendanceSortKey; dir: SortDir;
+  onSort: (k: AttendanceSortKey) => void; align?: 'left' | 'right';
 }) {
+  const active = current === sortKey;
   return (
-    <div className="flex items-center gap-2 mb-2">
-      <Icon className={`w-3.5 h-3.5 ${iconClass}`} />
-      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-        {label} ({count})
-      </span>
-    </div>
+    <th className={`px-4 py-3 whitespace-nowrap cursor-pointer select-none group ${align === 'right' ? 'text-right' : 'text-left'}`} onClick={() => onSort(sortKey)}>
+      <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+        <span className={`text-xs font-semibold transition-colors ${active ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
+          {label}
+        </span>
+        {active
+          ? dir === 'asc'
+            ? <ArrowUp   className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+            : <ArrowDown className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+          : <ArrowUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60 text-neutral-400" />
+        }
+      </div>
+    </th>
   );
 }
 
@@ -219,6 +157,8 @@ export default function SessionDetail({
   const [isDeleting,        setIsDeleting]        = useState(false);
   const [joinRequested,     setJoinRequested]     = useState(false);
   const [expandedMemberId,  setExpandedMemberId]  = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<AttendanceSortKey>('attendanceCount');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const { scope, selectedRole } = useRoleScope();
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
@@ -227,7 +167,6 @@ export default function SessionDetail({
   const isOwnShakha  = !!scope.centre && session.activityCentre === scope.centre;
 
   const rate       = attendanceRate(session);
-  const shakhaType = getSessionShakhaType(session);
 
   const dateObj   = new Date(session.date + 'T12:00:00');
   const dateLabel = `${DAY_NAMES_FULL[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
@@ -242,8 +181,17 @@ export default function SessionDetail({
   const canCancel = !isMemberRole && session.status !== 'cancelled' && !!onCancelSession
     && (isShakhaAdmin || isFutureSession);
   const canDelete = selectedRole === 'Super Admin' && !!onDeleteSession;
-  // Editing blocked for past sessions
-  const canEdit   = !isMemberRole && !isPastSession;
+  // Only Super Admin and Shakha Admin can edit a Shakha; blocked for past sessions
+  const canEdit   = (selectedRole === 'Super Admin' || isShakhaAdmin) && !isPastSession;
+
+  // Once a Shakha is completed, anyone left unmarked is automatically set to Absent.
+  useEffect(() => {
+    if (session.status !== 'completed') return;
+    session.attendanceRecords.forEach(r => {
+      if (r.status === 'unmarked') onMarkAttendance(session.id, r.memberId, 'absent');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.id, session.status]);
 
   const handleConfirmCancel = async () => {
     if (!onCancelSession) return;
@@ -294,39 +242,52 @@ export default function SessionDetail({
   // ── Role type options — full master list, A→Z ────────────
   const roleTypeOptions = [...ROLE_TYPE_OPTIONS].sort((a, b) => a.localeCompare(b));
 
+  const STATUS_RANK: Record<AttendanceRecord['status'], number> = { unmarked: 0, present: 1, absent: 2 };
+
+  const handleSort = (key: AttendanceSortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
   // ── Filter + sort helper ──────────────────────────────────
   const processRecords = (records: AttendanceRecord[]) => {
     const q = searchQuery.toLowerCase().trim();
-    return records
-      .filter(r => {
-        if (q && !r.memberName.toLowerCase().includes(q)) return false;
-        if (filterAgeCategory && r.ageCategory !== filterAgeCategory) return false;
-        if (filterJobTitle && r.jobTitle !== filterJobTitle) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const countA = attendanceCountMap.get(a.memberId) ?? 0;
-        const countB = attendanceCountMap.get(b.memberId) ?? 0;
-        return countB - countA; // descending — most attended on top
-      });
+    const filtered = records.filter(r => {
+      if (q && !r.memberName.toLowerCase().includes(q)) return false;
+      if (filterAgeCategory && r.ageCategory !== filterAgeCategory) return false;
+      if (filterJobTitle && r.jobTitle !== filterJobTitle) return false;
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'attendanceCount':
+          cmp = (attendanceCountMap.get(a.memberId) ?? 0) - (attendanceCountMap.get(b.memberId) ?? 0);
+          break;
+        case 'memberName':  cmp = a.memberName.localeCompare(b.memberName); break;
+        case 'jobTitle':    cmp = a.jobTitle.localeCompare(b.jobTitle);     break;
+        case 'ageCategory': cmp = a.ageCategory.localeCompare(b.ageCategory); break;
+        case 'gender':      cmp = a.gender.localeCompare(b.gender);         break;
+        case 'status':      cmp = STATUS_RANK[a.status] - STATUS_RANK[b.status]; break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
   };
 
-  // ── Derived attendance groups ─────────────────────────────
+  // ── Derived attendance list ────────────────────────────────
   const allRecords = isMemberRole
     ? session.attendanceRecords.filter(record => record.memberId === selfMemberId)
     : session.attendanceRecords;
   const selfAttendance = selfMemberId
     ? session.attendanceRecords.find(record => record.memberId === selfMemberId)
     : undefined;
-  const present     = processRecords(allRecords.filter(r => r.status === 'present'));
-  const absent      = processRecords(allRecords.filter(r => r.status === 'absent'));
-  const unmarked    = processRecords(allRecords.filter(r => r.status === 'unmarked'));
+  const filteredRecords = processRecords(allRecords);
 
   const totalPresent  = allRecords.filter(r => r.status === 'present').length;
   const totalAbsent   = allRecords.filter(r => r.status === 'absent').length;
   const totalUnmarked = allRecords.filter(r => r.status === 'unmarked').length;
 
-  const filteredTotal  = present.length + absent.length + unmarked.length;
+  const filteredTotal  = filteredRecords.length;
   const isFiltered     = !!searchQuery.trim() || !!filterAgeCategory || !!filterJobTitle;
   const hasActiveFilter = isFiltered;
 
@@ -414,87 +375,6 @@ export default function SessionDetail({
           {/* ── Left: main content (col-span-2) ──────────── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* ── Card: Shakha Info ───────────────────────── */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <SectionHeader icon={Calendar} title="Shakha Details" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Date</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{dateLabel}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Time</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.startTime} – {session.endTime}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Location</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.activityCentre}</p>
-                    <p className="text-xs text-neutral-400 dark:text-neutral-500">{session.town}, {session.region}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <Tag className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Shakha Type</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{shakhaType}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <Tag className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Utsav</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.utsav || 'None'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <RefreshCw className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Frequency</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white capitalize">{session.frequency}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Status</p>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(session.status)}`}>
-                      {statusLabel}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
             {/* ── Card: Attendance ─────────────────────────── */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
 
@@ -578,85 +458,95 @@ export default function SessionDetail({
                     </p>
                   )}
 
-                  {/* Column legend */}
-                  <div className="flex items-center gap-2 mb-3 px-3">
-                    <span className="w-8 text-center text-[10px] font-semibold text-neutral-400 dark:text-neutral-600 uppercase tracking-wider flex-shrink-0">#</span>
-                    <div className="w-8 flex-shrink-0" />
-                    <span className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-600 uppercase tracking-wider flex-1">Member</span>
-                    <span className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-600 uppercase tracking-wider flex-shrink-0 mr-1">Mark</span>
-                  </div>
-
-                  {/* ── Attendance groups ─────────────────── */}
+                  {/* ── Attendance table ──────────────────── */}
                   {filteredTotal === 0 ? (
                     <div className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
                       No members match your search or filters.
                     </div>
                   ) : (
-                    <div className="space-y-6">
-
-                      {/* Awaiting Mark */}
-                      {unmarked.length > 0 && (
-                        <div>
-                          <GroupHeader icon={Users} iconClass="text-neutral-400" label="Awaiting Mark" count={unmarked.length} />
-                          <div className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-neutral-100 dark:border-neutral-800 overflow-hidden">
-                            {unmarked.map(r => (
-                              <MemberRow
-                                key={r.memberId}
-                                record={r}
-                                attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
-                                isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
-                                postCode={postCodeMap.get(r.memberId)}
-                                isExpanded={expandedMemberId === r.memberId}
-                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
-                                onMark={status => onMarkAttendance(session.id, r.memberId, status)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Present */}
-                      {present.length > 0 && (
-                        <div>
-                          <GroupHeader icon={CheckCircle2} iconClass="text-success-500" label="Present" count={present.length} />
-                          <div className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-success-100 dark:border-success-900/30 overflow-hidden">
-                            {present.map(r => (
-                              <MemberRow
-                                key={r.memberId}
-                                record={r}
-                                attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
-                                isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
-                                postCode={postCodeMap.get(r.memberId)}
-                                isExpanded={expandedMemberId === r.memberId}
-                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
-                                onMark={status => onMarkAttendance(session.id, r.memberId, status)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Absent */}
-                      {absent.length > 0 && (
-                        <div>
-                          <GroupHeader icon={XCircle} iconClass="text-error-400" label="Absent" count={absent.length} />
-                          <div className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-error-100 dark:border-error-900/30 overflow-hidden">
-                            {absent.map(r => (
-                              <MemberRow
-                                key={r.memberId}
-                                record={r}
-                                attendanceCount={attendanceCountMap.get(r.memberId) ?? 0}
-                                isGuest={!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre}
-                                postCode={postCodeMap.get(r.memberId)}
-                                isExpanded={expandedMemberId === r.memberId}
-                                onToggleExpand={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
-                                onMark={status => onMarkAttendance(session.id, r.memberId, status)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
+                    <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+                      <table className="w-full min-w-max text-sm">
+                        <thead>
+                          <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+                            <SortTh label="#" sortKey="attendanceCount" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <th className="w-10 px-2"></th>
+                            <SortTh label="Member" sortKey="memberName" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <SortTh label="Role" sortKey="jobTitle" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <SortTh label="Age" sortKey="ageCategory" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <SortTh label="Gender" sortKey="gender" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Mark</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {filteredRecords.map(r => {
+                            const attendanceCount = attendanceCountMap.get(r.memberId) ?? 0;
+                            const isGuest = !!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre;
+                            const initials = r.memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                            return (
+                              <tr key={r.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                                <td className="px-4 py-2.5 whitespace-nowrap">
+                                  <span
+                                    className="inline-block min-w-[1.5rem] px-1 py-0.5 rounded text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 leading-none text-center"
+                                    title={`${attendanceCount} Shakha${attendanceCount !== 1 ? 's' : ''} attended`}
+                                  >
+                                    {attendanceCount}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-2.5">
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedMemberId(prev => prev === r.memberId ? null : r.memberId)}
+                                      title="Show post code"
+                                      className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center hover:ring-2 hover:ring-primary-300 dark:hover:ring-primary-700 transition-all"
+                                    >
+                                      <span className="text-xs font-bold text-primary-700 dark:text-primary-300">{initials}</span>
+                                    </button>
+                                    {expandedMemberId === r.memberId && (
+                                      <div className="absolute left-0 top-9 z-10 whitespace-nowrap rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-md px-2.5 py-1.5">
+                                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Post Code</p>
+                                        <p className="text-xs font-semibold text-neutral-900 dark:text-white">{postCodeMap.get(r.memberId) ?? '—'}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{r.memberName}</p>
+                                    {isGuest && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 flex-shrink-0">
+                                        Guest
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2.5 text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{r.jobTitle}</td>
+                                <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.ageCategory}</td>
+                                <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.gender}</td>
+                                <td className="px-4 py-2.5 whitespace-nowrap">
+                                  <StatusBadge status={r.status} />
+                                </td>
+                                <td className="px-4 py-2.5 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => onMarkAttendance(session.id, r.memberId, 'present')}
+                                    disabled={r.status === 'absent'}
+                                    title={r.status === 'absent' ? 'Marked absent — Shakha is completed' : 'Mark present'}
+                                    className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors ${
+                                      r.status === 'present'
+                                        ? 'bg-success-100 text-success-700 dark:bg-success-950 dark:text-success-400'
+                                        : 'text-neutral-400 hover:text-success-600 hover:bg-success-50 dark:hover:bg-success-950'
+                                    } disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent`}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </>
@@ -733,11 +623,64 @@ export default function SessionDetail({
               </div>
             </div>
 
+            {/* Shakha Summary */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-5 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <Info className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                Shakha Summary
+              </div>
+              <dl className="space-y-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <Calendar className="w-3.5 h-3.5" /> Date
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {dateLabel}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <Clock className="w-3.5 h-3.5" /> Time
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {session.startTime} – {session.endTime}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <MapPin className="w-3.5 h-3.5" /> Location
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {session.activityCentre}
+                    <span className="block text-neutral-400 dark:text-neutral-500">{session.town}, {session.region}</span>
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <Tag className="w-3.5 h-3.5" /> Utsav
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {session.utsav || 'None'}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <Users className="w-3.5 h-3.5" /> Status
+                  </dt>
+                  <dd>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(session.status)}`}>
+                      {statusLabel}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
             {/* Help note */}
             <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-3">
               <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 <span className="font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Marking attendance</span>
-                Use the <CheckCircle2 className="inline w-3 h-3 text-success-500 mx-0.5" /> and <XCircle className="inline w-3 h-3 text-error-400 mx-0.5" /> buttons to mark present or absent. Changes save instantly.
+                Use the <CheckCircle2 className="inline w-3 h-3 text-success-500 mx-0.5" /> button to mark a member present. Once this Shakha is completed, anyone not marked present is automatically set to absent.
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 <span className="font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Attendance count (#)</span>

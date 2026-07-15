@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link2, Unlink } from "lucide-react";
 import { cn } from "../../ui/utils";
 
 interface RichTextEditorProps {
@@ -30,6 +30,25 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     }
   };
 
+  const handleInsertLink = () => {
+    const url = window.prompt('Enter the URL to link (e.g. https://example.com)');
+    if (!url || !url.trim()) return;
+    editorRef.current?.focus();
+    document.execCommand('createLink', false, url.trim());
+    if (editorRef.current) {
+      // Make inserted links open in a new tab
+      editorRef.current.querySelectorAll('a:not([target])').forEach(a => {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+      const html = editorRef.current.innerHTML;
+      lastValue.current = html;
+      onChange(html);
+    }
+  };
+
+  const handleRemoveLink = () => execCommand('unlink');
+
   const toolButtons: { icon: React.ElementType; command: string; arg?: string; title: string }[] = [
     { icon: Bold,        command: 'bold',              title: 'Bold' },
     { icon: Italic,      command: 'italic',            title: 'Italic' },
@@ -55,6 +74,23 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
             <Icon className="w-3.5 h-3.5" />
           </button>
         ))}
+        <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700 mx-0.5" />
+        <button
+          type="button"
+          onClick={handleInsertLink}
+          title="Insert Link"
+          className="w-7 h-7 flex items-center justify-center text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleRemoveLink}
+          title="Remove Link"
+          className="w-7 h-7 flex items-center justify-center text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors"
+        >
+          <Unlink className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div
         ref={editorRef}

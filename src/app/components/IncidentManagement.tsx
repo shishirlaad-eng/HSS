@@ -481,10 +481,7 @@ function IncidentForm({
         </h2>
       </div>
 
-      {/* Row 1: Incident Details + Casualty */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-
-      {/* Incident Details */}
+      {/* Incident Details — full width */}
       <Card title="Incident Details">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -570,10 +567,13 @@ function IncidentForm({
         </div>
       </Card>
 
+      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+
       {/* Casualty */}
       <Card title="Casualty">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
             <MemberAutocomplete
               ref={el => { fieldRefs.current.casualtyName = el; }}
               label="Casualty Name"
@@ -596,7 +596,7 @@ function IncidentForm({
             />
           </div>
 
-          <div className="sm:col-span-2 md:col-span-4">
+          <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Address of Injured Person <span className="text-neutral-400 text-xs font-normal">(optional)</span>
             </label>
@@ -605,15 +605,10 @@ function IncidentForm({
         </div>
       </Card>
 
-      </div>{/* end row 1 */}
-
-      {/* Row 2: Treatment & Outcome + Reporting & Follow-up */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
-
       {/* Treatment & Outcome */}
       <Card title="Treatment & Outcome">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
             <MemberAutocomplete
               ref={el => { fieldRefs.current.firstAiderName = el; }}
               label="First Aider Name"
@@ -625,7 +620,7 @@ function IncidentForm({
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Outcome <span className="text-red-500">*</span>
             </label>
@@ -636,7 +631,7 @@ function IncidentForm({
             <ErrorText>{touched && errors.outcome && 'Outcome is required.'}</ErrorText>
           </div>
 
-          <div className="sm:col-span-2 md:col-span-4">
+          <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               First Aid Given <span className="text-red-500">*</span>
             </label>
@@ -644,7 +639,7 @@ function IncidentForm({
             <ErrorText>{touched && errors.firstAidGiven && 'First aid given is required.'}</ErrorText>
           </div>
 
-          <div className="sm:col-span-2 md:col-span-4">
+          <div>
             <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Contacts Notified</p>
             <div className="flex flex-wrap gap-4">
               {([
@@ -671,8 +666,8 @@ function IncidentForm({
 
       {/* Reporting & Follow-up */}
       <Card title="Reporting & Follow-up">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
             <MemberAutocomplete
               ref={el => { fieldRefs.current.reportedBy = el; }}
               label="Reported By"
@@ -684,14 +679,14 @@ function IncidentForm({
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Witnesses <span className="text-neutral-400 text-xs font-normal">(optional)</span>
             </label>
             <input type="text" value={form.witnesses} onChange={e => set('witnesses', e.target.value)} placeholder="Names of any witnesses…" className={fieldCls(false)} />
           </div>
 
-          <div className="sm:col-span-2 md:col-span-4 flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <button type="button" onClick={() => set('followUpRequired', !form.followUpRequired)}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.followUpRequired ? 'bg-primary-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
               <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${form.followUpRequired ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -700,7 +695,7 @@ function IncidentForm({
           </div>
 
           {form.followUpRequired && (
-            <div className="sm:col-span-2 md:col-span-4">
+            <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Follow-up Notes</label>
               <textarea rows={2} value={form.followUpNotes} onChange={e => set('followUpNotes', e.target.value)} placeholder="What follow-up is needed…" className={fieldCls(false)} />
             </div>
@@ -708,12 +703,10 @@ function IncidentForm({
         </div>
       </Card>
 
-      </div>{/* end row 2 */}
-
       {/* Declaration */}
       <Card title="Declaration">
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">All of the above facts are a true record of the incident/accident.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <MemberAutocomplete
               label="Signatory Name"
@@ -746,6 +739,8 @@ function IncidentForm({
           </div>
         </div>
       </Card>
+
+      </div>{/* end Casualty/Treatment/Reporting/Declaration row */}
 
       <div className="flex justify-end gap-3 pt-2">
         <button onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
@@ -819,119 +814,108 @@ function IncidentDetail({
         )}
       </div>
 
-      {/* Two-box grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── Left: main detail cards (col-span-2) ── */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Incident Details */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Incident Details</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <DetailRow label="Date & Time">{fmtDateTime(incident.dateTime)}</DetailRow>
-              <DetailRow label="Shakha">{incident.activityCentre}</DetailRow>
-              <DetailRow label="Incident Type"><TypeBadge type={incident.incidentType} /></DetailRow>
-              {incident.sessionId && <DetailRow label="Linked Session">{incident.sessionId}</DetailRow>}
-              {incident.incidentSite && <DetailRow label="Incident Site">{incident.incidentSite}</DetailRow>}
-              {incident.sessionPersonInCharge && <DetailRow label="Person in Charge">{incident.sessionPersonInCharge}</DetailRow>}
-              {incident.activityAtTimeOfIncident && (
-                <div className="sm:col-span-2">
-                  <DetailRow label="Activity at Time of Incident">
-                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal">{incident.activityAtTimeOfIncident}</p>
-                  </DetailRow>
-                </div>
-              )}
-              <div className="sm:col-span-2">
-                <DetailRow label="Incident Description">
-                  <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.incidentDescription}</p>
-                </DetailRow>
-              </div>
-            </div>
-          </div>
-
-          {/* Casualty */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Casualty</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <DetailRow label="Name">{incident.casualtyName}</DetailRow>
-              <DetailRow label="Shakha Member">{incident.isShakhaMember ? 'Yes' : 'No'}</DetailRow>
-              {incident.memberId && <DetailRow label="Member ID">{incident.memberId}</DetailRow>}
-              {incident.casualtyAddress && (
-                <div className="sm:col-span-2">
-                  <DetailRow label="Address">
-                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal whitespace-pre-wrap">{incident.casualtyAddress}</p>
-                  </DetailRow>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Treatment & Outcome */}
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Treatment & Outcome</h3>
-            </div>
-            <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="sm:col-span-2">
-                <DetailRow label="First Aid Given">
-                  <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.firstAidGiven}</p>
-                </DetailRow>
-              </div>
-              <DetailRow label="First Aider">{incident.firstAiderName}</DetailRow>
-              <DetailRow label="Outcome"><OutcomeBadge outcome={incident.outcome} /></DetailRow>
-              {(incident.contactedParents !== undefined || incident.contactedPolice !== undefined || incident.contactedAmbulance !== undefined) && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Contacts Notified</p>
-                  <div className="flex flex-wrap gap-3 text-sm">
-                    <span className={incident.contactedParents ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Parents/Guardians</span>
-                    <span className={incident.contactedPolice ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Police</span>
-                    <span className={incident.contactedAmbulance ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Ambulance</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
+      {/* Incident Details — full width */}
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm mb-6" style={{ borderTop: '3px solid #172E4D' }}>
+        <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+          <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Incident Details</h3>
         </div>
-
-        {/* ── Right: reporting sidebar ── */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Reporting & Follow-up</h3>
-            </div>
-            <div className="px-5 py-5 space-y-4">
-              <DetailRow label="Reported By">{incident.reportedBy}</DetailRow>
-              {incident.witnesses && <DetailRow label="Witnesses">{incident.witnesses}</DetailRow>}
-              <DetailRow label="Follow-up Required">{incident.followUpRequired ? 'Yes' : 'No'}</DetailRow>
-              {incident.followUpRequired && incident.followUpNotes && (
-                <DetailRow label="Follow-up Notes">
-                  <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.followUpNotes}</p>
-                </DetailRow>
-              )}
-            </div>
-          </div>
-
-          {(incident.declarationName || incident.declarationRole || incident.declarationDate) && (
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
-              <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Declaration</h3>
-              </div>
-              <div className="px-5 py-5 space-y-4">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 italic">All of the above facts are a true record of the accident/incident.</p>
-                {incident.declarationName && <DetailRow label="Signed By">{incident.declarationName}</DetailRow>}
-                {incident.declarationRole && <DetailRow label="Responsibility in Shakha">{incident.declarationRole}</DetailRow>}
-                {incident.declarationDate && <DetailRow label="Date">{fmtDate(incident.declarationDate)}</DetailRow>}
-              </div>
+        <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <DetailRow label="Date & Time">{fmtDateTime(incident.dateTime)}</DetailRow>
+          <DetailRow label="Shakha">{incident.activityCentre}</DetailRow>
+          <DetailRow label="Incident Type"><TypeBadge type={incident.incidentType} /></DetailRow>
+          {incident.sessionId && <DetailRow label="Linked Session">{incident.sessionId}</DetailRow>}
+          {incident.incidentSite && <DetailRow label="Incident Site">{incident.incidentSite}</DetailRow>}
+          {incident.sessionPersonInCharge && <DetailRow label="Person in Charge">{incident.sessionPersonInCharge}</DetailRow>}
+          {incident.activityAtTimeOfIncident && (
+            <div className="sm:col-span-2 md:col-span-3">
+              <DetailRow label="Activity at Time of Incident">
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal">{incident.activityAtTimeOfIncident}</p>
+              </DetailRow>
             </div>
           )}
+          <div className="sm:col-span-2 md:col-span-3">
+            <DetailRow label="Incident Description">
+              <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.incidentDescription}</p>
+            </DetailRow>
+          </div>
+        </div>
+      </div>
+
+      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — parallel, equal height */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+
+        {/* Casualty */}
+        <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+          <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex-shrink-0">
+            <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Casualty</h3>
+          </div>
+          <div className="px-5 py-5 flex-1 space-y-4">
+            <DetailRow label="Name">{incident.casualtyName}</DetailRow>
+            <DetailRow label="Shakha Member">{incident.isShakhaMember ? 'Yes' : 'No'}</DetailRow>
+            {incident.memberId && <DetailRow label="Member ID">{incident.memberId}</DetailRow>}
+            {incident.casualtyAddress && (
+              <DetailRow label="Address">
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal whitespace-pre-wrap">{incident.casualtyAddress}</p>
+              </DetailRow>
+            )}
+          </div>
         </div>
 
+        {/* Treatment & Outcome */}
+        <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+          <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex-shrink-0">
+            <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Treatment & Outcome</h3>
+          </div>
+          <div className="px-5 py-5 flex-1 space-y-4">
+            <DetailRow label="First Aid Given">
+              <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.firstAidGiven}</p>
+            </DetailRow>
+            <DetailRow label="First Aider">{incident.firstAiderName}</DetailRow>
+            <DetailRow label="Outcome"><OutcomeBadge outcome={incident.outcome} /></DetailRow>
+            {(incident.contactedParents !== undefined || incident.contactedPolice !== undefined || incident.contactedAmbulance !== undefined) && (
+              <div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Contacts Notified</p>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <span className={incident.contactedParents ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Parents/Guardians</span>
+                  <span className={incident.contactedPolice ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Police</span>
+                  <span className={incident.contactedAmbulance ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 line-through'}>Ambulance</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reporting & Follow-up */}
+        <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+          <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex-shrink-0">
+            <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Reporting & Follow-up</h3>
+          </div>
+          <div className="px-5 py-5 flex-1 space-y-4">
+            <DetailRow label="Reported By">{incident.reportedBy}</DetailRow>
+            {incident.witnesses && <DetailRow label="Witnesses">{incident.witnesses}</DetailRow>}
+            <DetailRow label="Follow-up Required">{incident.followUpRequired ? 'Yes' : 'No'}</DetailRow>
+            {incident.followUpRequired && incident.followUpNotes && (
+              <DetailRow label="Follow-up Notes">
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.followUpNotes}</p>
+              </DetailRow>
+            )}
+          </div>
+        </div>
+
+        {/* Declaration */}
+        {(incident.declarationName || incident.declarationRole || incident.declarationDate) && (
+          <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
+            <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex-shrink-0">
+              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Declaration</h3>
+            </div>
+            <div className="px-5 py-5 flex-1 space-y-4">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 italic">All of the above facts are a true record of the accident/incident.</p>
+              {incident.declarationName && <DetailRow label="Signed By">{incident.declarationName}</DetailRow>}
+              {incident.declarationRole && <DetailRow label="Responsibility in Shakha">{incident.declarationRole}</DetailRow>}
+              {incident.declarationDate && <DetailRow label="Date">{fmtDate(incident.declarationDate)}</DetailRow>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

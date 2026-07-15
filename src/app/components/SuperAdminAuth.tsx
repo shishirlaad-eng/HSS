@@ -7,7 +7,7 @@ import {
   ErrorText
 } from "./hb/common";
 import { PrimaryButton } from "./hb/listing";
-import { Mail, Lock, KeyRound, UserPlus } from "lucide-react";
+import { Mail, Lock, KeyRound, UserPlus, Baby, X } from "lucide-react";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import { toast } from "sonner";
@@ -34,11 +34,14 @@ type Screen = "login" | "otp" | "forgot" | "reset" | "register";
 interface SuperAdminAuthProps {
   onLoginSuccess: () => void;
   onRegisterSuccess?: (role: 'Adult Member' | 'Teen Member') => void;
+  onGuardianRegisterSuccess?: (data: { firstName: string; lastName: string; email: string }) => void;
 }
 
-export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: SuperAdminAuthProps) {
+export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGuardianRegisterSuccess }: SuperAdminAuthProps) {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegisterChoice, setShowRegisterChoice] = useState(false);
+  const [registerMode, setRegisterMode] = useState<'member' | 'child'>('member');
   
   // Login Form
   const [email, setEmail] = useState("");
@@ -207,7 +210,8 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                 setCurrentScreen("login");
                 setErrors({});
               }}
-              onRegistrationComplete={onRegisterSuccess}
+              onRegistrationComplete={registerMode === 'member' ? onRegisterSuccess : undefined}
+              onAccountCreated={registerMode === 'child' ? onGuardianRegisterSuccess : undefined}
             />
           </div>
         </div>
@@ -351,15 +355,12 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
                 <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setCurrentScreen("register");
-                      setErrors({});
-                    }}
+                    onClick={() => setShowRegisterChoice(true)}
                     disabled={isLoading}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
                   >
                     <UserPlus className="w-4 h-4" />
-                    Register as Member
+                    Register
                   </button>
                 </div>
               </form>
@@ -588,6 +589,16 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
       </div>
       </>
       )}
+      <RegisterChoiceModal
+        isOpen={showRegisterChoice}
+        onClose={() => setShowRegisterChoice(false)}
+        onChoose={(mode) => {
+          setRegisterMode(mode);
+          setShowRegisterChoice(false);
+          setCurrentScreen("register");
+          setErrors({});
+        }}
+      />
         <Toaster
           position="top-right"
           expand
@@ -595,5 +606,52 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess }: Su
           closeButton
         />
     </LanguageProvider>
+  );
+}
+
+function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onChoose: (mode: 'member' | 'child') => void;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Register</h3>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => onChoose('member')}
+            className="flex flex-col items-center text-center gap-2 p-5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register as Member</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create your own HSS UK membership account.</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChoose('child')}
+            className="flex flex-col items-center text-center gap-2 p-5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+              <Baby className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register your Child</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create a membership account for your child.</span>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

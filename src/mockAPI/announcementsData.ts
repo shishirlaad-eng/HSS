@@ -27,11 +27,19 @@ export interface Announcement {
   priority: 'high' | 'medium' | 'low';
   status: AnnouncementStatus;
 
-  // Audience scope (hierarchy)
+  // Audience scope (hierarchy) — legacy singular fields, kept for list/detail display
   scope: AnnouncementScope;
   targetRegion?: string;
   targetTown?: string;
   targetCentre?: string;
+
+  // Audience scope — multi-select (empty array = All)
+  targetRegions?: string[];
+  targetTowns?: string[];
+  targetCentres?: string[];
+
+  // Send to specific members only, bypassing scope/demographic filters
+  targetMemberIds?: string[];
 
   // Demographic filters (empty array = all)
   filterAgeCategories: ('child' | 'teen' | 'adult')[];

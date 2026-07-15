@@ -22,7 +22,7 @@ import Dashboard from "./components/Dashboard";
 import Announcements from "./components/Announcements";
 import Sessions from "./components/Sessions";
 import AttendanceLog from "./components/AttendanceLog";
-import MyProfile from "./components/MyProfile";
+import MyProfile, { MEMBER_PROFILE_STORAGE_KEY } from "./components/MyProfile";
 import MembersReport from "./components/MembersReport";
 import EventsReport from "./components/EventsReport";
 import DonationsPaymentsReport from "./components/DonationsPaymentsReport";
@@ -33,6 +33,7 @@ import { SiteMap } from "./components/SiteMap";
 import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
+import NonMemberDashboard from "./components/NonMemberDashboard";
 import StripeDonation from "./components/StripeDonation";
 import MyDonations from "./components/MyDonations";
 import ComplianceManagement from "./components/ComplianceManagement";
@@ -68,6 +69,11 @@ function PlaceholderPage({ page }: { page: string }) {
     </div>
   );
 }
+
+// Demo child pre-attached to the "Member" login so the My Profile hover-flyout
+// (switch to child profile) has something to show without a manual Add Child pass first.
+const DEMO_CHILD = { id: "CHILD-DEMO-001", firstName: "Aarav", surname: "Doe" };
+const CHILD_ACCOUNTS_STORAGE_KEY = "myMemberChildAccounts";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -109,6 +115,20 @@ export default function App() {
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [isPostRegistration, setIsPostRegistration] = useState(false);
   const [isUnderReview, setIsUnderReview] = useState(false);
+  const [childAccounts, setChildAccounts] = useState<{ id: string; firstName: string; surname: string }[]>(() => {
+    if (typeof window === "undefined") return [DEMO_CHILD];
+    try {
+      const saved = localStorage.getItem(CHILD_ACCOUNTS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [DEMO_CHILD];
+    } catch {
+      return [DEMO_CHILD];
+    }
+  });
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const [nonMemberProfile, setNonMemberProfile] = useState<{ firstName: string; lastName: string; email: string; registeredAt: string } | null>(null);
+  const [nonMemberChildren, setNonMemberChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
+  const [nonMemberViewChildId, setNonMemberViewChildId] = useState<string | null>(null);
+  const [nonMemberUpgrading, setNonMemberUpgrading] = useState(false);
   const [memberToView, setMemberToView] = useState<string | null>(null);
   const [memberToViewTab, setMemberToViewTab] = useState<string | undefined>(undefined);
   const [eventToView, setEventToView] = useState<string | null>(null);
@@ -137,6 +157,26 @@ export default function App() {
       setCustomLogoUrl(null);
     }
   }, []);
+
+  useEffect(() => {
+    // Seed the demo child's own profile (child, not adult defaults) so switching
+    // to it shows a proper Kishor (12-16) profile the first time, not blank fields.
+    const key = `${MEMBER_PROFILE_STORAGE_KEY}:child:${DEMO_CHILD.id}`;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, JSON.stringify({
+        firstName: DEMO_CHILD.firstName,
+        surname: DEMO_CHILD.surname,
+        gender: "Male",
+        dateOfBirth: "2012-06-10",
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Persist so children added via "Add Child" survive a page refresh — otherwise
+    // the in-memory list resets to just the seeded demo child on reload.
+    localStorage.setItem(CHILD_ACCOUNTS_STORAGE_KEY, JSON.stringify(childAccounts));
+  }, [childAccounts]);
 
   /* -------------------- Theme Effects -------------------- */
   useEffect(() => {
@@ -173,6 +213,11 @@ export default function App() {
     setIsAuthenticated(false);
     setIsPostRegistration(false);
     setIsUnderReview(false);
+    setActiveChildId(null);
+    setNonMemberProfile(null);
+    setNonMemberChildren([]);
+    setNonMemberViewChildId(null);
+    setNonMemberUpgrading(false);
     toast.success("You have been logged out.");
   };
 
@@ -193,10 +238,28 @@ export default function App() {
   const handleRoleChange = (role: string) => {
     setSelectedRole(role);
     setCurrentPage("dashboard");
+    setActiveChildId(null);
     // Member & Teen roles default to horizontal layout; all others use vertical
     const orientation = MEMBER_ROLES.includes(role) ? "horizontal" : "vertical";
     setMenuOrientation(orientation);
     localStorage.setItem("menuOrientation", orientation);
+  };
+
+  // Switch the "My Profile" page between the logged-in member's own profile (childId = null)
+  // and one of their children's profiles.
+  const handleSwitchProfile = (childId: string | null) => {
+    setActiveChildId(childId);
+    setIsPostRegistration(false);
+    setIsUnderReview(false);
+    setCurrentPage("my-profile");
+  };
+
+  const handleChildAdded = (child: { id: string; firstName: string; surname: string }) => {
+    setChildAccounts(prev => [...prev, child]);
+    setActiveChildId(child.id);
+    setIsPostRegistration(true);
+    setIsUnderReview(false);
+    setCurrentPage("my-profile");
   };
 
   if (!isAuthenticated) {
@@ -217,6 +280,43 @@ export default function App() {
           const orientation = "horizontal";
           setMenuOrientation(orientation);
           localStorage.setItem("menuOrientation", orientation);
+        }}
+        onGuardianRegisterSuccess={(data) => {
+          setNonMemberProfile({ ...data, registeredAt: new Date().toISOString() });
+          setNonMemberChildren([]);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
+
+  if (nonMemberProfile && !nonMemberViewChildId && !nonMemberUpgrading) {
+    return (
+      <NonMemberDashboard
+        profile={nonMemberProfile}
+        childAccounts={nonMemberChildren}
+        onAddChild={(child) => {
+          setNonMemberChildren(prev => [...prev, { id: child.id, firstName: child.firstName, lastName: child.lastName }]);
+        }}
+        onViewChildProfile={(childId) => {
+          setNonMemberViewChildId(childId);
+          setSelectedRole('Adult Member');
+          setActiveChildId(childId);
+          setIsPostRegistration(false);
+          setIsUnderReview(false);
+          setCurrentPage('my-profile');
+          setMenuOrientation('horizontal');
+          localStorage.setItem('menuOrientation', 'horizontal');
+        }}
+        onUpgrade={() => {
+          setNonMemberUpgrading(true);
+          setSelectedRole('Adult Member');
+          setActiveChildId(null);
+          setIsPostRegistration(true);
+          setIsUnderReview(false);
+          setCurrentPage('my-profile');
+          setMenuOrientation('horizontal');
+          localStorage.setItem('menuOrientation', 'horizontal');
         }}
       />
     );
@@ -267,6 +367,9 @@ export default function App() {
           onRoleChange={handleRoleChange}
           onLogout={handleLogout}
           isPostRegistration={isPostRegistration || isUnderReview}
+          childAccounts={MEMBER_ROLES.includes(selectedRole) ? childAccounts : []}
+          activeChildId={activeChildId}
+          onSwitchProfile={handleSwitchProfile}
         />
 
         {/* Page Content */}
@@ -367,6 +470,15 @@ export default function App() {
             isPostRegistration={isPostRegistration}
             isUnderReview={isUnderReview}
             onSubmitForApproval={() => { setIsPostRegistration(false); setIsUnderReview(true); }}
+            activeChildId={activeChildId}
+            onChildAdded={handleChildAdded}
+            onBack={(nonMemberViewChildId || nonMemberUpgrading) ? () => {
+              setNonMemberViewChildId(null);
+              setNonMemberUpgrading(false);
+              setActiveChildId(null);
+              setCurrentPage('dashboard');
+            } : undefined}
+            backLabel={(nonMemberViewChildId || nonMemberUpgrading) ? "Back to Dashboard" : undefined}
           />
         ) : currentPage === "logs" ? (
           <LogsPage />

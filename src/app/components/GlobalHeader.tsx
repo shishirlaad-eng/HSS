@@ -97,6 +97,9 @@ interface GlobalHeaderProps {
   onRoleChange?: (role: string) => void;
   onLogout?: () => void;
   isPostRegistration?: boolean;
+  childAccounts?: { id: string; firstName: string; surname: string }[];
+  activeChildId?: string | null;
+  onSwitchProfile?: (childId: string | null) => void;
 }
 
 export function GlobalHeader({
@@ -114,6 +117,9 @@ export function GlobalHeader({
   onRoleChange,
   onLogout,
   isPostRegistration = false,
+  childAccounts = [],
+  activeChildId = null,
+  onSwitchProfile,
 }: GlobalHeaderProps) {
   const { language: currentLanguage, setLanguage, t, languages } =
     useLanguage();
@@ -1356,9 +1362,9 @@ export function GlobalHeader({
               <ChevronDown className="w-3 h-3 hidden lg:inline" />
             </button>
             {showUserDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl">
                 {/* User Info Section */}
-                <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
+                <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 rounded-t-lg">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
                       JD
@@ -1376,16 +1382,40 @@ export function GlobalHeader({
 
                 {/* Menu Items */}
                 <div className="p-1">
+                  <div className="relative group">
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
+                      onSwitchProfile?.(null);
                       onNavigate?.("my-profile");
                     }}
                     className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                   >
                     <User className="w-4 h-4" />
-                    <span>My Profile</span>
+                    <span className="flex-1">My Profile</span>
+                    {!activeChildId && <Check className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />}
+                    {childAccounts.length > 0 && <ChevronRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />}
                   </button>
+                  {childAccounts.length > 0 && (
+                  <div className="hidden group-hover:block absolute right-full top-0 mr-1 w-64 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl z-30 p-1">
+                  {childAccounts.map(child => (
+                    <button
+                      key={child.id}
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onSwitchProfile?.(child.id);
+                        onNavigate?.("my-profile");
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>{child.firstName} {child.surname}'s Profile</span>
+                      {activeChildId === child.id && <Check className="w-3.5 h-3.5 ml-auto text-primary-600 dark:text-primary-400" />}
+                    </button>
+                  ))}
+                  </div>
+                  )}
+                  </div>
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
@@ -1519,7 +1549,7 @@ export function GlobalHeader({
                 )}
 
                 {/* Logout */}
-                <div className="p-1 border-t border-neutral-200 dark:border-neutral-800">
+                <div className="p-1 border-t border-neutral-200 dark:border-neutral-800 rounded-b-lg">
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
