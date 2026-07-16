@@ -104,7 +104,7 @@ function StatusBadge({ status }: { status: AttendanceRecord['status'] }) {
 
 // ── Sortable table header ───────────────────────────────────────
 
-type AttendanceSortKey = 'attendanceCount' | 'memberName' | 'jobTitle' | 'ageCategory' | 'gender' | 'status';
+type AttendanceSortKey = 'attendanceCount' | 'memberName' | 'ageCategory' | 'gender' | 'status';
 type SortDir = 'asc' | 'desc';
 
 function SortTh({ label, sortKey, current, dir, onSort, align }: {
@@ -269,7 +269,6 @@ export default function SessionDetail({
           cmp = (attendanceCountMap.get(a.memberId) ?? 0) - (attendanceCountMap.get(b.memberId) ?? 0);
           break;
         case 'memberName':  cmp = a.memberName.localeCompare(b.memberName); break;
-        case 'jobTitle':    cmp = a.jobTitle.localeCompare(b.jobTitle);     break;
         case 'ageCategory': cmp = a.ageCategory.localeCompare(b.ageCategory); break;
         case 'gender':      cmp = a.gender.localeCompare(b.gender);         break;
         case 'status':      cmp = STATUS_RANK[a.status] - STATUS_RANK[b.status]; break;
@@ -475,7 +474,6 @@ export default function SessionDetail({
                             <SortTh label="#" sortKey="attendanceCount" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <th className="w-10 px-2"></th>
                             <SortTh label="Member" sortKey="memberName" current={sortKey} dir={sortDir} onSort={handleSort} />
-                            <SortTh label="Role" sortKey="jobTitle" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <SortTh label="Age" sortKey="ageCategory" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <SortTh label="Gender" sortKey="gender" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -525,7 +523,6 @@ export default function SessionDetail({
                                     )}
                                   </div>
                                 </td>
-                                <td className="px-4 py-2.5 text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{r.jobTitle}</td>
                                 <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.ageCategory}</td>
                                 <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.gender}</td>
                                 <td className="px-4 py-2.5 whitespace-nowrap">

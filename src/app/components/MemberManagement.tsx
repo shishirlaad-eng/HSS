@@ -1196,7 +1196,8 @@ export default function MemberManagement({
 
   const memberColumns: ColumnConfig[] = karyakartasOnly ? [
     { key: 'id',                  label: 'Member ID'           },
-    { key: 'name',                label: 'Name'                },
+    { key: 'firstName',           label: 'First Name'          },
+    { key: 'lastName',            label: 'Last Name'           },
     { key: 'memberType',          label: 'Age Category'        },
     { key: 'sanghResponsibility', label: 'Sangh Responsibility'},
     { key: 'registrationDate',    label: 'Since'               },
@@ -1205,7 +1206,8 @@ export default function MemberManagement({
     { key: 'regDate',             label: 'Registration Date'   },
   ] : [
     { key: 'id',         label: 'Member ID'      },
-    { key: 'name',       label: 'Name'           },
+    { key: 'firstName',  label: 'First Name'     },
+    { key: 'lastName',   label: 'Last Name'      },
     { key: 'memberType', label: 'Age Category'   },
     { key: 'email',      label: 'Email Address'  },
     { key: 'phone',      label: 'Contact Number' },
@@ -1233,9 +1235,9 @@ export default function MemberManagement({
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
-      ? { id: true, name: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, regDate: true }
+      ? { id: true, firstName: true, lastName: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, regDate: true }
       : {
-          id: true, name: true, memberType: true, email: true, phone: true, status: true,
+          id: true, firstName: true, lastName: true, memberType: true, email: true, phone: true, status: true,
           regDate: true,
           townCity: false,
           emergencyContactName: false, emergencyContactPhone: false, emergencyContactEmail: false, emergencyContactRelationship: false,
@@ -1382,8 +1384,8 @@ export default function MemberManagement({
     const data = selectedIds.size > 0 ? sortedMembers.filter(m => selectedIds.has(m.id)) : sortedMembers;
     if (!data.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Membership ID,Name,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
-      ...data.map(m => `"${m.id}","${m.name}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${m.registrationDate}"`),
+      'Membership ID,First Name,Last Name,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
+      ...data.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${m.registrationDate}"`),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -1862,9 +1864,14 @@ export default function MemberManagement({
                           {m.id}
                         </td>
                       )}
-                      {visibleColumns.name && (
+                      {visibleColumns.firstName && (
                         <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
-                          {m.name}
+                          {m.firstName ?? m.name.split(' ')[0]}
+                        </td>
+                      )}
+                      {visibleColumns.lastName && (
+                        <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
+                          {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                         </td>
                       )}
                       {visibleColumns.memberType && (
