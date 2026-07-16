@@ -1,16 +1,17 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Sessions (Shakha Table)
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo, useRef, Fragment } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
   Users,
   Filter,
   Plus,
   MapPin,
   X,
   CalendarDays,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing/PageHeader';
 import { PrimaryButton, DateRangeFilter, useStickyListingHeader, Pagination } from './hb/listing';
@@ -30,10 +31,6 @@ function isoDate(y: number, m: number, d: number) {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatMonthName(monthKey: string) {
-  return new Date(monthKey + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long' });
 }
 
 function statusColor(status: ShakhaSession['status']) {
@@ -77,6 +74,32 @@ function buildAttendanceRecordsForCentre(activityCentre: string): AttendanceReco
 // ── Table header style ────────────────────────────────────────
 const TH = 'px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900 text-left';
 
+// ── Sortable TH ───────────────────────────────────────────────
+type SortKey = 'date' | 'startTime' | 'activityCentre' | 'region' | 'town' | 'status' | 'attendanceRate';
+type SortDir = 'asc' | 'desc';
+
+function SortTh({ label, sortKey, current, dir, onSort }: {
+  label: string; sortKey: SortKey; current: SortKey; dir: SortDir;
+  onSort: (k: SortKey) => void;
+}) {
+  const active = current === sortKey;
+  return (
+    <th className={`${TH} cursor-pointer select-none group`} onClick={() => onSort(sortKey)}>
+      <div className="flex items-center gap-1">
+        <span className={`transition-colors ${active ? 'text-primary-600 dark:text-primary-400' : 'group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
+          {label}
+        </span>
+        {active
+          ? dir === 'asc'
+            ? <ArrowUp   className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+            : <ArrowDown className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+          : <ArrowUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60 text-neutral-400" />
+        }
+      </div>
+    </th>
+  );
+}
+
 // ── Main Sessions Component ───────────────────────────────────
 export default function Sessions() {
   const today = new Date();
@@ -90,8 +113,13 @@ export default function Sessions() {
 
   const [page,     setPage]     = useState(1);
   const [pageSize, setPageSize] = useState(15);
-  const [collapsedYears,  setCollapsedYears]  = useState<Set<string>>(new Set());
-  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
 
   const [filterRegion, setFilterRegion]   = useState('');
   const [filterTown,   setFilterTown]     = useState('');
@@ -195,84 +223,44 @@ export default function Sessions() {
   const handleRegionChange = (v: string) => { setFilterRegion(v); setFilterTown(''); setFilterCentre(''); setPage(1); };
   const handleTownChange   = (v: string) => { setFilterTown(v);   setFilterCentre(''); setPage(1); };
 
-  // Filtered + sorted sessions (all-time, newest first — grouped by year/month below)
+  // Filtered sessions (unsorted — sort applied separately below)
   const filteredSessions = useMemo(() => {
     const base = browse ? sessions : scopedSessions;
-    return base
-      .filter(s => {
-        if (dateFrom) {
-          if (s.date < dateFrom || s.date > (dateTo || dateFrom)) return false;
-        }
-        if (filterRegion && s.region !== filterRegion) return false;
-        if (filterTown   && s.town   !== filterTown)   return false;
-        if (filterCentre && s.activityCentre !== filterCentre) return false;
-        return true;
-      })
-      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
+    return base.filter(s => {
+      if (dateFrom) {
+        if (s.date < dateFrom || s.date > (dateTo || dateFrom)) return false;
+      }
+      if (filterRegion && s.region !== filterRegion) return false;
+      if (filterTown   && s.town   !== filterTown)   return false;
+      if (filterCentre && s.activityCentre !== filterCentre) return false;
+      return true;
+    });
   }, [browse, sessions, scopedSessions, filterRegion, filterTown, filterCentre, dateFrom, dateTo]);
+
+  // ── Sorted sessions ──────────────────────────────────────────
+  const sortedSessions = useMemo(() => {
+    const list = [...filteredSessions];
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'attendanceRate') {
+        cmp = (attendanceRate(a) ?? -1) - (attendanceRate(b) ?? -1);
+      } else {
+        const av = a[sortKey] as string;
+        const bv = b[sortKey] as string;
+        cmp = av.localeCompare(bv);
+      }
+      if (cmp === 0) cmp = a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [filteredSessions, sortKey, sortDir]);
 
   const todayIso = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
   const activeFilters = [filterRegion, filterTown, filterCentre].filter(Boolean).length;
 
   // ── Pagination ──────────────────────────────────────────────
-  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filteredSessions.length / pageSize));
-  const paginatedSessions = pageSize === 0 ? filteredSessions : filteredSessions.slice((page - 1) * pageSize, page * pageSize);
-
-  // ── Year/Month grouping (same pattern as Attendance Log) ───
-  const monthTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    filteredSessions.forEach(s => {
-      const monthKey = s.date.slice(0, 7);
-      totals.set(monthKey, (totals.get(monthKey) ?? 0) + 1);
-    });
-    return totals;
-  }, [filteredSessions]);
-
-  const yearTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    filteredSessions.forEach(s => {
-      const yearKey = s.date.slice(0, 4);
-      totals.set(yearKey, (totals.get(yearKey) ?? 0) + 1);
-    });
-    return totals;
-  }, [filteredSessions]);
-
-  const groupedPaginated = useMemo(() => {
-    const yearMap = new Map<string, Map<string, ShakhaSession[]>>();
-    paginatedSessions.forEach(s => {
-      const yearKey  = s.date.slice(0, 4);
-      const monthKey = s.date.slice(0, 7);
-      if (!yearMap.has(yearKey)) yearMap.set(yearKey, new Map());
-      const monthMap = yearMap.get(yearKey)!;
-      if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
-      monthMap.get(monthKey)!.push(s);
-    });
-    return Array.from(yearMap.entries()).map(([year, monthMap]) => ({
-      year,
-      totalEntries: yearTotals.get(year) ?? 0,
-      months: Array.from(monthMap.entries()).map(([month, entries]) => ({
-        month,
-        entries,
-        totalEntries: monthTotals.get(month) ?? 0,
-      })),
-    }));
-  }, [paginatedSessions, monthTotals, yearTotals]);
-
-  const toggleYear = (year: string) => {
-    setCollapsedYears(prev => {
-      const next = new Set(prev);
-      next.has(year) ? next.delete(year) : next.add(year);
-      return next;
-    });
-  };
-
-  const toggleMonth = (month: string) => {
-    setCollapsedMonths(prev => {
-      const next = new Set(prev);
-      next.has(month) ? next.delete(month) : next.add(month);
-      return next;
-    });
-  };
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(sortedSessions.length / pageSize));
+  const paginatedSessions = pageSize === 0 ? sortedSessions : sortedSessions.slice((page - 1) * pageSize, page * pageSize);
 
   const colCount = 4 + ((scope.showRegionFilter || scope.showTownFilter) ? 1 : 0) + (scope.showTownFilter ? 1 : 0) + 2;
 
@@ -468,14 +456,14 @@ export default function Sessions() {
         <table className="w-full min-w-max text-sm border-collapse">
           <thead>
             <tr className="border-b border-neutral-200 dark:border-neutral-800">
-              <th className={TH}>Date</th>
+              <SortTh label="Date" sortKey="date" current={sortKey} dir={sortDir} onSort={handleSort} />
               <th className={TH}>Day</th>
-              <th className={TH}>Time</th>
-              <th className={TH}>Shakha</th>
-              {(scope.showRegionFilter || scope.showTownFilter) && <th className={TH}>Region</th>}
-              {scope.showTownFilter && <th className={TH}>Town</th>}
-              <th className={TH}>Status</th>
-              <th className={TH}>Attendance</th>
+              <SortTh label="Time" sortKey="startTime" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortTh label="Shakha" sortKey="activityCentre" current={sortKey} dir={sortDir} onSort={handleSort} />
+              {(scope.showRegionFilter || scope.showTownFilter) && <SortTh label="Region" sortKey="region" current={sortKey} dir={sortDir} onSort={handleSort} />}
+              {scope.showTownFilter && <SortTh label="Town" sortKey="town" current={sortKey} dir={sortDir} onSort={handleSort} />}
+              <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortTh label="Attendance" sortKey="attendanceRate" current={sortKey} dir={sortDir} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -495,139 +483,81 @@ export default function Sessions() {
                   )}
                 </td>
               </tr>
-            ) : groupedPaginated.map(({ year, months, totalEntries: yearTotal }) => (
-              <Fragment key={`${page}-${year}`}>
-                {/* ── Year header ── */}
-                <tr>
-                  <td colSpan={colCount} className="p-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleYear(year)}
-                      aria-expanded={!collapsedYears.has(year)}
-                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-primary-700 dark:bg-primary-950 hover:bg-primary-800 dark:hover:bg-primary-900 text-left transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        {collapsedYears.has(year)
-                          ? <ChevronRight className="w-4 h-4 text-white/80" />
-                          : <ChevronDown className="w-4 h-4 text-white/80" />
-                        }
-                        <span className="text-sm font-bold text-white tracking-wide">{year}</span>
+            ) : paginatedSessions.map(s => {
+              const isToday   = s.date === todayIso;
+              const rate      = attendanceRate(s);
+              const present   = s.attendanceRecords.filter(r => r.status === 'present').length;
+              const total     = s.attendanceRecords.length;
+              const dateObj   = new Date(s.date + 'T00:00:00');
+              const dayName   = DAY_NAMES_FULL[dateObj.getDay()];
+              const [y, mo, d] = s.date.split('-');
+              const displayDate = `${d}/${mo}/${y}`;
+
+              return (
+                <tr
+                  key={s.id}
+                  onClick={() => setSelectedSession(s)}
+                  className={`cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
+                    isToday ? 'bg-primary-50/30 dark:bg-primary-950/10' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      {isToday && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
+                      )}
+                      <span className={`text-sm font-medium ${isToday ? 'text-primary-700 dark:text-primary-400' : 'text-neutral-900 dark:text-white'}`}>
+                        {displayDate}
                       </span>
-                      <span className="text-xs font-medium text-white/60">
-                        {yearTotal} {yearTotal === 1 ? 'Shakha' : 'Shakhas'}
-                      </span>
-                    </button>
+                      {isToday && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400">
+                          Today
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{dayName}</td>
+                  <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 whitespace-nowrap font-medium">
+                    {s.startTime}–{s.endTime}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">
+                    {s.activityCentre.replace(' Activity Centre', '')}
+                  </td>
+                  {(scope.showRegionFilter || scope.showTownFilter) && (
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
+                  )}
+                  {scope.showTownFilter && (
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
+                  )}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
+                      {statusLabel(s.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {total === 0 ? (
+                      <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                          {present}/{total}
+                        </span>
+                        {rate !== null && (
+                          <span className={`text-xs font-medium ${
+                            rate >= 75 ? 'text-success-600 dark:text-success-400' :
+                            rate >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                            'text-error-600 dark:text-error-400'
+                          }`}>
+                            ({rate}%)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
-                {/* ── Month groups within year ── */}
-                {!collapsedYears.has(year) && months.map(({ month, entries, totalEntries }) => (
-                  <Fragment key={month}>
-                    <tr>
-                      <td colSpan={colCount} className="p-0">
-                        <button
-                          type="button"
-                          onClick={() => toggleMonth(month)}
-                          aria-expanded={!collapsedMonths.has(month)}
-                          className="w-full flex items-center justify-between gap-3 pl-8 pr-4 py-3 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-y border-neutral-200 dark:border-neutral-800 text-left transition-colors"
-                        >
-                          <span className="flex items-center gap-2">
-                            {collapsedMonths.has(month)
-                              ? <ChevronRight className="w-4 h-4 text-neutral-500" />
-                              : <ChevronDown className="w-4 h-4 text-neutral-500" />
-                            }
-                            <CalendarDays className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                              {formatMonthName(month)}
-                            </span>
-                          </span>
-                          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                            {entries.length === totalEntries
-                              ? `${totalEntries} ${totalEntries === 1 ? 'Shakha' : 'Shakhas'}`
-                              : `${entries.length} on this page · ${totalEntries} total`
-                            }
-                          </span>
-                        </button>
-                      </td>
-                    </tr>
-                    {!collapsedMonths.has(month) && entries.map(s => {
-                      const isToday   = s.date === todayIso;
-                      const rate      = attendanceRate(s);
-                      const present   = s.attendanceRecords.filter(r => r.status === 'present').length;
-                      const total     = s.attendanceRecords.length;
-                      const dateObj   = new Date(s.date + 'T00:00:00');
-                      const dayName   = DAY_NAMES_FULL[dateObj.getDay()];
-                      const [y, mo, d] = s.date.split('-');
-                      const displayDate = `${d}/${mo}/${y}`;
-
-                      return (
-                        <tr
-                          key={s.id}
-                          onClick={() => setSelectedSession(s)}
-                          className={`cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
-                            isToday ? 'bg-primary-50/30 dark:bg-primary-950/10' : ''
-                          }`}
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              {isToday && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
-                              )}
-                              <span className={`text-sm font-medium ${isToday ? 'text-primary-700 dark:text-primary-400' : 'text-neutral-900 dark:text-white'}`}>
-                                {displayDate}
-                              </span>
-                              {isToday && (
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400">
-                                  Today
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{dayName}</td>
-                          <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 whitespace-nowrap font-medium">
-                            {s.startTime}–{s.endTime}
-                          </td>
-                          <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">
-                            {s.activityCentre.replace(' Activity Centre', '')}
-                          </td>
-                          {(scope.showRegionFilter || scope.showTownFilter) && (
-                            <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
-                          )}
-                          {scope.showTownFilter && (
-                            <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
-                          )}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
-                              {statusLabel(s.status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {total === 0 ? (
-                              <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                                <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                                  {present}/{total}
-                                </span>
-                                {rate !== null && (
-                                  <span className={`text-xs font-medium ${
-                                    rate >= 75 ? 'text-success-600 dark:text-success-400' :
-                                    rate >= 50 ? 'text-amber-600 dark:text-amber-400' :
-                                    'text-error-600 dark:text-error-400'
-                                  }`}>
-                                    ({rate}%)
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </Fragment>
-                ))}
-              </Fragment>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 

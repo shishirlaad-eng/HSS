@@ -63,7 +63,7 @@ import {
   AnnouncementScope,
   AnnouncementContent,
 } from '../../mockAPI/announcementsData';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, mockMembers } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -218,7 +218,9 @@ interface CreateForm {
   targetMemberIds: string[];
   filterAgeCategories: ('child' | 'teen' | 'adult')[];
   filterGenders: ('male' | 'female')[];
+  filterResponsibilityLevels: string[];
   filterJobTitles: string[];
+  filterResponsibilityTypes: string[];
   pushEnabled: boolean;
   pushSchedule: 'instant' | 'scheduled';
   pushScheduledAt: string;
@@ -241,7 +243,9 @@ const blankForm = (): CreateForm => ({
   targetMemberIds: [],
   filterAgeCategories: [],
   filterGenders: [],
+  filterResponsibilityLevels: [],
   filterJobTitles: [],
+  filterResponsibilityTypes: [],
   pushEnabled: true,
   pushSchedule: 'instant',
   pushScheduledAt: '',
@@ -638,7 +642,9 @@ export default function Announcements({
           targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
           filterAgeCategories: form.filterAgeCategories,
           filterGenders:       form.filterGenders,
+          filterResponsibilityLevels: form.filterResponsibilityLevels,
           filterJobTitles:     form.filterJobTitles,
+          filterResponsibilityTypes:  form.filterResponsibilityTypes,
           push: {
             enabled:     form.pushEnabled,
             schedule:    form.pushSchedule,
@@ -678,7 +684,9 @@ export default function Announcements({
         targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
         filterAgeCategories: form.filterAgeCategories,
         filterGenders:       form.filterGenders,
+        filterResponsibilityLevels: form.filterResponsibilityLevels,
         filterJobTitles:     form.filterJobTitles,
+        filterResponsibilityTypes:  form.filterResponsibilityTypes,
         push: {
           enabled:     form.pushEnabled,
           schedule:    form.pushSchedule,
@@ -757,7 +765,9 @@ export default function Announcements({
       targetMemberIds:     ann.targetMemberIds ?? [],
       filterAgeCategories: (ann.filterAgeCategories as any) ?? [],
       filterGenders:       ann.filterGenders  ?? [],
+      filterResponsibilityLevels: ann.filterResponsibilityLevels ?? [],
       filterJobTitles:     ann.filterJobTitles ?? [],
+      filterResponsibilityTypes:  ann.filterResponsibilityTypes  ?? [],
       pushEnabled:         ann.push.enabled,
       pushSchedule:        ann.push.schedule,
       pushScheduledAt:     ann.push.scheduledAt ?? '',
@@ -1026,10 +1036,22 @@ export default function Announcements({
                           onChange={v => setField('filterGenders', v as ('male' | 'female')[])}
                         />
                         <MultiSelectField
-                          label="Job Title / Responsibility"
+                          label="Responsibility Level"
+                          options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                          selected={form.filterResponsibilityLevels}
+                          onChange={v => setField('filterResponsibilityLevels', v)}
+                        />
+                        <MultiSelectField
+                          label="Sangh Responsibility"
                           options={JOB_TITLE_OPTIONS}
                           selected={form.filterJobTitles}
                           onChange={v => setField('filterJobTitles', v)}
+                        />
+                        <MultiSelectField
+                          label="Responsibility Type"
+                          options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                          selected={form.filterResponsibilityTypes}
+                          onChange={v => setField('filterResponsibilityTypes', v)}
                         />
                       </div>
                     </Card>
@@ -1251,7 +1273,7 @@ export default function Announcements({
             )}
 
             {/* Demographic filters (if any) */}
-            {!isMemberRole && (selected.filterAgeCategories.length > 0 || selected.filterGenders.length > 0 || selected.filterJobTitles.length > 0) && (
+            {!isMemberRole && (selected.filterAgeCategories.length > 0 || selected.filterGenders.length > 0 || (selected.filterResponsibilityLevels?.length ?? 0) > 0 || selected.filterJobTitles.length > 0 || (selected.filterResponsibilityTypes?.length ?? 0) > 0) && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
                 <div className="px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                   <Users className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
@@ -1282,13 +1304,37 @@ export default function Announcements({
                       </div>
                     </div>
                   )}
+                  {(selected.filterResponsibilityLevels?.length ?? 0) > 0 && (
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Responsibility Level</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.filterResponsibilityLevels!.map(l => (
+                          <span key={l} className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            {l}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {selected.filterJobTitles.length > 0 && (
                     <div>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Job Titles / Responsibilities</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Sangh Responsibility</p>
                       <div className="flex flex-wrap gap-2">
                         {selected.filterJobTitles.map(j => (
                           <span key={j} className="text-xs font-medium px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                             {j}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(selected.filterResponsibilityTypes?.length ?? 0) > 0 && (
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Responsibility Type</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.filterResponsibilityTypes!.map(t => (
+                          <span key={t} className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            {t}
                           </span>
                         ))}
                       </div>

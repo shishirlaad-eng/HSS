@@ -181,8 +181,12 @@ export default function SessionDetail({
   const canCancel = !isMemberRole && session.status !== 'cancelled' && !!onCancelSession
     && (isShakhaAdmin || isFutureSession);
   const canDelete = selectedRole === 'Super Admin' && !!onDeleteSession;
-  // Only Super Admin and Shakha Admin can edit a Shakha; blocked for past sessions
-  const canEdit   = (selectedRole === 'Super Admin' || isShakhaAdmin) && !isPastSession;
+  // Only Super Admin and Shakha Admin can edit a Shakha, and only while it hasn't
+  // started yet — a session already underway (even if scheduled for today) is locked.
+  // Shakha Admin is further scoped to Shakhas at their own activity centre only.
+  const sessionStart = new Date(`${session.date}T${session.startTime}`);
+  const hasStarted    = sessionStart <= new Date();
+  const canEdit   = !hasStarted && (selectedRole === 'Super Admin' || (isShakhaAdmin && isOwnShakha));
 
   // Once a Shakha is completed, anyone left unmarked is automatically set to Absent.
   useEffect(() => {

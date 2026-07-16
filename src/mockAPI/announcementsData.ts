@@ -44,7 +44,9 @@ export interface Announcement {
   // Demographic filters (empty array = all)
   filterAgeCategories: ('child' | 'teen' | 'adult')[];
   filterGenders: ('male' | 'female')[];
+  filterResponsibilityLevels?: string[];
   filterJobTitles: string[];
+  filterResponsibilityTypes?: string[];
 
   // Notifications
   push: AnnouncementNotification;
