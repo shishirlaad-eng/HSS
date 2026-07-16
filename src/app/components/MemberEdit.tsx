@@ -580,7 +580,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <div className="flex items-center gap-2 flex-shrink-0">
               <SecondaryButton icon={ArrowLeft} onClick={onBack}>Cancel</SecondaryButton>
               <PrimaryButton icon={Save} onClick={handleSave} isLoading={isSaving}>
-                {isSaving ? 'Saving...' : 'Update'}
+                {isSaving ? 'Saving...' : 'Save'}
               </PrimaryButton>
             </div>
           </div>

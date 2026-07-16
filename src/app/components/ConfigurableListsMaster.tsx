@@ -600,7 +600,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
                 </button>
                 {modalMode !== 'view' && (
                   <PrimaryButton onClick={handleSave}>
-                    {modalMode === 'create' ? 'Save' : 'Update'}
+                    Save
                   </PrimaryButton>
                 )}
               </div>

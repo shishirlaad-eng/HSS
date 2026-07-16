@@ -203,7 +203,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               isLoading={isSaving}
               disabled={blocked}
             >
-              {isSaving ? 'Saving...' : 'Update'}
+              {isSaving ? 'Saving...' : 'Save'}
             </PrimaryButton>
           </div>
         </PageHeader>

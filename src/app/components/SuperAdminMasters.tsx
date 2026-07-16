@@ -1305,7 +1305,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 </button>
                 {modalMode !== 'view' && (
                   <PrimaryButton onClick={handleSaveItem}>
-                    {modalMode === 'create' ? 'Save' : 'Update'}
+                    Save
                   </PrimaryButton>
                 )}
               </div>
