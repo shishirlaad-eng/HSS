@@ -987,7 +987,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     error={fieldErrors.gender}
                     errorMessage="Gender is required."
                   />
-                  <EditableInfoItem label="Surname" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} error={fieldErrors.surname} errorMessage="Surname is required." />
+                  <EditableInfoItem label="Last Name" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} error={fieldErrors.surname} errorMessage="Last name is required." />
                   <EditableInfoItem
                     label="Date of Birth"
                     required

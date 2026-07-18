@@ -33,6 +33,8 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isLegalAdult, setIsLegalAdult] = useState(false);
+  const [legalAdultError, setLegalAdultError] = useState('');
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const set = (key: keyof RegistrationForm) =>
@@ -60,7 +62,9 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
+    const adultErr = onAccountCreated && !isLegalAdult ? 'You must confirm you are a legal adult member.' : '';
+    setLegalAdultError(adultErr);
+    if (Object.keys(errs).length > 0 || adultErr) {
       toast.error('Please fill in all required fields.');
       const firstKey = FIELD_ORDER.find(k => errs[k]);
       const el = firstKey ? fieldRefs.current[firstKey] : null;
@@ -153,6 +157,20 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
             <FormInput ref={el => { fieldRefs.current.confirmPassword = el; }} type="password" value={form.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter your password" className={errCls('confirmPassword')} />
             <ErrorText>{errors.confirmPassword}</ErrorText>
           </FormField>
+          {onAccountCreated && (
+            <div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isLegalAdult}
+                  onChange={e => { setIsLegalAdult(e.target.checked); setLegalAdultError(''); }}
+                  className="mt-0.5 h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-neutral-700 dark:text-neutral-200">I am a legal adult member</span>
+              </label>
+              <ErrorText>{legalAdultError}</ErrorText>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">

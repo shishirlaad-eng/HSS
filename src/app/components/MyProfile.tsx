@@ -4,7 +4,7 @@ import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, Clipb
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText, FormField, FormLabel } from "./hb/common/Form";
-import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE } from "../../mockAPI/membersData";
+import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE, generateMemberId } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
 import {
   createTransferRequest,
@@ -613,7 +613,7 @@ function AddChildModal({ isOpen, onClose, onCreated }: {
       return;
     }
 
-    const id = `CHILD-${Date.now()}`;
+    const id = generateMemberId();
     onCreated(
       { id, firstName: form.firstName.trim(), surname: form.surname.trim() },
       {
@@ -707,7 +707,11 @@ type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'histor
 function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel = "Back" }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string }) {
   const storageKey = activeChildId ? `child:${activeChildId}` : selectedRole;
   const loadProfile = () => {
-    const defaultProfile = getDefaultMemberProfile(selectedRole);
+    // A freshly registered child hasn't been given a DOB yet — never default to the
+    // adult template's date of birth, which would wrongly place them in an adult age band.
+    const defaultProfile = activeChildId
+      ? { ...getDefaultMemberProfile(selectedRole), dateOfBirth: '' }
+      : getDefaultMemberProfile(selectedRole);
     const scope = getRoleScope(selectedRole);
     const approvedLocation = getMemberCentreOverrides()[scope.selfMemberId || selectedRole] || {
       country: scope.country || defaultProfile.country,
@@ -1171,7 +1175,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 {!isPostRegistration && <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>}
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
                 <EditableInfoItem label="Gender" required        value={profile.gender}      isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} error={fieldErrors.gender} errorMessage="Gender is required." />
-                <EditableInfoItem label="Surname" required       value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Surname is required." />
+                <EditableInfoItem label="Last Name" required     value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Last name is required." />
                 {effectiveEditing ? (
                   <EditableInfoItem label="Date of Birth" required value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" error={fieldErrors.dateOfBirth} errorMessage="Date of birth is required." />
                 ) : (
@@ -1183,8 +1187,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
 
               <InfoSection title="Contact Details">
-                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." />
-                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
+                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." />
+                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
                 <EditableInfoItem
                   label="Post Code"
                   required
@@ -1548,7 +1552,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   error={fieldErrors.activityCentre}
                   errorMessage="Shakha is required."
                 />
-                {!isPostRegistration && <InfoItem label="Age Category">{getAgeGroupLabel(profile.dateOfBirth)}</InfoItem>}
+                {!isPostRegistration && <InfoItem label="Age Category">{profile.dateOfBirth ? getAgeGroupLabel(profile.dateOfBirth) : '—'}</InfoItem>}
               </InfoSection>
 
             </>

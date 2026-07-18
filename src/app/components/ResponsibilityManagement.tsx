@@ -178,7 +178,7 @@ export default function ResponsibilityManagement({ members, onBack, onSave }: {
     </div>
     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-950 overflow-auto">
       <table className="w-full min-w-[1320px] border-collapse"><thead><tr>
-        <th className={th}>Member ID</th><th className={th}>Name</th><th className={th}>Responsibility Level</th>
+        <th className={th}>Member ID</th><th className={th}>First Name</th><th className={th}>Last Name</th><th className={th}>Responsibility Level</th>
         <th className={th}>Responsibility</th><th className={th}>Responsibility Type</th><th className={th}>Start Date</th>
         <th className={th}>End Date</th><th className={th}>Actions</th>
       </tr></thead><tbody>
@@ -187,7 +187,8 @@ export default function ResponsibilityManagement({ members, onBack, onSave }: {
           return <Fragment key={member.id}>
             <tr className="bg-primary-50/30 dark:bg-primary-950/10">
               <td rowSpan={rows.length + 1} className={`${td} text-sm font-mono text-neutral-600 bg-white dark:bg-neutral-950`}>{member.id}</td>
-              <td rowSpan={rows.length + 1} className={`${td} text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-neutral-950`}>{member.name}</td>
+              <td rowSpan={rows.length + 1} className={`${td} text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-neutral-950`}>{member.firstName ?? member.name.split(' ')[0]}</td>
+              <td rowSpan={rows.length + 1} className={`${td} text-sm font-medium text-neutral-900 dark:text-white bg-white dark:bg-neutral-950`}>{member.surname ?? member.name.split(' ').slice(1).join(' ')}</td>
               <td colSpan={6} className={`${td} py-2`}>
                 <button type="button" onClick={() => addRow(member.id)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-primary-700 hover:bg-primary-100 dark:text-primary-300 dark:hover:bg-primary-950/40">
                   <Plus className="w-3.5 h-3.5" /> {rows.length ? 'Add another responsibility' : 'Add responsibility'}

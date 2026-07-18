@@ -72,7 +72,7 @@ function PlaceholderPage({ page }: { page: string }) {
 
 // Demo child pre-attached to the "Member" login so the My Profile hover-flyout
 // (switch to child profile) has something to show without a manual Add Child pass first.
-const DEMO_CHILD = { id: "CHILD-DEMO-001", firstName: "Aarav", surname: "Doe" };
+const DEMO_CHILD = { id: "HSS-00099", firstName: "Aarav", surname: "Doe" };
 const CHILD_ACCOUNTS_STORAGE_KEY = "myMemberChildAccounts";
 
 export default function App() {
@@ -168,6 +168,10 @@ export default function App() {
         surname: DEMO_CHILD.surname,
         gender: "Male",
         dateOfBirth: "2012-06-10",
+        country: "HSS UK",
+        region: "London & South East",
+        town: "Wembley",
+        activityCentre: "Wembley Activity Centre",
       }));
     }
   }, []);
@@ -383,6 +387,8 @@ export default function App() {
             onNavigate={handleNavigate}
             onNavigateToEvent={(id) => { setEventToView(id); setCurrentPage('event-management'); }}
             onNavigateToAnnouncement={(id) => { setAnnouncementToView(id); setCurrentPage('announcements'); }}
+            childAccounts={MEMBER_ROLES.includes(selectedRole) ? childAccounts : []}
+            onSwitchProfile={handleSwitchProfile}
           />
         ) : currentPage === "members" ? (
           <MemberManagement

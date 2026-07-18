@@ -235,6 +235,12 @@ export function hasResponsibility(m: Member): boolean {
   return !!m.responsibilityType && !!m.responsibilityLevel;
 }
 
+// New member/child accounts (e.g. a guardian registering a child) get the same
+// HSS-##### member ID format used for adults — never a separate "CHILD-" prefix.
+export function generateMemberId(): string {
+  return `HSS-${String(Date.now()).slice(-5)}`;
+}
+
 export function getAge(dateOfBirth: string): number {
   const today = new Date();
   const dob = new Date(dateOfBirth);

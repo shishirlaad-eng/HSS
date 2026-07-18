@@ -265,8 +265,8 @@ export default function KaryakartaReport() {
       ['With Formal Responsibility', String(withFormalResponsibility)],
       [],
       ['KARYAKARTAS'],
-      ['Name', 'Vibhag', 'Nagar', 'Shakha', 'Responsibility', 'Email', 'Contact Number'],
-      ...filtered.map(m => [m.name, m.region, m.town, m.activityCentre, m.jobTitle, m.email, m.phone ?? '']),
+      ['First Name', 'Last Name', 'Vibhag', 'Nagar', 'Shakha', 'Responsibility', 'Email', 'Contact Number'],
+      ...filtered.map(m => [m.firstName ?? m.name.split(' ')[0], m.surname ?? m.name.split(' ').slice(1).join(' '), m.region, m.town, m.activityCentre, m.jobTitle, m.email, m.phone ?? '']),
     ];
 
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -557,7 +557,8 @@ export default function KaryakartaReport() {
               <table className="w-full min-w-max text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">
-                    <th className="py-2 pr-4 font-medium">Name</th>
+                    <th className="py-2 pr-4 font-medium">First Name</th>
+                    <th className="py-2 pr-4 font-medium">Last Name</th>
                     <th className="py-2 pr-4 font-medium">Vibhag</th>
                     <th className="py-2 pr-4 font-medium">Nagar</th>
                     <th className="py-2 pr-4 font-medium">Shakha</th>
@@ -569,11 +570,12 @@ export default function KaryakartaReport() {
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {paginated.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-neutral-400 text-sm">No karyakartas match the selected filters.</td>
+                      <td colSpan={8} className="py-6 text-center text-neutral-400 text-sm">No karyakartas match the selected filters.</td>
                     </tr>
                   ) : paginated.map(m => (
                     <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
-                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.name}</td>
+                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
+                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
                       <td className="py-2 pr-4 whitespace-nowrap">{m.region}</td>
                       <td className="py-2 pr-4 whitespace-nowrap">{m.town}</td>
                       <td className="py-2 pr-4 whitespace-nowrap">{m.activityCentre}</td>

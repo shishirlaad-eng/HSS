@@ -204,10 +204,14 @@ function MemberDashboard({
   onNavigate,
   onNavigateToEvent,
   onNavigateToAnnouncement,
+  childAccounts = [],
+  onSwitchProfile,
 }: {
   onNavigate?: (page: string) => void;
   onNavigateToEvent?: (eventId: string) => void;
   onNavigateToAnnouncement?: (announcementId: string) => void;
+  childAccounts?: { id: string; firstName: string; surname: string }[];
+  onSwitchProfile?: (childId: string | null) => void;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -516,7 +520,7 @@ function MemberDashboard({
                     <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.memberId}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-1.5">
+                <div className="flex items-start gap-1.5 mb-5">
                   <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Responsibilities</p>
@@ -526,6 +530,32 @@ function MemberDashboard({
                     </div>
                   </div>
                 </div>
+
+                {childAccounts.length > 0 && (
+                  <div className="flex items-start gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">My Children</p>
+                      <div className="flex flex-col gap-1.5">
+                        {childAccounts.map(child => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => onSwitchProfile?.(child.id)}
+                            className="flex items-center justify-between gap-2 text-left rounded-md -mx-1.5 px-1.5 py-1 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                          >
+                            <span className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug truncate">
+                              {child.firstName} {child.surname}
+                            </span>
+                            <span className="text-xs font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                              {child.id}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1031,9 +1061,11 @@ interface DashboardProps {
   onNavigate?: (page: string) => void;
   onNavigateToEvent?: (eventId: string) => void;
   onNavigateToAnnouncement?: (announcementId: string) => void;
+  childAccounts?: { id: string; firstName: string; surname: string }[];
+  onSwitchProfile?: (childId: string | null) => void;
 }
 
-export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToAnnouncement }: DashboardProps) {
+export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToAnnouncement, childAccounts = [], onSwitchProfile }: DashboardProps) {
 
   const { selectedRole, scope } = useRoleScope();
 
@@ -1045,6 +1077,8 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         onNavigate={onNavigate}
         onNavigateToEvent={onNavigateToEvent}
         onNavigateToAnnouncement={onNavigateToAnnouncement}
+        childAccounts={childAccounts}
+        onSwitchProfile={onSwitchProfile}
       />
     );
   }

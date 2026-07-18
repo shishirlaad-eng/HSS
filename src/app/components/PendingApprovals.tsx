@@ -436,11 +436,11 @@ export default function PendingApprovals() {
 
   const handleExportCSV = () => {
     if (!sortedMembers.length) { toast.error('No data to export.'); return; }
-    const headers = ['Member ID', 'Name', 'Age Groups (years old)', 'Email', 'Country', 'Vibhag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
+    const headers = ['Member ID', 'First Name', 'Last Name', 'Age Groups (years old)', 'Email', 'Country', 'Vibhag', 'Nagar', 'Shakha', 'DBS Status', 'First Aid Status', 'Registration Date', 'Waiting (days)'];
     const csv = [
       headers.join(','),
       ...sortedMembers.map(m => [
-        m.id, `"${m.name}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email,
+        m.id, `"${m.firstName ?? m.name.split(' ')[0]}"`, `"${m.surname ?? m.name.split(' ').slice(1).join(' ')}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email,
         `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
         m.compliance.dbs, m.compliance.firstAid,
         new Date(m.registrationDate).toLocaleDateString('en-GB'),
@@ -803,7 +803,8 @@ export default function PendingApprovals() {
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {[
                       { key: 'id',        label: 'Member ID' },
-                      { key: 'name',      label: 'Name' },
+                      { key: 'firstName', label: 'First Name' },
+                      { key: 'surname',   label: 'Last Name' },
                       { key: 'memberType',label: 'Age Category' },
                       { key: 'email',     label: 'Email Address' },
                       { key: 'phone',     label: 'Contact Number' },
@@ -831,7 +832,10 @@ export default function PendingApprovals() {
                           {m.id}
                         </td>
                         <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
-                          {m.name}
+                          {m.firstName ?? m.name.split(' ')[0]}
+                        </td>
+                        <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
+                          {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                         </td>
                         <td className="px-4 py-3.5">
                           <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
@@ -849,7 +853,7 @@ export default function PendingApprovals() {
                     );
                   }) : (
                     <tr>
-                      <td colSpan={6} className="px-6 py-20 text-center">
+                      <td colSpan={7} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">

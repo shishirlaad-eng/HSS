@@ -255,7 +255,7 @@ export default function EventDetail({
     if (!filteredParticipants.length) { toast.error('No participants to export.'); return; }
 
     const headers = [
-      'Member ID', 'Name', 'Age Groups (years old)', 'Gender', 'Date of Birth',
+      'Member ID', 'First Name', 'Last Name', 'Age Groups (years old)', 'Gender', 'Date of Birth',
       'Email', 'Secondary Email', 'Primary Contact Number', 'Secondary Contact Number',
       'Building Name', 'Address Line 1', 'Address Line 2', 'Town / City', 'Post Code',
       'Country', 'Vibhag', 'Nagar', 'Shakha',
@@ -277,7 +277,8 @@ export default function EventDetail({
       const m = mockMembers.find(mem => mem.id === p.memberId);
       return [
         p.memberId,
-        escape(p.name),
+        escape(m?.firstName ?? p.name.split(' ')[0]),
+        escape(m?.surname ?? p.name.split(' ').slice(1).join(' ')),
         escape(m ? getAgeGroupLabel(m.dateOfBirth) : ''),
         escape(m?.gender ?? ''),
         escape(m ? new Date(m.dateOfBirth).toLocaleDateString('en-GB') : ''),
@@ -846,26 +847,32 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','Name','Member ID','Email','Phone','Post Code','Type', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                           {filteredParticipants.map((p, idx) => {
-                            const postCode = mockMembers.find(mem => mem.id === p.memberId)?.postCode;
+                            const member = mockMembers.find(mem => mem.id === p.memberId);
+                            const postCode = member?.postCode;
+                            const firstName = member?.firstName ?? p.name.split(' ')[0];
+                            const lastName = member?.surname ?? p.name.split(' ').slice(1).join(' ');
                             return (
                             <tr key={p.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                               <td className="px-4 py-3 text-xs text-neutral-400">{idx + 1}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1.5">
-                                  <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{p.name}</button>
+                                  <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{firstName}</button>
                                   {p.isCoordinator && (
                                     <span title="Coordinator" className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 flex-shrink-0">
                                       <ShieldCheck className="w-3 h-3" />
                                     </span>
                                   )}
                                 </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{lastName}</button>
                               </td>
                               <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{p.memberId}</td>
                               <td className="px-4 py-3">

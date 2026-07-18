@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
-import { UserPlus, Menu, User, Check, ChevronDown, ChevronRight, Mail, CalendarDays, Users, Building2, MapPin, ArrowLeft } from "lucide-react";
+import { UserPlus, User, Check, ChevronDown, ChevronRight, Users, Building2, MapPin, ArrowLeft } from "lucide-react";
 import { LanguageProvider } from "../../i18n/LanguageContext";
-import { SecondaryButton, PrimaryButton } from "./hb/listing";
-import { getAgeGroupLabel } from "../../mockAPI/membersData";
+import { PageHeader, SecondaryButton, PrimaryButton } from "./hb/listing";
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from "./hb/common";
+import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
 import MyProfile, { MEMBER_PROFILE_STORAGE_KEY } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
@@ -25,9 +26,6 @@ interface NonMemberProfile {
 }
 
 type ChildStatus = "draft" | "pending" | "approved";
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 // Child's Personal/Organisation details are entered inside MyProfile itself (no
 // pre-collection form) — read them back from where MyProfile persists them.
@@ -141,15 +139,6 @@ function NonMemberHeader({
             </div>
           )}
         </div>
-
-        <button
-          type="button"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-white hover:bg-white/20 transition-colors flex-shrink-0"
-          aria-label="Menu"
-          title="Menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
       </div>
     </div>
   );
@@ -182,14 +171,26 @@ function UpgradeToTeenScreen({
 
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
+  const [guardianName, setGuardianName] = useState(`${profile.firstName} ${profile.lastName}`.trim());
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState(profile.email);
+  const [guardianRelationship, setGuardianRelationship] = useState("Parent");
   const [authorised, setAuthorised] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; confirmEmail?: string; authorised?: string }>({});
+  const [errors, setErrors] = useState<{
+    email?: string; confirmEmail?: string; authorised?: string;
+    guardianName?: string; guardianPhone?: string; guardianEmail?: string; guardianRelationship?: string;
+  }>({});
   const [submitting, setSubmitting] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const validate = () => {
     const errs: typeof errors = {};
+    if (!guardianName.trim()) errs.guardianName = "Parent / guardian name is required.";
+    if (!guardianPhone.trim()) errs.guardianPhone = "Parent / guardian phone number is required.";
+    if (!guardianEmail.trim()) errs.guardianEmail = "Parent / guardian email is required.";
+    else if (!emailRegex.test(guardianEmail.trim())) errs.guardianEmail = "Enter a valid parent / guardian email.";
+    if (!guardianRelationship.trim()) errs.guardianRelationship = "Parent / guardian relationship is required.";
     if (!email.trim()) errs.email = "Child's email address is required.";
     else if (!emailRegex.test(email.trim())) errs.email = "Enter a valid email address.";
     if (!confirmEmail.trim()) errs.confirmEmail = "Please confirm the email address.";
@@ -229,41 +230,81 @@ function UpgradeToTeenScreen({
             Back to Dashboard
           </button>
 
-          <h1 className="text-[24px] font-bold text-neutral-900 dark:text-white leading-tight mb-1">
-            Upgrade {displayFirstName} to a Teen Account
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
-            {turns13Label ? `${displayFirstName} turns 13 on ${turns13Label}. ` : ""}
-            Teens manage their own login but changes still require your approval.
-          </p>
+          <PageHeader
+            title={`Upgrade ${displayFirstName} to a Teen Account`}
+            subtitle={`${turns13Label ? `${displayFirstName} turns 13 on ${turns13Label}. ` : ""}Teens manage their own login but changes still require your approval.`}
+          />
 
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm mb-6">
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Parent / Guardian Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-1.5">
-                  Child's own email address
-                </label>
-                <input
+              <FormField>
+                <FormLabel required>Parent / Guardian Name</FormLabel>
+                <FormInput
+                  value={guardianName}
+                  onChange={e => setGuardianName(e.target.value)}
+                  className={inputCls(errors.guardianName)}
+                />
+                <ErrorText>{errors.guardianName}</ErrorText>
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Relationship</FormLabel>
+                <FormSelect
+                  value={guardianRelationship}
+                  onChange={e => setGuardianRelationship(e.target.value)}
+                  className={inputCls(errors.guardianRelationship)}
+                >
+                  <option value="Parent">Parent</option>
+                  <option value="Guardian">Guardian</option>
+                </FormSelect>
+                <ErrorText>{errors.guardianRelationship}</ErrorText>
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Phone Number</FormLabel>
+                <FormInput
+                  type="tel"
+                  value={guardianPhone}
+                  onChange={e => setGuardianPhone(e.target.value)}
+                  placeholder="e.g. +44 7700 900123"
+                  className={inputCls(errors.guardianPhone)}
+                />
+                <ErrorText>{errors.guardianPhone}</ErrorText>
+              </FormField>
+              <FormField>
+                <FormLabel required>Parent / Guardian Email</FormLabel>
+                <FormInput
+                  type="email"
+                  value={guardianEmail}
+                  onChange={e => setGuardianEmail(e.target.value)}
+                  className={inputCls(errors.guardianEmail)}
+                />
+                <ErrorText>{errors.guardianEmail}</ErrorText>
+              </FormField>
+            </div>
+
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Child's Login Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+              <FormField>
+                <FormLabel required>Child's own email address</FormLabel>
+                <FormInput
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder={`e.g. ${displayFirstName.toLowerCase()}@email.com`}
                   className={inputCls(errors.email)}
                 />
-                {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-1.5">
-                  Confirm email address
-                </label>
-                <input
+                <ErrorText>{errors.email}</ErrorText>
+              </FormField>
+              <FormField>
+                <FormLabel required>Confirm email address</FormLabel>
+                <FormInput
                   type="email"
                   value={confirmEmail}
                   onChange={e => setConfirmEmail(e.target.value)}
                   className={inputCls(errors.confirmEmail)}
                 />
-                {errors.confirmEmail && <p className="text-xs text-red-600 mt-1">{errors.confirmEmail}</p>}
-              </div>
+                <ErrorText>{errors.confirmEmail}</ErrorText>
+              </FormField>
             </div>
 
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">What changes once approved:</p>
@@ -316,7 +357,11 @@ export default function NonMemberDashboard({
 }) {
   const [viewChildId, setViewChildId] = useState<string | null>(null);
   const [upgradeChildId, setUpgradeChildId] = useState<string | null>(null);
-  const [childStatusMap, setChildStatusMap] = useState<Record<string, ChildStatus>>({});
+  // Demo seed: the first child (shown as "PENDING APPROVAL" on its card) already has a
+  // submitted profile awaiting review, so opening it must not be editable.
+  const [childStatusMap, setChildStatusMap] = useState<Record<string, ChildStatus>>(() =>
+    childAccounts[0] ? { [childAccounts[0].id]: "pending" } : {}
+  );
   const getChildStatus = (id: string): ChildStatus => childStatusMap[id] ?? "draft";
 
   if (upgradeChildId) {
@@ -371,42 +416,57 @@ export default function NonMemberDashboard({
         />
         <div className="px-6 py-6">
 
-          {/* ── Top bar: greeting (left) + profile summary (right) ── */}
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-6">
+          {/* ── Top bar: greeting (left) + upgrade to member (right) ── */}
+          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-[28px] font-bold text-neutral-900 dark:text-white leading-tight">Welcome, {profile.firstName}</h1>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Manage your account and your children's Shakha registrations.</p>
+              <h1 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white mb-1 flex items-center gap-3 flex-wrap">
+                Welcome, {profile.firstName}
+                <span className="px-2 py-0.5 rounded-full text-[19px] font-semibold tracking-wide flex-shrink-0" style={{ backgroundColor: `${HSS_BLUE}1A`, color: HSS_BLUE }}>
+                  NON-MEMBER
+                </span>
+              </h1>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Manage your account and your children's Shakha registrations.</p>
             </div>
-
-            {/* Profile summary card — top right, mirrors the "My Profile" card style */}
-            <div
-              className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow w-full lg:w-auto lg:min-w-[360px] flex-shrink-0"
-              style={{ borderTop: '3px solid #172E4D' }}
-            >
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-semibold flex-shrink-0" style={{ backgroundColor: HSS_BLUE }}>
-                {`${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}`.toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[15px] font-semibold text-neutral-900 dark:text-white truncate">{profile.firstName} {profile.lastName}</p>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide flex-shrink-0" style={{ backgroundColor: `${HSS_BLUE}1A`, color: HSS_BLUE }}>
-                    NON-MEMBER
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mt-1 truncate">
-                  <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
-                  {profile.email}
-                </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                  <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
-                  Registered {formatDate(profile.registeredAt)}
-                </p>
-              </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const id = generateMemberId();
+                  onAddChild({ id, firstName: 'John', lastName: 'Doe', email: '' });
+                  setChildStatusMap(prev => ({ ...prev, [id]: "draft" }));
+                  // Seed a demo profile summary so the card shows full details immediately,
+                  // matching every other child card, rather than sitting blank until the
+                  // guardian manually fills in Personal Details.
+                  localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:child:${id}`, JSON.stringify({
+                    firstName: 'John',
+                    surname: 'Doe',
+                    gender: 'Male',
+                    dateOfBirth: '1990-01-01',
+                    country: 'HSS UK',
+                    region: 'London & South East',
+                    town: 'Wembley',
+                    activityCentre: 'Wembley Activity Centre',
+                  }));
+                  setViewChildId(id);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors bg-[#172E4D] hover:bg-[#0f2138] active:bg-[#0a1830]"
+              >
+                <UserPlus className="w-4 h-4" />
+                {childAccounts.length === 0 ? 'Register Child' : 'Register Another Child'}
+              </button>
+              <button
+                type="button"
+                onClick={() => (onUpgrade ? onUpgrade() : toast.info("Membership upgrade flow coming soon."))}
+                className="px-4 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-neutral-950 transition-colors"
+                style={{ borderColor: HSS_BLUE, color: HSS_BLUE }}
+              >
+                Upgrade to Member
+              </button>
             </div>
           </div>
 
           {/* ── My children ── */}
-          <h2 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: HSS_BLUE }}>
+          <h2 className="text-[19px] font-semibold mb-3 flex items-center gap-2" style={{ color: HSS_BLUE }}>
             <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: HSS_BLUE }} />
             My children {childAccounts.length > 0 && <span className="text-neutral-400 dark:text-neutral-500 font-normal">({childAccounts.length})</span>}
           </h2>
@@ -435,19 +495,26 @@ export default function NonMemberDashboard({
                     style={{ borderTop: '3px solid #172E4D' }}
                   >
                     <div className="p-4 flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-11 h-11 rounded-full flex-shrink-0" style={{ backgroundColor: HSS_BLUE }} />
-                        <div className="min-w-0 flex-1">
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-[15px] font-semibold text-neutral-900 dark:text-white truncate">{displayName}</p>
-                          {ageLabel && <p className="text-xs text-neutral-400 dark:text-neutral-500">{ageLabel}{gender ? ` · ${gender}` : ''}</p>}
+                          <span className={`text-xs font-medium ${isApproved ? 'text-success-700 dark:text-success-400' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                            ID: {child.id}
+                          </span>
+                          {isApproved ? (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success-50 text-success-700 dark:bg-success-950/30 dark:text-success-400 border border-success-200 dark:border-success-800 tracking-wide">
+                              APPROVED
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 tracking-wide">
+                              PENDING APPROVAL
+                            </span>
+                          )}
                         </div>
+                        {ageLabel && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{ageLabel}{gender ? ` · ${gender}` : ''}</p>}
                       </div>
 
                       <div className="space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                        <p className="flex items-center gap-1.5">
-                          <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
-                          {dateOfBirth ? `DOB: ${formatDate(dateOfBirth)}` : 'DOB: —'}
-                        </p>
                         {activityCentre && (
                           <p className="flex items-center gap-1.5">
                             <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
@@ -459,25 +526,6 @@ export default function NonMemberDashboard({
                             <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
                             {[town, region].filter(Boolean).join(', ')}
                           </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        {isApproved ? (
-                          <>
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success-50 text-success-700 dark:bg-success-950/30 dark:text-success-400 border border-success-200 dark:border-success-800 tracking-wide">
-                              APPROVED
-                            </span>
-                            <span className="text-xs font-medium text-success-700 dark:text-success-400">
-                              ID: {child.id}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 tracking-wide">
-                              PENDING APPROVAL
-                            </span>
-                          </>
                         )}
                       </div>
                     </div>
@@ -501,34 +549,6 @@ export default function NonMemberDashboard({
               })}
             </div>
           )}
-
-          <div className="flex justify-center mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                const id = `CHILD-${Date.now()}`;
-                onAddChild({ id, firstName: 'John', lastName: 'Doe', email: '' });
-                setChildStatusMap(prev => ({ ...prev, [id]: "draft" }));
-                setViewChildId(id);
-              }}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors bg-[#172E4D] hover:bg-[#0f2138] active:bg-[#0a1830]"
-            >
-              <UserPlus className="w-4 h-4" />
-              Register Another Child
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-5 py-4 shadow-sm">
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white">Want full membership benefits?</p>
-            <button
-              type="button"
-              onClick={() => (onUpgrade ? onUpgrade() : toast.info("Membership upgrade flow coming soon."))}
-              className="px-4 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-neutral-950 transition-colors"
-              style={{ borderColor: HSS_BLUE, color: HSS_BLUE }}
-            >
-              Upgrade to Member
-            </button>
-          </div>
         </div>
       </div>
       <Toaster position="top-right" expand richColors closeButton />

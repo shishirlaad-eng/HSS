@@ -630,7 +630,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField><FormLabel>Membership ID</FormLabel><FormInput value={member.id} readOnly /></FormField>
                   <FormField><FormLabel>Middle Name</FormLabel><FormInput value={formData.middleName} onChange={set('middleName')} /></FormField>
                   <FormField><FormLabel required>Gender</FormLabel><FormSelect value={formData.gender} onChange={set('gender')} className={errCls('gender')}>{GENDER_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Surname</FormLabel><FormInput value={formData.surname} onChange={set('surname')} className={errCls('surname')} /></FormField>
+                  <FormField><FormLabel required>Last Name</FormLabel><FormInput value={formData.surname} onChange={set('surname')} className={errCls('surname')} /></FormField>
                   <FormField>
                     <FormLabel required>Date of Birth</FormLabel>
                     <FormInput type="date" value={formData.dateOfBirth} onChange={set('dateOfBirth')} className={errCls('dateOfBirth')} />
