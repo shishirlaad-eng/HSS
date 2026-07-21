@@ -351,6 +351,7 @@ function EditableInfoItem({
   phone = false,
   error = false,
   errorMessage,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -364,6 +365,7 @@ function EditableInfoItem({
   phone?: boolean;
   error?: boolean;
   errorMessage?: string;
+  disabled?: boolean;
 }) {
   if (!isEditing) {
     return <InfoItem label={label} required={required}>{valueOrDash(value)}</InfoItem>;
@@ -375,16 +377,16 @@ function EditableInfoItem({
         {label}{required && <span className="text-error-500 ml-0.5">*</span>}
       </label>
       {options ? (
-        <FormSelect value={value} onChange={e => onChange(e.target.value)} className={errCls}>
+        <FormSelect value={value} onChange={e => onChange(e.target.value)} className={errCls} disabled={disabled}>
           {placeholderOption && <option value="">{placeholderOption}</option>}
           {options.map(o => <option key={o} value={o}>{o}</option>)}
         </FormSelect>
       ) : textarea ? (
-        <FormTextarea value={value} onChange={e => onChange(e.target.value)} className={errCls} />
+        <FormTextarea value={value} onChange={e => onChange(e.target.value)} className={errCls} disabled={disabled} />
       ) : phone ? (
-        <PhoneInput value={value} onChange={onChange} error={error} />
+        <PhoneInput value={value} onChange={onChange} error={error} disabled={disabled} />
       ) : (
-        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} className={errCls} />
+        <FormInput type={type} value={value} onChange={e => onChange(e.target.value)} className={errCls} disabled={disabled} />
       )}
       <ErrorText>{error && (errorMessage ?? 'This field is required.')}</ErrorText>
     </div>
@@ -704,7 +706,14 @@ function AddChildModal({ isOpen, onClose, onCreated }: {
 
 type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other' | 'roles';
 
-function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel = "Back" }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string }) {
+type CarriedOverMemberDetails = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+};
+
+function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel = "Back", carriedOverDetails }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
   const storageKey = activeChildId ? `child:${activeChildId}` : selectedRole;
   const loadProfile = () => {
     // A freshly registered child hasn't been given a DOB yet — never default to the
@@ -738,6 +747,14 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
       result.medicalInfoDeclared = '';
       result.allergiesDeclared = '';
       result.isFirstAider = '';
+    }
+    if (isPostRegistration && !activeChildId && carriedOverDetails) {
+      result.firstName = carriedOverDetails.firstName;
+      result.middleName = '';
+      result.surname = carriedOverDetails.lastName;
+      result.fullName = [carriedOverDetails.firstName, carriedOverDetails.lastName].filter(Boolean).join(' ');
+      result.email = carriedOverDetails.email;
+      if (carriedOverDetails.phone) result.phone = carriedOverDetails.phone;
     }
     return result;
   };
@@ -779,7 +796,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     setPostRegEditing(isPostRegistration);
     setPendingTransfer(getPendingTransferForMember(memberId));
     setTransferHistory(getTransferRequests().filter(request => request.memberId === memberId));
-  }, [selectedRole, memberId, activeChildId]);
+  }, [selectedRole, memberId, activeChildId, carriedOverDetails?.firstName, carriedOverDetails?.lastName, carriedOverDetails?.email, carriedOverDetails?.phone]);
 
   useEffect(() => {
     const refreshTransferState = () => {
@@ -803,6 +820,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const initials = fullName.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase() || "JD";
   const isTeenRole = selectedRole.toLowerCase().includes("teen");
   const isMemberRole = true;
+  const lockCarriedOverDetails = isPostRegistration && !activeChildId && !!carriedOverDetails;
+  const lockCarriedOverPhone = lockCarriedOverDetails && !!profile.phone?.trim();
   const dobAge = getAge(profile.dateOfBirth);
   const isTeenByDob = dobAge >= 13 && dobAge <= 17;
   const isMinorByDob = dobAge >= 0 && dobAge < 18;
@@ -1130,13 +1149,13 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
       {isUnderReview && (
         <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-4 py-3">
           <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" /></svg>
-          <p className="text-sm text-blue-800 dark:text-blue-300">Your profile is under review. You will be able to access the application once an admin approves your profile.</p>
+          <p className="text-sm text-blue-800 dark:text-blue-300">Your application is currently under review. Once your Shakha Karyawaha approves your membership, you will have full access to MyHSS.</p>
         </div>
       )}
       {isPostRegistration && (
         <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
           <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" /></svg>
-          <p className="text-sm text-amber-800 dark:text-amber-300">Submit all the details and share it for the admin approval. After approval, you will be able to access the application.</p>
+          <p className="text-sm text-amber-800 dark:text-amber-300">Complete all required fields and submit your registration for approval by the Shakha Karyawaha. Once approved, you can access all the features of MyHSS.</p>
         </div>
       )}
 
@@ -1171,11 +1190,11 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {(isPostRegistration || activeTab === 'personal') && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <InfoSection title="Personal Details">
-                <EditableInfoItem label="First Name" required    value={profile.firstName}   isEditing={effectiveEditing} onChange={v => setField("firstName", v)} error={fieldErrors.firstName} errorMessage="First name is required." />
+                <EditableInfoItem label="First Name" required    value={profile.firstName}   isEditing={effectiveEditing} onChange={v => setField("firstName", v)} error={fieldErrors.firstName} errorMessage="First name is required." disabled={lockCarriedOverDetails} />
                 {!isPostRegistration && <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>}
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
                 <EditableInfoItem label="Gender" required        value={profile.gender}      isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} error={fieldErrors.gender} errorMessage="Gender is required." />
-                <EditableInfoItem label="Last Name" required     value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Last name is required." />
+                <EditableInfoItem label="Last Name" required     value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Last name is required." disabled={lockCarriedOverDetails} />
                 {effectiveEditing ? (
                   <EditableInfoItem label="Date of Birth" required value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" error={fieldErrors.dateOfBirth} errorMessage="Date of birth is required." />
                 ) : (
@@ -1187,8 +1206,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               </InfoSection>
 
               <InfoSection title="Contact Details">
-                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." />
-                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
+                <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." disabled={lockCarriedOverPhone} />
+                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." disabled={lockCarriedOverDetails} />
                 <EditableInfoItem
                   label="Post Code"
                   required
@@ -1973,6 +1992,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   );
 }
 
-export default function MyProfile({ selectedRole = "Super Admin", isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel }: { selectedRole?: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string }) {
-  return <MemberProfileView selectedRole={selectedRole} isPostRegistration={isPostRegistration} isUnderReview={isUnderReview} onSubmitForApproval={onSubmitForApproval} activeChildId={activeChildId} onChildAdded={onChildAdded} onBack={onBack} backLabel={backLabel} />;
+export default function MyProfile({ selectedRole = "Super Admin", isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel, carriedOverDetails }: { selectedRole?: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
+  return <MemberProfileView selectedRole={selectedRole} isPostRegistration={isPostRegistration} isUnderReview={isUnderReview} onSubmitForApproval={onSubmitForApproval} activeChildId={activeChildId} onChildAdded={onChildAdded} onBack={onBack} backLabel={backLabel} carriedOverDetails={carriedOverDetails} />;
 }

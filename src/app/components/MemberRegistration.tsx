@@ -62,7 +62,7 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const errs = validate();
-    const adultErr = onAccountCreated && !isLegalAdult ? 'You must confirm you are a legal adult member.' : '';
+    const adultErr = onAccountCreated && !isLegalAdult ? 'You must confirm that you are 18 years of age or older and agree to the policies.' : '';
     setLegalAdultError(adultErr);
     if (Object.keys(errs).length > 0 || adultErr) {
       toast.error('Please fill in all required fields.');
@@ -81,12 +81,8 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
       onAccountCreated({ firstName: form.firstName, lastName: form.lastName, email: form.email });
       return;
     }
-    if (onRegistrationComplete) {
-      onRegistrationComplete('Adult Member');
-      return;
-    }
     setSubmitted(true);
-    toast.success('Registration submitted successfully.');
+    toast.success('Verification email sent.');
   };
 
   if (submitted) {
@@ -100,9 +96,9 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <div className="w-12 h-12 rounded-full bg-[#f1fced] flex items-center justify-center mx-auto mb-4">
             <ShieldCheck className="w-6 h-6 text-[#4EAE33]" />
           </div>
-          <h1 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">Registration Submitted</h1>
+          <h1 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">Verify Your Email</h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            Welcome, {form.firstName}! Your account is pending review.
+            We have sent a verification email to {form.email}. Please verify your email address to continue setting up your Member account.
           </p>
           <button type="button" onClick={onBackToLogin} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
             Back to Login
@@ -123,8 +119,10 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <div className="inline-flex items-center justify-center rounded-xl px-5 py-3 mb-4" style={{ backgroundColor: '#172E4D' }}>
             <img src={myHssLogo} alt="My HSS" className="h-10 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{onAccountCreated ? 'Create Child Account' : 'Create Account'}</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{onAccountCreated ? 'Enter Parent Details' : 'Register for HSS UK membership.'}</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{onAccountCreated ? 'Create Non-Member Account' : 'Create Member Account'}</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 text-center">
+            {onAccountCreated ? 'Enter your Parent or Guardian details. After creating your Non-Member account, you can register a child for membership.' : 'Enter your details below to create your Member account'}
+          </p>
         </div>
       </div>
 
@@ -132,18 +130,18 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 space-y-4 mb-5">
           <div className="grid grid-cols-2 gap-4">
             <FormField>
-              <FormLabel required>First Name</FormLabel>
+              <FormLabel required>{onAccountCreated ? 'Parent/Guardian First Name' : 'First Name'}</FormLabel>
               <FormInput ref={el => { fieldRefs.current.firstName = el; }} value={form.firstName} onChange={set('firstName')} placeholder="e.g. Arjun" className={errCls('firstName')} />
               <ErrorText>{errors.firstName}</ErrorText>
             </FormField>
             <FormField>
-              <FormLabel required>Last Name</FormLabel>
+              <FormLabel required>{onAccountCreated ? 'Parent/Guardian Last Name' : 'Last Name'}</FormLabel>
               <FormInput ref={el => { fieldRefs.current.lastName = el; }} value={form.lastName} onChange={set('lastName')} placeholder="e.g. Sharma" className={errCls('lastName')} />
               <ErrorText>{errors.lastName}</ErrorText>
             </FormField>
           </div>
           <FormField>
-            <FormLabel required>Email</FormLabel>
+            <FormLabel required>{onAccountCreated ? 'Parent/Guardian Email' : 'Email'}</FormLabel>
             <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={form.email} onChange={set('email')} placeholder="e.g. arjun@email.com" className={errCls('email')} />
             <ErrorText>{errors.email}</ErrorText>
           </FormField>
@@ -164,9 +162,11 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
                   type="checkbox"
                   checked={isLegalAdult}
                   onChange={e => { setIsLegalAdult(e.target.checked); setLegalAdultError(''); }}
-                  className="mt-0.5 h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-neutral-500 bg-white accent-primary-600 focus:ring-2 focus:ring-primary-500/40 dark:border-neutral-400 dark:bg-neutral-950"
                 />
-                <span className="text-sm text-neutral-700 dark:text-neutral-200">I am a legal adult member</span>
+                <span className="text-sm text-neutral-700 dark:text-neutral-200">
+                  I confirm that I am 18 years of age or older and have read and agree to the HSS (UK) Privacy Policy and the MyHSS Terms &amp; Conditions.
+                </span>
               </label>
               <ErrorText>{legalAdultError}</ErrorText>
             </div>
@@ -182,7 +182,7 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
             Cancel
           </button>
           <PrimaryButton type="submit" disabled={isSubmitting} className="justify-center">
-            {isSubmitting ? 'Submitting…' : onAccountCreated ? 'Submit' : 'Create Account'}
+            {isSubmitting ? 'Submitting…' : 'Create Account'}
           </PrimaryButton>
         </div>
       </form>

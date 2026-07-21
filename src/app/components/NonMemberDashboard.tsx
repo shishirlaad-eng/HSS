@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
-import { UserPlus, User, Check, ChevronDown, ChevronRight, Users, Building2, MapPin, ArrowLeft } from "lucide-react";
+import { UserPlus, User, Check, ChevronDown, ChevronRight, Users, Building2, MapPin, ArrowLeft, Key, LogOut, Clock } from "lucide-react";
 import { LanguageProvider } from "../../i18n/LanguageContext";
 import { PageHeader, SecondaryButton, PrimaryButton } from "./hb/listing";
-import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from "./hb/common";
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, FormModal, FormSection, FormFooter } from "./hb/common";
 import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
 import MyProfile, { MEMBER_PROFILE_STORAGE_KEY } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
@@ -51,12 +51,20 @@ function NonMemberHeader({
   profile,
   childAccounts,
   activeChildId,
+  isProfileView,
   onSwitchProfile,
+  onShowProfile,
+  onChangePassword,
+  onLogout,
 }: {
   profile: NonMemberProfile;
   childAccounts: NonMemberChild[];
   activeChildId: string | null;
+  isProfileView?: boolean;
   onSwitchProfile: (childId: string | null) => void;
+  onShowProfile: () => void;
+  onChangePassword: () => void;
+  onLogout?: () => void;
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -73,10 +81,10 @@ function NonMemberHeader({
   }, []);
 
   return (
-    <div className="h-[53px] flex-shrink-0 px-3 flex items-center justify-between" style={{ backgroundColor: "#172E4D" }}>
+    <div className="h-[93px] flex-shrink-0 px-6 flex items-center justify-between" style={{ backgroundColor: "#172E4D" }}>
       <div className="flex items-center gap-2.5 min-w-0">
-        <img src={hssLogoOrange} alt="HSS UK Logo" className="h-9 w-auto object-contain flex-shrink-0" />
-        <div className="w-px h-7 bg-white/40 flex-shrink-0" />
+        <img src={hssLogoOrange} alt="HSS UK Logo" className="h-[74px] w-auto object-contain flex-shrink-0" />
+        <div className="w-px h-10 bg-white/40 flex-shrink-0" />
         <img src={myHssLogo} alt="My HSS" className="h-9 w-auto object-contain flex-shrink-0" />
       </div>
 
@@ -99,12 +107,12 @@ function NonMemberHeader({
                   <div className="relative group">
                     <button
                       type="button"
-                      onClick={() => { setShowDropdown(false); onSwitchProfile(null); }}
+                      onClick={() => { setShowDropdown(false); onShowProfile(); }}
                       className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4" />
                       <span className="flex-1">My Profile</span>
-                      {!activeChildId && <Check className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" style={{ color: HSS_BLUE }} />}
+                      {isProfileView && <Check className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" style={{ color: HSS_BLUE }} />}
                       <ChevronRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
                     </button>
 
@@ -127,14 +135,30 @@ function NonMemberHeader({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => { setShowDropdown(false); onSwitchProfile(null); }}
+                    onClick={() => { setShowDropdown(false); onShowProfile(); }}
                     className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                   >
                     <User className="w-4 h-4" />
                     <span>My Profile</span>
-                    <Check className="w-3.5 h-3.5 ml-auto" style={{ color: HSS_BLUE }} />
+                    {isProfileView && <Check className="w-3.5 h-3.5 ml-auto" style={{ color: HSS_BLUE }} />}
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => { setShowDropdown(false); onChangePassword(); }}
+                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>Change Password</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowDropdown(false); onLogout?.(); }}
+                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
               </div>
             </div>
           )}
@@ -152,22 +176,217 @@ function getTurns13Label(dateOfBirth?: string): string | null {
   return turns13.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function getAgeFromDateOfBirth(dateOfBirth?: string): number | null {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const beforeBirthday =
+    today.getMonth() < dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate());
+  if (beforeBirthday) age -= 1;
+  return age;
+}
+
+function validateTeenUpgradeAge(dateOfBirth?: string, name = "This child") {
+  const age = getAgeFromDateOfBirth(dateOfBirth);
+  if (age === null) {
+    toast.error(`${name}'s date of birth is required before upgrading to a Teen Account.`);
+    return false;
+  }
+  if (age < 13) {
+    const turns13Label = getTurns13Label(dateOfBirth);
+    toast.error(`${name} cannot be upgraded to a Teen Account until they turn 13${turns13Label ? ` on ${turns13Label}` : ""}.`);
+    return false;
+  }
+  return true;
+}
+
+function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
+      <p className="text-sm font-medium text-neutral-900 dark:text-white">{children || "—"}</p>
+    </div>
+  );
+}
+
+function NonMemberMyProfile({ profile }: { profile: NonMemberProfile }) {
+  const [activeTab, setActiveTab] = useState<"personal" | "history">("personal");
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Non-Member";
+  const registeredDate = profile.registeredAt
+    ? new Date(profile.registeredAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "—";
+
+  return (
+    <div className="px-6 py-6">
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h1 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white">{fullName}</h1>
+            <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-[#eff6ff] text-[#172E4D] border-[#bfdbfe]">
+              (Non-Member)
+            </span>
+          </div>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Manage your Non-Member account details.</p>
+        </div>
+      </div>
+
+      <div className="border-b border-neutral-200 dark:border-neutral-800 mb-5">
+        <nav className="flex gap-1">
+          {[
+            { id: "personal" as const, label: "Personal Info", icon: User },
+            { id: "history" as const, label: "History", icon: Clock },
+          ].map(tab => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  active
+                    ? "border-[#172E4D] text-[#172E4D] dark:text-white"
+                    : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {activeTab === "personal" ? (
+        <section className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
+          <h2 className="text-[19px] font-semibold text-neutral-900 dark:text-white mb-4">Personal Info</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <InfoItem label="First Name">{profile.firstName}</InfoItem>
+            <InfoItem label="Last Name">{profile.lastName}</InfoItem>
+            <InfoItem label="Email Address">{profile.email}</InfoItem>
+            <InfoItem label="Account Type">Non-Member</InfoItem>
+            <InfoItem label="Registered On">{registeredDate}</InfoItem>
+          </div>
+        </section>
+      ) : (
+        <section className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+            <h2 className="text-[19px] font-semibold text-neutral-900 dark:text-white">History</h2>
+          </div>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <div className="px-5 py-4 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#eff6ff] text-[#172E4D] flex items-center justify-center flex-shrink-0">
+                <UserPlus className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">Non-Member account created</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{registeredDate}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const resetAndClose = () => {
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    onClose();
+  };
+
+  return (
+    <FormModal
+      isOpen={isOpen}
+      onClose={resetAndClose}
+      title="Change Password"
+      description="Enter your current password and choose a new one"
+      maxWidth="max-w-md"
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          toast.success("Password changed successfully.");
+          resetAndClose();
+        }}
+      >
+        <FormSection>
+          <FormField>
+            <FormLabel htmlFor="currentPassword" required>Current Password</FormLabel>
+            <FormInput
+              id="currentPassword"
+              type="password"
+              placeholder="Enter current password"
+              value={passwordForm.currentPassword}
+              onChange={(event) => setPasswordForm(prev => ({ ...prev, currentPassword: event.target.value }))}
+              required
+            />
+          </FormField>
+          <FormField>
+            <FormLabel htmlFor="newPassword" required>New Password</FormLabel>
+            <FormInput
+              id="newPassword"
+              type="password"
+              placeholder="Enter new password"
+              value={passwordForm.newPassword}
+              onChange={(event) => setPasswordForm(prev => ({ ...prev, newPassword: event.target.value }))}
+              required
+            />
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Must be at least 8 characters long</p>
+          </FormField>
+          <FormField>
+            <FormLabel htmlFor="confirmPassword" required>Confirm New Password</FormLabel>
+            <FormInput
+              id="confirmPassword"
+              type="password"
+              placeholder="Confirm new password"
+              value={passwordForm.confirmPassword}
+              onChange={(event) => setPasswordForm(prev => ({ ...prev, confirmPassword: event.target.value }))}
+              required
+            />
+          </FormField>
+        </FormSection>
+        <FormFooter>
+          <SecondaryButton type="button" onClick={resetAndClose}>Cancel</SecondaryButton>
+          <PrimaryButton type="submit">Change Password</PrimaryButton>
+        </FormFooter>
+      </form>
+    </FormModal>
+  );
+}
+
 function UpgradeToTeenScreen({
   profile,
   child,
   childAccounts,
   onBack,
   onSubmitted,
+  onShowProfile,
+  onChangePassword,
+  onLogout,
 }: {
   profile: NonMemberProfile;
   child: NonMemberChild;
   childAccounts: NonMemberChild[];
   onBack: () => void;
   onSubmitted: () => void;
+  onShowProfile: () => void;
+  onChangePassword: () => void;
+  onLogout?: () => void;
 }) {
   const { firstName, dateOfBirth } = getChildProfileSummary(child.id);
   const displayFirstName = firstName || child.firstName;
-  const turns13Label = getTurns13Label(dateOfBirth);
 
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
@@ -186,6 +405,7 @@ function UpgradeToTeenScreen({
 
   const validate = () => {
     const errs: typeof errors = {};
+    const validAge = validateTeenUpgradeAge(dateOfBirth, displayFirstName);
     if (!guardianName.trim()) errs.guardianName = "Parent / guardian name is required.";
     if (!guardianPhone.trim()) errs.guardianPhone = "Parent / guardian phone number is required.";
     if (!guardianEmail.trim()) errs.guardianEmail = "Parent / guardian email is required.";
@@ -197,7 +417,7 @@ function UpgradeToTeenScreen({
     else if (confirmEmail.trim() !== email.trim()) errs.confirmEmail = "Email addresses do not match.";
     if (!authorised) errs.authorised = "You must authorise this upgrade to continue.";
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return validAge && Object.keys(errs).length === 0;
   };
 
   const handleSubmit = () => {
@@ -220,7 +440,15 @@ function UpgradeToTeenScreen({
   return (
     <LanguageProvider>
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-        <NonMemberHeader profile={profile} childAccounts={childAccounts} activeChildId={child.id} onSwitchProfile={() => {}} />
+        <NonMemberHeader
+          profile={profile}
+          childAccounts={childAccounts}
+          activeChildId={child.id}
+          onSwitchProfile={() => {}}
+          onShowProfile={onShowProfile}
+          onChangePassword={onChangePassword}
+          onLogout={onLogout}
+        />
         <div className="px-6 py-6 max-w-3xl mx-auto">
           <button
             onClick={onBack}
@@ -232,7 +460,7 @@ function UpgradeToTeenScreen({
 
           <PageHeader
             title={`Upgrade ${displayFirstName} to a Teen Account`}
-            subtitle={`${turns13Label ? `${displayFirstName} turns 13 on ${turns13Label}. ` : ""}Teens manage their own login but changes still require your approval.`}
+            subtitle={`${displayFirstName} has turned 13 and can now upgrade to a Teen account. If they have their own email address, they can create a personal login and manage their account. You will continue to approve any changes they make.`}
           />
 
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm mb-6">
@@ -323,7 +551,7 @@ function UpgradeToTeenScreen({
                 className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 mt-0.5 flex-shrink-0"
               />
               <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                I authorise this upgrade and understand a shakha admin must approve it before it takes effect.
+                I have read and understood the above information and authorise the upgrade to a Teen Account.
               </span>
             </label>
             {errors.authorised && <p className="text-xs text-red-600 mt-1 ml-7">{errors.authorised}</p>}
@@ -348,15 +576,19 @@ export default function NonMemberDashboard({
   onAddChild,
   onUpgrade,
   onViewChildProfile,
+  onLogout,
 }: {
   profile: NonMemberProfile;
   childAccounts: NonMemberChild[];
   onAddChild: (child: { id: string; firstName: string; lastName: string; email: string }) => void;
   onUpgrade?: () => void;
   onViewChildProfile?: (childId: string) => void;
+  onLogout?: () => void;
 }) {
   const [viewChildId, setViewChildId] = useState<string | null>(null);
   const [upgradeChildId, setUpgradeChildId] = useState<string | null>(null);
+  const [showNonMemberProfile, setShowNonMemberProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   // Demo seed: the first child (shown as "PENDING APPROVAL" on its card) already has a
   // submitted profile awaiting review, so opening it must not be editable.
   const [childStatusMap, setChildStatusMap] = useState<Record<string, ChildStatus>>(() =>
@@ -368,13 +600,22 @@ export default function NonMemberDashboard({
     const child = childAccounts.find(c => c.id === upgradeChildId);
     if (child) {
       return (
-        <UpgradeToTeenScreen
-          profile={profile}
-          child={child}
-          childAccounts={childAccounts}
-          onBack={() => setUpgradeChildId(null)}
-          onSubmitted={() => setUpgradeChildId(null)}
-        />
+        <>
+          <UpgradeToTeenScreen
+            profile={profile}
+            child={child}
+            childAccounts={childAccounts}
+            onBack={() => setUpgradeChildId(null)}
+            onSubmitted={() => setUpgradeChildId(null)}
+            onShowProfile={() => {
+              setUpgradeChildId(null);
+              setShowNonMemberProfile(true);
+            }}
+            onChangePassword={() => setShowChangePassword(true)}
+            onLogout={onLogout}
+          />
+          <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+        </>
       );
     }
   }
@@ -388,7 +629,14 @@ export default function NonMemberDashboard({
             profile={profile}
             childAccounts={childAccounts}
             activeChildId={viewChildId}
+            isProfileView={false}
             onSwitchProfile={(id) => setViewChildId(id)}
+            onShowProfile={() => {
+              setViewChildId(null);
+              setShowNonMemberProfile(true);
+            }}
+            onChangePassword={() => setShowChangePassword(true)}
+            onLogout={onLogout}
           />
           <MyProfile
             selectedRole="Adult Member"
@@ -400,6 +648,32 @@ export default function NonMemberDashboard({
             backLabel="Back to Dashboard"
           />
         </div>
+        <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+        <Toaster position="top-right" expand richColors closeButton />
+      </LanguageProvider>
+    );
+  }
+
+  if (showNonMemberProfile) {
+    return (
+      <LanguageProvider>
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+          <NonMemberHeader
+            profile={profile}
+            childAccounts={childAccounts}
+            activeChildId={null}
+            isProfileView
+            onSwitchProfile={(id) => {
+              setShowNonMemberProfile(false);
+              setViewChildId(id);
+            }}
+            onShowProfile={() => setShowNonMemberProfile(true)}
+            onChangePassword={() => setShowChangePassword(true)}
+            onLogout={onLogout}
+          />
+          <NonMemberMyProfile profile={profile} />
+        </div>
+        <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
         <Toaster position="top-right" expand richColors closeButton />
       </LanguageProvider>
     );
@@ -412,20 +686,25 @@ export default function NonMemberDashboard({
           profile={profile}
           childAccounts={childAccounts}
           activeChildId={viewChildId}
+          isProfileView={false}
           onSwitchProfile={(id) => setViewChildId(id)}
+          onShowProfile={() => setShowNonMemberProfile(true)}
+          onChangePassword={() => setShowChangePassword(true)}
+          onLogout={onLogout}
         />
         <div className="px-6 py-6">
 
           {/* ── Top bar: greeting (left) + upgrade to member (right) ── */}
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white mb-1 flex items-center gap-3 flex-wrap">
-                Welcome, {profile.firstName}
-                <span className="px-2 py-0.5 rounded-full text-[19px] font-semibold tracking-wide flex-shrink-0" style={{ backgroundColor: `${HSS_BLUE}1A`, color: HSS_BLUE }}>
-                  NON-MEMBER
+              <h1 className="text-[32px] leading-[40px] font-semibold text-neutral-900 dark:text-white mb-1 flex items-center gap-2 flex-wrap">
+                {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Non-Member'}
+                <span className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-[#eff6ff] text-[#172E4D] border-[#bfdbfe]">
+                  (Non-Member)
                 </span>
               </h1>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Manage your account and your children's Shakha registrations.</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Manage your Non-Member account and the memberships of the children you have registered</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
@@ -488,6 +767,14 @@ export default function NonMemberDashboard({
                 // every subsequent child is treated as already approved.
                 const isApproved = index > 0;
                 const ageLabel = dateOfBirth ? getAgeGroupLabel(dateOfBirth) : null;
+                const childMemberId = `MBR-${String(index + 1).padStart(5, '0')}`;
+                const openChildProfile = () => {
+                  if (onViewChildProfile) {
+                    onViewChildProfile(child.id);
+                    return;
+                  }
+                  setViewChildId(child.id);
+                };
                 return (
                   <div
                     key={child.id}
@@ -497,9 +784,10 @@ export default function NonMemberDashboard({
                     <div className="p-4 flex-1">
                       <div className="mb-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[15px] font-semibold text-neutral-900 dark:text-white truncate">{displayName}</p>
-                          <span className={`text-xs font-medium ${isApproved ? 'text-success-700 dark:text-success-400' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                            ID: {child.id}
+                          <p className="text-[18px] leading-6 font-semibold text-neutral-900 dark:text-white truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{displayName}</p>
+                          <span className="text-neutral-300 dark:text-neutral-700">|</span>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
+                            {childMemberId}
                           </span>
                           {isApproved ? (
                             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success-50 text-success-700 dark:bg-success-950/30 dark:text-success-400 border border-success-200 dark:border-success-800 tracking-wide">
@@ -511,10 +799,15 @@ export default function NonMemberDashboard({
                             </span>
                           )}
                         </div>
-                        {ageLabel && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{ageLabel}{gender ? ` · ${gender}` : ''}</p>}
                       </div>
 
-                      <div className="space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                      <div className="space-y-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                        {(ageLabel || gender) && (
+                          <p className="flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
+                            {[ageLabel, gender].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                         {activityCentre && (
                           <p className="flex items-center gap-1.5">
                             <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: HSS_BLUE }} />
@@ -531,13 +824,16 @@ export default function NonMemberDashboard({
                     </div>
 
                     <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3 flex items-center gap-2">
-                      <SecondaryButton onClick={() => (isApproved && onViewChildProfile ? onViewChildProfile(child.id) : setViewChildId(child.id))}>
-                        {isApproved ? 'View Profile' : 'View Submission'}
+                      <SecondaryButton onClick={openChildProfile}>
+                        View Profile
                       </SecondaryButton>
                       {isApproved && (
                         <button
                           type="button"
-                          onClick={() => setUpgradeChildId(child.id)}
+                          onClick={() => {
+                            if (!validateTeenUpgradeAge(dateOfBirth, displayName)) return;
+                            setUpgradeChildId(child.id);
+                          }}
                           className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-btn-text text-sm font-semibold transition-colors"
                         >
                           Upgrade to Teen
@@ -551,6 +847,7 @@ export default function NonMemberDashboard({
           )}
         </div>
       </div>
+      <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
       <Toaster position="top-right" expand richColors closeButton />
     </LanguageProvider>
   );

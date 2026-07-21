@@ -322,6 +322,7 @@ export default function App() {
           setMenuOrientation('horizontal');
           localStorage.setItem('menuOrientation', 'horizontal');
         }}
+        onLogout={handleLogout}
       />
     );
   }
@@ -485,6 +486,11 @@ export default function App() {
               setCurrentPage('dashboard');
             } : undefined}
             backLabel={(nonMemberViewChildId || nonMemberUpgrading) ? "Back to Dashboard" : undefined}
+            carriedOverDetails={nonMemberUpgrading && nonMemberProfile ? {
+              firstName: nonMemberProfile.firstName,
+              lastName: nonMemberProfile.lastName,
+              email: nonMemberProfile.email,
+            } : undefined}
           />
         ) : currentPage === "logs" ? (
           <LogsPage />

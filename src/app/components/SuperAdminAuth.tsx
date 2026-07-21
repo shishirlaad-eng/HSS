@@ -637,7 +637,7 @@ function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
               <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <span className="text-sm font-medium text-neutral-900 dark:text-white">Register as Member</span>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create your own HSS UK membership account.</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create your own HSS (UK) membership account if you are 18 years of age or older, or 13 years of age or older and have your own email address.</span>
           </button>
           <button
             type="button"
@@ -647,8 +647,8 @@ function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
             <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
               <Baby className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register your Child</span>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create a membership account for your child.</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register as a Non-Member</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create a Non-Member account if you are a parent or guardian who is not attending Shakha but need to register a child under 13 years of age for membership.</span>
           </button>
         </div>
       </div>
