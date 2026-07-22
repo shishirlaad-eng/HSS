@@ -18,6 +18,26 @@ import {
 export const MEMBER_PROFILE_STORAGE_KEY = "myMemberProfile";
 const SHARED_PROFILE_KEY = "hss_shared_profile";
 
+// Child's Personal/Organisation details are entered inside MyProfile itself (no
+// pre-collection form) — read them back from where MyProfile persists them.
+export function getChildProfileSummary(id: string): {
+  dateOfBirth?: string; activityCentre?: string; firstName?: string; surname?: string;
+  gender?: string; region?: string; town?: string;
+} {
+  try {
+    const raw = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:child:${id}`);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return {
+      dateOfBirth: parsed.dateOfBirth, activityCentre: parsed.activityCentre,
+      firstName: parsed.firstName, surname: parsed.surname,
+      gender: parsed.gender, region: parsed.region, town: parsed.town,
+    };
+  } catch {
+    return {};
+  }
+}
+
 // Fields that are personal to the user and must stay consistent across all roles
 const SHARED_FIELDS = [
   'firstName', 'middleName', 'surname', 'gender', 'dateOfBirth',

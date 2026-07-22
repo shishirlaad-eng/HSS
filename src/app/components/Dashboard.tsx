@@ -29,6 +29,7 @@ import {
   Check,
   ListChecks,
   IdCard,
+  ArrowLeft,
 } from 'lucide-react';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
@@ -38,6 +39,7 @@ import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
+import { getChildProfileSummary } from './MyProfile';
 
 // â”€â”€ Mock Announcements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -206,15 +208,39 @@ function MemberDashboard({
   onNavigateToAnnouncement,
   childAccounts = [],
   onSwitchProfile,
+  activeChildId = null,
+  onBack,
+  backLabel,
 }: {
   onNavigate?: (page: string) => void;
   onNavigateToEvent?: (eventId: string) => void;
   onNavigateToAnnouncement?: (announcementId: string) => void;
   childAccounts?: { id: string; firstName: string; surname: string }[];
   onSwitchProfile?: (childId: string | null) => void;
+  activeChildId?: string | null;
+  onBack?: () => void;
+  backLabel?: string;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const activeChild = activeChildId ? childAccounts.find(c => c.id === activeChildId) : null;
+  const childSummary = activeChildId ? getChildProfileSummary(activeChildId) : null;
+  const currentMember = activeChildId
+    ? {
+        firstName:            childSummary?.firstName || activeChild?.firstName || 'Child',
+        lastName:             childSummary?.surname || activeChild?.surname || '',
+        memberId:             activeChildId,
+        shakha:               childSummary?.activityCentre || '—',
+        town:                 childSummary?.town || '—',
+        vibhag:               childSummary?.region || '—',
+        sanghResponsibility:  '',
+        sanghResponsibility2: '',
+        joinDate:             mockCurrentMember.joinDate,
+        ageGroup:             childSummary?.dateOfBirth ? getAgeGroup(childSummary.dateOfBirth) : 'bal',
+        status:               'Active',
+      }
+    : mockCurrentMember;
   const [animated, setAnimated] = useState(false);
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 80); return () => clearTimeout(t); }, []);
 
@@ -234,7 +260,7 @@ function MemberDashboard({
   const absentCount   = mockMyAttendance.filter(a => a.status === 'absent').length;
   const attendancePct = Math.round((presentCount / mockMyAttendance.length) * 100);
   const presentAnotherShakha = mockMyAttendance.filter(
-    a => a.status === 'present' && a.session.includes('Shakha') && !a.session.includes(mockCurrentMember.shakha),
+    a => a.status === 'present' && a.session.includes('Shakha') && !a.session.includes(currentMember.shakha),
   ).length;
   const highPriority  = mockAnnouncements.filter(a => a.priority === 'high').length;
 
@@ -245,10 +271,20 @@ function MemberDashboard({
       {/* Member Identity Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-1">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mb-1 w-fit"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {backLabel || 'Back'}
+            </button>
+          )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-[32px] font-bold text-neutral-900 dark:text-white leading-tight">
-              {mockCurrentMember.firstName} {mockCurrentMember.lastName}{' '}
-              <span className="text-xl font-medium text-neutral-400 dark:text-neutral-500">[{mockCurrentMember.memberId}]</span>
+              {currentMember.firstName} {currentMember.lastName}{' '}
+              <span className="text-xl font-medium text-neutral-400 dark:text-neutral-500">[{currentMember.memberId}]</span>
             </h1>
           </div>
         </div>
@@ -468,21 +504,21 @@ function MemberDashboard({
                   <Building2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Shakha</p>
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.shakha}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.shakha}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Nagar</p>
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.town}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.town}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <Globe2 className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Vibhag</p>
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.vibhag}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.vibhag}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -490,7 +526,7 @@ function MemberDashboard({
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Age Category</p>
                     <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">
-                      {AGE_GROUP_LABELS[mockCurrentMember.ageGroup.toLowerCase() as keyof typeof AGE_GROUP_LABELS] ?? mockCurrentMember.ageGroup}
+                      {AGE_GROUP_LABELS[currentMember.ageGroup.toLowerCase() as keyof typeof AGE_GROUP_LABELS] ?? currentMember.ageGroup}
                     </p>
                   </div>
                 </div>
@@ -499,12 +535,12 @@ function MemberDashboard({
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Status</p>
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs ${
-                      mockCurrentMember.status === 'Active'
+                      currentMember.status === 'Active'
                         ? 'bg-success-50 dark:bg-success-950/20 border-success-200 dark:border-success-800'
                         : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
                     }`}>
-                      <span className={`whitespace-nowrap ${mockCurrentMember.status === 'Active' ? 'text-success-700 dark:text-success-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                        {mockCurrentMember.status}
+                      <span className={`whitespace-nowrap ${currentMember.status === 'Active' ? 'text-success-700 dark:text-success-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                        {currentMember.status}
                       </span>
                     </span>
                   </div>
@@ -517,21 +553,23 @@ function MemberDashboard({
                   <IdCard className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Member ID</p>
-                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.memberId}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.memberId}</p>
                   </div>
                 </div>
+                {!activeChildId && (
                 <div className="flex items-start gap-1.5 mb-5">
                   <Award className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Responsibilities</p>
                     <div className="flex flex-col gap-1">
-                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility}</p>
-                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{mockCurrentMember.sanghResponsibility2}</p>
+                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.sanghResponsibility}</p>
+                      <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">{currentMember.sanghResponsibility2}</p>
                     </div>
                   </div>
                 </div>
+                )}
 
-                {childAccounts.length > 0 && (
+                {!activeChildId && childAccounts.length > 0 && (
                   <div className="flex items-start gap-1.5">
                     <UserPlus className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
@@ -1063,9 +1101,12 @@ interface DashboardProps {
   onNavigateToAnnouncement?: (announcementId: string) => void;
   childAccounts?: { id: string; firstName: string; surname: string }[];
   onSwitchProfile?: (childId: string | null) => void;
+  activeChildId?: string | null;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
-export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToAnnouncement, childAccounts = [], onSwitchProfile }: DashboardProps) {
+export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToAnnouncement, childAccounts = [], onSwitchProfile, activeChildId = null, onBack, backLabel }: DashboardProps) {
 
   const { selectedRole, scope } = useRoleScope();
 
@@ -1079,6 +1120,9 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         onNavigateToAnnouncement={onNavigateToAnnouncement}
         childAccounts={childAccounts}
         onSwitchProfile={onSwitchProfile}
+        activeChildId={activeChildId}
+        onBack={onBack}
+        backLabel={backLabel}
       />
     );
   }

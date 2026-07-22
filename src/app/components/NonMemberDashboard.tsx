@@ -6,7 +6,7 @@ import { LanguageProvider } from "../../i18n/LanguageContext";
 import { PageHeader, SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, FormModal, FormSection, FormFooter } from "./hb/common";
 import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
-import MyProfile, { MEMBER_PROFILE_STORAGE_KEY } from "./MyProfile";
+import MyProfile, { MEMBER_PROFILE_STORAGE_KEY, getChildProfileSummary } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 
@@ -26,26 +26,6 @@ interface NonMemberProfile {
 }
 
 type ChildStatus = "draft" | "pending" | "approved";
-
-// Child's Personal/Organisation details are entered inside MyProfile itself (no
-// pre-collection form) — read them back from where MyProfile persists them.
-function getChildProfileSummary(id: string): {
-  dateOfBirth?: string; activityCentre?: string; firstName?: string; surname?: string;
-  gender?: string; region?: string; town?: string;
-} {
-  try {
-    const raw = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:child:${id}`);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return {
-      dateOfBirth: parsed.dateOfBirth, activityCentre: parsed.activityCentre,
-      firstName: parsed.firstName, surname: parsed.surname,
-      gender: parsed.gender, region: parsed.region, town: parsed.town,
-    };
-  } catch {
-    return {};
-  }
-}
 
 function NonMemberHeader({
   profile,

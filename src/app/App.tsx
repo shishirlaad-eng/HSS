@@ -255,7 +255,7 @@ export default function App() {
     setActiveChildId(childId);
     setIsPostRegistration(false);
     setIsUnderReview(false);
-    setCurrentPage("my-profile");
+    setCurrentPage(childId ? "dashboard" : "my-profile");
   };
 
   const handleChildAdded = (child: { id: string; firstName: string; surname: string }) => {
@@ -308,7 +308,7 @@ export default function App() {
           setActiveChildId(childId);
           setIsPostRegistration(false);
           setIsUnderReview(false);
-          setCurrentPage('my-profile');
+          setCurrentPage('dashboard');
           setMenuOrientation('horizontal');
           localStorage.setItem('menuOrientation', 'horizontal');
         }}
@@ -388,8 +388,16 @@ export default function App() {
             onNavigate={handleNavigate}
             onNavigateToEvent={(id) => { setEventToView(id); setCurrentPage('event-management'); }}
             onNavigateToAnnouncement={(id) => { setAnnouncementToView(id); setCurrentPage('announcements'); }}
-            childAccounts={MEMBER_ROLES.includes(selectedRole) ? childAccounts : []}
+            childAccounts={(MEMBER_ROLES.includes(selectedRole) && !activeChildId) ? childAccounts : []}
             onSwitchProfile={handleSwitchProfile}
+            activeChildId={activeChildId}
+            onBack={(nonMemberViewChildId || nonMemberUpgrading) ? () => {
+              setNonMemberViewChildId(null);
+              setNonMemberUpgrading(false);
+              setActiveChildId(null);
+              setCurrentPage('dashboard');
+            } : undefined}
+            backLabel={(nonMemberViewChildId || nonMemberUpgrading) ? "Back to Dashboard" : undefined}
           />
         ) : currentPage === "members" ? (
           <MemberManagement
