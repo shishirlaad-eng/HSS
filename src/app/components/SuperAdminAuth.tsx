@@ -619,7 +619,7 @@ function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
-          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Register</h3>
+          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Create Account</h3>
           <button
             onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
@@ -636,8 +636,8 @@ function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
             <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register as Member</span>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create your own HSS (UK) membership account if you are 18 years of age or older, or 13 years of age or older and have your own email address.</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">Create Member Account</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">If you are 13 years of age or older and have your own email address.</span>
           </button>
           <button
             type="button"
@@ -647,8 +647,8 @@ function RegisterChoiceModal({ isOpen, onClose, onChoose }: {
             <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
               <Baby className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">Register as a Non-Member</span>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Create a Non-Member account if you are a parent or guardian who is not attending Shakha but need to register a child under 13 years of age for membership.</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">Create Non Member Account</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">If you are a parent or guardian who is not attending Shakha and need to register a child under 13 years of age for membership.</span>
           </button>
         </div>
       </div>
