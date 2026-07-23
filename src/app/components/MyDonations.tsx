@@ -9,7 +9,6 @@ import { PageHeader } from "./hb/listing";
 import { mockMemberDonations } from "../../mockAPI/donationsData";
 import { useRoleScope } from "../contexts/RoleScopeContext";
 
-type DonationType = 'one-off' | 'recurring' | null;
 type RecurringFrequency = 'Monthly' | 'Quarterly' | 'Annually';
 
 const formatDateTime = (iso: string) => {
@@ -19,32 +18,114 @@ const formatDateTime = (iso: string) => {
   return { date, time };
 };
 
-export default function MyDonations({ onNavigate }: { onNavigate?: (page: string) => void }) {
+export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () => void }) {
   const { scope } = useRoleScope();
   const mockMyDonations = mockMemberDonations.filter(donation => donation.memberId === scope.selfMemberId);
   const total = mockMyDonations.reduce((s, d) => s + d.amount, 0);
 
-  const [showModal, setShowModal]         = useState(false);
-  const [donationType, setDonationType]   = useState<DonationType>(null);
-  const [frequency, setFrequency]         = useState<RecurringFrequency>('Monthly');
-  const [amount, setAmount]               = useState('');
+  const [showModal, setShowModal]                 = useState(false);
+  const [showStandingOrder, setShowStandingOrder]  = useState(false);
+  const [frequency, setFrequency]                  = useState<RecurringFrequency>('Monthly');
+  const [amount, setAmount]                        = useState('');
+  const closeModal = () => setShowModal(false);
 
-  const closeModal = () => {
-    setShowModal(false);
-    setDonationType(null);
+  const handleSetupStandingOrder = () => {
+    toast.success(`Recurring Dakshina of £${amount} ${frequency.toLowerCase()} submitted successfully.`);
+    setShowStandingOrder(false);
     setFrequency('Monthly');
     setAmount('');
   };
 
-  const handleProceed = () => {
-    if (donationType === 'one-off') {
-      closeModal();
-      onNavigate?.('donate');
-    } else if (donationType === 'recurring') {
-      closeModal();
-      toast.success(`Recurring Dakshina of £${amount} ${frequency.toLowerCase()} submitted successfully.`);
-    }
-  };
+  if (showStandingOrder) {
+    return (
+      <div className="px-6 py-6 max-w-2xl mx-auto">
+        <PageHeader
+          title="Recurring Dakshina"
+          subtitle="Set up a regular standing order from your personal bank account"
+        />
+
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm space-y-5">
+          <div className="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 p-4 space-y-3">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              You can setup a regular standing order from your personal bank account by including the donation amount and the frequency (Monthly, Quarterly or Annually). This is the easiest and most convenient way to make a regular donation to HSS (UK). Please see details below:
+            </p>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex gap-2">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Bank Name:</span>
+                <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Sort Code:</span>
+                <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Account Number:</span>
+                <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
+              </div>
+              <div className="flex gap-2 items-start">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Reference Number:</span>
+                <span className="font-mono font-semibold text-primary-700 dark:text-primary-300">{scope.selfMemberId ?? '[Your Membership ID]'}</span>
+              </div>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-0 pt-0.5">
+                This is your MyHSS membership ID.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">Frequency</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Monthly', 'Quarterly', 'Annually'] as RecurringFrequency[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFrequency(f)}
+                  className={`py-2 rounded-lg text-sm font-medium border transition-all ${
+                    frequency === f
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-primary-300 dark:hover:border-primary-700'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">Amount (£)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">£</span>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full pl-7 pr-4 py-2.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              onClick={() => setShowStandingOrder(false)}
+              className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={!amount}
+              onClick={handleSetupStandingOrder}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-all"
+            >
+              <Heart className="w-4 h-4" />
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 py-6">
@@ -119,113 +200,30 @@ export default function MyDonations({ onNavigate }: { onNavigate?: (page: string
               {/* Type selection */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setDonationType('one-off')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                    donationType === 'one-off'
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700'
-                  }`}
+                  onClick={() => { closeModal(); onGiveDakshina?.(); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all"
                 >
-                  <Zap className={`w-5 h-5 ${donationType === 'one-off' ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
-                  <span className={`text-sm font-semibold ${donationType === 'one-off' ? 'text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                  <Zap className="w-5 h-5 text-neutral-400" />
+                  <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                     One-off Dakshina
                   </span>
                 </button>
                 <button
-                  onClick={() => setDonationType('recurring')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                    donationType === 'recurring'
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700'
-                  }`}
+                  onClick={() => { closeModal(); setShowStandingOrder(true); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all"
                 >
-                  <RefreshCw className={`w-5 h-5 ${donationType === 'recurring' ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-400'}`} />
-                  <span className={`text-sm font-semibold ${donationType === 'recurring' ? 'text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                  <RefreshCw className="w-5 h-5 text-neutral-400" />
+                  <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                     Recurring Dakshina
                   </span>
                 </button>
               </div>
-
-              {/* Recurring options */}
-              {donationType === 'recurring' && (
-                <div className="space-y-4 pt-1">
-                  {/* Standing order info */}
-                  <div className="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 p-4 space-y-3">
-                    <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                      You can setup a regular standing order from your personal bank account by including the donation amount and the frequency (Monthly, Quarterly or Annually). This is the easiest and most convenient way to make a regular donation to HSS (UK). Please see details below:
-                    </p>
-                    <div className="space-y-1.5 text-sm">
-                      <div className="flex gap-2">
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Bank Name:</span>
-                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Sort Code:</span>
-                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Account Number:</span>
-                        <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
-                      </div>
-                      <div className="flex gap-2 items-start">
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Reference Number:</span>
-                        <span className="font-mono font-semibold text-primary-700 dark:text-primary-300">{scope.selfMemberId ?? '[Your Membership ID]'}</span>
-                      </div>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-0 pt-0.5">
-                        This is your MyHSS membership ID.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">Frequency</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['Monthly', 'Quarterly', 'Annually'] as RecurringFrequency[]).map(f => (
-                        <button
-                          key={f}
-                          onClick={() => setFrequency(f)}
-                          className={`py-2 rounded-lg text-sm font-medium border transition-all ${
-                            frequency === f
-                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
-                              : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-primary-300 dark:hover:border-primary-700'
-                          }`}
-                        >
-                          {f}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">Amount (£)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">£</span>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        value={amount}
-                        onChange={e => setAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full pl-7 pr-4 py-2.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-end px-6 py-4 border-t border-neutral-200 dark:border-neutral-800">
               <button onClick={closeModal} className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                 Cancel
-              </button>
-              <button
-                disabled={!donationType || (donationType === 'recurring' && !amount)}
-                onClick={handleProceed}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-all"
-              >
-                <Heart className="w-4 h-4" />
-                Proceed
               </button>
             </div>
           </div>

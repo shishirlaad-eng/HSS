@@ -181,19 +181,13 @@ export const getNavigationData = (
       id: "attendance-group",
       label: "Attendance",
       icon: ClipboardCheck,
-      active: ['sessions', 'attendance-log', 'first-aid-incidents'].includes(currentPage),
+      active: ['sessions', 'first-aid-incidents'].includes(currentPage),
       subItems: [
         {
           id: "sessions",
           label: "Shakha",
           onClick: () => onNavigate("sessions"),
           active: currentPage === "sessions",
-        },
-        {
-          id: "attendance-log",
-          label: "My Attendance",
-          onClick: () => onNavigate("attendance-log"),
-          active: currentPage === "attendance-log",
         },
         ...(['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
           id: "first-aid-incidents",

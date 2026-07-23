@@ -12,7 +12,6 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Megaphone,
   Plus,
-  Eye,
   Trash2,
   ArrowLeft,
   Send,
@@ -1495,8 +1494,8 @@ export default function Announcements({
     return (
       <div
         key={ann.id}
-        onClick={isMemberRole ? () => openDetail(ann) : undefined}
-        className={`border rounded-lg overflow-hidden shadow-sm transition-colors group${isMemberRole ? ' cursor-pointer' : ''} bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700`}
+        onClick={() => openDetail(ann)}
+        className="border rounded-lg overflow-hidden shadow-sm transition-colors group cursor-pointer bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
       >
         <div className="flex">
           {/* Priority bar */}
@@ -1575,18 +1574,9 @@ export default function Announcements({
                   {!isMemberRole && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{ann.postedBy}</p>}
                 </div>
                 <div className="flex items-center gap-1">
-                  {!isMemberRole && (
-                    <button
-                      onClick={() => openDetail(ann)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                      title="View Suchana"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  )}
                   {ap.canDelete && (canDeleteAnnouncement(ann) ? (
                     <button
-                      onClick={() => { setToDelete(ann); setShowDelete(true); }}
+                      onClick={(e) => { e.stopPropagation(); setToDelete(ann); setShowDelete(true); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                       title="Delete Suchana"
                     >
@@ -1747,7 +1737,7 @@ export default function Announcements({
             { heading: 'Read',   items: paginated.filter(a =>  readIds.has(a.id)), emptyLabel: 'No read Suchanas yet.' },
           ] as const).map(section => (
             <div key={section.heading}>
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+              <h2 className="text-[19px] font-semibold text-neutral-900 dark:text-white mb-3">
                 {section.heading}
                 <span className="text-neutral-400 dark:text-neutral-500 font-normal"> ({section.items.length})</span>
               </h2>

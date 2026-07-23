@@ -151,7 +151,6 @@ export function Sidebar({
     // 5. Attendance
     "attendance-group":               isMemberRole ? "My Attendance" : "Attendance",
     "sessions":                       "Shakha",
-    "attendance-log":                 "Attendance Log",
 
     // 6. Reports
     "reports-group":                  "Reports",

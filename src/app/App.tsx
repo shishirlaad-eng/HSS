@@ -382,7 +382,7 @@ export default function App() {
         {currentPage === "donate" ? (
           <StripeDonation onBack={() => handleNavigate("dashboard")} />
         ) : currentPage === "my-donations" ? (
-          <MyDonations onNavigate={handleNavigate} />
+          <MyDonations onGiveDakshina={() => handleNavigate("donate")} />
         ) : currentPage === "dashboard" ? (
           <Dashboard
             onNavigate={handleNavigate}
