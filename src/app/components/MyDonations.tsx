@@ -47,7 +47,10 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm space-y-5">
           <div className="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 p-4 space-y-3">
             <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-              You can setup a regular standing order from your personal bank account by including the donation amount and the frequency (Monthly, Quarterly or Annually). This is the easiest and most convenient way to make a regular donation to HSS (UK). Please see details below:
+              You can support HSS (UK) by setting up a regular standing order from your personal bank account. This is the easiest and most convenient way to make ongoing donations.
+            </p>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              Please use the following bank details when setting up your standing order:
             </p>
             <div className="space-y-1.5 text-sm">
               <div className="flex gap-2">
@@ -63,13 +66,24 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
                 <span className="text-neutral-500 dark:text-neutral-400">[TBD]</span>
               </div>
               <div className="flex gap-2 items-start">
-                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Reference Number:</span>
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Payment Reference:</span>
                 <span className="font-mono font-semibold text-primary-700 dark:text-primary-300">{scope.selfMemberId ?? '[Your Membership ID]'}</span>
               </div>
               <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-0 pt-0.5">
                 This is your MyHSS membership ID.
               </p>
             </div>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              Before you set up your standing order with your bank, please provide the following information so we can record your donation details:
+            </p>
+            <ul className="text-sm text-neutral-700 dark:text-neutral-300 list-disc list-inside space-y-1">
+              <li><span className="font-semibold">Frequency:</span> Monthly, Quarterly, or Annually</li>
+              <li><span className="font-semibold">Donation Amount</span></li>
+              <li><span className="font-semibold">First Payment Date</span></li>
+            </ul>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              <span className="font-semibold">Please note:</span> The frequency, donation amount, and first payment date are collected for our records only. HSS (UK) cannot set up the standing order on your behalf; you must arrange this directly with your bank.
+            </p>
           </div>
 
           <div>

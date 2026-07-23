@@ -59,6 +59,9 @@ export default function SystemSettings() {
     adminEmail: 'admin@hssuk.org',
     contactNumber: '+44 (0) 20 8446 0756',
     websiteUrl: 'https://www.hssuk.org',
+    bankName: '',
+    sortCode: '',
+    accountNumber: '',
 
     // Regional
     dateFormat: 'DD/MM/YYYY',
@@ -384,9 +387,35 @@ export default function SystemSettings() {
                     </FormField>
                     <FormField>
                       <FormLabel>Website URL</FormLabel>
-                      <FormInput 
+                      <FormInput
                         value={settings.websiteUrl}
                         onChange={(e) => setSettings({...settings, websiteUrl: e.target.value})}
+                      />
+                    </FormField>
+                  </FormGrid>
+                </FormSection>
+                <div className="h-px bg-neutral-100 dark:bg-neutral-800 my-6" />
+                <FormSection title="Bank Details">
+                  <FormGrid cols={2}>
+                    <FormField>
+                      <FormLabel>Bank Name</FormLabel>
+                      <FormInput
+                        value={settings.bankName}
+                        onChange={(e) => setSettings({...settings, bankName: e.target.value})}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Sort Code</FormLabel>
+                      <FormInput
+                        value={settings.sortCode}
+                        onChange={(e) => setSettings({...settings, sortCode: e.target.value})}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Account Number</FormLabel>
+                      <FormInput
+                        value={settings.accountNumber}
+                        onChange={(e) => setSettings({...settings, accountNumber: e.target.value})}
                       />
                     </FormField>
                   </FormGrid>
