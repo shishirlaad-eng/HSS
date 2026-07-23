@@ -55,6 +55,7 @@ import {
   ROLE_TYPE_OPTIONS,
   ResponsibilityAssignment,
 } from '../../mockAPI/membersData';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 
 // ── Status helpers ────────────────────────────────────────────
 
@@ -543,6 +544,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 // ── Component ─────────────────────────────────────────────────
 
 export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab, backLabel }: MemberDetailProps) {
+  const { selectedRole } = useRoleScope();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
 
   const [isEditing, setIsEditing]   = useState(false);
@@ -1005,7 +1007,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Contact Details">
                   <EditableInfoItem label="Contact Number" required value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone error={fieldErrors.phone} errorMessage="Contact number is required." />
-                  <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing} onChange={v => setField('email', v)} type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
+                  <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing && selectedRole === 'Super Admin'} onChange={v => setField('email', v)} type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
                   <EditableInfoItem
                     label="Post Code"
                     required

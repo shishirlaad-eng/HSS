@@ -181,12 +181,10 @@ export default function SessionDetail({
   const canCancel = !isMemberRole && session.status !== 'cancelled' && !!onCancelSession
     && (isShakhaAdmin || isFutureSession);
   const canDelete = selectedRole === 'Super Admin' && !!onDeleteSession;
-  // Only Super Admin and Shakha Admin can edit a Shakha, and only while it hasn't
-  // started yet — a session already underway (even if scheduled for today) is locked.
-  // Shakha Admin is further scoped to Shakhas at their own activity centre only.
-  const sessionStart = new Date(`${session.date}T${session.startTime}`);
-  const hasStarted    = sessionStart <= new Date();
-  const canEdit   = !hasStarted && (selectedRole === 'Super Admin' || (isShakhaAdmin && isOwnShakha));
+  // Only Super Admin and Shakha Admin can edit a Shakha — past Shakhas are editable
+  // too, but their date/time become locked once the session has started (see
+  // CreateSession.tsx). Shakha Admin is further scoped to their own activity centre.
+  const canEdit   = selectedRole === 'Super Admin' || (isShakhaAdmin && isOwnShakha);
 
   // Once a Shakha is completed, anyone left unmarked is automatically set to Absent.
   useEffect(() => {
@@ -227,6 +225,16 @@ export default function SessionDetail({
   const postCodeMap = useMemo(() => {
     const map = new Map<string, string>();
     mockMembers.forEach(m => map.set(m.id, m.postCode ?? ''));
+    return map;
+  }, []);
+
+  // ── Computed: member first/last name lookup (memberId → { firstName, lastName }) ──
+  const memberNameMap = useMemo(() => {
+    const map = new Map<string, { firstName: string; lastName: string }>();
+    mockMembers.forEach(m => map.set(m.id, {
+      firstName: m.firstName ?? m.name.split(' ')[0],
+      lastName: m.surname ?? m.name.split(' ').slice(1).join(' '),
+    }));
     return map;
   }, []);
 
@@ -473,7 +481,8 @@ export default function SessionDetail({
                           <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                             <SortTh label="#" sortKey="attendanceCount" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <th className="w-10 px-2"></th>
-                            <SortTh label="Member" sortKey="memberName" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <SortTh label="First Name" sortKey="memberName" current={sortKey} dir={sortDir} onSort={handleSort} />
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Last Name</th>
                             <SortTh label="Age" sortKey="ageCategory" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <SortTh label="Gender" sortKey="gender" current={sortKey} dir={sortDir} onSort={handleSort} />
                             <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -485,6 +494,8 @@ export default function SessionDetail({
                             const attendanceCount = attendanceCountMap.get(r.memberId) ?? 0;
                             const isGuest = !!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre;
                             const initials = r.memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                            const { firstName, lastName } = memberNameMap.get(r.memberId)
+                              ?? { firstName: r.memberName.split(' ')[0], lastName: r.memberName.split(' ').slice(1).join(' ') };
                             return (
                               <tr key={r.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <td className="px-4 py-2.5 whitespace-nowrap">
@@ -515,7 +526,7 @@ export default function SessionDetail({
                                 </td>
                                 <td className="px-4 py-2.5">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{r.memberName}</p>
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{firstName}</p>
                                     {isGuest && (
                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-error-50 dark:bg-error-950/30 text-error-600 dark:text-error-400 border border-error-200 dark:border-error-800 flex-shrink-0">
                                         Guest
@@ -523,6 +534,7 @@ export default function SessionDetail({
                                     )}
                                   </div>
                                 </td>
+                                <td className="px-4 py-2.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{lastName}</td>
                                 <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.ageCategory}</td>
                                 <td className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 whitespace-nowrap capitalize">{r.gender}</td>
                                 <td className="px-4 py-2.5 whitespace-nowrap">
@@ -531,14 +543,13 @@ export default function SessionDetail({
                                 <td className="px-4 py-2.5 text-right">
                                   <button
                                     type="button"
-                                    onClick={() => onMarkAttendance(session.id, r.memberId, 'present')}
-                                    disabled={r.status === 'absent'}
-                                    title={r.status === 'absent' ? 'Marked absent — Shakha is completed' : 'Mark present'}
+                                    onClick={() => onMarkAttendance(session.id, r.memberId, r.status === 'present' ? 'unmarked' : 'present')}
+                                    title={r.status === 'present' ? 'Un-mark presence' : 'Mark present'}
                                     className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors ${
                                       r.status === 'present'
                                         ? 'bg-success-100 text-success-700 dark:bg-success-950 dark:text-success-400'
                                         : 'text-neutral-400 hover:text-success-600 hover:bg-success-50 dark:hover:bg-success-950'
-                                    } disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent`}
+                                    }`}
                                   >
                                     <CheckCircle2 className="w-4 h-4" />
                                   </button>

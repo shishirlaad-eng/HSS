@@ -126,6 +126,9 @@ export default function CreateSession({
   const { scope } = useRoleScope();
   const showRegionSelect = scope.showRegionFilter;
   const showTownSelect   = scope.showTownFilter;
+  // A Completed Shakha keeps its date/time locked when edited — Scheduled Shakhas
+  // (including past-dated ones not yet marked completed) allow full rescheduling.
+  const dateTimeLocked = isEditMode && sessionToEdit?.status === 'completed';
 
   const [form, setForm]     = useState<CreateForm>(
     sessionToEdit
@@ -385,6 +388,7 @@ export default function CreateSession({
                     value={form.date}
                     onChange={e => setField('date', e.target.value)}
                     className={errCls('date')}
+                    disabled={dateTimeLocked}
                   />
                   <ErrorText>{touched && errors.date}</ErrorText>
                 </FormField>
@@ -407,6 +411,7 @@ export default function CreateSession({
                     value={form.startTime}
                     onChange={e => setField('startTime', e.target.value)}
                     className={errCls('startTime')}
+                    disabled={dateTimeLocked}
                   />
                   <ErrorText>{touched && errors.startTime}</ErrorText>
                 </FormField>
@@ -419,6 +424,7 @@ export default function CreateSession({
                     value={form.endTime}
                     onChange={e => setField('endTime', e.target.value)}
                     className={errCls('endTime')}
+                    disabled={dateTimeLocked}
                   />
                   <ErrorText>{touched && errors.endTime}</ErrorText>
                 </FormField>

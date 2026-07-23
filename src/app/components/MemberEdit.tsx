@@ -643,7 +643,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField><FormLabel required>Primary Contact Number</FormLabel><PhoneInput value={formData.phone} onChange={v => { setFormData(prev => ({ ...prev, phone: v })); if (errors.phone) setErrors(prev => ({ ...prev, phone: false })); }} error={!!errors.phone} /></FormField>
                   <FormField><FormLabel>Secondary Contact Number</FormLabel><PhoneInput value={formData.secondaryPhone} onChange={v => setFormData(prev => ({ ...prev, secondaryPhone: v }))} /></FormField>
-                  <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} className={errCls('email')} /></FormField>
+                  <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} className={errCls('email')} readOnly={selectedRole !== 'Super Admin'} /></FormField>
                   <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} className={errCls('secondaryEmail')} /></FormField>
                   <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
                   <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} className={errCls('contactTownCity')} /></FormField>

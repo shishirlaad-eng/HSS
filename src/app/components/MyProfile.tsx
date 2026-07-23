@@ -1227,7 +1227,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
 
               <InfoSection title="Contact Details">
                 <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." disabled={lockCarriedOverPhone} />
-                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." disabled={lockCarriedOverDetails} />
+                <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && selectedRole === 'Super Admin'} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." disabled={lockCarriedOverDetails} />
                 <EditableInfoItem
                   label="Post Code"
                   required

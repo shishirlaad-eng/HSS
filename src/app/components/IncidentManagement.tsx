@@ -567,8 +567,8 @@ function IncidentForm({
         </div>
       </Card>
 
-      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — two sections in parallel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
       {/* Casualty */}
       <Card title="Casualty">
@@ -841,8 +841,8 @@ function IncidentDetail({
         </div>
       </div>
 
-      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — parallel, equal height */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+      {/* Casualty · Treatment & Outcome · Reporting & Follow-up · Declaration — two sections in parallel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
 
         {/* Casualty */}
         <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm" style={{ borderTop: '3px solid #172E4D' }}>
