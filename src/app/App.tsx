@@ -22,7 +22,7 @@ import Dashboard from "./components/Dashboard";
 import Announcements from "./components/Announcements";
 import Sessions from "./components/Sessions";
 import AttendanceLog from "./components/AttendanceLog";
-import MyProfile, { MEMBER_PROFILE_STORAGE_KEY } from "./components/MyProfile";
+import MyProfile, { MEMBER_PROFILE_STORAGE_KEY, getChildStatus, setChildStatus } from "./components/MyProfile";
 import MembersReport from "./components/MembersReport";
 import EventsReport from "./components/EventsReport";
 import DonationsPaymentsReport from "./components/DonationsPaymentsReport";
@@ -70,9 +70,14 @@ function PlaceholderPage({ page }: { page: string }) {
   );
 }
 
-// Demo child pre-attached to the "Member" login so the My Profile hover-flyout
-// (switch to child profile) has something to show without a manual Add Child pass first.
-const DEMO_CHILD = { id: "HSS-00099", firstName: "Aarav", surname: "Doe" };
+// Demo children pre-attached to the "Member" login so the My Profile hover-flyout
+// and "Other Profiles" tab (switch to a child profile) have something to show
+// without a manual Add Child pass first — 2 Bal, 1 Kishor; 2 approved, 1 pending.
+const DEMO_CHILDREN = [
+  { id: "HSS-00099", firstName: "Aarav", surname: "Doe" },
+  { id: "HSS-00098", firstName: "Ishaan", surname: "Doe" },
+  { id: "HSS-00097", firstName: "Kavya", surname: "Doe" },
+];
 const CHILD_ACCOUNTS_STORAGE_KEY = "myMemberChildAccounts";
 
 export default function App() {
@@ -115,15 +120,9 @@ export default function App() {
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [isPostRegistration, setIsPostRegistration] = useState(false);
   const [isUnderReview, setIsUnderReview] = useState(false);
-  const [childAccounts, setChildAccounts] = useState<{ id: string; firstName: string; surname: string }[]>(() => {
-    if (typeof window === "undefined") return [DEMO_CHILD];
-    try {
-      const saved = localStorage.getItem(CHILD_ACCOUNTS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [DEMO_CHILD];
-    } catch {
-      return [DEMO_CHILD];
-    }
-  });
+  // Always reseed to the curated 3-child demo set on load — this is fixed demo data,
+  // not something that should keep accumulating "John Doe" entries from prior testing.
+  const [childAccounts, setChildAccounts] = useState<{ id: string; firstName: string; surname: string }[]>(DEMO_CHILDREN);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [nonMemberProfile, setNonMemberProfile] = useState<{ firstName: string; lastName: string; email: string; registeredAt: string } | null>(null);
   const [nonMemberChildren, setNonMemberChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
@@ -159,21 +158,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Seed the demo child's own profile (child, not adult defaults) so switching
-    // to it shows a proper Kishor (12-16) profile the first time, not blank fields.
-    const key = `${MEMBER_PROFILE_STORAGE_KEY}:child:${DEMO_CHILD.id}`;
-    if (!localStorage.getItem(key)) {
-      localStorage.setItem(key, JSON.stringify({
-        firstName: DEMO_CHILD.firstName,
-        surname: DEMO_CHILD.surname,
-        gender: "Male",
-        dateOfBirth: "2012-06-10",
-        country: "HSS UK",
-        region: "London & South East",
-        town: "Wembley",
-        activityCentre: "Wembley Activity Centre",
-      }));
-    }
+    // Seed each demo child's own profile (child, not adult defaults) so switching
+    // to one shows a proper profile the first time, not blank fields — 2 Bal, 1
+    // Kishor; 2 approved, 1 pending approval.
+    const seeds: Record<string, { gender: string; dateOfBirth: string; town: string; activityCentre: string; status: 'approved' | 'pending' }> = {
+      [DEMO_CHILDREN[0].id]: { gender: "Male",   dateOfBirth: "2012-06-10", town: "Wembley", activityCentre: "Wembley Activity Centre", status: "approved" }, // Kishor
+      [DEMO_CHILDREN[1].id]: { gender: "Male",   dateOfBirth: "2022-03-15", town: "Harrow",  activityCentre: "Harrow Activity Centre",  status: "approved" }, // Bal
+      [DEMO_CHILDREN[2].id]: { gender: "Female", dateOfBirth: "2023-01-10", town: "Wembley", activityCentre: "Wembley Activity Centre", status: "pending"  }, // Bal
+    };
+    DEMO_CHILDREN.forEach(child => {
+      const seed = seeds[child.id];
+      const key = `${MEMBER_PROFILE_STORAGE_KEY}:child:${child.id}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify({
+          firstName: child.firstName,
+          surname: child.surname,
+          gender: seed.gender,
+          dateOfBirth: seed.dateOfBirth,
+          country: "HSS UK",
+          region: "London & South East",
+          town: seed.town,
+          activityCentre: seed.activityCentre,
+        }));
+      }
+      if (getChildStatus(child.id) === 'draft') setChildStatus(child.id, seed.status);
+    });
   }, []);
 
   useEffect(() => {
@@ -484,9 +493,20 @@ export default function App() {
             selectedRole={selectedRole}
             isPostRegistration={isPostRegistration}
             isUnderReview={isUnderReview}
-            onSubmitForApproval={() => { setIsPostRegistration(false); setIsUnderReview(true); }}
+            onSubmitForApproval={() => {
+              if (activeChildId) setChildStatus(activeChildId, 'pending');
+              setIsPostRegistration(false);
+              setIsUnderReview(true);
+            }}
             activeChildId={activeChildId}
             onChildAdded={handleChildAdded}
+            childAccounts={(MEMBER_ROLES.includes(selectedRole) && !activeChildId) ? childAccounts : []}
+            onSelectOtherProfile={(childId) => {
+              const status = getChildStatus(childId);
+              setActiveChildId(childId);
+              setIsPostRegistration(status === 'draft');
+              setIsUnderReview(status === 'pending');
+            }}
             onBack={(nonMemberViewChildId || nonMemberUpgrading) ? () => {
               setNonMemberViewChildId(null);
               setNonMemberUpgrading(false);

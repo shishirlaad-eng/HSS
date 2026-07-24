@@ -1,8 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays, ChevronDown, Check, UserPlus, ArrowLeft } from "lucide-react";
+import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays, ChevronDown, Check, UserPlus, ArrowLeft, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from "./hb/listing";
+import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter, PageHeader } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText, FormField, FormLabel } from "./hb/common/Form";
 import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE, generateMemberId } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
@@ -36,6 +36,18 @@ export function getChildProfileSummary(id: string): {
   } catch {
     return {};
   }
+}
+
+// A child's registration status — draft until submitted for approval, pending until
+// a Shakha Karyawaha approves it. There is no admin "approve" action wired up in this
+// prototype (matching the non-member flow); 'approved' is only ever set by demo seeding.
+export type ChildRegistrationStatus = 'draft' | 'pending' | 'approved';
+export function getChildStatus(id: string): ChildRegistrationStatus {
+  const stored = localStorage.getItem(`${MEMBER_PROFILE_STORAGE_KEY}:childStatus:${id}`);
+  return stored === 'pending' || stored === 'approved' ? stored : 'draft';
+}
+export function setChildStatus(id: string, status: ChildRegistrationStatus) {
+  localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:childStatus:${id}`, status);
 }
 
 // Fields that are personal to the user and must stay consistent across all roles
@@ -561,170 +573,9 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
   );
 }
 
-// ── Add Child (internal mini-registration) ────────────────────────
-const todayISO = () => new Date().toISOString().split('T')[0];
-const childDobBounds = () => {
-  const today = new Date();
-  const max = todayISO();
-  const min = new Date(today.getFullYear() - 12, today.getMonth(), today.getDate()).toISOString().split('T')[0];
-  return { min, max };
-};
-
-interface AddChildForm {
-  firstName: string;
-  surname: string;
-  email: string;
-  dateOfBirth: string;
-  gender: string;
-}
-
-const EMPTY_CHILD_FORM: AddChildForm = {
-  firstName: '', surname: '', email: '', dateOfBirth: '', gender: '',
-};
-
-function AddChildModal({ isOpen, onClose, onCreated }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreated: (child: { id: string; firstName: string; surname: string }, seedProfile: Partial<MemberProfileForm>) => void;
-}) {
-  const [form, setForm] = useState<AddChildForm>(EMPTY_CHILD_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof AddChildForm, string>>>({});
-  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLSelectElement | null>>({});
-  const { min: minDob, max: maxDob } = childDobBounds();
-
-  useEffect(() => {
-    if (!isOpen) { setForm(EMPTY_CHILD_FORM); setErrors({}); }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const setField = (key: keyof AddChildForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm(prev => ({ ...prev, [key]: e.target.value }));
-    setErrors(prev => ({ ...prev, [key]: undefined }));
-  };
-
-  const errCls = (key: keyof AddChildForm) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
-
-  const FIELD_ORDER: (keyof AddChildForm)[] = ['firstName', 'surname', 'dateOfBirth', 'gender', 'email'];
-
-  const validate = (): Partial<Record<keyof AddChildForm, string>> => {
-    const e: Partial<Record<keyof AddChildForm, string>> = {};
-    if (!form.firstName.trim()) e.firstName = 'First name is required.';
-    if (!form.surname.trim())   e.surname  = 'Last name is required.';
-    if (!form.dateOfBirth) {
-      e.dateOfBirth = 'Date of birth is required.';
-    } else {
-      const age = getAge(form.dateOfBirth);
-      if (age < 0 || age > 12) e.dateOfBirth = 'Child must be between 0 and 12 years old.';
-    }
-    if (!form.gender) e.gender = 'Gender is required.';
-    if (!form.email.trim()) e.email = 'Email is required.';
-    else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Enter a valid email address.';
-    return e;
-  };
-
-  const handleSubmit = (event: React.FormEvent | React.MouseEvent) => {
-    event.preventDefault();
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      toast.error('Please fill in all required fields.');
-      const firstKey = FIELD_ORDER.find(k => errs[k]);
-      const el = firstKey ? fieldRefs.current[firstKey] : null;
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
-      return;
-    }
-
-    const id = generateMemberId();
-    onCreated(
-      { id, firstName: form.firstName.trim(), surname: form.surname.trim() },
-      {
-        firstName: form.firstName.trim(),
-        surname: form.surname.trim(),
-        fullName: `${form.firstName.trim()} ${form.surname.trim()}`,
-        email: form.email.trim(),
-        dateOfBirth: form.dateOfBirth,
-        gender: form.gender,
-      },
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center flex-shrink-0">
-              <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Add Child</h3>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Register a child (0–12 years) under your account</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4 overflow-y-auto slim-scroll flex-1">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel required>First Name</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.firstName = el; }} value={form.firstName} onChange={setField('firstName')} className={errCls('firstName')} />
-              <ErrorText>{errors.firstName}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel required>Last Name</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.surname = el; }} value={form.surname} onChange={setField('surname')} className={errCls('surname')} />
-              <ErrorText>{errors.surname}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel required>Date of Birth</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.dateOfBirth = el; }}
-                type="date"
-                value={form.dateOfBirth}
-                onChange={setField('dateOfBirth')}
-                min={minDob}
-                max={maxDob}
-                className={errCls('dateOfBirth')}
-              />
-              <ErrorText>{errors.dateOfBirth}</ErrorText>
-              <p className="text-xs text-neutral-400 mt-1">Must be between 0 and 12 years old.</p>
-            </FormField>
-            <FormField>
-              <FormLabel required>Gender</FormLabel>
-              <FormSelect ref={el => { fieldRefs.current.gender = el; }} value={form.gender} onChange={setField('gender')} className={errCls('gender')}>
-                <option value="">Select gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </FormSelect>
-              <ErrorText>{errors.gender}</ErrorText>
-            </FormField>
-          </div>
-          <FormField>
-            <FormLabel required>Email</FormLabel>
-            <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={form.email} onChange={setField('email')} placeholder="e.g. child@email.com" className={errCls('email')} />
-            <ErrorText>{errors.email}</ErrorText>
-          </FormField>
-        </form>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
-          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-          <PrimaryButton icon={UserPlus} onClick={handleSubmit}>Add Child</PrimaryButton>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Member profile view ───────────────────────────────────────
 
-type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other' | 'roles';
+type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other' | 'roles' | 'otherProfiles';
 
 type CarriedOverMemberDetails = {
   firstName: string;
@@ -733,7 +584,196 @@ type CarriedOverMemberDetails = {
   phone?: string;
 };
 
-function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel = "Back", carriedOverDetails }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
+// ── Upgrade (a member's own) child to a Teen account ───────────
+// Mirrors NonMemberDashboard's UpgradeToTeenScreen — same fields, validation and
+// copy — but renders inside the authenticated app shell (GlobalHeader/Toaster
+// already present) instead of its own standalone header.
+function UpgradeChildToTeenScreen({
+  guardianFirstName,
+  guardianSurname,
+  guardianEmail,
+  childId,
+  onBack,
+  onSubmitted,
+}: {
+  guardianFirstName: string;
+  guardianSurname: string;
+  guardianEmail: string;
+  childId: string;
+  onBack: () => void;
+  onSubmitted: () => void;
+}) {
+  const { firstName: childFirstName } = getChildProfileSummary(childId);
+  const displayFirstName = childFirstName || "This child";
+
+  const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [guardianName, setGuardianName] = useState(`${guardianFirstName} ${guardianSurname}`.trim());
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [guardianEmailField, setGuardianEmailField] = useState(guardianEmail);
+  const [guardianRelationship, setGuardianRelationship] = useState("Parent");
+  const [authorised, setAuthorised] = useState(false);
+  const [errors, setErrors] = useState<{
+    email?: string; confirmEmail?: string; authorised?: string;
+    guardianName?: string; guardianPhone?: string; guardianEmail?: string; guardianRelationship?: string;
+  }>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validate = () => {
+    const errs: typeof errors = {};
+    if (!guardianName.trim()) errs.guardianName = "Parent / guardian name is required.";
+    if (!guardianPhone.trim()) errs.guardianPhone = "Parent / guardian phone number is required.";
+    if (!guardianEmailField.trim()) errs.guardianEmail = "Parent / guardian email is required.";
+    else if (!emailRegex.test(guardianEmailField.trim())) errs.guardianEmail = "Enter a valid parent / guardian email.";
+    if (!guardianRelationship.trim()) errs.guardianRelationship = "Parent / guardian relationship is required.";
+    if (!email.trim()) errs.email = "Child's email address is required.";
+    else if (!emailRegex.test(email.trim())) errs.email = "Enter a valid email address.";
+    if (!confirmEmail.trim()) errs.confirmEmail = "Please confirm the email address.";
+    else if (confirmEmail.trim() !== email.trim()) errs.confirmEmail = "Email addresses do not match.";
+    if (!authorised) errs.authorised = "You must authorise this upgrade to continue.";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validate()) return;
+    setSubmitting(true);
+    setTimeout(() => {
+      setSubmitting(false);
+      toast.success(`Upgrade request for ${displayFirstName} submitted for approval.`);
+      onSubmitted();
+    }, 600);
+  };
+
+  const inputCls = (err?: string) =>
+    `w-full h-10 px-3 rounded-lg border text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-colors ${
+      err
+        ? "border-red-400 dark:border-red-600 focus:ring-red-400/30"
+        : "border-neutral-200 dark:border-neutral-700 focus:ring-primary-500/30 focus:border-primary-500"
+    }`;
+
+  return (
+    <div className="px-6 py-6 max-w-3xl mx-auto">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mb-4"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Other Profiles
+      </button>
+
+      <PageHeader
+        title={`Upgrade ${displayFirstName} to a Teen Account`}
+        subtitle={`${displayFirstName} has turned 13 and can now upgrade to a Teen account. If they have their own email address, they can create a personal login and manage their account. You will continue to approve any changes they make.`}
+      />
+
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm mb-6">
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Parent / Guardian Details</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          <FormField>
+            <FormLabel required>Parent / Guardian Name</FormLabel>
+            <FormInput
+              value={guardianName}
+              onChange={e => setGuardianName(e.target.value)}
+              className={inputCls(errors.guardianName)}
+            />
+            <ErrorText>{errors.guardianName}</ErrorText>
+          </FormField>
+          <FormField>
+            <FormLabel required>Parent / Guardian Relationship</FormLabel>
+            <FormSelect
+              value={guardianRelationship}
+              onChange={e => setGuardianRelationship(e.target.value)}
+              className={inputCls(errors.guardianRelationship)}
+            >
+              <option value="Parent">Parent</option>
+              <option value="Guardian">Guardian</option>
+            </FormSelect>
+            <ErrorText>{errors.guardianRelationship}</ErrorText>
+          </FormField>
+          <FormField>
+            <FormLabel required>Parent / Guardian Phone Number</FormLabel>
+            <FormInput
+              type="tel"
+              value={guardianPhone}
+              onChange={e => setGuardianPhone(e.target.value)}
+              placeholder="e.g. +44 7700 900123"
+              className={inputCls(errors.guardianPhone)}
+            />
+            <ErrorText>{errors.guardianPhone}</ErrorText>
+          </FormField>
+          <FormField>
+            <FormLabel required>Parent / Guardian Email</FormLabel>
+            <FormInput
+              type="email"
+              value={guardianEmailField}
+              onChange={e => setGuardianEmailField(e.target.value)}
+              className={inputCls(errors.guardianEmail)}
+            />
+            <ErrorText>{errors.guardianEmail}</ErrorText>
+          </FormField>
+        </div>
+
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Child's Login Details</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          <FormField>
+            <FormLabel required>Child's own email address</FormLabel>
+            <FormInput
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder={`e.g. ${displayFirstName.toLowerCase()}@email.com`}
+              className={inputCls(errors.email)}
+            />
+            <ErrorText>{errors.email}</ErrorText>
+          </FormField>
+          <FormField>
+            <FormLabel required>Confirm email address</FormLabel>
+            <FormInput
+              type="email"
+              value={confirmEmail}
+              onChange={e => setConfirmEmail(e.target.value)}
+              className={inputCls(errors.confirmEmail)}
+            />
+            <ErrorText>{errors.confirmEmail}</ErrorText>
+          </FormField>
+        </div>
+
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">What changes once approved:</p>
+        <ul className="space-y-1.5 mb-6 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-inside">
+          <li>{displayFirstName} will set their own password and can log in directly</li>
+          <li>Their profile moves out of your "Other Profiles" tab</li>
+          <li>Any changes they make will be queued for your approval</li>
+          <li>You will still be listed as their parent/guardian contact</li>
+        </ul>
+
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={authorised}
+            onChange={e => setAuthorised(e.target.checked)}
+            className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600 mt-0.5 flex-shrink-0"
+          />
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            I have read and understood the above information and authorise the upgrade to a Teen Account.
+          </span>
+        </label>
+        {errors.authorised && <p className="text-xs text-red-600 mt-1 ml-7">{errors.authorised}</p>}
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <SecondaryButton onClick={onBack}>Cancel</SecondaryButton>
+        <PrimaryButton onClick={handleSubmit} disabled={submitting}>
+          {submitting ? "Submitting…" : "Submit for Approval"}
+        </PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, childAccounts = [], onSelectOtherProfile, onBack, backLabel = "Back", carriedOverDetails }: { selectedRole: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; childAccounts?: { id: string; firstName: string; surname: string }[]; onSelectOtherProfile?: (childId: string) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
   const storageKey = activeChildId ? `child:${activeChildId}` : selectedRole;
   const loadProfile = () => {
     // A freshly registered child hasn't been given a DOB yet — never default to the
@@ -787,7 +827,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [selectedAddress, setSelectedAddress] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showAddChild, setShowAddChild] = useState(false);
+  const [upgradeChildId, setUpgradeChildId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(20);
@@ -1023,6 +1063,11 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     ...(!isPostRegistration ? [
       { id: 'roles' as ProfileTab, label: 'Responsibilities and Roles' },
       { id: 'other' as ProfileTab, label: 'Other Information'      },
+      // Only the adult's own profile can have linked children — never shown
+      // while viewing a child's profile, and only once at least one exists.
+      ...(!activeChildId && childAccounts.length > 0 ? [
+        { id: 'otherProfiles' as ProfileTab, label: 'Other Profiles' },
+      ] : []),
       { id: 'history' as ProfileTab, label: 'History'              },
     ] : []),
   ];
@@ -1102,6 +1147,19 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     return rows;
   }, [changeHistory, historySearch, historyDateStart, historyDateEnd, historySortCol, historySortDir]);
 
+  if (upgradeChildId) {
+    return (
+      <UpgradeChildToTeenScreen
+        guardianFirstName={profile.firstName}
+        guardianSurname={profile.surname}
+        guardianEmail={profile.email}
+        childId={upgradeChildId}
+        onBack={() => setUpgradeChildId(null)}
+        onSubmitted={() => setUpgradeChildId(null)}
+      />
+    );
+  }
+
   return (
     <div className="px-6 py-6">
 
@@ -1156,8 +1214,26 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             </>
           ) : (
             <>
-              {!activeChildId && !isTeenRole && (
-                <SecondaryButton icon={UserPlus} onClick={() => setShowAddChild(true)}>Add Child</SecondaryButton>
+              {!activeChildId && selectedRole === 'Adult Member' && (
+                <SecondaryButton icon={UserPlus} onClick={() => {
+                  const id = generateMemberId();
+                  localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:child:${id}`, JSON.stringify({
+                    firstName: 'John',
+                    surname: 'Doe',
+                    gender: 'Male',
+                    dateOfBirth: '1990-01-01',
+                    country: 'HSS UK',
+                    region: 'London & South East',
+                    town: 'Wembley',
+                    activityCentre: 'Wembley Activity Centre',
+                    // Contact details for a child registered by an adult member always
+                    // come from the adult's own profile, and stay read-only (see the
+                    // Contact Details fields below).
+                    email: profile.email,
+                    phone: profile.phone,
+                  }));
+                  onChildAdded?.({ id, firstName: 'John', surname: 'Doe' });
+                }}>Add Child</SecondaryButton>
               )}
               <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
             </>
@@ -1808,6 +1884,89 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             );
           })()}
 
+          {/* ── Other Profiles Tab ── */}
+          {activeTab === 'otherProfiles' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {childAccounts.map(child => {
+                const summary = getChildProfileSummary(child.id);
+                const displayName = summary.firstName
+                  ? `${summary.firstName} ${summary.surname ?? ''}`.trim()
+                  : `${child.firstName} ${child.surname}`;
+                const status = getChildStatus(child.id);
+                const ageLabel = summary.dateOfBirth ? getAgeGroupLabel(summary.dateOfBirth) : null;
+                const handleUpgradeToTeen = () => {
+                  const age = summary.dateOfBirth ? getAge(summary.dateOfBirth) : null;
+                  if (age === null) {
+                    toast.error(`${displayName}'s date of birth is required before upgrading to a Teen Account.`);
+                    return;
+                  }
+                  if (age < 13) {
+                    toast.error(`${displayName} cannot be upgraded to a Teen Account until they turn 13.`);
+                    return;
+                  }
+                  setUpgradeChildId(child.id);
+                };
+                return (
+                  <div
+                    key={child.id}
+                    className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm hover:shadow-md hover:border-primary-300 dark:hover:border-primary-700 transition-all flex flex-col overflow-hidden"
+                    style={{ borderTop: '3px solid #172E4D' }}
+                  >
+                    <div className="p-4 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <p className="text-[15px] font-semibold text-neutral-900 dark:text-white truncate">{displayName}</p>
+                        <span className={`text-xs font-medium ${status === 'approved' ? 'text-success-700 dark:text-success-400' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                          ID: {child.id}
+                        </span>
+                        {status === 'approved' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success-50 text-success-700 dark:bg-success-950/30 dark:text-success-400 border border-success-200 dark:border-success-800 tracking-wide">
+                            APPROVED
+                          </span>
+                        ) : status === 'pending' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 tracking-wide">
+                            PENDING APPROVAL
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 tracking-wide">
+                            DRAFT
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                        {ageLabel && (
+                          <p className="flex items-center gap-1.5">
+                            <UserCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#172E4D' }} />
+                            {ageLabel}
+                          </p>
+                        )}
+                        {summary.activityCentre && (
+                          <p className="flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#172E4D' }} />
+                            {summary.activityCentre}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3 flex items-center gap-2">
+                      <SecondaryButton onClick={() => onSelectOtherProfile?.(child.id)}>
+                        View Profile
+                      </SecondaryButton>
+                      {status === 'approved' && (
+                        <button
+                          type="button"
+                          onClick={handleUpgradeToTeen}
+                          className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-btn-text text-sm font-semibold transition-colors"
+                        >
+                          Upgrade to Teen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* ── History Tab ── */}
           {activeTab === 'history' && (
             <div className="space-y-6">
@@ -1997,21 +2156,10 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
       />
-
-      <AddChildModal
-        isOpen={showAddChild}
-        onClose={() => setShowAddChild(false)}
-        onCreated={(child, seedProfile) => {
-          localStorage.setItem(`${MEMBER_PROFILE_STORAGE_KEY}:child:${child.id}`, JSON.stringify(seedProfile));
-          setShowAddChild(false);
-          toast.success(`${child.firstName}'s profile created. Complete their details below.`);
-          onChildAdded?.(child);
-        }}
-      />
     </div>
   );
 }
 
-export default function MyProfile({ selectedRole = "Super Admin", isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, onBack, backLabel, carriedOverDetails }: { selectedRole?: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
-  return <MemberProfileView selectedRole={selectedRole} isPostRegistration={isPostRegistration} isUnderReview={isUnderReview} onSubmitForApproval={onSubmitForApproval} activeChildId={activeChildId} onChildAdded={onChildAdded} onBack={onBack} backLabel={backLabel} carriedOverDetails={carriedOverDetails} />;
+export default function MyProfile({ selectedRole = "Super Admin", isPostRegistration = false, isUnderReview = false, onSubmitForApproval, activeChildId = null, onChildAdded, childAccounts, onSelectOtherProfile, onBack, backLabel, carriedOverDetails }: { selectedRole?: string; isPostRegistration?: boolean; isUnderReview?: boolean; onSubmitForApproval?: () => void; activeChildId?: string | null; onChildAdded?: (child: { id: string; firstName: string; surname: string }) => void; childAccounts?: { id: string; firstName: string; surname: string }[]; onSelectOtherProfile?: (childId: string) => void; onBack?: () => void; backLabel?: string; carriedOverDetails?: CarriedOverMemberDetails }) {
+  return <MemberProfileView selectedRole={selectedRole} isPostRegistration={isPostRegistration} isUnderReview={isUnderReview} onSubmitForApproval={onSubmitForApproval} activeChildId={activeChildId} onChildAdded={onChildAdded} childAccounts={childAccounts} onSelectOtherProfile={onSelectOtherProfile} onBack={onBack} backLabel={backLabel} carriedOverDetails={carriedOverDetails} />;
 }

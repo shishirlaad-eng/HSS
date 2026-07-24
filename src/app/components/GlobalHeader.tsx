@@ -1185,22 +1185,24 @@ export function GlobalHeader({
             </div>
           )}
 
-          {/* Role Switcher Dropdown */}
-          <div className="relative flex items-center">
-            <div className="relative">
-              <select
-                value={selectedRole}
-                onChange={e => onRoleChange?.(e.target.value)}
-                className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors border-white/30 bg-white/20 text-white hover:bg-white/30"
-                title="Switch role view"
-              >
-                {ADMIN_ROLE_OPTIONS.map(role => (
-                  <option key={role} value={role} className="text-neutral-900 bg-white">{ROLE_DISPLAY_LABELS[role] ?? role}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/70" />
+          {/* Role Switcher Dropdown — hidden while viewing a child profile, role switching doesn't apply */}
+          {!activeChildId && (
+            <div className="relative flex items-center">
+              <div className="relative">
+                <select
+                  value={selectedRole}
+                  onChange={e => onRoleChange?.(e.target.value)}
+                  className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors border-white/30 bg-white/20 text-white hover:bg-white/30"
+                  title="Switch role view"
+                >
+                  {ADMIN_ROLE_OPTIONS.map(role => (
+                    <option key={role} value={role} className="text-neutral-900 bg-white">{ROLE_DISPLAY_LABELS[role] ?? role}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/70" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Notifications Dropdown */}
           <div className="relative" ref={notificationsRef}>
@@ -1387,7 +1389,6 @@ export function GlobalHeader({
                     onClick={() => {
                       setShowUserDropdown(false);
                       onSwitchProfile?.(null);
-                      onNavigate?.("my-profile");
                     }}
                     className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                   >
@@ -1404,7 +1405,6 @@ export function GlobalHeader({
                       onClick={() => {
                         setShowUserDropdown(false);
                         onSwitchProfile?.(child.id);
-                        onNavigate?.("my-profile");
                       }}
                       className="w-full px-3 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded transition-colors flex items-center gap-2"
                     >

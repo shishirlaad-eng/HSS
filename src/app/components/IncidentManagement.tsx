@@ -219,6 +219,7 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
   required?: boolean;
   error?: boolean;
   placeholder?: string;
+  labelExtra?: React.ReactNode;
   onChange: (name: string, member: MemberList[number] | null) => void;
 }>(function MemberAutocomplete({
   label,
@@ -227,6 +228,7 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
   required,
   error,
   placeholder,
+  labelExtra,
   onChange,
 }, forwardedRef) {
   const [query, setQuery]     = useState(value);
@@ -309,13 +311,16 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-        {label}
-        {required
-          ? <span className="text-red-500 ml-0.5">*</span>
-          : <span className="text-neutral-400 text-xs font-normal ml-1">(optional)</span>
-        }
-      </label>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          {label}
+          {required
+            ? <span className="text-red-500 ml-0.5">*</span>
+            : <span className="text-neutral-400 text-xs font-normal ml-1">(optional)</span>
+          }
+        </label>
+        {labelExtra}
+      </div>
       <input
         ref={forwardedRef}
         type="text"
@@ -403,6 +408,7 @@ function IncidentForm({
       : EMPTY_FORM,
   );
   const [touched, setTouched] = useState(false);
+  const [reportedByGuest, setReportedByGuest] = useState(false);
 
   const set = (k: keyof IncidentForm, v: any) => setForm(p => ({ ...p, [k]: v }));
 
@@ -668,15 +674,54 @@ function IncidentForm({
       <Card title="Reporting & Follow-up">
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <MemberAutocomplete
-              ref={el => { fieldRefs.current.reportedBy = el; }}
-              label="Reported By"
-              value={form.reportedBy}
-              members={activeMembers}
-              required
-              error={touched && errors.reportedBy}
-              onChange={(name) => set('reportedBy', name)}
-            />
+            {reportedByGuest ? (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Reported By<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reportedByGuest}
+                      onChange={e => { setReportedByGuest(e.target.checked); set('reportedBy', ''); }}
+                      className="rounded border-neutral-300 dark:border-neutral-600"
+                    />
+                    Guest User
+                  </label>
+                </div>
+                <input
+                  ref={el => { fieldRefs.current.reportedBy = el; }}
+                  type="text"
+                  value={form.reportedBy}
+                  onChange={e => set('reportedBy', e.target.value)}
+                  placeholder="Enter guest name…"
+                  className={fieldCls(touched && errors.reportedBy)}
+                />
+                <ErrorText>{touched && errors.reportedBy && 'Reported By is required.'}</ErrorText>
+              </div>
+            ) : (
+              <MemberAutocomplete
+                ref={el => { fieldRefs.current.reportedBy = el; }}
+                label="Reported By"
+                value={form.reportedBy}
+                members={activeMembers}
+                required
+                error={touched && errors.reportedBy}
+                onChange={(name) => set('reportedBy', name)}
+                labelExtra={
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reportedByGuest}
+                      onChange={e => { setReportedByGuest(e.target.checked); set('reportedBy', ''); }}
+                      className="rounded border-neutral-300 dark:border-neutral-600"
+                    />
+                    Guest User
+                  </label>
+                }
+              />
+            )}
           </div>
 
           <div>
