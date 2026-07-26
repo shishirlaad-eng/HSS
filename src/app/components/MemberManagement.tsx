@@ -75,14 +75,14 @@ import {
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import MemberEdit from './MemberEdit';
-import ResponsibilityManagement from './ResponsibilityManagement';
+import AssignResponsibilityModal from './AssignResponsibilityModal';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 
 type ViewMode = 'grid' | 'list' | 'table';
-type PageState = 'list' | 'detail' | 'edit' | 'manage-responsibilities';
+type PageState = 'list' | 'detail' | 'edit';
 
 // All admin roles with members listing access default to table view
 const TABLE_VIEW_DEFAULT_ROLES = [
@@ -1193,6 +1193,7 @@ export default function MemberManagement({
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   const memberColumns: ColumnConfig[] = karyakartasOnly ? [
     { key: 'id',                  label: 'Member ID'           },
@@ -1482,16 +1483,6 @@ export default function MemberManagement({
 
   // â"€â"€ Sub-page rendering â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-  if (pageState === 'manage-responsibilities') {
-    return (
-      <ResponsibilityManagement
-        members={members}
-        onBack={() => setPageState('list')}
-        onSave={(updatedMembers) => setMembers(updatedMembers)}
-      />
-    );
-  }
-
   if (pageState === 'detail' && selectedMember) {
     return (
       <>
@@ -1655,8 +1646,8 @@ export default function MemberManagement({
             </PrimaryButton>
           )}
           {(isSuperAdmin || selectedRole === 'Shakha Admin') && karyakartasOnly && (
-            <PrimaryButton onClick={() => setPageState('manage-responsibilities')}>
-              Manage
+            <PrimaryButton onClick={() => setShowAssignModal(true)}>
+              Assign Responsibility
             </PrimaryButton>
           )}
           {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
@@ -2097,6 +2088,13 @@ export default function MemberManagement({
           toast.success(`Bulk upload completed successfully. ${count} member${count > 1 ? 's' : ''} created.`);
           setShowBulkModal(false);
         }}
+      />
+      <AssignResponsibilityModal
+        isOpen={showAssignModal}
+        members={members}
+        selectedRole={selectedRole}
+        onClose={() => setShowAssignModal(false)}
+        onSave={(updated) => setMembers(prev => prev.map(m => m.id === updated.id ? updated : m))}
       />
     </div>
   );

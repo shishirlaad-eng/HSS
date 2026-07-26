@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
-import { ADMIN_ROLE_OPTIONS, getPermittedNavIds } from "../../mockAPI/rolesData";
+import { ADMIN_ROLE_OPTIONS, ROLE_DISPLAY_LABELS, getPermittedNavIds } from "../../mockAPI/rolesData";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import {
   FormModal,
@@ -51,16 +51,6 @@ import {
   FormFooter,
   FormSection,
 } from "./hb/common/Form";
-
-const ROLE_DISPLAY_LABELS: Record<string, string> = {
-  'Kendriya Admin':   'Kendriya Admin',
-  'Vibhag Admin':    'Vibhag Admin',
-  'Nagar Admin':      'Nagar Admin',
-  'Shakha Admin':     'Shakha Admin',
-  'Shakha Operations':'Shakha Operations',
-  'Adult Member':     'Member',
-  'Teen Member':      'Teen Member',
-};
 
 // ── Mock "My Shakha" details (shown via My Profile dropdown) ──
 const MY_SHAKHA_DETAILS = {

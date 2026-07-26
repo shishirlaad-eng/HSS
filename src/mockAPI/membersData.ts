@@ -151,6 +151,12 @@ export interface ResponsibilityAssignment {
   endDate?: string;
 }
 
+export interface MyHSSRoleAssignment {
+  role: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface Member {
   id: string;
   memberType: MemberType;
@@ -224,6 +230,8 @@ export interface Member {
   responsibilityStartDate?: string;
   responsibilities?: ResponsibilityAssignment[];
   previousResponsibilities?: PreviousResponsibility[];
+  myhssRoles?: MyHSSRoleAssignment[];
+  previousMyhssRoles?: MyHSSRoleAssignment[];
   eventsAttended: number;
   shakhaSessionsAttended: number;
 }

@@ -370,6 +370,17 @@ export const ADMIN_ROLE_OPTIONS: string[] = mockRoles
   .filter(r => r.status === 'active')
   .map(r => r.name);
 
+// Friendlier labels for a couple of roles shown in member-facing UI
+export const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  'Kendriya Admin':    'Kendriya Admin',
+  'Vibhag Admin':      'Vibhag Admin',
+  'Nagar Admin':       'Nagar Admin',
+  'Shakha Admin':      'Shakha Admin',
+  'Shakha Operations': 'Shakha Operations',
+  'Adult Member':      'Member',
+  'Teen Member':       'Teen Member',
+};
+
 // Maps role permission keys → sidebar nav group IDs
 const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   dashboard:     ['dashboard'],
