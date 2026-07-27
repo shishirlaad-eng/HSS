@@ -69,6 +69,7 @@ import EventCreate from './EventCreate';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 import { PriceCategoriesEditor, CustomQuestionsEditor, EventImageField } from './EventFormFields';
 
 type ViewMode = 'grid' | 'list' | 'table';
@@ -1056,13 +1057,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   useEffect(() => { if (viewMode !== 'table') setShowColumnPanel(false); }, [viewMode]);
 
   // ── Date formatting ────────────────────────────────────────────────────────
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
+  const formatDate = (iso: string) => sharedFormatDate(iso);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const openDetail = (event: Event) => { setSelectedEvent(event); setPageState('detail'); scrollToTop(); };
@@ -1349,7 +1345,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              {eventDateStart ? (eventDateLabel || `${eventDateStart} - ${eventDateEnd}`) : 'Karyakram dates'}
+              {eventDateStart ? (eventDateLabel || formatDateRange(eventDateStart, eventDateEnd)) : 'Karyakram dates'}
               {eventDateStart && (
                 <span
                   role="button"
@@ -1530,14 +1526,20 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[640px]">
+                      {/* This table isn't meant to be sticky, but its <th> still inherit
+                          `.sticky-listing-table thead th { position: sticky }` from the
+                          page-level wrapper above (a descendant selector, so it applies
+                          regardless of nesting) — the page's own sticky offset then makes
+                          this header drift to the wrong spot on scroll. Inline style
+                          beats any class-based rule, so opt this table out explicitly. */}
                       <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram Title</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Location</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Start Date/Time</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">End Date/Time</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Karyakram ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Karyakram Title</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Location</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Start Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>End Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Status</th>
                         </tr>
                       </thead>
                       <tbody>

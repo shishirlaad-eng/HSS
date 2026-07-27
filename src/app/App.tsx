@@ -12,7 +12,6 @@ import StaticPages from "./components/StaticPages";
 import SystemSettings from "./components/SystemSettings";
 import SuperAdminMasters from "./components/SuperAdminMasters";
 import EmailTemplates from "./components/EmailTemplates";
-import SystemNotifications from "./components/SystemNotifications";
 import RoleManagement from "./components/RoleManagement";
 import LogsManagement from "./components/LogsManagement";
 import LogsPage from "./components/LogsPage";
@@ -463,8 +462,6 @@ export default function App() {
           <StaticPages />
         ) : currentPage === "email-templates" ? (
           <EmailTemplates />
-        ) : currentPage === "system-notifications" ? (
-          <SystemNotifications />
         ) : currentPage === "announcements" ? (
           <Announcements
             initialAnnouncementId={announcementToView}

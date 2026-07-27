@@ -6,6 +6,7 @@ import { LanguageProvider } from "../../i18n/LanguageContext";
 import { PageHeader, SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, FormModal, FormSection, FormFooter } from "./hb/common";
 import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime } from "../../utils/formatDate";
 import MyProfile, { MEMBER_PROFILE_STORAGE_KEY, getChildProfileSummary } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
@@ -153,7 +154,7 @@ function getTurns13Label(dateOfBirth?: string): string | null {
   const dob = new Date(dateOfBirth);
   if (Number.isNaN(dob.getTime())) return null;
   const turns13 = new Date(dob.getFullYear() + 13, dob.getMonth(), dob.getDate());
-  return turns13.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return sharedFormatDate(turns13);
 }
 
 function getAgeFromDateOfBirth(dateOfBirth?: string): number | null {
@@ -195,9 +196,7 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 function NonMemberMyProfile({ profile }: { profile: NonMemberProfile }) {
   const [activeTab, setActiveTab] = useState<"personal" | "history">("personal");
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Non-Member";
-  const registeredDate = profile.registeredAt
-    ? new Date(profile.registeredAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
-    : "—";
+  const registeredDate = profile.registeredAt ? sharedFormatDateTime(profile.registeredAt) : "—";
 
   return (
     <div className="px-6 py-6">

@@ -41,6 +41,7 @@ import {
 } from './hb/common';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { formatDate } from '../../utils/formatDate';
 
 type ViewMode = 'grid' | 'list' | 'table';
 
@@ -301,7 +302,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
         columnsToExport.map(col => {
           let val = (item as any)[col.key];
           if (col.key === 'createdDate') {
-            val = new Date(val).toLocaleDateString('en-GB');
+            val = formatDate(val);
           }
           return `"${String(val || '').replace(/"/g, '""')}"`;
         }).join(',')
@@ -319,7 +320,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
       
       toast.success(`Successfully exported ${dataToExport.length} items to Excel.`);
     } else {
-      let reportContent = `${masterType.toUpperCase()} MASTER REPORT - Generated on ${new Date().toLocaleString()}\n`;
+      let reportContent = `${masterType.toUpperCase()} MASTER REPORT - Generated on ${formatDate(new Date())}\n`;
       reportContent += `Total Records: ${dataToExport.length}\n\n`;
       reportContent += columnsToExport.map(col => col.label.padEnd(25)).join('') + '\n';
       reportContent += '='.repeat(columnsToExport.length * 25) + '\n';
@@ -328,7 +329,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
         reportContent += columnsToExport.map(col => {
           let val = (item as any)[col.key];
           if (col.key === 'createdDate') {
-            val = new Date(val).toLocaleDateString('en-GB');
+            val = formatDate(val);
           }
           return String(val || '').substring(0, 23).padEnd(25);
         }).join('') + '\n';
@@ -926,7 +927,7 @@ export default function MasterManagement({ masterType }: MasterManagementProps) 
                         )}
                         {visibleColumns.createdDate && (
                           <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 font-mono">
-                            {item.createdDate}
+                            {formatDate(item.createdDate)}
                           </td>
                         )}
                         <td className="px-6 py-3.5 text-right" onClick={e => e.stopPropagation()}>

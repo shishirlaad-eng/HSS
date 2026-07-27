@@ -27,7 +27,6 @@ export interface TranslationDict {
     configurations: string;
     staticPages: string;
     emailTemplates: string;
-    systemNotifications: string;
     systemSettings: string;
     roleManagement: string;
     logs: string;
@@ -85,7 +84,6 @@ export const translations: Record<Language, TranslationDict> = {
       configurations: "Configurations",
       staticPages: "Static Pages",
       emailTemplates: "Email Templates",
-      systemNotifications: "System Notifications",
       systemSettings: "System Settings",
       roleManagement: "Roles",
       logs: "Logs",

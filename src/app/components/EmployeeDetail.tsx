@@ -13,6 +13,7 @@ import {
   MoreVertical,
   HandCoins
 } from 'lucide-react';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 
 interface Employee {
   id: string;
@@ -57,10 +58,7 @@ export default function EmployeeDetail({ employee, onBack, onEdit, onDelete }: E
     );
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-  };
+  const formatDate = (dateString: string) => sharedFormatDate(dateString);
 
   return (
     <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">

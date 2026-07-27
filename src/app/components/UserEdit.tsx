@@ -10,6 +10,7 @@ import {
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormSection, FormField, FormLabel, FormInput, StatusSlider, ErrorText } from './hb/common';
 import { User } from '../../mockAPI/usersData';
+import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
 interface UserEditProps {
@@ -165,7 +166,7 @@ export default function UserEdit({ user, onBack }: UserEditProps) {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Join Date</label>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">{new Date(user.createdDate).toLocaleDateString()}</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">{formatDate(user.createdDate)}</p>
                 </div>
               </div>
             </div>

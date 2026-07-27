@@ -39,6 +39,7 @@ import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 import { getChildProfileSummary } from './MyProfile';
 
 // â”€â”€ Mock Announcements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -100,11 +101,7 @@ const mockAnnouncements: Announcement[] = [
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  return sharedFormatDate(iso);
 }
 
 function formatEventTime(iso: string) {

@@ -39,6 +39,7 @@ import { mockMembers } from '../../mockAPI/membersData';
 import { mockSessions, ShakhaSession } from '../../mockAPI/attendanceData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 import { ErrorText } from './hb/common';
 import { toast } from 'sonner';
 
@@ -82,13 +83,11 @@ function TypeBadge({ type }: { type: IncidentType }) {
 // ── Helpers ───────────────────────────────────────────────────
 
 function fmtDateTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return sharedFormatDateTime(iso).replace(' ', ' · ');
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return sharedFormatDate(iso);
 }
 
 // ── Form types ────────────────────────────────────────────────
@@ -1124,7 +1123,7 @@ export default function IncidentManagement() {
       headers.join(','),
       ...filtered.map(i => [
         i.id,
-        new Date(i.dateTime).toLocaleDateString('en-GB'),
+        sharedFormatDate(i.dateTime),
         `"${i.activityCentre}"`,
         `"${i.casualtyName}"`,
         i.isShakhaMember ? 'Yes' : 'No',

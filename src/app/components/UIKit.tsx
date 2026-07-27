@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateRange } from '../../utils/formatDate';
 import {
   Check,
   Copy,
@@ -1498,7 +1499,7 @@ import { Loader2 } from 'lucide-react';
                           onClick={() => setShowDateRange(!showDateRange)}
                         >
                           <Calendar className="w-4 h-4 mr-2" />
-                          {startDate && endDate ? `${startDate} - ${endDate}` : 'Select Date Range'}
+                          {startDate && endDate ? formatDateRange(startDate, endDate) : 'Select Date Range'}
                         </Button>
                         <DateRangeFilter
                           isOpen={showDateRange}

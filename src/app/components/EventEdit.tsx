@@ -18,6 +18,7 @@ import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormSection, FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
+import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import {
   PriceCategoriesEditor,
@@ -641,7 +642,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 <div>
                   <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Last Updated</label>
                   <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                    {new Date(event.lastUpdated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {formatDate(event.lastUpdated)}
                   </p>
                 </div>
               </div>

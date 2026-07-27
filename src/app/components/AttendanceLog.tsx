@@ -37,6 +37,7 @@ import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 
 // ── Constants ─────────────────────────────────────────────────
 const ALL_REGIONS  = MASTERS_CASCADE.regions['HSS UK'] ?? [];
@@ -110,9 +111,7 @@ FILTER_OPTIONS['Role Type'] = ALL_ROLE_TYPES;
 
 // ── Helpers ───────────────────────────────────────────────────
 function formatDate(iso: string) {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
+  return sharedFormatDate(iso);
 }
 
 function formatMonth(iso: string) {

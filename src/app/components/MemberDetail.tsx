@@ -56,6 +56,7 @@ import {
   ResponsibilityAssignment,
 } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 
 // ── Status helpers ────────────────────────────────────────────
 
@@ -694,14 +695,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   const ageGroup = getAgeGroup(member.dateOfBirth);
   const showGuardian = isMinor;
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = (iso: string) => sharedFormatDate(iso);
 
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+  const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
 
   const complianceAlerts =
     (member.compliance.dbs === 'Pending' ? 1 : 0) +
@@ -1237,8 +1233,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
               const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
               const TD = 'px-4 py-3 text-sm text-neutral-900 dark:text-white';
               const TDE = 'px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400';
-              const fmtD = (d: string | null | undefined) =>
-                d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Present';
+              const fmtD = (d: string | null | undefined) => d ? sharedFormatDate(d) : 'Present';
               const currentRole = member.orgRole || member.adminRole || 'Member';
               return (
                 <div className="space-y-5">
@@ -1340,9 +1335,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                                 <td className={TD}>—</td>
                                 <td className={TDE}>{r.responsibilityType}</td>
                                 <td className={TDE}>
-                                  {new Date(r.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                                  {sharedFormatDate(r.startDate)}
                                   {' – '}
-                                  {new Date(r.endDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                                  {sharedFormatDate(r.endDate)}
                                 </td>
                               </tr>
                             ))
@@ -1656,7 +1651,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             }`}
                           >
                             <CalendarDays className="w-3.5 h-3.5" />
-                            {activityDateStart ? (activityDateLabel || `${activityDateStart} - ${activityDateEnd}`) : 'Date range'}
+                            {activityDateStart ? (activityDateLabel || formatDateRange(activityDateStart, activityDateEnd)) : 'Date range'}
                             {activityDateStart && (
                               <span role="button" onClick={e => { e.stopPropagation(); setActivityDateStart(''); setActivityDateEnd(''); setActivityDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
                                 <X className="w-3 h-3" />
@@ -1706,7 +1701,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
-                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  {sharedFormatDate(d)}
                                   {' · '}
                                   {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
@@ -1809,7 +1804,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         }`}
                       >
                         <CalendarDays className="w-3.5 h-3.5" />
-                        {historyDateStart ? (historyDateLabel || `${historyDateStart} - ${historyDateEnd}`) : 'Date range'}
+                        {historyDateStart ? (historyDateLabel || formatDateRange(historyDateStart, historyDateEnd)) : 'Date range'}
                         {historyDateStart && (
                           <span role="button" onClick={e => { e.stopPropagation(); setHistoryDateStart(''); setHistoryDateEnd(''); setHistoryDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
                             <X className="w-3 h-3" />
@@ -1870,7 +1865,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                             <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
-                                  {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  {sharedFormatDate(d)}
                                   {' · '}
                                   {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>

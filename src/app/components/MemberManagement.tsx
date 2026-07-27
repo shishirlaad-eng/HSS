@@ -80,6 +80,7 @@ import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
+import { formatDate, formatDateRange } from '../../utils/formatDate';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit';
@@ -1194,6 +1195,7 @@ export default function MemberManagement({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignMemberId, setAssignMemberId] = useState<string | null>(null);
 
   const memberColumns: ColumnConfig[] = karyakartasOnly ? [
     { key: 'id',                  label: 'Member ID'           },
@@ -1204,7 +1206,6 @@ export default function MemberManagement({
     { key: 'registrationDate',    label: 'Since'               },
     { key: 'hssRoles',            label: 'My HSS Role'         },
     { key: 'status',              label: 'Member Status'       },
-    { key: 'regDate',             label: 'Registration Date'   },
   ] : [
     { key: 'id',         label: 'Member ID'      },
     { key: 'firstName',  label: 'First Name'     },
@@ -1236,7 +1237,7 @@ export default function MemberManagement({
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
-      ? { id: true, firstName: true, lastName: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, regDate: true }
+      ? { id: true, firstName: true, lastName: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
       : {
           id: true, firstName: true, lastName: true, memberType: true, email: true, phone: true, status: true,
           regDate: true,
@@ -1386,7 +1387,7 @@ export default function MemberManagement({
     if (!data.length) { toast.error('No data to export.'); return; }
     const csv = [
       'Membership ID,First Name,Last Name,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
-      ...data.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${m.registrationDate}"`),
+      ...data.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${formatDate(m.registrationDate)}"`),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -1614,7 +1615,7 @@ export default function MemberManagement({
                 }`}
               >
                 <CalendarDays className="w-3.5 h-3.5" />
-                {regDateStart ? (regDateLabel || `${regDateStart} - ${regDateEnd}`) : 'Reg. Date'}
+                {regDateStart ? (regDateLabel || formatDateRange(regDateStart, regDateEnd)) : 'Reg. Date'}
                 {regDateStart && (
                   <span
                     role="button"
@@ -1719,7 +1720,7 @@ export default function MemberManagement({
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                          {new Date(m.registrationDate).toLocaleDateString('en-GB')}
+                          {formatDate(m.registrationDate)}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
@@ -1783,7 +1784,7 @@ export default function MemberManagement({
                     </div>
                     <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                       <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                      <span>{new Date(m.registrationDate).toLocaleDateString('en-GB')}</span>
+                      <span>{formatDate(m.registrationDate)}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
@@ -1835,6 +1836,11 @@ export default function MemberManagement({
                         {col.label}{renderSortArrow(col.key)}
                       </th>
                     ))}
+                    {karyakartasOnly && (
+                      <th style={{ top: tableHeadTop }} className="sticky z-20 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-800 whitespace-nowrap">
+                        Action
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -1884,9 +1890,9 @@ export default function MemberManagement({
                             const shortLevel = (level: string) => level.split('/')[0].trim();
                             if (m.responsibilities && m.responsibilities.length > 0) {
                               return (
-                                <div className="text-xs space-y-1">
+                                <div className="text-sm space-y-1.5">
                                   {m.responsibilities.map((r, i) => (
-                                    <div key={i} className="text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                                    <div key={i} className="text-neutral-600 dark:text-neutral-400">
                                       {shortLevel(r.responsibilityLevel)} · {r.sanghResponsibility || m.jobTitle} · {r.responsibilityType}
                                     </div>
                                   ))}
@@ -1895,7 +1901,7 @@ export default function MemberManagement({
                             }
                             if (m.responsibilityType && m.responsibilityLevel) {
                               return (
-                                <div className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                                <div className="text-sm text-neutral-600 dark:text-neutral-400">
                                   {shortLevel(m.responsibilityLevel)} · {m.jobTitle} · {m.responsibilityType}
                                 </div>
                               );
@@ -1907,10 +1913,10 @@ export default function MemberManagement({
                       {visibleColumns.registrationDate && (
                         <td className="px-4 py-3.5">
                           {(() => {
-                            const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                            const fmt = (iso: string) => formatDate(iso);
                             if (m.responsibilities && m.responsibilities.length > 0) {
                               return (
-                                <div className="text-xs space-y-1">
+                                <div className="text-sm space-y-1.5">
                                   {m.responsibilities.map((r, i) => (
                                     <div key={i} className="text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
                                       {fmt(r.startDate)}
@@ -1938,9 +1944,9 @@ export default function MemberManagement({
                                   ? [ORG_ROLE_TO_HSS_ROLE[m.orgRole] ?? m.orgRole]
                                   : [];
                             return roles.length > 0 ? (
-                              <div className="text-xs space-y-0.5">
+                              <div className="text-sm space-y-1.5">
                                 {roles.map((r, i) => (
-                                  <span key={i} className="block text-neutral-700 dark:text-neutral-300">{r}</span>
+                                  <span key={i} className="block text-neutral-600 dark:text-neutral-400">{r}</span>
                                 ))}
                               </div>
                             ) : <span className="text-sm text-neutral-400">-</span>;
@@ -1952,7 +1958,7 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.regDate && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                          {new Date(m.registrationDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatDate(m.registrationDate)}
                         </td>
                       )}
                       {visibleColumns.townCity && (
@@ -2009,10 +2015,15 @@ export default function MemberManagement({
                       {visibleColumns.dbsStatus && (
                         <td className="px-4 py-3.5"><ComplianceBadge status={m.compliance.dbs} /></td>
                       )}
+                      {karyakartasOnly && (
+                        <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
+                          <IconButton icon={Edit} borderless title="Edit" onClick={() => { setAssignMemberId(m.id); setShowAssignModal(true); }} />
+                        </td>
+                      )}
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} className="px-6 py-20 text-center">
+                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1 + (karyakartasOnly ? 1 : 0)} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                             <Search className="w-6 h-6 text-neutral-400" />
@@ -2093,7 +2104,8 @@ export default function MemberManagement({
         isOpen={showAssignModal}
         members={members}
         selectedRole={selectedRole}
-        onClose={() => setShowAssignModal(false)}
+        initialMemberId={assignMemberId}
+        onClose={() => { setShowAssignModal(false); setAssignMemberId(null); }}
         onSave={(updated) => setMembers(prev => prev.map(m => m.id === updated.id ? updated : m))}
       />
     </div>

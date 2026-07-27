@@ -176,7 +176,6 @@ export function Sidebar({
     "system-settings":                t.nav.systemSettings,
     "static-pages":                   t.nav.staticPages,
     "email-templates":                t.nav.emailTemplates,
-    "system-notifications":           t.nav.systemNotifications,
 
     // 10. Audit Logging
     "audit-logging":                  "Audit Logging",

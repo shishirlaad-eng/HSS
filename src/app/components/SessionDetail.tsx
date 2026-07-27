@@ -28,6 +28,7 @@ import {
 import { PageHeader, SecondaryButton } from './hb/listing';
 import { ShakhaSession, AttendanceRecord } from '../../mockAPI/attendanceData';
 import { mockMembers, ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
 
@@ -169,7 +170,7 @@ export default function SessionDetail({
   const rate       = attendanceRate(session);
 
   const dateObj   = new Date(session.date + 'T12:00:00');
-  const dateLabel = `${DAY_NAMES_FULL[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+  const dateLabel = `${DAY_NAMES_FULL[dateObj.getDay()]}, ${sharedFormatDate(dateObj)}`;
   const statusLabel = session.status.charAt(0).toUpperCase() + session.status.slice(1);
 
   // Future session = date is strictly after today (midnight)

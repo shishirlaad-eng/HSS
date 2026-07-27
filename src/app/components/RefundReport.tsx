@@ -29,6 +29,7 @@ import {
 import { PageHeader, PrimaryButton } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { mockRefunds, type RefundReason, type RefundStatus } from '../../mockAPI/refundsData';
+import { formatDate } from '../../utils/formatDate';
 
 const PRIMARY = '#f59e0b';
 const CHART_PALETTE = ['#f59e0b', '#3b82f6', '#22c55e', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16', '#f97316'];
@@ -288,7 +289,7 @@ export default function RefundReport() {
   const handleExport = () => {
     const rows: string[][] = [
       ['Refund Report - HSS'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB')}`],
+      [`Generated: ${formatDate(new Date())}`],
       [],
       ['SUMMARY KPIs'],
       ['Total Refund Requests', String(totalRequests)],

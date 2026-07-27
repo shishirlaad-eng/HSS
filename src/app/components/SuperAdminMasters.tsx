@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
 import { getRoleScope } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 
 type ViewMode = 'grid' | 'list' | 'table';
 export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types' | 'configurable-lists';
@@ -544,7 +545,10 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
     if (format === 'excel') {
       const headers = cols.map(c => `"${c.label}"`).join(',');
       const rows = dataToExport.map(item =>
-        cols.map(c => `"${String((item as any)[c.key] ?? '').replace(/"/g, '""')}"`).join(',')
+        cols.map(c => {
+          const v = (item as any)[c.key];
+          return `"${String(c.key === 'lastUpdated' ? sharedFormatDate(v) : (v ?? '')).replace(/"/g, '""')}"`;
+        }).join(',')
       );
       const blob = new Blob([[headers, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -554,13 +558,16 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       toast.success(`Exported ${dataToExport.length} records to Excel.`);
     } else {
       const lines = [
-        `${config.title.toUpperCase()} REPORT — ${new Date().toLocaleString()}`,
+        `${config.title.toUpperCase()} REPORT — ${sharedFormatDate(new Date())}`,
         `Total: ${dataToExport.length}`,
         '',
         cols.map(c => c.label.padEnd(22)).join(''),
         '─'.repeat(cols.length * 22),
         ...dataToExport.map(item =>
-          cols.map(c => String((item as any)[c.key] ?? '').substring(0, 20).padEnd(22)).join('')
+          cols.map(c => {
+            const v = (item as any)[c.key];
+            return String(c.key === 'lastUpdated' ? sharedFormatDate(v) : (v ?? '')).substring(0, 20).padEnd(22);
+          }).join('')
         ),
       ];
       const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
@@ -595,10 +602,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       : <ArrowDown className="w-3 h-3 text-primary-600 dark:text-primary-400 ml-1 inline-block" />;
   };
 
-  const formatDate = (d: string) => {
-    try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
-    catch { return d; }
-  };
+  const formatDate = (d: string) => sharedFormatDate(d, d);
 
   // ─── Advanced filter options per tab ──────────────────────────────────────
   const filterOptions = useMemo<Record<string, string[]>>(() => ({

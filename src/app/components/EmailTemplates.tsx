@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { formatDate } from '../../utils/formatDate';
 import { 
   Mail,
   Eye,
@@ -964,7 +965,7 @@ export default function EmailTemplates() {
                         )}
                         {visibleColumns.lastUpdated && (
                           <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 font-mono">
-                            {new Date(item.lastUpdated).toLocaleDateString('en-GB')}
+                            {formatDate(item.lastUpdated)}
                           </td>
                         )}
                         <td className="px-6 py-3.5 text-right" onClick={e => e.stopPropagation()}>

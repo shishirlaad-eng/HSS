@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { formatDate } from '../../utils/formatDate';
 import {
   User,
   Mail,
@@ -1097,7 +1098,7 @@ export default function SampleDesign() {
                           )}
                           {visibleColumns.joinDate && (
                             <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                              {employee.joinDate}
+                              {formatDate(employee.joinDate)}
                             </td>
                           )}
                       <td className="px-4 py-3">

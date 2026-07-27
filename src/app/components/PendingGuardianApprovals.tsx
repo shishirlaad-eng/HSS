@@ -42,6 +42,7 @@ import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
 import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 import { getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate } from '../../utils/formatDate';
 
 type ViewMode   = 'grid' | 'list' | 'table';
 type PageState  = 'list' | 'detail';
@@ -429,7 +430,7 @@ export default function PendingGuardianApprovals() {
         `"${m.guardianName ?? ''}"`, m.guardianEmail ?? '',
         `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
         m.compliance.dbs, m.compliance.firstAid,
-        new Date(m.registrationDate).toLocaleDateString('en-GB'),
+        formatDate(m.registrationDate),
         waitingDays(m.registrationDate),
       ].join(','))
     ].join('\n');
@@ -668,7 +669,7 @@ export default function PendingGuardianApprovals() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                         <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                        <span>{new Date(m.registrationDate).toLocaleDateString('en-GB')}</span>
+                        <span>{formatDate(m.registrationDate)}</span>
                       </div>
                     </div>
 

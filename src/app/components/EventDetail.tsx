@@ -46,6 +46,7 @@ import {
   EVENT_TERMS_AND_CONDITIONS,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
+import { formatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
 
@@ -151,11 +152,7 @@ export default function EventDetail({
   onViewMember,
 }: EventDetailProps) {
 
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+  const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
 
   const past                   = isPastStart(event);
   const modifyOk               = canModify(event);
@@ -281,7 +278,7 @@ export default function EventDetail({
         escape(m?.surname ?? p.name.split(' ').slice(1).join(' ')),
         escape(m ? getAgeGroupLabel(m.dateOfBirth) : ''),
         escape(m?.gender ?? ''),
-        escape(m ? new Date(m.dateOfBirth).toLocaleDateString('en-GB') : ''),
+        escape(m ? formatDate(m.dateOfBirth) : ''),
         escape(p.email),
         escape(m?.secondaryEmail ?? ''),
         escape(p.phone),
@@ -310,7 +307,7 @@ export default function EventDetail({
         escape(m?.compliance?.dbs ?? ''),
         escape(m?.compliance?.firstAid ?? ''),
         escape(m?.status ?? ''),
-        m ? new Date(m.registrationDate).toLocaleDateString('en-GB') : '',
+        m ? formatDate(m.registrationDate) : '',
         rsvpLabel(p.rsvp),
         p.memberType.charAt(0).toUpperCase() + p.memberType.slice(1),
       ].join(',');
@@ -1186,7 +1183,7 @@ export default function EventDetail({
                                   )}
                                   <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5">
                                     <Clock className="w-2.5 h-2.5 flex-shrink-0" />
-                                    {new Date(m.postedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    {sharedFormatDateTime(m.postedAt)}
                                   </p>
                                 </div>
                               </div>
@@ -1310,7 +1307,7 @@ export default function EventDetail({
             <div className="flex items-center gap-4 text-xs text-neutral-400">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {new Date(currentMedia.postedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {sharedFormatDateTime(currentMedia.postedAt)}
               </span>
               <span className="flex items-center gap-1">
                 {currentMedia.type === 'video' ? <Video className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}

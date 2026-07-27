@@ -23,6 +23,7 @@ import {
 } from './hb/listing';
 import { ReadOnlyBanner } from './hb/common/ReadOnlyBanner';
 import { mockStaticPages, StaticPage } from '../../mockAPI/staticPagesData';
+import { formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 import StaticPageEdit from './StaticPageEdit';
 
 type ViewMode = 'grid' | 'list' | 'table';
@@ -117,15 +118,7 @@ export default function StaticPages() {
     setSelectedPage(null);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => sharedFormatDateTime(dateString);
 
   if (showEdit && selectedPage) {
     return (

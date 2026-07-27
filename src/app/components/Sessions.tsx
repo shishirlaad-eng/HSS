@@ -21,6 +21,7 @@ import { mockSessions, ShakhaSession, AttendanceRecord } from '../../mockAPI/att
 import { MASTERS_CASCADE, mockMembers, getAgeGroup } from '../../mockAPI/membersData';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 
 // ── Helpers ──────────────────────────────────────────────────
 const DAY_NAMES_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -30,7 +31,7 @@ function isoDate(y: number, m: number, d: number) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return sharedFormatDate(iso);
 }
 
 function statusColor(status: ShakhaSession['status']) {

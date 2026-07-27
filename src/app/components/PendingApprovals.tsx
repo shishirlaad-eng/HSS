@@ -46,6 +46,7 @@ import MemberDetail from './MemberDetail';
 import { toast } from 'sonner';
 import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 import { getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate, formatDateTime } from '../../utils/formatDate';
 import {
   getTransferRequests,
   reviewTransferRequest,
@@ -443,7 +444,7 @@ export default function PendingApprovals() {
         m.id, `"${m.firstName ?? m.name.split(' ')[0]}"`, `"${m.surname ?? m.name.split(' ').slice(1).join(' ')}"`, `"${getAgeGroupLabel(m.dateOfBirth)}"`, m.email,
         `"${m.country}"`, `"${m.region}"`, m.town, `"${m.activityCentre}"`,
         m.compliance.dbs, m.compliance.firstAid,
-        new Date(m.registrationDate).toLocaleDateString('en-GB'),
+        formatDate(m.registrationDate),
         waitingDays(m.registrationDate),
       ].join(','))
     ].join('\n');
@@ -622,7 +623,7 @@ export default function PendingApprovals() {
                       <span className="font-medium text-primary-700 dark:text-primary-300">{request.toCentre}</span>
                     </div>
                     <p className="mt-1 text-xs text-neutral-400">
-                      Requested {new Date(request.requestedAt).toLocaleString('en-GB')} · {request.memberRole}
+                      Requested {formatDateTime(request.requestedAt)} · {request.memberRole}
                     </p>
                   </div>
                   {canReviewTransfers && (
@@ -757,7 +758,7 @@ export default function PendingApprovals() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                         <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                        <span>{new Date(m.registrationDate).toLocaleDateString('en-GB')}</span>
+                        <span>{formatDate(m.registrationDate)}</span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-3">

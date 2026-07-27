@@ -63,6 +63,7 @@ import {
   AnnouncementContent,
 } from '../../mockAPI/announcementsData';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -122,14 +123,11 @@ const btnGhost   = `${btnBase} border border-neutral-300 dark:border-neutral-700
 const btnDanger  = `${btnBase} border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 bg-white dark:bg-neutral-900 hover:bg-red-50 dark:hover:bg-red-950/20`;
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return sharedFormatDate(iso);
 }
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  return sharedFormatDateTime(iso);
 }
 
 function scopeLabel(ann: Announcement) {
@@ -1628,7 +1626,7 @@ export default function Announcements({
                 }`}
               >
                 <CalendarDays className="w-3.5 h-3.5" />
-                {dateStart ? (dateLabel || `${dateStart} – ${dateEnd}`) : 'Date range'}
+                {dateStart ? (dateLabel || formatDateRange(dateStart, dateEnd)) : 'Date range'}
                 {dateStart && (
                   <span
                     role="button"

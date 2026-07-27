@@ -3,6 +3,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertic
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 import {
   mockMembers,
   Member,
@@ -51,7 +52,7 @@ function CertBadge({ status }: { status?: CertStatus }) {
 
 function fmtDate(date?: string) {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return sharedFormatDate(date);
 }
 
 const TH = 'sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
@@ -398,9 +399,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><DBSBadge status={m.compliance.dbs} /></td>
                       <td className={TD}>
-                        {m.dbsCertificateNumber
-                          ? <><span className="font-medium">{m.dbsCertificateNumber}</span>{m.dbsCertificateDate && <span className="block text-xs text-neutral-400 dark:text-neutral-500">{fmtDate(m.dbsCertificateDate)}</span>}</>
-                          : fmtDate(m.dbsCertificateDate)}
+                        {fmtDate(m.dbsCertificateDate)}
                       </td>
                       <td className={TD}>
                         {m.dbsUpdateService === true ? (

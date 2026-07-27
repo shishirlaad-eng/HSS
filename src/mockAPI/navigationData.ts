@@ -277,12 +277,6 @@ export const getNavigationData = (
           active: currentPage === "email-templates",
         },
         {
-          id: "system-notifications",
-          label: "System Notifications",
-          onClick: () => onNavigate("system-notifications"),
-          active: currentPage === "system-notifications",
-        },
-        {
           id: "role-management",
           label: "Roles & Permissions",
           onClick: () => onNavigate("role-management"),

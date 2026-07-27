@@ -8,13 +8,13 @@ import { toast } from "sonner";
 import { PageHeader } from "./hb/listing";
 import { mockMemberDonations } from "../../mockAPI/donationsData";
 import { useRoleScope } from "../contexts/RoleScopeContext";
+import { formatDate, formatDateTime as sharedFormatDateTime } from "../../utils/formatDate";
 
 type RecurringFrequency = 'Monthly' | 'Quarterly' | 'Annually';
 
 const formatDateTime = (iso: string) => {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const date = formatDate(iso);
+  const time = sharedFormatDateTime(iso).split(' ').pop()!;
   return { date, time };
 };
 
@@ -22,6 +22,10 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
   const { scope } = useRoleScope();
   const mockMyDonations = mockMemberDonations.filter(donation => donation.memberId === scope.selfMemberId);
   const total = mockMyDonations.reduce((s, d) => s + d.amount, 0);
+  // Display-only membership ID format for the payment reference — the underlying
+  // scope.selfMemberId keeps its real value above, since donation history is
+  // matched against it and must not change.
+  const paymentReference = scope.selfMemberId ? scope.selfMemberId.replace(/^[A-Za-z]+-/, 'MBR-') : undefined;
 
   const [showModal, setShowModal]                 = useState(false);
   const [showStandingOrder, setShowStandingOrder]  = useState(false);
@@ -67,12 +71,12 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
               </div>
               <div className="flex gap-2 items-start">
                 <span className="font-semibold text-neutral-700 dark:text-neutral-300 w-40 flex-shrink-0">Payment Reference:</span>
-                <span className="font-mono font-semibold text-primary-700 dark:text-primary-300">{scope.selfMemberId ?? '[Your Membership ID]'}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">{paymentReference ?? '[Your Membership ID]'}</span>
               </div>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-0 pt-0.5">
-                This is your MyHSS membership ID.
-              </p>
             </div>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              This is your MyHSS membership ID.
+            </p>
             <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
               Before you set up your standing order with your bank, please provide the following information so we can record your donation details:
             </p>

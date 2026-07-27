@@ -28,6 +28,7 @@ import {
 import { PageHeader, PrimaryButton } from './hb/listing';
 import { getSessionShakhaType, mockSessions, SHAKHA_TYPES, type ShakhaSession } from '../../mockAPI/attendanceData';
 import { AGE_GROUP_LABELS, MASTERS_CASCADE, type AgeGroup } from '../../mockAPI/membersData';
+import { formatDate } from '../../utils/formatDate';
 
 const PRIMARY = '#f59e0b';
 
@@ -335,7 +336,7 @@ export default function AttendanceReport() {
   const handleExport = () => {
     const rows: string[][] = [
       ['Attendance Report - HSS UK'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB')}`],
+      [`Generated: ${formatDate(new Date())}`],
       [],
       ['SUMMARY KPIs'],
       ['Total Shakhas', String(totalSessions)],

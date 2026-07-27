@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
 import { mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
 // â”€â”€ Colour palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -268,7 +269,7 @@ export default function MembersReport() {
 
     const rows: string[][] = [
       ['Members Report â€” HSS UK'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`],
+      [`Generated: ${formatDate(new Date())}`],
       filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All members)'],
       [],
       ['SUMMARY KPIs'],

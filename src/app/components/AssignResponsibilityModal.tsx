@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, Plus, Save } from 'lucide-react';
+import { Search, X, Plus, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormSelect, FormInput, ErrorText, StatusSlider } from './hb/common';
@@ -10,6 +10,7 @@ import {
   RESPONSIBILITY_TYPE_OPTIONS, ROLE_TYPE_OPTIONS,
 } from '../../mockAPI/membersData';
 import { ADMIN_ROLE_OPTIONS, ROLE_DISPLAY_LABELS } from '../../mockAPI/rolesData';
+import { formatDate } from '../../utils/formatDate';
 
 // _wasActiveOnLoad freezes whether a row was active at the moment the member was
 // selected: a row already inactive before this session opened can never be
@@ -20,11 +21,10 @@ type DraftRole = MyHSSRoleAssignment & { _isNew?: boolean; _wasActiveOnLoad?: bo
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
+// Only currently active responsibilities are loaded — this modal manages the
+// live assignment, it isn't a history browser, so ended ones are left out.
 function respRowsFor(member: Member): DraftResp[] {
-  return [
-    ...(member.responsibilities ?? []).map(r => ({ ...r, _wasActiveOnLoad: !r.endDate })),
-    ...(member.previousResponsibilities ?? []).map(p => ({ ...p, sanghResponsibility: member.jobTitle, _wasActiveOnLoad: false })),
-  ];
+  return (member.responsibilities ?? []).map(r => ({ ...r, _wasActiveOnLoad: !r.endDate }));
 }
 function roleRowsFor(member: Member): DraftRole[] {
   return [
@@ -35,18 +35,36 @@ function roleRowsFor(member: Member): DraftRole[] {
 
 // A member is already a Member/Teen Member the moment they register — that base
 // role isn't something an admin "adds", so it's never offered in the Add Role
-// dropdown, and is always shown pre-assigned in the Current MyHSS Roles list.
-const ASSIGNABLE_MYHSS_ROLE_OPTIONS = ADMIN_ROLE_OPTIONS.filter(r => r !== 'Adult Member' && r !== 'Teen Member');
-function baseMyHSSRole(member: Member): string | null {
-  if (member.memberType === 'adult') return 'Adult Member';
-  if (member.memberType === 'teen') return 'Teen Member';
-  return null;
+// dropdown (and isn't shown in Current MyHSS Roles either — it's implicit).
+const ALL_ASSIGNABLE_MYHSS_ROLE_OPTIONS = ADMIN_ROLE_OPTIONS.filter(r => r !== 'Adult Member' && r !== 'Teen Member');
+
+// Org hierarchy, top to bottom — mirrors RESPONSIBILITY_LEVEL_OPTIONS 1:1. Shakha
+// Operations has no responsibility level of its own but sits at the Shakha tier
+// for role-coverage purposes.
+const LEVEL_ADMIN_CHAIN = ['Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin'];
+const ROLE_COVERAGE_CHAIN = [...LEVEL_ADMIN_CHAIN, 'Shakha Operations'];
+
+// A level admin (e.g. Shakha Admin) may only assign responsibility at their own
+// tier and below, and may only hand out MyHSS roles at their own tier and below —
+// never anything above their own level. Super Admin is unrestricted.
+function assignableLevelsFor(selectedRole: string): ResponsibilityLevel[] {
+  if (selectedRole === 'Super Admin') return RESPONSIBILITY_LEVEL_OPTIONS;
+  const idx = LEVEL_ADMIN_CHAIN.indexOf(selectedRole);
+  if (idx === -1) return ['Shakha / Activity center'];
+  return RESPONSIBILITY_LEVEL_OPTIONS.slice(idx);
+}
+function assignableMyhssRolesFor(selectedRole: string): string[] {
+  if (selectedRole === 'Super Admin') return ALL_ASSIGNABLE_MYHSS_ROLE_OPTIONS;
+  const idx = ROLE_COVERAGE_CHAIN.indexOf(selectedRole);
+  if (idx === -1) return ['Shakha Admin', 'Shakha Operations'].filter(r => ALL_ASSIGNABLE_MYHSS_ROLE_OPTIONS.includes(r));
+  return ROLE_COVERAGE_CHAIN.slice(idx).filter(r => ALL_ASSIGNABLE_MYHSS_ROLE_OPTIONS.includes(r));
 }
 
 export default function AssignResponsibilityModal({
   isOpen,
   members,
   selectedRole,
+  initialMemberId,
   onClose,
   onSave,
 }: {
@@ -55,6 +73,9 @@ export default function AssignResponsibilityModal({
   // ever receives members from their own Shakha.
   members: Member[];
   selectedRole: string;
+  // When set, the modal opens with this member already selected (e.g. launched
+  // from a row-level edit icon) instead of landing on the empty search state.
+  initialMemberId?: string | null;
   onClose: () => void;
   onSave: (updatedMember: Member) => void;
 }) {
@@ -65,12 +86,11 @@ export default function AssignResponsibilityModal({
   const [roleRows, setRoleRows] = useState<DraftRole[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Only Super Admin may assign responsibilities at any level — a Shakha Admin
-  // may only assign at Shakha level, for members already scoped to their own Shakha.
-  const isSuperAdmin = selectedRole === 'Super Admin';
-  const assignableLevels: ResponsibilityLevel[] = isSuperAdmin
-    ? RESPONSIBILITY_LEVEL_OPTIONS
-    : ['Shakha / Activity center'];
+  // Role coverage: an admin can only assign a Sangh Responsibility level or a
+  // MyHSS Role at/below their own tier — e.g. a Shakha Admin only ever sees
+  // "Shakha / Activity center" and can only hand out "Shakha Admin"/"Shakha Operations".
+  const assignableLevels = assignableLevelsFor(selectedRole);
+  const assignableRoles = assignableMyhssRolesFor(selectedRole);
 
   const activeMembers = useMemo(() => members.filter(m => m.status === 'active'), [members]);
   const suggestions = useMemo(() => {
@@ -117,6 +137,13 @@ export default function AssignResponsibilityModal({
     setRoleRows([]);
   };
 
+  useEffect(() => {
+    if (!isOpen || !initialMemberId) return;
+    const m = activeMembers.find(x => x.id === initialMemberId);
+    if (m) selectMember(m);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialMemberId]);
+
   // A row already inactive before this session opened can never be reactivated
   // here — only rows the user themselves deactivated just now can be undone.
   const toggleRespActive = (index: number) => setRespRows(rows => rows.map((r, i) =>
@@ -134,9 +161,14 @@ export default function AssignResponsibilityModal({
     ...rows,
   ]);
   const addRoleRow = () => setRoleRows(rows => [
-    { role: ASSIGNABLE_MYHSS_ROLE_OPTIONS[0], startDate: todayISO(), _isNew: true },
+    { role: assignableRoles[0], startDate: todayISO(), _isNew: true },
     ...rows,
   ]);
+
+  // Only rows added in this session (never saved) can be removed outright —
+  // existing assignments are deactivated instead, never deleted.
+  const removeRespRow = (index: number) => setRespRows(rows => rows.filter((_, i) => i !== index));
+  const removeRoleRow = (index: number) => setRoleRows(rows => rows.filter((_, i) => i !== index));
 
   const handleClose = () => {
     clearMember();
@@ -170,10 +202,16 @@ export default function AssignResponsibilityModal({
     const updated: Member = {
       ...selectedMember,
       responsibilities: activeResp.map(({ _isNew, _wasActiveOnLoad, ...r }) => r),
-      previousResponsibilities: endedResp.map(r => ({
-        responsibilityLevel: r.responsibilityLevel, responsibilityType: r.responsibilityType,
-        startDate: r.startDate ?? '', endDate: r.endDate ?? '',
-      })),
+      // respRows only ever holds active responsibilities (see respRowsFor) — the
+      // member's already-ended history isn't loaded/shown here, so it must be
+      // preserved as-is rather than overwritten with just this session's changes.
+      previousResponsibilities: [
+        ...(selectedMember.previousResponsibilities ?? []),
+        ...endedResp.map(r => ({
+          responsibilityLevel: r.responsibilityLevel, responsibilityType: r.responsibilityType,
+          startDate: r.startDate ?? '', endDate: r.endDate ?? '',
+        })),
+      ],
       myhssRoles: activeRoles.map(({ _isNew, _wasActiveOnLoad, ...r }) => r),
       previousMyhssRoles: endedRoles.map(({ _isNew, _wasActiveOnLoad, ...r }) => r),
       jobTitle: primary?.sanghResponsibility || selectedMember.jobTitle,
@@ -360,7 +398,17 @@ export default function AssignResponsibilityModal({
                                 <FormInput type="date" value={row.startDate ?? ''} onChange={e => updateResp(index, 'startDate', e.target.value)} />
                               </td>
                               <td className={td}>
-                                <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">New</span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">New</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRespRow(index)}
+                                    title="Remove this row"
+                                    className="p-1 rounded text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950/30 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </>
                           ) : (
@@ -369,7 +417,7 @@ export default function AssignResponsibilityModal({
                               <td className={`${td} text-sm font-medium text-neutral-900 dark:text-white`}>{row.sanghResponsibility}</td>
                               <td className={`${td} text-sm text-neutral-500 dark:text-neutral-400`}>{row.responsibilityType}</td>
                               <td className={`${td} text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap`}>
-                                {row.startDate} – {row.endDate ?? 'Present'}
+                                {formatDate(row.startDate)} – {row.endDate ? formatDate(row.endDate) : 'Present'}
                               </td>
                               <td className={td}>
                                 <div
@@ -425,7 +473,7 @@ export default function AssignResponsibilityModal({
                       <col style={{ width: '22%' }} />
                     </colgroup>
                     <tbody>
-                      {roleRows.length === 0 && !baseMyHSSRole(selectedMember) && (
+                      {roleRows.length === 0 && (
                         <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-neutral-400">No MyHSS roles yet</td></tr>
                       )}
                       {roleRows.map((row, index) => (
@@ -434,21 +482,31 @@ export default function AssignResponsibilityModal({
                             <>
                               <td className={td}>
                                 <FormSelect value={row.role} onChange={e => updateRole(index, 'role', e.target.value)}>
-                                  {ASSIGNABLE_MYHSS_ROLE_OPTIONS.map(v => <option key={v} value={v}>{ROLE_DISPLAY_LABELS[v] ?? v}</option>)}
+                                  {assignableRoles.map(v => <option key={v} value={v}>{ROLE_DISPLAY_LABELS[v] ?? v}</option>)}
                                 </FormSelect>
                               </td>
                               <td className={td}>
                                 <FormInput type="date" value={row.startDate ?? ''} onChange={e => updateRole(index, 'startDate', e.target.value)} />
                               </td>
                               <td className={td}>
-                                <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">New</span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">New</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRoleRow(index)}
+                                    title="Remove this row"
+                                    className="p-1 rounded text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950/30 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </>
                           ) : (
                             <>
                               <td className={`${td} text-sm font-medium text-neutral-900 dark:text-white`}>{ROLE_DISPLAY_LABELS[row.role] ?? row.role}</td>
                               <td className={`${td} text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap`}>
-                                {row.startDate} – {row.endDate ?? 'Present'}
+                                {formatDate(row.startDate)} – {row.endDate ? formatDate(row.endDate) : 'Present'}
                               </td>
                               <td className={td}>
                                 <div
@@ -465,21 +523,6 @@ export default function AssignResponsibilityModal({
                           )}
                         </tr>
                       ))}
-                      {baseMyHSSRole(selectedMember) && (
-                        <tr>
-                          <td className={`${td} text-sm font-medium text-neutral-900 dark:text-white`}>
-                            {ROLE_DISPLAY_LABELS[baseMyHSSRole(selectedMember)!] ?? baseMyHSSRole(selectedMember)}
-                          </td>
-                          <td className={`${td} text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap`}>
-                            {selectedMember.registrationDate?.split('T')[0]} – Present
-                          </td>
-                          <td className={td}>
-                            <div className="opacity-60 pointer-events-none" title="Every member already has this role — cannot be changed here">
-                              <StatusSlider value="active" onChange={() => {}} />
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>

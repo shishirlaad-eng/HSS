@@ -65,13 +65,14 @@ export default function SystemSettings() {
 
     // Regional
     dateFormat: 'DD/MM/YYYY',
-    timeZone: 'UTC+0 (Greenwich Mean Time)',
+    timeZone: 'BST (British Summer Time)',
     currency: 'GBP (£)',
     language: 'UK English',
     
     // Security
     maxLoginAttempts: 5,
     sessionTimeout: 60,
+    blockDuration: 30,
     
     // Mobile
     androidVersion: '1.2.4',
@@ -87,11 +88,11 @@ export default function SystemSettings() {
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['companyName', 'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword', 'senderName', 'senderEmail', 'address', 'adminEmail', 'maxLoginAttempts', 'sessionTimeout', 'androidVersion', 'iosVersion'];
+  const FIELD_ORDER = ['companyName', 'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword', 'senderName', 'senderEmail', 'address', 'adminEmail', 'maxLoginAttempts', 'sessionTimeout', 'blockDuration', 'androidVersion', 'iosVersion'];
   const FIELD_TAB: Record<string, 'general' | 'mobile'> = {
     companyName: 'general', smtpHost: 'general', smtpPort: 'general', smtpUsername: 'general', smtpPassword: 'general',
     senderName: 'general', senderEmail: 'general', address: 'general', adminEmail: 'general',
-    maxLoginAttempts: 'general', sessionTimeout: 'general',
+    maxLoginAttempts: 'general', sessionTimeout: 'general', blockDuration: 'general',
     androidVersion: 'mobile', iosVersion: 'mobile',
   };
 
@@ -108,6 +109,7 @@ export default function SystemSettings() {
     if (!settings.adminEmail.trim())   errs.adminEmail = true;
     if (!settings.maxLoginAttempts || settings.maxLoginAttempts < 1) errs.maxLoginAttempts = true;
     if (!settings.sessionTimeout || settings.sessionTimeout < 1)     errs.sessionTimeout = true;
+    if (!settings.blockDuration || settings.blockDuration < 1)       errs.blockDuration = true;
     if (!settings.androidVersion.trim()) errs.androidVersion = true;
     if (!settings.iosVersion.trim())     errs.iosVersion = true;
     return errs;
@@ -437,8 +439,6 @@ export default function SystemSettings() {
                         onChange={(e) => setSettings({...settings, dateFormat: e.target.value})}
                       >
                         <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                       </FormSelect>
                     </FormField>
                     <FormField>
@@ -447,9 +447,7 @@ export default function SystemSettings() {
                         value={settings.timeZone}
                         onChange={(e) => setSettings({...settings, timeZone: e.target.value})}
                       >
-                        <option value="UTC+0 (Greenwich Mean Time)">UTC+0 (Greenwich Mean Time)</option>
-                        <option value="UTC+5:30 (Indian Standard Time)">UTC+5:30 (Indian Standard Time)</option>
-                        <option value="UTC-5 (Eastern Standard Time)">UTC-5 (Eastern Standard Time)</option>
+                        <option value="BST (British Summer Time)">BST (British Summer Time)</option>
                       </FormSelect>
                     </FormField>
                     <FormField>
@@ -459,9 +457,6 @@ export default function SystemSettings() {
                         onChange={(e) => setSettings({...settings, currency: e.target.value})}
                       >
                         <option value="GBP (£)">GBP (£)</option>
-                        <option value="USD ($)">USD ($)</option>
-                        <option value="EUR (€)">EUR (€)</option>
-                        <option value="INR (₹)">INR (₹)</option>
                       </FormSelect>
                     </FormField>
                     <FormField>
@@ -506,6 +501,17 @@ export default function SystemSettings() {
                         className={errCls('sessionTimeout')}
                       />
                       <ErrorText>{errors.sessionTimeout && 'Enter a valid number.'}</ErrorText>
+                    </FormField>
+                    <FormField>
+                      <FormLabel required>Block Duration (Minutes)</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.blockDuration = el; }}
+                        type="number"
+                        value={settings.blockDuration}
+                        onChange={(e) => { setSettings({...settings, blockDuration: parseInt(e.target.value)}); setErrors(prev => ({ ...prev, blockDuration: false })); }}
+                        className={errCls('blockDuration')}
+                      />
+                      <ErrorText>{errors.blockDuration && 'Enter a valid number.'}</ErrorText>
                     </FormField>
                   </FormGrid>
                 </FormSection>

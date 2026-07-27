@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { formatDate } from '../../utils/formatDate';
 import {
   mockDonations,
   type DonationStatus,
@@ -265,7 +266,7 @@ export default function DonationsPaymentsReport() {
   const handleExport = () => {
     const rows: string[][] = [
       ['Nidhi Report - HSS'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB')}`],
+      [`Generated: ${formatDate(new Date())}`],
       [],
       ['SUMMARY KPIs'],
       ['Total Income', money(totalIncome)],

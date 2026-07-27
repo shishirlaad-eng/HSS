@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { mockMembers, Member, getAgeGroupLabel, AGE_GROUP_LABELS, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { formatDate } from '../../utils/formatDate';
 import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 
@@ -294,7 +295,7 @@ export default function EmergencyDetails({
                     <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
                     <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
                     <td className={TD}>
-                      {new Date(m.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(m.dateOfBirth)}
                     </td>
                     <td className={TD}>{dash(m.emergencyContactName)}</td>
                     <td className={TD}>

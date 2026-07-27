@@ -52,6 +52,7 @@ import {
   ErrorText,
 } from './hb/common';
 import { mockRoles, availableModules, Role, ModulePermission } from '../../mockAPI/rolesData';
+import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext';
 
@@ -291,14 +292,15 @@ export default function RoleManagement() {
 
     if (format === 'excel') {
       const headers = columnsToExport.map(col => `"${col.label}"`).join(',');
-      const rows = dataToExport.map(item => 
+      const rows = dataToExport.map(item =>
         columnsToExport.map(col => {
           let val = (item as any)[col.key];
+          if (col.key === 'lastUpdated') val = formatDate(val);
           return `"${String(val || '').replace(/"/g, '""')}"`;
         }).join(',')
       );
       const csvContent = [headers, ...rows].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -307,17 +309,18 @@ export default function RoleManagement() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success(`Successfully exported ${dataToExport.length} roles to Excel.`);
     } else {
-      let reportContent = `ROLE REPORT - Generated on ${new Date().toLocaleString()}\n`;
+      let reportContent = `ROLE REPORT - Generated on ${formatDate(new Date())}\n`;
       reportContent += `Total Records: ${dataToExport.length}\n\n`;
       reportContent += columnsToExport.map(col => col.label.padEnd(25)).join('') + '\n';
       reportContent += '='.repeat(columnsToExport.length * 25) + '\n';
-      
+
       dataToExport.forEach(item => {
         reportContent += columnsToExport.map(col => {
           let val = (item as any)[col.key];
+          if (col.key === 'lastUpdated') val = formatDate(val);
           return String(val || '').substring(0, 23).padEnd(25);
         }).join('') + '\n';
       });
@@ -483,7 +486,7 @@ export default function RoleManagement() {
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{new Date(role.lastUpdated).toLocaleDateString()}</span>
+                    <span>{formatDate(role.lastUpdated)}</span>
                   </div>
                 </div>
               </div>
@@ -581,7 +584,7 @@ export default function RoleManagement() {
                     )}
                     {visibleColumns.lastUpdated && (
                       <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                        {new Date(role.lastUpdated).toLocaleDateString('en-GB')}
+                        {formatDate(role.lastUpdated)}
                       </td>
                     )}
                     <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>

@@ -44,9 +44,9 @@ import {
 import { toast } from 'sonner';
 import { ADMIN_ROLE_OPTIONS } from '../../mockAPI/rolesData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { formatDate } from '../../utils/formatDate';
 
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtDate = (iso: string) => formatDate(iso);
 
 const STATUS_CONFIG: Record<MemberStatus, { label: string; dot: string; text: string; bg: string; border: string }> = {
   active:                    { label: 'Active',                   dot: 'bg-success-500',  text: 'text-success-700 dark:text-success-400',  bg: 'bg-success-50 dark:bg-success-950/20',  border: 'border-success-200 dark:border-success-800'  },
@@ -968,7 +968,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
                   <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Registration Date</label>
                   <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                    {new Date(member.registrationDate).toLocaleDateString('en-GB')}
+                    {formatDate(member.registrationDate)}
                   </p>
                 </div>
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">

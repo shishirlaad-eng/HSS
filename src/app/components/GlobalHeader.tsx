@@ -131,7 +131,6 @@ export function GlobalHeader({
     "configurations-group": t.nav.configurations,
     "static-pages": t.nav.staticPages,
     "email-templates": t.nav.emailTemplates,
-    "system-notifications": t.nav.systemNotifications,
     "system-settings": t.nav.systemSettings,
     "logs-group": t.nav.logs,
     "login-logs": t.nav.loginLogs,

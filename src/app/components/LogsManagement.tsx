@@ -62,22 +62,20 @@ import {
 } from '../../mockAPI/logsData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 
 export type LogModuleType = 'login' | 'audit' | 'api' | 'email';
 
 const formatDateTime = (dateStr: string | null | undefined) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = date.toLocaleString('default', { month: 'short' });
-  const year = date.getFullYear();
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   hours = hours ? hours : 12;
   const strTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-  return `${day} ${month} ${year}, ${strTime}`;
+  return `${sharedFormatDate(date)}, ${strTime}`;
 };
 
 const getRelativeTime = (dateStr: string | null | undefined) => {
@@ -493,7 +491,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
       
       toast.success(`Successfully exported ${dataToExport.length} logs to Excel.`);
     } else {
-      let reportContent = `${type.toUpperCase()} LOG REPORT - Generated on ${new Date().toLocaleString()}\n`;
+      let reportContent = `${type.toUpperCase()} LOG REPORT - Generated on ${formatDateTime(new Date().toISOString())}\n`;
       reportContent += `Total Records: ${dataToExport.length}\n\n`;
       reportContent += columnsToExport.map(col => col.label.padEnd(25)).join('') + '\n';
       reportContent += '='.repeat(columnsToExport.length * 25) + '\n';

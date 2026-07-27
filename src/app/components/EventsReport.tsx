@@ -28,6 +28,7 @@ import {
 import { PageHeader, PrimaryButton } from './hb/listing';
 import { mockEvents, type Event } from '../../mockAPI/eventsData';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { formatDate } from '../../utils/formatDate';
 
 const PRIMARY = '#f59e0b';
 
@@ -356,7 +357,7 @@ export default function EventsReport() {
   const handleExport = () => {
     const rows: string[][] = [
       ['Events Report - HSS'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB')}`],
+      [`Generated: ${formatDate(new Date())}`],
       [],
       ['SUMMARY KPIs'],
       ['Total Events', String(totalEvents)],

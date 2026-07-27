@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
+import { formatDate } from '../../utils/formatDate';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -257,7 +258,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
     const data = selectedIds.size > 0 ? processedData.filter(i => selectedIds.has(i.id)) : processedData;
     if (!data.length) { toast.error('No data to export.'); return; }
     const csv = ['ID,Name,Status,Last Updated',
-      ...data.map(i => `"${i.id}","${i.name}","${i.status}","${i.lastUpdated}"`)
+      ...data.map(i => `"${i.id}","${i.name}","${i.status}","${formatDate(i.lastUpdated)}"`)
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -286,10 +287,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
       : <ArrowDown className="w-3 h-3 text-primary-600 dark:text-primary-400 ml-1 inline-block" />;
   };
 
-  const fmtDate = (d: string) => {
-    try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
-    catch { return d; }
-  };
+  const fmtDate = (d: string) => formatDate(d, d);
 
   const getMenuItems = (item: ConfigItem) => {
     const items: any[] = [

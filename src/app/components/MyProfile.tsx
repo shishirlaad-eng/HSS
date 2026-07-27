@@ -6,6 +6,7 @@ import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter,
 import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText, FormField, FormLabel } from "./hb/common/Form";
 import { FIRST_AID_QUALIFICATION_OPTIONS, getAge, getAgeGroupLabel, MASTERS_CASCADE, generateMemberId } from "../../mockAPI/membersData";
 import { getRoleScope } from "../../mockAPI/roleScope";
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from "../../utils/formatDate";
 import {
   createTransferRequest,
   getMemberCentreOverrides,
@@ -1052,8 +1053,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     toast.success("Your account deletion request has been submitted. An administrator will process it shortly.");
   };
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = (iso: string) => sharedFormatDate(iso);
 
   const TABS: { id: ProfileTab; label: string }[] = [
     { id: 'personal',     label: 'Personal Info'       },
@@ -1072,11 +1072,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     ] : []),
   ];
 
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", {
-      day: "numeric", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
+  const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
 
   interface ChangeRow {
     id: string;
@@ -1585,7 +1581,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert Date</p>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateDate ? new Date(profile.dbsCertificateDate).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—"}</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{profile.dbsCertificateDate ? sharedFormatDate(profile.dbsCertificateDate) : "—"}</p>
                     </div>
                     <div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">DBS Cert File</p>
@@ -1736,7 +1732,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               { role: 'Member', from: '2019-06-15', to: null },
             ];
             const previousRoles: { role: string; from: string; to: string }[] = [];
-            const fmtD = (d: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Present';
+            const fmtD = (d: string | null) => d ? sharedFormatDate(d) : 'Present';
             const TH = 'px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
             const TD = 'px-4 py-3 text-sm text-neutral-900 dark:text-white';
             const TDE = 'px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400';
@@ -2041,7 +2037,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       }`}
                     >
                       <CalendarDays className="w-3.5 h-3.5" />
-                      {historyDateStart ? (historyDateLabel || `${historyDateStart} - ${historyDateEnd}`) : 'Date range'}
+                      {historyDateStart ? (historyDateLabel || formatDateRange(historyDateStart, historyDateEnd)) : 'Date range'}
                       {historyDateStart && (
                         <span role="button" onClick={e => { e.stopPropagation(); setHistoryDateStart(''); setHistoryDateEnd(''); setHistoryDateLabel(''); }} className="ml-0.5 text-primary-400 hover:text-primary-700">
                           <X className="w-3 h-3" />
@@ -2102,7 +2098,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                           <tr key={row.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap">
                               <p className="text-[14px] text-neutral-900 dark:text-white whitespace-nowrap">
-                                {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {sharedFormatDate(d)}
                                 {' · '}
                                 {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                               </p>

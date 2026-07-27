@@ -16,6 +16,7 @@ import {
   RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS,
 } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
+import { formatDate } from '../../utils/formatDate';
 
 // Age-group membership labels are NOT sangh responsibilities — same exclusion
 // list used by Dashboard's "Shakha Karyakartas" KPI.
@@ -255,7 +256,7 @@ export default function KaryakartaReport() {
 
     const rows: string[][] = [
       ['Karyakarta Report — HSS UK'],
-      [`Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`],
+      [`Generated: ${formatDate(new Date())}`],
       filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All karyakartas)'],
       [],
       ['SUMMARY KPIs'],

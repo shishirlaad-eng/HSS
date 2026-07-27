@@ -16,6 +16,7 @@ import {
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
 import { User } from '../../mockAPI/usersData';
+import { formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 
 interface UserDetailProps {
   user: User;
@@ -36,15 +37,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
     );
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const formatDate = (dateString: string) => sharedFormatDateTime(dateString);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'events'>('overview');
 

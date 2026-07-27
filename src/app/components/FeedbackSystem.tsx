@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MessageSquarePlus, List, X, Send, Image as ImageIcon, Check, ChevronRight, MessageSquare, Plus, PenTool } from "lucide-react";
+import { formatDate } from "../../utils/formatDate";
 
 // Mock Data for Past Feedbacks
 const MOCK_FEEDBACKS = [
@@ -351,7 +352,7 @@ export function FeedbackSystem() {
                       <tr key={fb.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-neutral-900 dark:text-white">{fb.id}</td>
                         <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-300">{fb.subject}</td>
-                        <td className="px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">{fb.date}</td>
+                        <td className="px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">{formatDate(fb.date)}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                             fb.status === "Resolved" 
