@@ -45,15 +45,21 @@ export function toggleArr<T>(arr: T[], item: T): T[] {
 export function PriceCategoriesEditor({
   categories,
   onChange,
+  disabled,
 }: {
   categories: EventPriceCategory[];
   onChange: (next: EventPriceCategory[]) => void;
+  disabled?: boolean;
 }) {
   const addCategory = () => {
     onChange([...categories, { id: `PC-${Date.now()}`, label: '', price: 0 }]);
   };
   const updateCategory = (id: string, field: 'label' | 'price', value: string) => {
-    onChange(categories.map(c => c.id === id ? { ...c, [field]: field === 'price' ? parseFloat(value) || 0 : value } : c));
+    onChange(categories.map(c => {
+      if (c.id !== id) return c;
+      if (field === 'label') return { ...c, label: value };
+      return { ...c, price: parseFloat(value) || 0 };
+    }));
   };
   const removeCategory = (id: string) => {
     onChange(categories.filter(c => c.id !== id));
@@ -61,27 +67,40 @@ export function PriceCategoriesEditor({
 
   return (
     <div className="space-y-2">
+      {categories.length > 0 && (
+        <div className="flex items-center gap-2 px-0.5">
+          <span className="flex-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">Ticket Type / Title</span>
+          <span className="w-32 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">Price (GBP)</span>
+          <span className="w-8" />
+        </div>
+      )}
       {categories.map(cat => (
         <div key={cat.id} className="flex items-center gap-2">
           <FormInput
             value={cat.label}
             onChange={e => updateCategory(cat.id, 'label', e.target.value)}
-            placeholder="Category name (e.g. Adult, Child)"
+            placeholder="e.g. Adult, Child, Helper, Adult (part-time)"
+            disabled={disabled}
             className="flex-1"
           />
-          <FormInput
-            type="number"
-            value={String(cat.price)}
-            onChange={e => updateCategory(cat.id, 'price', e.target.value)}
-            placeholder="0.00"
-            min="0"
-            step="0.01"
-            className="w-32"
-          />
+          <div className="relative w-32">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+            <FormInput
+              type="number"
+              value={String(cat.price)}
+              onChange={e => updateCategory(cat.id, 'price', e.target.value)}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              disabled={disabled}
+              className="pl-6"
+            />
+          </div>
           <button
             type="button"
             onClick={() => removeCategory(cat.id)}
-            className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0"
+            disabled={disabled}
+            className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -90,9 +109,10 @@ export function PriceCategoriesEditor({
       <button
         type="button"
         onClick={addCategory}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+        disabled={disabled}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-300 dark:disabled:hover:border-neutral-700 disabled:hover:text-neutral-600 dark:disabled:hover:text-neutral-400"
       >
-        <Plus className="w-3.5 h-3.5" /> Add price category
+        <Plus className="w-3.5 h-3.5" /> Add ticket type
       </button>
     </div>
   );
@@ -146,12 +166,13 @@ export function CustomQuestionsEditor({
             />
             <FormSelect
               value={q.type}
-              onChange={e => updateQuestion(q.id, { type: e.target.value as EventCustomQuestion['type'], options: e.target.value === 'dropdown' ? (q.options ?? ['']) : undefined })}
+              onChange={e => updateQuestion(q.id, { type: e.target.value as EventCustomQuestion['type'], options: (e.target.value === 'dropdown' || e.target.value === 'radio') ? (q.options ?? ['']) : undefined })}
               className="w-40"
             >
               <option value="text">Single-line text</option>
               <option value="dropdown">Dropdown</option>
               <option value="checkbox">Checkbox</option>
+              <option value="radio">Radio Button</option>
             </FormSelect>
             <button
               type="button"
@@ -162,7 +183,14 @@ export function CustomQuestionsEditor({
             </button>
           </div>
 
-          {q.type === 'dropdown' && (
+          <FormInput
+            value={q.description ?? ''}
+            onChange={e => updateQuestion(q.id, { description: e.target.value })}
+            placeholder="Description shown below the question (optional) — explain why you're asking"
+            className="text-xs"
+          />
+
+          {(q.type === 'dropdown' || q.type === 'radio') && (
             <div className="space-y-1.5 pl-2">
               {(q.options ?? []).map((opt, idx) => (
                 <div key={idx} className="flex items-center gap-2">

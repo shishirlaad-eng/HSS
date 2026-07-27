@@ -53,16 +53,16 @@ import {
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import {
-  FormModal,
   FormField,
   FormLabel,
   FormInput,
   FormGrid,
   FormSelect,
   ErrorText,
+  RichTextEditor,
 } from './hb/common';
-import { mockEvents, mockParticipants, Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
+import { mockEvents, mockParticipants, Event } from '../../mockAPI/eventsData';
+import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
 import EventCreate from './EventCreate';
@@ -70,15 +70,26 @@ import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
-import { PriceCategoriesEditor, CustomQuestionsEditor, EventImageField } from './EventFormFields';
 
 type ViewMode = 'grid' | 'list' | 'table';
 type PageState = 'list' | 'detail' | 'edit' | 'create';
 type ModalType = null | 'create' | 'status' | 'cancel' | 'override' | 'delete';
 
+// ─── Listing tabs ─────────────────────────────────────────────────────────────
+// Splits the admin listing into an in-flight working set (Draft/Scheduled/Active/
+// In-progress) and a terminal set (Past/Completed/Closed), so finished Karyakrams
+// don't clutter the default view.
+type EventListTab = 'current' | 'completed';
+const CURRENT_EVENT_STATUSES: Event['status'][]   = ['draft', 'published', 'active'];
+const COMPLETED_EVENT_STATUSES: Event['status'][] = ['completed', 'cancelled'];
+
 // ─── Cutoff helpers ───────────────────────────────────────────────────────────
+// Decision (Shishir/Ritesh): "future only" was too strict — in-progress Karyakrams
+// still need day-of edits (venue/time change, early closure, extension, emergency
+// relocation, ticket/price/capacity updates). Draft, scheduled and in-progress stay
+// editable; only Completed (and Cancelled, which is equally terminal) are locked.
 const isPastStart = (event: Event) => new Date() >= new Date(event.startDate);
-const canModify   = (event: Event) => !isPastStart(event);
+const canModify   = (event: Event) => CURRENT_EVENT_STATUSES.includes(event.status);
 const canDelete   = (event: Event) => !isPastStart(event) && event.status !== 'completed';
 
 // ─── Member view helpers ──────────────────────────────────────────────────────
@@ -195,665 +206,6 @@ function ConfirmModal({
   );
 }
 
-// ─── Create Event Modal ────────────────────────────────────────────────────────
-interface CreateEventModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: Partial<Event>) => void;
-}
-
-// ─── Audience helpers ─────────────────────────────────────────────────────────
-function CheckChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
-  return (
-    <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
-      checked
-        ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-    }`}>
-      <input type="checkbox" className="sr-only" checked={checked} onChange={onChange} />
-      {checked && <CheckCircle2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />}
-      {label}
-    </label>
-  );
-}
-
-function toggleArr<T>(arr: T[], item: T): T[] {
-  return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
-}
-
-const AGE_GROUP_OPTIONS: { value: AgeGroup; label: string }[] = [
-  { value: 'bal',     label: 'Bal(ika) (0-5)'   },
-  { value: 'shishu',  label: 'Shishu (6-11)'    },
-  { value: 'kishor',  label: 'Kishor(i) (12-16)' },
-  { value: 'tarun',   label: 'Tarun(i) (17-30)'  },
-  { value: 'yuva',    label: 'Yuva(ti) (30-60)'  },
-  { value: 'jyestha', label: 'Jyestha(a) (60+)'  },
-];
-
-function MultiSelectDropdown<T extends string>({
-  label,
-  options,
-  selected,
-  onChange,
-}: {
-  label: string;
-  options: { value: T; label: string }[];
-  selected: T[];
-  onChange: (vals: T[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const filtered = options.filter(o =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
-  const allSelected = options.length > 0 && options.every(o => selected.includes(o.value));
-  const someSelected = selected.length > 0 && !allSelected;
-
-  const toggleAll = () => {
-    onChange(allSelected ? [] : options.map(o => o.value));
-  };
-  const toggle = (val: T) => {
-    onChange(selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val]);
-  };
-
-  const displayText = selected.length === 0
-    ? `Select ${label}`
-    : selected.length === options.length
-      ? `All ${label}`
-      : selected.map(v => options.find(o => o.value === v)?.label ?? v).join(', ');
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(p => !p)}
-        className="w-full flex items-center justify-between px-3 py-2 text-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-left hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
-      >
-        <span className={`truncate text-sm ${selected.length === 0 ? 'text-neutral-400' : 'text-neutral-900 dark:text-white'}`}>
-          {displayText}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-neutral-400 flex-shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden">
-          {/* Search */}
-          <div className="p-2 border-b border-neutral-100 dark:border-neutral-800">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md outline-none focus:border-primary-400 dark:text-white"
-              />
-            </div>
-          </div>
-          {/* Select All */}
-          <div
-            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800"
-            onClick={toggleAll}
-          >
-            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${allSelected ? 'bg-primary-600 border-primary-600' : someSelected ? 'border-neutral-300 dark:border-neutral-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-              {allSelected && <Check className="w-3 h-3 text-white" />}
-              {someSelected && <div className="w-2 h-0.5 bg-primary-600 rounded" />}
-            </div>
-            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Select All</span>
-          </div>
-          {/* Options */}
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-neutral-400 text-center">No results</div>
-            ) : filtered.map(opt => (
-              <div
-                key={opt.value}
-                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                onClick={() => toggle(opt.value)}
-              >
-                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(opt.value) ? 'bg-primary-600 border-primary-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                  {selected.includes(opt.value) && <Check className="w-3 h-3 text-white" />}
-                </div>
-                <span className="text-xs text-neutral-700 dark:text-neutral-300">{opt.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-const AUDIENCE_AGE_LABELS: Record<AgeGroup, string> = {
-  bal:     'Bal(ika) (0-5)',
-  shishu:  'Shishu (6-11)',
-  kishor:  'Kishor(i) (12-16)',
-  tarun:   'Tarun(i) (17-30)',
-  yuva:    'Yuva(ti) (30-60)',
-  jyestha: 'Jyestha(a) (60+)',
-};
-
-const EMPTY_CREATE = {
-  name: '',
-  description: '',
-  imageUrl: '',
-  country: '',
-  region: '',
-  town: '',
-  activityCentre: '',
-  locationType: 'physical' as 'physical' | 'online',
-  venueAddress: '',
-  onlineUrl: '',
-  startDate: '',
-  startTime: '',
-  endDate: '',
-  endTime: '',
-  paymentType: '' as 'paid' | 'free' | '',
-  priceCategories: [] as EventPriceCategory[],
-  capacity: '',
-  guestRegistrationEnabled: false,
-  customQuestions: [] as EventCustomQuestion[],
-  termsAndConditions: EVENT_TERMS_AND_CONDITIONS,
-  filterAgeCategories: [] as AgeGroup[],
-  filterGenders:       [] as ('male' | 'female')[],
-  filterJobTitles:     [] as string[],
-};
-
-type CreateForm = typeof EMPTY_CREATE;
-type CreateErrors = Partial<Record<keyof CreateForm, string>>;
-
-function CreateEventModal({ isOpen, onClose, onSave }: CreateEventModalProps) {
-  const [form, setForm] = useState<CreateForm>(EMPTY_CREATE);
-  const [errors, setErrors] = useState<CreateErrors>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [touched, setTouched] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setForm(EMPTY_CREATE);
-      setErrors({});
-      setTouched(false);
-      setIsLoading(false);
-    }
-  }, [isOpen]);
-
-  const availableRegions = form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : [];
-  const availableTowns   = form.region  ? (MASTERS_CASCADE.towns[form.region]   ?? []) : [];
-  const availableCentres = form.town    ? (MASTERS_CASCADE.centres[form.town]   ?? []) : [];
-
-  const set = (field: keyof CreateForm, value: any) => {
-    setForm(prev => {
-      const next: CreateForm = { ...prev, [field]: value };
-      if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-      if (field === 'region')  { next.town = ''; next.activityCentre = ''; }
-      if (field === 'town')    { next.activityCentre = ''; }
-      return next;
-    });
-    if (touched) validate({ ...form, [field]: value });
-  };
-
-  const validate = (f: CreateForm): CreateErrors => {
-    const errs: CreateErrors = {};
-    if (!f.name.trim())         errs.name         = 'This field is required.';
-    if (!f.country)             errs.country       = 'This field is required.';
-    if (!f.region)              errs.region        = 'This field is required.';
-    if (!f.town)                errs.town          = 'This field is required.';
-    if (!f.activityCentre)      errs.activityCentre = 'This field is required.';
-    if (f.locationType === 'physical' && !f.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical Karyakrams.';
-    if (f.locationType === 'online' && !f.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online Karyakrams.';
-    if (!f.startDate)           errs.startDate     = 'This field is required.';
-    if (!f.startTime)           errs.startTime     = 'This field is required.';
-    if (!f.endDate)             errs.endDate       = 'This field is required.';
-    if (!f.endTime)             errs.endTime       = 'This field is required.';
-    if (!f.paymentType)         errs.paymentType   = 'This field is required.';
-    if (f.paymentType === 'paid' && f.priceCategories.length === 0) errs.priceCategories = 'Add at least one price category for paid Karyakrams.';
-    if (f.startDate && f.startTime && f.endDate && f.endTime) {
-      const start = new Date(`${f.startDate}T${f.startTime}`);
-      const end   = new Date(`${f.endDate}T${f.endTime}`);
-      if (start >= end) errs.endDate = 'Start Date/Time must be earlier than End Date/Time.';
-    }
-    setErrors(errs);
-    return errs;
-  };
-
-  const errCls = (key: string) => errors[key as keyof CreateErrors] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
-
-  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'country', 'region', 'town', 'activityCentre'];
-  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  const focusFirstError = (errs: CreateErrors) => {
-    const firstKey = FIELD_ORDER.find(k => errs[k as keyof CreateErrors]);
-    const el = firstKey ? fieldRefs.current[firstKey] : null;
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.focus();
-    }
-  };
-
-  const handleSave = async () => {
-    setTouched(true);
-    const errs = validate(form);
-    if (Object.keys(errs).length > 0) {
-      toast.error('Please fill in all required fields.');
-      focusFirstError(errs);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      await new Promise(r => setTimeout(r, 800));
-      const now = new Date().toISOString();
-      onSave({
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
-        imageUrl: form.imageUrl || undefined,
-        country: form.country,
-        region: form.region,
-        town: form.town,
-        activityCentre: form.activityCentre,
-        locationType: form.locationType,
-        venueAddress: form.locationType === 'physical' ? form.venueAddress.trim() : undefined,
-        onlineUrl:    form.locationType === 'online'   ? form.onlineUrl.trim()    : undefined,
-        startDate: `${form.startDate}T${form.startTime}:00Z`,
-        endDate: `${form.endDate}T${form.endTime}:00Z`,
-        paymentType: form.paymentType as 'paid' | 'free',
-        price: form.paymentType === 'paid' ? form.priceCategories[0]?.price : undefined,
-        priceCategories: form.paymentType === 'paid' ? form.priceCategories : undefined,
-        capacity: form.capacity ? parseInt(form.capacity) : undefined,
-        guestRegistrationEnabled: form.guestRegistrationEnabled,
-        customQuestions: form.customQuestions.length > 0 ? form.customQuestions : undefined,
-        termsAndConditions: form.termsAndConditions.trim() || undefined,
-        filterAgeCategories: form.filterAgeCategories.length > 0 ? form.filterAgeCategories : undefined,
-        filterGenders:       form.filterGenders.length > 0       ? form.filterGenders       : undefined,
-        filterJobTitles:     form.filterJobTitles.length > 0     ? form.filterJobTitles     : undefined,
-        status: 'draft',
-        createdDate: now,
-        lastUpdated: now,
-        chatState: 'archived',
-        metrics: { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
-      });
-    } catch {
-      toast.error('Unable to save. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <FormModal isOpen={isOpen} onClose={onClose} title="Create Karyakram" maxWidth="max-w-3xl">
-      <div className="overflow-y-auto slim-scroll space-y-6 max-h-[62vh]">
-        {/* Karyakram Basics */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5" /> Karyakram Basics
-          </p>
-          <FormGrid cols={2}>
-            <FormField className="md:col-span-2">
-              <FormLabel required>Karyakram Title</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.name = el; }}
-                value={form.name}
-                onChange={e => set('name', e.target.value)}
-                placeholder="Enter Karyakram title"
-                className={errCls('name')}
-              />
-              <ErrorText>{errors.name}</ErrorText>
-            </FormField>
-            <FormField className="md:col-span-2">
-              <FormLabel>Karyakram Description</FormLabel>
-              <textarea
-                value={form.description}
-                onChange={e => set('description', e.target.value)}
-                placeholder="Describe the Karyakram — purpose, agenda, what to expect…"
-                rows={3}
-                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-              />
-            </FormField>
-            <FormField>
-              <FormLabel>Capacity</FormLabel>
-              <FormInput
-                type="number"
-                value={form.capacity}
-                onChange={e => set('capacity', e.target.value)}
-                placeholder="Max participants"
-                min="1"
-              />
-            </FormField>
-            <EventImageField value={form.imageUrl} onChange={v => set('imageUrl', v)} />
-          </FormGrid>
-        </div>
-
-        {/* Location */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5" /> Location
-          </p>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => set('locationType', 'physical')}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  form.locationType === 'physical'
-                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
-                }`}
-              >
-                <MapPin className="w-4 h-4" /> Physical
-              </button>
-              <button
-                type="button"
-                onClick={() => set('locationType', 'online')}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  form.locationType === 'online'
-                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
-                }`}
-              >
-                <Globe className="w-4 h-4" /> Online
-              </button>
-            </div>
-            {form.locationType === 'physical' ? (
-              <FormField>
-                <FormLabel required>Venue Address</FormLabel>
-                <FormInput
-                  ref={el => { fieldRefs.current.venueAddress = el; }}
-                  value={form.venueAddress}
-                  onChange={e => set('venueAddress', e.target.value)}
-                  placeholder="Enter full venue address"
-                  className={errCls('venueAddress')}
-                />
-                <ErrorText>{errors.venueAddress}</ErrorText>
-              </FormField>
-            ) : (
-              <FormField>
-                <FormLabel required>Online Call URL</FormLabel>
-                <FormInput
-                  ref={el => { fieldRefs.current.onlineUrl = el; }}
-                  value={form.onlineUrl}
-                  onChange={e => set('onlineUrl', e.target.value)}
-                  placeholder="e.g. https://meet.hssuk.org/your-karyakram"
-                  className={errCls('onlineUrl')}
-                />
-                <ErrorText>{errors.onlineUrl}</ErrorText>
-              </FormField>
-            )}
-          </div>
-        </div>
-
-        {/* Schedule */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" /> Schedule
-          </p>
-          <FormGrid cols={2}>
-            <FormField>
-              <FormLabel required>Start Date</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.startDate = el; }}
-                type="date"
-                value={form.startDate}
-                onChange={e => set('startDate', e.target.value)}
-                className={errCls('startDate')}
-              />
-              <ErrorText>{errors.startDate}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel required>Start Time</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.startTime = el; }}
-                type="time"
-                value={form.startTime}
-                onChange={e => set('startTime', e.target.value)}
-                className={errCls('startTime')}
-              />
-              <ErrorText>{errors.startTime}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel required>End Date</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.endDate = el; }}
-                type="date"
-                value={form.endDate}
-                onChange={e => set('endDate', e.target.value)}
-                className={errCls('endDate')}
-              />
-              <ErrorText>{errors.endDate}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel required>End Time</FormLabel>
-              <FormInput
-                ref={el => { fieldRefs.current.endTime = el; }}
-                type="time"
-                value={form.endTime}
-                onChange={e => set('endTime', e.target.value)}
-                className={errCls('endTime')}
-              />
-              <ErrorText>{errors.endTime}</ErrorText>
-            </FormField>
-          </FormGrid>
-        </div>
-
-        {/* Payment */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <CreditCard className="w-3.5 h-3.5" /> Payment Type
-          </p>
-          <FormGrid cols={2}>
-            <FormField>
-              <FormLabel required>Payment Type</FormLabel>
-              <FormSelect
-                ref={el => { fieldRefs.current.paymentType = el; }}
-                value={form.paymentType}
-                onChange={e => set('paymentType', e.target.value)}
-                className={errCls('paymentType')}
-              >
-                <option value="">Select Payment Type</option>
-                <option value="free">Free</option>
-                <option value="paid">Paid</option>
-              </FormSelect>
-              <ErrorText>{errors.paymentType}</ErrorText>
-            </FormField>
-          </FormGrid>
-          {form.paymentType === 'paid' && (
-            <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-3">
-              <FormLabel required>Price Categories</FormLabel>
-              <PriceCategoriesEditor
-                categories={form.priceCategories}
-                onChange={cats => set('priceCategories', cats)}
-              />
-              <ErrorText>{errors.priceCategories}</ErrorText>
-            </div>
-          )}
-        </div>
-
-        {/* Guest Registration */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Ticket className="w-3.5 h-3.5" /> Guest Registration
-          </p>
-          <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={form.guestRegistrationEnabled}
-              onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-              className="rounded border-neutral-300 dark:border-neutral-700"
-            />
-            Allow non-members to register via a guest registration link
-          </label>
-        </div>
-
-        {/* Custom Questions */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <ListChecks className="w-3.5 h-3.5" /> Additional Questions
-          </p>
-          <CustomQuestionsEditor
-            questions={form.customQuestions}
-            onChange={qs => set('customQuestions', qs)}
-          />
-        </div>
-
-        {/* Target Audience */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <UsersIcon className="w-3.5 h-3.5" /> Target Audience
-          </p>
-          <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Define who this event is for — Sangh scope and demographic filters. Leave demographic filters unchecked to target all members within scope.
-            </p>
-
-            {/* Sangh Scope */}
-            <div>
-              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Sangh Scope</p>
-              <FormGrid cols={2}>
-                <FormField>
-                  <FormLabel required>Country</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.country = el; }}
-                    value={form.country}
-                    onChange={e => set('country', e.target.value)}
-                    className={errCls('country')}
-                  >
-                    <option value="">Select Country</option>
-                    {MASTERS_CASCADE.countries.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </FormSelect>
-                  <ErrorText>{errors.country}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>Vibhag</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.region = el; }}
-                    value={form.region}
-                    onChange={e => set('region', e.target.value)}
-                    disabled={!form.country}
-                    className={errCls('region')}
-                  >
-                    <option value="">Select Vibhag</option>
-                    {availableRegions.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </FormSelect>
-                  <ErrorText>{errors.region}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>Nagar</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.town = el; }}
-                    value={form.town}
-                    onChange={e => set('town', e.target.value)}
-                    disabled={!form.region}
-                    className={errCls('town')}
-                  >
-                    <option value="">Select Nagar</option>
-                    {availableTowns.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </FormSelect>
-                  <ErrorText>{errors.town}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>Shakha</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.activityCentre = el; }}
-                    value={form.activityCentre}
-                    onChange={e => set('activityCentre', e.target.value)}
-                    disabled={!form.town}
-                    className={errCls('activityCentre')}
-                  >
-                    <option value="">Select Shakha</option>
-                    {availableCentres.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </FormSelect>
-                  <ErrorText>{errors.activityCentre}</ErrorText>
-                </FormField>
-              </FormGrid>
-            </div>
-
-            {/* Age Category / Gender / Role Type */}
-            <FormGrid cols={3}>
-              <FormField>
-                <FormLabel>Age Category</FormLabel>
-                <MultiSelectDropdown
-                  label="Age Category"
-                  options={AGE_GROUP_OPTIONS}
-                  selected={form.filterAgeCategories as string[] as AgeGroup[]}
-                  onChange={vals => set('filterAgeCategories', vals as any)}
-                />
-              </FormField>
-              <FormField>
-                <FormLabel>Gender</FormLabel>
-                <MultiSelectDropdown<'male' | 'female'>
-                  label="Gender"
-                  options={[
-                    { value: 'male',   label: 'Male'   },
-                    { value: 'female', label: 'Female' },
-                  ]}
-                  selected={form.filterGenders}
-                  onChange={vals => set('filterGenders', vals as any)}
-                />
-              </FormField>
-              <FormField>
-                <FormLabel>Role Type</FormLabel>
-                <MultiSelectDropdown
-                  label="Role Type"
-                  options={ROLE_TYPE_OPTIONS.map(r => ({ value: r, label: r }))}
-                  selected={form.filterJobTitles}
-                  onChange={vals => set('filterJobTitles', vals as any)}
-                />
-              </FormField>
-            </FormGrid>
-          </div>
-        </div>
-
-        {/* Terms & Conditions */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <ScrollText className="w-3.5 h-3.5" /> Terms &amp; Conditions
-          </p>
-          <textarea
-            value={form.termsAndConditions}
-            onChange={e => set('termsAndConditions', e.target.value)}
-            rows={8}
-            className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y leading-relaxed"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-2 pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          onClick={onClose}
-          disabled={isLoading}
-          className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-60"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isLoading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors disabled:opacity-60"
-        >
-          {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          Save
-        </button>
-      </div>
-    </FormModal>
-  );
-}
-
 // ─── FILTER OPTIONS ───────────────────────────────────────────────────────────
 const EVENT_FILTER_BASE = {
   'Status': ['Draft', 'Published', 'In Progress', 'Cancelled', 'Completed'],
@@ -907,7 +259,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   );
 
   const [viewMode, setViewMode]       = useState<ViewMode>(
-    isMemberRole ? 'list' : 'grid'
+    isMemberRole ? 'list' : 'table'
   );
   const [events, setEvents]           = useState<Event[]>(mockEvents);
   const [searchQuery, setSearchQuery] = useState('');
@@ -926,6 +278,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary]         = useState(true);
   const [showMemberSummary, setShowMemberSummary] = useState(true);
+  const [activeEventTab, setActiveEventTab] = useState<EventListTab>('current');
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const scrollToTop = () => {
@@ -996,9 +349,16 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       return next;
     });
 
+  const eventTabCounts = useMemo(() => ({
+    current:   scopedEvents.filter(e => CURRENT_EVENT_STATUSES.includes(e.status)).length,
+    completed: scopedEvents.filter(e => COMPLETED_EVENT_STATUSES.includes(e.status)).length,
+  }), [scopedEvents]);
+
   // Filtering
   const filteredEvents = useMemo(() => {
+    const tabStatuses = activeEventTab === 'current' ? CURRENT_EVENT_STATUSES : COMPLETED_EVENT_STATUSES;
     return scopedEvents.filter(event => {
+      if (!isMemberRole && !tabStatuses.includes(event.status)) return false;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         event.name.toLowerCase().includes(q) ||
@@ -1035,7 +395,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
 
       return matchesSearch && matchesFilters && matchesEventDates;
     });
-  }, [scopedEvents, searchQuery, filters, eventDateStart, eventDateEnd]);
+  }, [scopedEvents, searchQuery, filters, eventDateStart, eventDateEnd, activeEventTab, isMemberRole]);
 
   const sortedEvents = useMemo(() => {
     return [...filteredEvents].sort((a, b) => {
@@ -1149,15 +509,25 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     paymentType: data.paymentType ?? 'free',
     price: data.price,
     priceCategories: data.priceCategories,
+    couponCode: data.couponCode,
     capacity: data.capacity,
+    waitlistEnabled: data.waitlistEnabled,
     description: data.description,
     imageUrl: data.imageUrl,
     guestRegistrationEnabled: data.guestRegistrationEnabled,
+    guestPaymentType: data.guestPaymentType,
+    guestPrice: data.guestPrice,
     customQuestions: data.customQuestions,
     termsAndConditions: data.termsAndConditions,
+    targetRegions: data.targetRegions,
+    targetTowns: data.targetTowns,
+    targetCentres: data.targetCentres,
+    targetMemberIds: data.targetMemberIds,
     filterAgeCategories: data.filterAgeCategories,
     filterGenders: data.filterGenders,
     filterJobTitles: data.filterJobTitles,
+    filterResponsibilityLevels: data.filterResponsibilityLevels,
+    filterResponsibilityTypes: data.filterResponsibilityTypes,
     metrics: data.metrics ?? { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
     chatState: 'archived',
   });
@@ -1184,11 +554,10 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
 
   // ── Determine row actions ──────────────────────────────────────────────────
   const getRowActions = (event: Event) => {
-    const past = isPastStart(event);
     const isCancelledOrCompleted = event.status === 'cancelled' || event.status === 'completed';
     return {
-      canModify:   ep.canEdit && !past,
-      modifyTip:   past ? 'Karyakram cannot be edited after it starts.' : 'Modify Karyakram',
+      canModify:   ep.canEdit && canModify(event),
+      modifyTip:   canModify(event) ? 'Modify Karyakram' : (event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'),
       canActivate: ep.canEdit && !isCancelledOrCompleted,
       canCancel:   ep.canCancel && !isCancelledOrCompleted,
       canDelete:   ep.canDelete && canDelete(event),
@@ -1417,6 +786,38 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
               { label: 'Completed',         value: scopedEvents.filter(e => e.status === 'completed').length,                         icon: 'XCircle'     },
             ]}
           />
+        )}
+
+        {/* TAB BAR — admin: current (working) vs completed (terminal) Karyakrams */}
+        {!isMemberRole && (
+          <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex gap-1">
+              {([
+                { id: 'current' as EventListTab,   label: 'Current Karyakrams' },
+                { id: 'completed' as EventListTab, label: 'Completed Karyakrams' },
+              ]).map(tab => {
+                const count = eventTabCounts[tab.id];
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setActiveEventTab(tab.id); setCurrentPage(1); }}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                      activeEventTab === tab.id
+                        ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-400'
+                        : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600'
+                    }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-error-600 text-white text-[10px] font-bold leading-none">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* SUMMARY WIDGETS — member */}
@@ -1661,7 +1062,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           title="Actions"
                           menuItems={[
                             { icon: Eye,        label: 'View Details',                     onClick: () => openDetail(event)                                                   },
-                            { icon: Edit,       label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Karyakram cannot be edited after it starts.') },
+                            { icon: Edit,       label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning(actions.modifyTip) },
                             { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
                             { icon: XCircle,    label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
                             { icon: ShieldAlert,label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
@@ -1718,7 +1119,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           title="Actions"
                           menuItems={[
                             { icon: Eye,         label: 'View Details',                     onClick: () => openDetail(event)                                                   },
-                            { icon: Edit,        label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning('Karyakram cannot be edited after it starts.') },
+                            { icon: Edit,        label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning(actions.modifyTip) },
                             { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
                             { icon: XCircle,     label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
                             { icon: ShieldAlert, label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
@@ -1840,16 +1241,10 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                         Last Updated {renderSortArrow('lastUpdated')}
                       </th>
                     )}
-                    {!isMemberRole && (
-                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800">
-                        Actions
-                      </th>
-                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {paginatedEvents.length > 0 ? paginatedEvents.map(event => {
-                    const actions = getRowActions(event);
                     return (
                       <tr
                         key={event.id}
@@ -1906,8 +1301,6 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 text-xs text-neutral-500 whitespace-nowrap">
                               <span className="flex items-center gap-0.5 text-success-600"><CheckCircle2 className="w-3 h-3" />{event.metrics.going}</span>
-                              <span className="flex items-center gap-0.5 text-primary-600"><HelpCircle   className="w-3 h-3" />{event.metrics.maybe}</span>
-                              <span className="flex items-center gap-0.5 text-neutral-400"><XCircle      className="w-3 h-3" />{event.metrics.notGoing}</span>
                             </div>
                           </td>
                         )}
@@ -1916,30 +1309,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                             {formatDate(event.lastUpdated)}
                           </td>
                         )}
-                        {!isMemberRole && (
-                          <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              <IconButton icon={Eye}   borderless onClick={() => openDetail(event)} title="View Details" />
-                              <IconButton
-                                icon={Edit}
-                                borderless
-                                onClick={() => actions.canModify ? openEdit(event) : toast.warning('Karyakram cannot be edited after it starts.')}
-                                title={actions.modifyTip}
-                              />
-                              <IconButton
-                                icon={Trash2}
-                                borderless
-                                onClick={() => actions.canDelete ? openModal('delete', event) : toast.error(actions.deleteTip)}
-                                title={actions.deleteTip}
-                              />
-                            </div>
-                          </td>
-                        )}
                       </tr>
                     );
                   }) : (
                     <tr>
-                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 2} className="px-6 py-20 text-center">
+                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} className="px-6 py-20 text-center">
                         <h3 className="text-sm font-medium text-neutral-900 dark:text-white">No records found.</h3>
                       </td>
                     </tr>

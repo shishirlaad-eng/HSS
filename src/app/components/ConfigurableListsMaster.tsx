@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
+import { mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,7 +34,8 @@ export type ListKey =
   | 'shakha-types'
   | 'utsav-options'
   | 'incident-type'
-  | 'incident-outcome';
+  | 'incident-outcome'
+  | 'coupons';
 
 export interface ConfigItem {
   id: string;
@@ -84,6 +86,12 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
       { key: 'incident-outcome', label: 'Incident Outcome', idPrefix: 'INO' },
     ],
   },
+  {
+    label: 'Events',
+    lists: [
+      { key: 'coupons', label: 'Coupons', idPrefix: 'CPN' },
+    ],
+  },
 ];
 
 const LIST_META: Record<ListKey, { label: string; idPrefix: string }> = {} as any;
@@ -115,6 +123,7 @@ const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'utsav-options':        makeItems('UTS', ['None', 'Makar Sankranti', 'Varsh Pratipada', 'Guru Purnima', 'Rakshabandhan', 'Vijya Dashmi']),
   'incident-type':        makeItems('INT', ['Minor Injury', 'Major Injury', 'Illness', 'Allergic Reaction', 'Other']),
   'incident-outcome':     makeItems('INO', ['Returned to Activity', 'Sent Home', 'Taken to Hospital', 'Ambulance Called']),
+  'coupons':              mockCoupons.map(c => ({ ...c })),
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -181,7 +190,17 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   const setItems = (updater: (prev: ConfigItem[]) => ConfigItem[]) =>
-    setAllData(prev => ({ ...prev, [selectedList]: updater(prev[selectedList]) }));
+    setAllData(prev => {
+      const next = updater(prev[selectedList]);
+      // 'coupons' is read live by EventDetail.tsx for registration-code
+      // validation — mirror edits into the shared mock array in place so other
+      // components (which hold a reference to the same array) see the change.
+      if (selectedList === 'coupons') {
+        mockCoupons.length = 0;
+        mockCoupons.push(...next.map(i => ({ id: i.id, name: i.name, status: i.status, lastUpdated: i.lastUpdated })));
+      }
+      return { ...prev, [selectedList]: next };
+    });
 
   const toggleId = (id: string) =>
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });

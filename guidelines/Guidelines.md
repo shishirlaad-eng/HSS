@@ -1,4 +1,10 @@
 **Add your own guidelines here**
+
+# Standing UI consistency rules
+
+* Large descriptive/free-text areas (event descriptions, announcement bodies, static page content, email templates, etc.) must use the shared `RichTextEditor` (`src/app/components/hb/common/RichTextEditor.tsx`) — never a plain `<textarea>`. Decision from Ritesh: description fields need Bold, Highlight, Lists, Tables, Links, and structured formatting, and this should be consistent across every large text field in the app, not just Karyakrams. When adding a new large-text field, use `RichTextEditor` from the start.
+* Anywhere `RichTextEditor` output (HTML) is displayed back to a user, render it with `dangerouslySetInnerHTML` inside a `prose dark:prose-invert max-w-none` wrapper — never dump the raw HTML string into a plain text node (it will show literal tags).
+
 <!--
 
 System Guidelines

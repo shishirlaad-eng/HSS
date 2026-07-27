@@ -1,17 +1,16 @@
-import { useState, useRef } from 'react';
-import { ArrowLeft, Save, Globe, MapPin, Ticket } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Save, Globe, MapPin, Ticket, ChevronDown, Search, X } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
-import { Event, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { Event, EVENT_TERMS_AND_CONDITIONS, mockCoupons } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 import {
   PriceCategoriesEditor,
   CustomQuestionsEditor,
   EventImageField,
   AGE_GROUP_OPTIONS,
-  CheckChip,
-  toggleArr,
 } from './EventFormFields';
 
 interface EventCreateProps {
@@ -35,12 +34,13 @@ const EMPTY_FORM = {
   name: '',
   description: '',
   imageUrl: '',
-  country: '',
-  region: '',
-  town: '',
-  activityCentre: '',
   locationType: 'physical' as 'physical' | 'online',
-  venueAddress: '',
+  venuePostCode: '',
+  venueSelectedAddress: '',
+  venueBuildingName: '',
+  venueAddressLine1: '',
+  venueAddressLine2: '',
+  venueTownCity: '',
   onlineUrl: '',
   startDate: '',
   startTime: '',
@@ -48,22 +48,76 @@ const EMPTY_FORM = {
   endTime: '',
   paymentType: 'free' as 'paid' | 'free',
   priceCategories: [] as { id: string; label: string; price: number }[],
+  couponCode: '',
   capacity: '',
+  waitlistEnabled: false,
   guestRegistrationEnabled: false,
+  guestPaymentType: 'free' as 'paid' | 'free',
+  guestPrice: '',
   customQuestions: [] as { id: string; question: string; required: boolean }[],
   filterAgeCategories: [] as AgeGroup[],
   filterGenders: [] as ('male' | 'female')[],
   filterJobTitles: [] as string[],
+  filterResponsibilityLevels: [] as string[],
+  filterResponsibilityTypes: [] as string[],
+  targetSpecificOnly: false,
+  targetMemberIds: [] as string[],
+  targetRegions: [] as string[],
+  targetTowns: [] as string[],
+  targetCentres: [] as string[],
 };
+
+// Cascade options — empty selection OR every option selected both mean "All" and widen to the full available set
+const isFullSelection = (sel: string[], opts: string[]) => sel.length === 0 || sel.length >= opts.length;
+
+function findCountryForRegion(region: string): string {
+  const entry = Object.entries(MASTERS_CASCADE.regions).find(([, regions]) => (regions as string[]).includes(region));
+  return entry?.[0] ?? MASTERS_CASCADE.countries[0];
+}
+
+// Karyakram scope (country/region/town/activityCentre) still drives admin
+// ownership/visibility (shared filterByScope, same as Members/Sessions/Logs) —
+// it's derived from the multi-select audience targeting rather than picked
+// directly, falling back to the creating admin's own scope when the target is
+// left as "All".
+function deriveOwnerScope(f: typeof EMPTY_FORM, creatorScope: { country?: string; region?: string; town?: string; centre?: string }) {
+  const region = f.targetRegions.length === 1 ? f.targetRegions[0] : (creatorScope.region ?? f.targetRegions[0] ?? '');
+  const town   = f.targetTowns.length === 1   ? f.targetTowns[0]   : (creatorScope.town   ?? f.targetTowns[0]   ?? '');
+  const centre = f.targetCentres.length === 1 ? f.targetCentres[0] : (creatorScope.centre ?? f.targetCentres[0] ?? '');
+  const country = creatorScope.country ?? (region ? findCountryForRegion(region) : MASTERS_CASCADE.countries[0]);
+  return { country, region, town, activityCentre: centre };
+}
+
+const composeVenueAddress = (f: typeof EMPTY_FORM) =>
+  [f.venueBuildingName, f.venueAddressLine1, f.venueAddressLine2, f.venueTownCity, f.venuePostCode]
+    .map(s => s.trim()).filter(Boolean).join(', ');
+
+// ── Mock postcode lookup (matches the pattern used on the member address form) ─
+const MOCK_STREET_NAMES = ['High Street', 'Church Road', 'Kings Avenue', 'Mill Lane', 'Victoria Street'];
+function mockAddressesForPostcode(postcode: string, fallbackTown: string): { label: string; buildingName: string; addressLine1: string; town: string }[] {
+  const cleaned = postcode.trim();
+  if (cleaned.length < 4) return [];
+  const seed = cleaned.toUpperCase().split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return [1, 2, 3].map(n => {
+    const street = MOCK_STREET_NAMES[(seed + n) % MOCK_STREET_NAMES.length];
+    const houseNumber = ((seed * n) % 90) + 1;
+    return {
+      label: `${houseNumber} ${street}`,
+      buildingName: '',
+      addressLine1: `${houseNumber} ${street}`,
+      town: fallbackTown,
+    };
+  });
+}
 
 // ── Reusable card matching profile InfoSection style ──────────────────────────
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
-      className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden"
+      className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg"
       style={{ borderTop: '3px solid #172E4D' }}
     >
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 rounded-t-lg">
         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
       </div>
       <div className="px-6 pb-6 pt-4">
@@ -73,37 +127,202 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+// ── Multi-select dropdown (matches the Suchana Audience & Targeting pattern) ──
+function MultiSelectField({
+  label,
+  options,
+  selected,
+  onChange,
+  required,
+  disabled,
+  allLabel = 'All',
+  getLabel,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (v: string[]) => void;
+  required?: boolean;
+  disabled?: boolean;
+  allLabel?: string;
+  getLabel?: (v: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const fmt = (v: string) => getLabel ? getLabel(v) : v;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const isAll = selected.length === 0 || (options.length > 0 && selected.length === options.length);
+  const displayLabel = isAll ? allLabel : selected.length === 1 ? fmt(selected[0]) : `${selected.length} selected`;
+
+  return (
+    <FormField>
+      <FormLabel required={required}>{label}</FormLabel>
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(o => !o)}
+          className="w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className={isAll ? 'text-neutral-500 dark:text-neutral-400' : ''}>{displayLabel}</span>
+          <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        </button>
+        {open && !disabled && (
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-56 overflow-y-auto slim-scroll">
+            <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer border-b border-neutral-100 dark:border-neutral-800">
+              <input type="checkbox" checked={isAll} onChange={() => onChange(options)} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
+              {allLabel}
+            </label>
+            {options.map(opt => (
+              <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(opt)}
+                  onChange={() => onChange(selected.includes(opt) ? selected.filter(v => v !== opt) : [...selected, opt])}
+                  className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                />
+                {fmt(opt)}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </FormField>
+  );
+}
+
+// ── Searchable multi-select for targeting specific members ────────────────────
+function MemberMultiSelect({ selectedIds, onChange }: { selectedIds: string[]; onChange: (ids: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const q = query.toLowerCase().trim();
+  const matches = (q
+    ? mockMembers.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))
+    : mockMembers
+  ).slice(0, 30);
+
+  const selectedMembers = mockMembers.filter(m => selectedIds.includes(m.id));
+
+  return (
+    <div>
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          className="w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+        >
+          <span className={selectedIds.length === 0 ? 'text-neutral-500 dark:text-neutral-400' : ''}>
+            {selectedIds.length === 0 ? 'Search and select members…' : `${selectedIds.length} member${selectedIds.length !== 1 ? 's' : ''} selected`}
+          </span>
+          <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        </button>
+        {open && (
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg">
+            <div className="p-2 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search by name or member ID…"
+                  className="w-full pl-8 pr-2 h-8 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+            <div className="max-h-56 overflow-y-auto slim-scroll">
+              {matches.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-center text-neutral-400">No members found</p>
+              ) : matches.map(m => (
+                <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(m.id)}
+                    onChange={() => onChange(selectedIds.includes(m.id) ? selectedIds.filter(id => id !== m.id) : [...selectedIds, m.id])}
+                    className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                  />
+                  <span className="flex-1 min-w-0 truncate">{m.name}</span>
+                  <span className="text-xs text-neutral-400 flex-shrink-0">{m.id}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {selectedMembers.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selectedMembers.map(m => (
+            <span key={m.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-700 dark:text-primary-300">
+              {m.name}
+              <button type="button" onClick={() => onChange(selectedIds.filter(id => id !== m.id))} className="hover:text-primary-900 dark:hover:text-primary-100">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EventCreate({ onBack, onSave, onPublish }: EventCreateProps) {
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const { scope } = useRoleScope();
+  const [formData, setFormData] = useState(() => ({
+    ...EMPTY_FORM,
+    targetRegions: scope.showRegionFilter ? [] : (scope.region ? [scope.region] : []),
+    targetTowns:   scope.showTownFilter   ? [] : (scope.town   ? [scope.town]   : []),
+    targetCentres: scope.showCentreFilter ? [] : (scope.centre ? [scope.centre] : []),
+  }));
   const [errors, setErrors]     = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched]   = useState(false);
   const [activeTab, setActiveTab] = useState<CreateTab>('basics');
   const [isDraft, setIsDraft]   = useState(false);
 
-  const availableRegions = formData.country ? (MASTERS_CASCADE.regions[formData.country] ?? []) : [];
-  const availableTowns   = formData.region  ? (MASTERS_CASCADE.towns[formData.region]   ?? []) : [];
-  const availableCentres = formData.town    ? (MASTERS_CASCADE.centres[formData.town]   ?? []) : [];
+  const regionOptions = Object.values(MASTERS_CASCADE.regions).flat();
+  const townOptions    = !isFullSelection(formData.targetRegions, regionOptions)
+    ? formData.targetRegions.flatMap(r => MASTERS_CASCADE.towns[r] ?? [])
+    : Object.values(MASTERS_CASCADE.towns).flat();
+  const centreOptions  = !isFullSelection(formData.targetTowns, townOptions)
+    ? formData.targetTowns.flatMap(t => MASTERS_CASCADE.centres[t] ?? [])
+    : Object.values(MASTERS_CASCADE.centres).flat();
 
   const set = (field: string, value: any) => {
     if (isDraft) setIsDraft(false);
     setFormData(prev => {
       const next: any = { ...prev, [field]: value };
-      if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-      if (field === 'region')  { next.town = ''; next.activityCentre = ''; }
-      if (field === 'town')    { next.activityCentre = ''; }
+      if (field === 'venuePostCode') { next.venueSelectedAddress = ''; }
       return next;
     });
   };
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'paymentType', 'priceCategories'];
+  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venuePostCode', 'venueAddressLine1', 'venueTownCity', 'onlineUrl', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode', 'guestPrice'];
   const FIELD_TAB: Record<string, CreateTab> = {
     name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
-    venueAddress: 'location', onlineUrl: 'location',
-    country: 'audience', region: 'audience', town: 'audience', activityCentre: 'audience',
-    paymentType: 'payment', priceCategories: 'payment',
+    venuePostCode: 'location', venueAddressLine1: 'location', venueTownCity: 'location', onlineUrl: 'location',
+    targetMemberIds: 'audience',
+    paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment', guestPrice: 'payment',
   };
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -124,11 +343,14 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!formData.name.trim())         errs.name           = 'This field is required.';
-    if (!formData.country)             errs.country        = 'This field is required.';
-    if (!formData.region)              errs.region         = 'This field is required.';
-    if (!formData.town)                errs.town           = 'This field is required.';
-    if (!formData.activityCentre)      errs.activityCentre = 'This field is required.';
-    if (formData.locationType === 'physical' && !formData.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical Karyakrams.';
+    if (formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
+      errs.targetMemberIds = 'Please select at least one member.';
+    }
+    if (formData.locationType === 'physical') {
+      if (!formData.venuePostCode.trim())     errs.venuePostCode     = 'Post code is required.';
+      if (!formData.venueAddressLine1.trim()) errs.venueAddressLine1 = 'Address line 1 is required.';
+      if (!formData.venueTownCity.trim())     errs.venueTownCity     = 'Town / city is required.';
+    }
     if (formData.locationType === 'online' && !formData.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online Karyakrams.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
@@ -136,7 +358,14 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
     if (!formData.endTime)             errs.endTime        = 'This field is required.';
     if (!formData.paymentType)         errs.paymentType    = 'This field is required.';
     if (formData.paymentType === 'paid' && formData.priceCategories.length === 0) {
-      errs.priceCategories = 'Add at least one price category for paid Karyakrams.';
+      errs.priceCategories = 'Add at least one ticket type for paid Karyakrams.';
+    }
+    if (formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' && !formData.guestPrice.trim()) {
+      errs.guestPrice = 'Enter a guest amount, or set Guest Payment Type to Free.';
+    }
+    if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
+      const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
+      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -149,28 +378,39 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
 
   const buildPayload = (status: 'draft' | 'published'): Partial<Event> => {
     const now = new Date().toISOString();
+    const ownerScope = deriveOwnerScope(formData, scope);
     return {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
       imageUrl: formData.imageUrl || undefined,
-      country: formData.country,
-      region: formData.region,
-      town: formData.town,
-      activityCentre: formData.activityCentre,
+      country: ownerScope.country,
+      region: ownerScope.region,
+      town: ownerScope.town,
+      activityCentre: ownerScope.activityCentre,
       locationType: formData.locationType,
-      venueAddress: formData.locationType === 'physical' ? formData.venueAddress.trim() : undefined,
+      venueAddress: formData.locationType === 'physical' ? composeVenueAddress(formData) : undefined,
       onlineUrl:    formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
       startDate: `${formData.startDate}T${formData.startTime}:00Z`,
       endDate:   `${formData.endDate}T${formData.endTime}:00Z`,
       paymentType: formData.paymentType,
       price: formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
       priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
+      couponCode: formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+      waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
+      guestPaymentType: formData.guestRegistrationEnabled ? formData.guestPaymentType : undefined,
+      guestPrice: formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' ? parseFloat(formData.guestPrice) || 0 : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
       filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
       filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
       filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
+      filterResponsibilityLevels: formData.filterResponsibilityLevels.length > 0 ? formData.filterResponsibilityLevels : undefined,
+      filterResponsibilityTypes:  formData.filterResponsibilityTypes.length > 0  ? formData.filterResponsibilityTypes  : undefined,
+      targetRegions: !isFullSelection(formData.targetRegions, regionOptions) ? formData.targetRegions : undefined,
+      targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
+      targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
+      targetMemberIds: formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
       status,
       createdDate: now,
       lastUpdated: now,
@@ -275,12 +515,10 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                   <div className="md:col-span-2">
                     <FormField>
                       <FormLabel>Karyakram Description</FormLabel>
-                      <textarea
+                      <RichTextEditor
                         value={formData.description}
-                        onChange={e => set('description', e.target.value)}
+                        onChange={html => set('description', html)}
                         placeholder="Describe the Karyakram — purpose, agenda, what to expect…"
-                        rows={3}
-                        className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                       />
                     </FormField>
                   </div>
@@ -293,6 +531,15 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                       placeholder="Max participants"
                       min="1"
                     />
+                    <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.waitlistEnabled}
+                        onChange={e => set('waitlistEnabled', e.target.checked)}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Enable waiting list — allow registration once capacity is full
+                    </label>
                   </FormField>
                   <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
                 </div>
@@ -354,17 +601,72 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                     </button>
                   </div>
                   {formData.locationType === 'physical' ? (
-                    <FormField>
-                      <FormLabel required>Venue Address</FormLabel>
-                      <FormInput
-                        ref={el => { fieldRefs.current.venueAddress = el; }}
-                        value={formData.venueAddress}
-                        onChange={e => set('venueAddress', e.target.value)}
-                        placeholder="Enter full venue address"
-                        className={errCls('venueAddress')}
-                      />
-                      <ErrorText>{touched && errors.venueAddress}</ErrorText>
-                    </FormField>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField>
+                        <FormLabel required>Post Code</FormLabel>
+                        <FormInput
+                          ref={el => { fieldRefs.current.venuePostCode = el; }}
+                          value={formData.venuePostCode}
+                          onChange={e => set('venuePostCode', e.target.value)}
+                          placeholder="Post code"
+                          className={errCls('venuePostCode')}
+                        />
+                        <ErrorText>{touched && errors.venuePostCode}</ErrorText>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Select Address</FormLabel>
+                        <FormSelect
+                          value={formData.venueSelectedAddress}
+                          disabled={formData.venuePostCode.trim().length < 4}
+                          onChange={e => {
+                            const idx = e.target.value;
+                            set('venueSelectedAddress', idx);
+                            const options = mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity);
+                            const picked = options[Number(idx)];
+                            if (picked) {
+                              set('venueBuildingName', picked.buildingName);
+                              set('venueAddressLine1', picked.addressLine1);
+                              set('venueTownCity', picked.town);
+                            }
+                          }}
+                        >
+                          <option value="">{formData.venuePostCode.trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
+                          {mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity).map((opt, i) => (
+                            <option key={i} value={i}>{opt.label}</option>
+                          ))}
+                        </FormSelect>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Building Name</FormLabel>
+                        <FormInput value={formData.venueBuildingName} onChange={e => set('venueBuildingName', e.target.value)} placeholder="Building name" />
+                      </FormField>
+                      <FormField>
+                        <FormLabel required>Address Line 1</FormLabel>
+                        <FormInput
+                          ref={el => { fieldRefs.current.venueAddressLine1 = el; }}
+                          value={formData.venueAddressLine1}
+                          onChange={e => set('venueAddressLine1', e.target.value)}
+                          placeholder="Address line 1"
+                          className={errCls('venueAddressLine1')}
+                        />
+                        <ErrorText>{touched && errors.venueAddressLine1}</ErrorText>
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Address Line 2</FormLabel>
+                        <FormInput value={formData.venueAddressLine2} onChange={e => set('venueAddressLine2', e.target.value)} placeholder="Address line 2" />
+                      </FormField>
+                      <FormField>
+                        <FormLabel required>Town / City</FormLabel>
+                        <FormInput
+                          ref={el => { fieldRefs.current.venueTownCity = el; }}
+                          value={formData.venueTownCity}
+                          onChange={e => set('venueTownCity', e.target.value)}
+                          placeholder="Town / City"
+                          className={errCls('venueTownCity')}
+                        />
+                        <ErrorText>{touched && errors.venueTownCity}</ErrorText>
+                      </FormField>
+                    </div>
                   ) : (
                     <FormField>
                       <FormLabel required>Online Call URL</FormLabel>
@@ -382,135 +684,106 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
               </Card>
           )}
 
-          {/* ── Target Audience ── */}
+          {/* ── Target Audience (matches Suchana's Audience & Targeting screen) ── */}
           {activeTab === 'audience' && (
             <div className="space-y-5">
-              <Card title="Sangh Scope">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FormField>
-                    <FormLabel required>Country</FormLabel>
-                    <FormSelect ref={el => { fieldRefs.current.country = el; }} value={formData.country} onChange={e => set('country', e.target.value)} className={errCls('country')}>
-                      <option value="">Select Country</option>
-                      {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.country}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Vibhag</FormLabel>
-                    <FormSelect ref={el => { fieldRefs.current.region = el; }} value={formData.region} onChange={e => set('region', e.target.value)} disabled={!formData.country} className={errCls('region')}>
-                      <option value="">Select Vibhag</option>
-                      {availableRegions.map(r => <option key={r} value={r}>{r}</option>)}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.region}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Nagar</FormLabel>
-                    <FormSelect ref={el => { fieldRefs.current.town = el; }} value={formData.town} onChange={e => set('town', e.target.value)} disabled={!formData.region} className={errCls('town')}>
-                      <option value="">Select Nagar</option>
-                      {availableTowns.map(t => <option key={t} value={t}>{t}</option>)}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.town}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Shakha</FormLabel>
-                    <FormSelect ref={el => { fieldRefs.current.activityCentre = el; }} value={formData.activityCentre} onChange={e => set('activityCentre', e.target.value)} disabled={!formData.town} className={errCls('activityCentre')}>
-                      <option value="">Select Shakha</option>
-                      {availableCentres.map(c => <option key={c} value={c}>{c}</option>)}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
-                  </FormField>
+              <Card title="Target Specific Members">
+                <div className="space-y-4">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                    <input
+                      type="checkbox"
+                      checked={formData.targetSpecificOnly}
+                      onChange={e => set('targetSpecificOnly', e.target.checked)}
+                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                    />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Invite specific members only
+                    </span>
+                  </label>
+                  {formData.targetSpecificOnly && (
+                    <FormField>
+                      <FormLabel required>Select Members</FormLabel>
+                      <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
+                        <MemberMultiSelect
+                          selectedIds={formData.targetMemberIds}
+                          onChange={ids => set('targetMemberIds', ids)}
+                        />
+                      </div>
+                      <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
+                    </FormField>
+                  )}
                 </div>
               </Card>
 
-              <Card title="Demographic Filters">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                  Optional — leave unchecked to target all members within scope.
-                </p>
-                {(() => {
-                  const allAges    = AGE_GROUP_OPTIONS.map(o => o.value);
-                  const allGenders = ['male', 'female'] as ('male' | 'female')[];
-                  const allRoles   = ROLE_TYPE_OPTIONS;
-                  const allAgesSelected    = allAges.every(v => formData.filterAgeCategories.includes(v));
-                  const allGendersSelected = allGenders.every(v => formData.filterGenders.includes(v));
-                  const allRolesSelected   = allRoles.every(v => formData.filterJobTitles.includes(v));
-                  return (
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Age Category</p>
-                          <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              className="w-3.5 h-3.5 accent-primary-600"
-                              checked={allAgesSelected}
-                              onChange={() => set('filterAgeCategories', allAgesSelected ? [] : allAges)}
-                            />
-                            Select all
-                          </label>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {AGE_GROUP_OPTIONS.map(({ value, label }) => (
-                            <CheckChip
-                              key={value}
-                              label={label}
-                              checked={formData.filterAgeCategories.includes(value)}
-                              onChange={() => set('filterAgeCategories', toggleArr(formData.filterAgeCategories, value))}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Gender</p>
-                          <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              className="w-3.5 h-3.5 accent-primary-600"
-                              checked={allGendersSelected}
-                              onChange={() => set('filterGenders', allGendersSelected ? [] : allGenders)}
-                            />
-                            Select all
-                          </label>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {([{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }] as { value: 'male' | 'female'; label: string }[]).map(({ value, label }) => (
-                            <CheckChip
-                              key={value}
-                              label={label}
-                              checked={formData.filterGenders.includes(value)}
-                              onChange={() => set('filterGenders', toggleArr(formData.filterGenders, value))}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Role Type / Job Title</p>
-                          <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              className="w-3.5 h-3.5 accent-primary-600"
-                              checked={allRolesSelected}
-                              onChange={() => set('filterJobTitles', allRolesSelected ? [] : allRoles)}
-                            />
-                            Select all
-                          </label>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {ROLE_TYPE_OPTIONS.map(role => (
-                            <CheckChip
-                              key={role}
-                              label={role}
-                              checked={formData.filterJobTitles.includes(role)}
-                              onChange={() => set('filterJobTitles', toggleArr(formData.filterJobTitles, role))}
-                            />
-                          ))}
-                        </div>
-                      </div>
+              {!formData.targetSpecificOnly && (
+                <>
+                  <Card title="Scope">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <MultiSelectField
+                        label="Vibhag"
+                        options={regionOptions}
+                        selected={formData.targetRegions}
+                        disabled={!scope.showRegionFilter}
+                        onChange={v => { set('targetRegions', v); set('targetTowns', []); set('targetCentres', []); }}
+                      />
+                      <MultiSelectField
+                        label="Nagar"
+                        options={townOptions}
+                        selected={formData.targetTowns}
+                        disabled={!scope.showTownFilter}
+                        onChange={v => { set('targetTowns', v); set('targetCentres', []); }}
+                      />
+                      <MultiSelectField
+                        label="Shakha"
+                        options={centreOptions}
+                        selected={formData.targetCentres}
+                        disabled={!scope.showCentreFilter}
+                        onChange={v => set('targetCentres', v)}
+                      />
                     </div>
-                  );
-                })()}
-              </Card>
+                  </Card>
+
+                  <Card title="Demographic Filters">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                      Optional — leave as "All" to target everyone within scope.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <MultiSelectField
+                        label="Age Category"
+                        options={AGE_GROUP_OPTIONS.map(o => o.value)}
+                        getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
+                        selected={formData.filterAgeCategories}
+                        onChange={v => set('filterAgeCategories', v as AgeGroup[])}
+                      />
+                      <MultiSelectField
+                        label="Gender"
+                        options={['male', 'female']}
+                        getLabel={v => v === 'male' ? 'Male' : 'Female'}
+                        selected={formData.filterGenders}
+                        onChange={v => set('filterGenders', v as ('male' | 'female')[])}
+                      />
+                      <MultiSelectField
+                        label="Responsibility Level"
+                        options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                        selected={formData.filterResponsibilityLevels}
+                        onChange={v => set('filterResponsibilityLevels', v)}
+                      />
+                      <MultiSelectField
+                        label="Sangh Responsibility"
+                        options={ROLE_TYPE_OPTIONS}
+                        selected={formData.filterJobTitles}
+                        onChange={v => set('filterJobTitles', v)}
+                      />
+                      <MultiSelectField
+                        label="Responsibility Type"
+                        options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                        selected={formData.filterResponsibilityTypes}
+                        onChange={v => set('filterResponsibilityTypes', v)}
+                      />
+                    </div>
+                  </Card>
+                </>
+              )}
             </div>
           )}
 
@@ -529,7 +802,7 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                   </FormField>
                   {formData.paymentType === 'paid' && (
                     <div ref={el => { fieldRefs.current.priceCategories = el; }}>
-                      <FormLabel required>Price Categories</FormLabel>
+                      <FormLabel required>Ticket Types</FormLabel>
                       <PriceCategoriesEditor
                         categories={formData.priceCategories}
                         onChange={cats => set('priceCategories', cats)}
@@ -537,20 +810,72 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                       <ErrorText>{touched && errors.priceCategories}</ErrorText>
                     </div>
                   )}
+                  {formData.paymentType === 'paid' && (
+                    <FormField>
+                      <FormLabel>Coupon Code</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.couponCode = el; }}
+                        value={formData.couponCode}
+                        onChange={e => set('couponCode', e.target.value)}
+                        placeholder="e.g. PRACHARAK2026"
+                        className={errCls('couponCode')}
+                      />
+                      <ErrorText>{touched && errors.couponCode}</ErrorText>
+                      <p className="text-xs text-neutral-400 mt-1">
+                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
+                      </p>
+                    </FormField>
+                  )}
                 </div>
               </Card>
 
               <Card title="Guest Registration">
-                <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={formData.guestRegistrationEnabled}
-                    onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-                    className="rounded border-neutral-300 dark:border-neutral-700"
-                  />
-                  <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                  Allow non-members to register via a guest registration link
-                </label>
+                <div className="space-y-4">
+                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.guestRegistrationEnabled}
+                      onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                      className="rounded border-neutral-300 dark:border-neutral-700"
+                    />
+                    <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                    Allow non-members to register via a guest registration link
+                  </label>
+
+                  {formData.guestRegistrationEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField>
+                        <FormLabel required>Guest Payment Type</FormLabel>
+                        <FormSelect value={formData.guestPaymentType} onChange={e => set('guestPaymentType', e.target.value)}>
+                          <option value="free">Free</option>
+                          <option value="paid">Paid</option>
+                        </FormSelect>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          Set separately from member pricing — guests can be charged a different amount, or nothing.
+                        </p>
+                      </FormField>
+                      {formData.guestPaymentType === 'paid' && (
+                        <FormField>
+                          <FormLabel required>Guest Amount</FormLabel>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                            <FormInput
+                              ref={el => { fieldRefs.current.guestPrice = el; }}
+                              type="number"
+                              value={formData.guestPrice}
+                              onChange={e => set('guestPrice', e.target.value)}
+                              placeholder="0.00"
+                              min="0"
+                              step="0.01"
+                              className={`pl-6 ${errCls('guestPrice')}`}
+                            />
+                          </div>
+                          <ErrorText>{touched && errors.guestPrice}</ErrorText>
+                        </FormField>
+                      )}
+                    </div>
+                  )}
+                </div>
               </Card>
             </div>
           )}

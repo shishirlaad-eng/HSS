@@ -43,6 +43,7 @@ import {
   EventMedia,
   mockParticipants,
   mockMediaPosts,
+  mockCoupons,
   EVENT_TERMS_AND_CONDITIONS,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
@@ -72,8 +73,12 @@ const AUDIENCE_AGE_LABELS: Record<string, string> = {
 };
 
 // ─── Cutoff helpers ────────────────────────────────────────────────────────────
+// Decision (Shishir/Ritesh): in-progress Karyakrams still need day-of edits
+// (venue/time change, early closure, extension, emergency relocation, ticket/
+// price/capacity updates). Draft, scheduled and in-progress stay editable; only
+// Completed (and Cancelled, equally terminal) are locked.
 const isPastStart = (event: Event) => new Date() >= new Date(event.startDate);
-const canModify   = (event: Event) => !isPastStart(event);
+const canModify   = (event: Event) => event.status !== 'completed' && event.status !== 'cancelled';
 const canDelete   = (event: Event) => !isPastStart(event) && event.status !== 'completed';
 
 // ─── Gradient palette (used when no imageUrl present) ─────────────────────────
@@ -204,10 +209,19 @@ export default function EventDetail({
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
   const [showAttendQuestions, setShowAttendQuestions] = useState(false);
   const [attendAnswers, setAttendAnswers] = useState<Record<string, string | boolean>>({});
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountCodeError, setDiscountCodeError] = useState('');
 
-  const handleAttend = (customAnswers?: Record<string, string | boolean>) => {
+  // Capacity — a 'requested' registration already holds a spot pending approval,
+  // same as 'going'; only 'denied' frees it up.
+  const nonDeniedCount = allParticipants.filter(p => p.rsvp !== 'denied').length;
+  const isFull = !!event.capacity && nonDeniedCount >= event.capacity;
+  const blockedByCapacity = isFull && !event.waitlistEnabled;
+
+  const handleAttend = (customAnswers?: Record<string, string | boolean>, appliedCode?: string) => {
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
+    const willWaitlist = isFull && !!event.waitlistEnabled;
     setParticipants(prev => ([
       ...prev,
       {
@@ -218,14 +232,28 @@ export default function EventDetail({
         memberType: me?.memberType ?? 'adult',
         rsvp: 'requested',
         ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
+        ...(appliedCode ? { discountCodeUsed: appliedCode } : {}),
+        ...(willWaitlist ? { waitlisted: true } : {}),
       },
     ]));
-    toast.success('Request to attend sent for approval.');
+    toast.success(
+      willWaitlist
+        ? 'Karyakram is full — you have been added to the waiting list.'
+        : appliedCode
+          ? 'Request to attend sent — no payment required (code applied).'
+          : 'Request to attend sent for approval.'
+    );
   };
 
+  // Only offer the code field when this Karyakram actually has one assigned
+  // (Payment Type tab, Coupon Code field) — no point prompting otherwise.
+  const eventHasCoupon = event.paymentType === 'paid' && !!event.couponCode;
+
   const handleRequestToAttendClick = () => {
-    if (event.customQuestions && event.customQuestions.length > 0) {
+    if ((event.customQuestions && event.customQuestions.length > 0) || eventHasCoupon) {
       setAttendAnswers({});
+      setDiscountCode('');
+      setDiscountCodeError('');
       setShowAttendQuestions(true);
     } else {
       handleAttend();
@@ -243,7 +271,20 @@ export default function EventDetail({
       toast.error(`Please answer: "${missing.label}"`);
       return;
     }
-    handleAttend(attendAnswers);
+
+    const enteredCode = discountCode.trim();
+    let appliedCode: string | undefined;
+    if (enteredCode) {
+      const assigned = event.couponCode ?? '';
+      const activeGlobally = mockCoupons.some(c => c.name.toLowerCase() === enteredCode.toLowerCase() && c.status === 'active');
+      if (!assigned || assigned.toLowerCase() !== enteredCode.toLowerCase() || !activeGlobally) {
+        setDiscountCodeError('This code is not valid for this Karyakram.');
+        return;
+      }
+      appliedCode = assigned;
+    }
+
+    handleAttend(attendAnswers, appliedCode);
     setShowAttendQuestions(false);
   };
 
@@ -261,7 +302,7 @@ export default function EventDetail({
       'Medical Info Declared', 'First Aider', 'Dietary Requirements',
       'Occupation', 'Originating State (India)', 'DBS Status', 'First Aid Status',
       'Member Status', 'Registration Date',
-      'RSVP', 'Participant Type',
+      'RSVP', 'Participant Type', 'Discount Code',
     ];
 
     const rsvpLabel = (r: EventParticipant['rsvp']) =>
@@ -310,6 +351,7 @@ export default function EventDetail({
         m ? formatDate(m.registrationDate) : '',
         rsvpLabel(p.rsvp),
         p.memberType.charAt(0).toUpperCase() + p.memberType.slice(1),
+        escape(p.discountCodeUsed ?? ''),
       ].join(',');
     });
 
@@ -492,15 +534,21 @@ export default function EventDetail({
               {/* Member self-registration */}
               {isMember && !isCancelledOrCompleted && (
                 !myParticipation ? (
-                  <button
-                    className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
-                    onClick={handleRequestToAttendClick}
-                  >
-                    <CalendarCheck className="w-3.5 h-3.5" /> Register for Karyakram
-                  </button>
+                  blockedByCapacity ? (
+                    <span className={`${btnBase} border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900`} title="This Karyakram has reached capacity.">
+                      <UsersIcon className="w-3.5 h-3.5" /> Karyakram Full
+                    </span>
+                  ) : (
+                    <button
+                      className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+                      onClick={handleRequestToAttendClick}
+                    >
+                      <CalendarCheck className="w-3.5 h-3.5" /> {isFull ? 'Join Waiting List' : 'Register for Karyakram'}
+                    </button>
+                  )
                 ) : myParticipation.rsvp === 'requested' ? (
                   <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
-                    <ClockIcon className="w-3.5 h-3.5" /> Requested — awaiting approval
+                    <ClockIcon className="w-3.5 h-3.5" /> {myParticipation.waitlisted ? 'Waitlisted — awaiting a spot' : 'Requested — awaiting approval'}
                   </span>
                 ) : myParticipation.rsvp === 'going' ? (
                   <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
@@ -517,7 +565,7 @@ export default function EventDetail({
                 modifyOk ? (
                   <button className={btnGhost} onClick={onModify}><Edit className="w-3.5 h-3.5" /> Modify</button>
                 ) : (
-                  <button className={btnDisabled} title="This Karyakram can no longer be edited after it starts." disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
+                  <button className={btnDisabled} title={event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'} disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
                 )
               )}
               {!isMember && !isCancelledOrCompleted && (
@@ -592,9 +640,10 @@ export default function EventDetail({
                       ) : (
                         <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Karyakram Description</h4>
                       )}
-                      <p className="px-5 py-4 text-[14px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
-                        {event.description}
-                      </p>
+                      <div
+                        className="px-5 py-4 text-[14px] text-neutral-700 dark:text-neutral-300 leading-relaxed prose dark:prose-invert max-w-none prose-sm"
+                        dangerouslySetInnerHTML={{ __html: event.description }}
+                      />
                     </div>
                   )}
 
@@ -864,6 +913,16 @@ export default function EventDetail({
                                   {p.isCoordinator && (
                                     <span title="Coordinator" className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 flex-shrink-0">
                                       <ShieldCheck className="w-3 h-3" />
+                                    </span>
+                                  )}
+                                  {p.discountCodeUsed && (
+                                    <span title={`Registered free with code "${p.discountCodeUsed}"`} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-success-50 dark:bg-success-950/30 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 flex-shrink-0">
+                                      Free (code)
+                                    </span>
+                                  )}
+                                  {p.waitlisted && (
+                                    <span title="Registered after capacity was reached" className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex-shrink-0">
+                                      Waitlisted
                                     </span>
                                   )}
                                 </div>
@@ -1359,9 +1418,14 @@ export default function EventDetail({
             {(event.customQuestions ?? []).map(q => (
               <div key={q.id}>
                 {q.type !== 'checkbox' && (
-                  <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
-                    {q.label} {q.required && <span className="text-error-500">*</span>}
-                  </label>
+                  <div className="mb-2">
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block">
+                      {q.label} {q.required && <span className="text-error-500">*</span>}
+                    </label>
+                    {q.description && (
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{q.description}</p>
+                    )}
+                  </div>
                 )}
 
                 {q.type === 'text' && (
@@ -1387,18 +1451,61 @@ export default function EventDetail({
                 )}
 
                 {q.type === 'checkbox' && (
-                  <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(attendAnswers[q.id] as boolean) ?? false}
-                      onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
-                      className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span>{q.label} {q.required && <span className="text-error-500">*</span>}</span>
-                  </label>
+                  <div>
+                    <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(attendAnswers[q.id] as boolean) ?? false}
+                        onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
+                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span>{q.label} {q.required && <span className="text-error-500">*</span>}</span>
+                    </label>
+                    {q.description && (
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 pl-6">{q.description}</p>
+                    )}
+                  </div>
+                )}
+
+                {q.type === 'radio' && (
+                  <div className="space-y-1.5">
+                    {(q.options ?? []).map(opt => (
+                      <label key={opt} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={q.id}
+                          value={opt}
+                          checked={(attendAnswers[q.id] as string) === opt}
+                          onChange={() => setAttendAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                          className="border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
+
+            {eventHasCoupon && (
+              <div>
+                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                  Discount / Free Registration Code <span className="text-neutral-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={e => { setDiscountCode(e.target.value); setDiscountCodeError(''); }}
+                  placeholder="Enter code if you have one"
+                  className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    discountCodeError
+                      ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+                      : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+                {discountCodeError && <p className="text-xs text-error-600 mt-1">{discountCodeError}</p>}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-200 dark:border-neutral-800">

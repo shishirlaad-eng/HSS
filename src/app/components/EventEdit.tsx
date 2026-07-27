@@ -15,9 +15,9 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormSection, FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
+import { FormSection, FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
-import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS } from '../../mockAPI/eventsData';
+import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS, mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import {
@@ -35,11 +35,14 @@ interface EventEditProps {
   onSave?: (updated: Event) => void;
 }
 
-// Cutoff rule: editing is blocked on/after event start datetime
-const isPastStart = (event: Event) => new Date() >= new Date(event.startDate);
+// Decision (Shishir/Ritesh): Draft, scheduled and in-progress Karyakrams stay
+// editable (day-of venue/time/price changes, early closure, extension, etc.) —
+// only Completed (and Cancelled, equally terminal) are locked. Matches canModify
+// in EventManagement.tsx/EventDetail.tsx.
+const canModify = (event: Event) => event.status !== 'completed' && event.status !== 'cancelled';
 
 export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
-  const blocked = isPastStart(event);
+  const blocked = !canModify(event);
 
   const [formData, setFormData] = useState({
     name:                event.name,
@@ -59,8 +62,12 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     endTime:        event.endDate.split('T')[1]?.substring(0, 5) ?? '17:00',
     paymentType:    event.paymentType as 'paid' | 'free',
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
+    couponCode:     event.couponCode ?? '',
     capacity:       event.capacity ? String(event.capacity) : '',
+    waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
+    guestPaymentType: (event.guestPaymentType ?? 'free') as 'paid' | 'free',
+    guestPrice: event.guestPrice !== undefined ? String(event.guestPrice) : '',
     customQuestions: event.customQuestions ?? [],
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders:       event.filterGenders ?? [],
@@ -89,7 +96,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories'];
+  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode', 'guestPrice'];
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const focusFirstError = (errs: Record<string, string>) => {
@@ -116,7 +123,14 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     if (!formData.endTime)             errs.endTime        = 'This field is required.';
     if (!formData.paymentType)         errs.paymentType    = 'This field is required.';
     if (formData.paymentType === 'paid' && formData.priceCategories.length === 0) {
-      errs.priceCategories = 'Add at least one price category for paid events.';
+      errs.priceCategories = 'Add at least one ticket type for paid events.';
+    }
+    if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
+      const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
+      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
+    }
+    if (formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' && !formData.guestPrice.trim()) {
+      errs.guestPrice = 'Enter a guest amount, or set Guest Payment Type to Free.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -160,8 +174,12 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         paymentType:    formData.paymentType,
         price:          formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
         priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
+        couponCode:      formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
         capacity:       formData.capacity ? parseInt(formData.capacity) : undefined,
+        waitlistEnabled: formData.waitlistEnabled,
         guestRegistrationEnabled: formData.guestRegistrationEnabled,
+        guestPaymentType: formData.guestRegistrationEnabled ? formData.guestPaymentType : undefined,
+        guestPrice: formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' ? (parseFloat(formData.guestPrice) || 0) : undefined,
         customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
         filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
         filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
@@ -213,7 +231,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         {blocked && (
           <div className="mb-6 flex items-center gap-3 px-5 py-3.5 bg-error-50 dark:bg-error-950/20 border border-error-200 dark:border-error-900/40 rounded-lg text-sm text-error-700 dark:text-error-400">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span>This event can no longer be edited after it starts. All fields are locked.</span>
+            <span>{event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'} All fields are locked.</span>
           </div>
         )}
 
@@ -241,13 +259,11 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 </FormField>
                 <FormField span={2 as any}>
                   <FormLabel>Karyakram Description</FormLabel>
-                  <textarea
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={e => set('description', e.target.value)}
+                    onChange={html => set('description', html)}
                     placeholder="Describe the event — purpose, agenda, what to expect…"
-                    rows={3}
                     disabled={blocked}
-                    className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </FormField>
                 <FormField>
@@ -269,6 +285,16 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                     min="1"
                     disabled={blocked}
                   />
+                  <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.waitlistEnabled}
+                      onChange={e => set('waitlistEnabled', e.target.checked)}
+                      disabled={blocked}
+                      className="rounded border-neutral-300 dark:border-neutral-700"
+                    />
+                    Enable waiting list — allow registration once capacity is full
+                  </label>
                 </FormField>
                 <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
               </div>
@@ -542,12 +568,32 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </div>
               {formData.paymentType === 'paid' && (
                 <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-4">
-                  <FormLabel required>Price Categories</FormLabel>
+                  <FormLabel required>Ticket Types</FormLabel>
                   <PriceCategoriesEditor
                     categories={formData.priceCategories}
                     onChange={cats => set('priceCategories', cats)}
+                    disabled={blocked}
                   />
                   <ErrorText>{touched && errors.priceCategories}</ErrorText>
+                </div>
+              )}
+              {formData.paymentType === 'paid' && (
+                <div className="mt-4">
+                  <FormField>
+                    <FormLabel>Coupon Code</FormLabel>
+                    <FormInput
+                      ref={el => { fieldRefs.current.couponCode = el; }}
+                      value={formData.couponCode}
+                      onChange={e => set('couponCode', e.target.value)}
+                      placeholder="e.g. PRACHARAK2026"
+                      disabled={blocked}
+                      className={errCls('couponCode')}
+                    />
+                    <ErrorText>{touched && errors.couponCode}</ErrorText>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
+                    </p>
+                  </FormField>
                 </div>
               )}
             </div>
@@ -567,6 +613,40 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 />
                 Allow non-members to register via a guest registration link
               </label>
+              {formData.guestRegistrationEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <FormField>
+                    <FormLabel required>Guest Payment Type</FormLabel>
+                    <FormSelect value={formData.guestPaymentType} onChange={e => set('guestPaymentType', e.target.value)} disabled={blocked}>
+                      <option value="free">Free</option>
+                      <option value="paid">Paid</option>
+                    </FormSelect>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Set separately from member pricing — guests can be charged a different amount, or nothing.
+                    </p>
+                  </FormField>
+                  {formData.guestPaymentType === 'paid' && (
+                    <FormField>
+                      <FormLabel required>Guest Amount</FormLabel>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                        <FormInput
+                          ref={el => { fieldRefs.current.guestPrice = el; }}
+                          type="number"
+                          value={formData.guestPrice}
+                          onChange={e => set('guestPrice', e.target.value)}
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          disabled={blocked}
+                          className={`pl-6 ${errCls('guestPrice')}`}
+                        />
+                      </div>
+                      <ErrorText>{touched && errors.guestPrice}</ErrorText>
+                    </FormField>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Custom Questions */}

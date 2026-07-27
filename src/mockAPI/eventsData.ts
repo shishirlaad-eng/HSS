@@ -7,8 +7,9 @@ export interface EventPriceCategory {
 export interface EventCustomQuestion {
   id: string;
   label: string;
-  type: 'text' | 'dropdown' | 'checkbox';
-  options?: string[];      // for 'dropdown'
+  description?: string;    // shown below the question to explain why it's asked
+  type: 'text' | 'dropdown' | 'checkbox' | 'radio';
+  options?: string[];      // for 'dropdown' and 'radio'
   required: boolean;
 }
 
@@ -39,20 +40,38 @@ export interface Event {
   paymentType: 'paid' | 'free';
   price?: number;      // Legacy single price (used when no price categories defined)
   priceCategories?: EventPriceCategory[];   // Multiple ticket/price tiers
+  // Coupon code the event admin has picked for this Karyakram, from the reusable
+  // pool at HSS UK Setup > Lists and Options > Events > Coupons. Shared manually
+  // with the relevant attendee; overrides the payable amount to £0 when applied.
+  couponCode?: string;
 
   // Configuration
   capacity?: number;
+  // When capacity is full, new registrations are waitlisted instead of blocked.
+  waitlistEnabled?: boolean;
   description?: string;
   imageUrl?: string;
   termsAndConditions?: string;
+
+  // Target audience — multi-select scope (Suchana-style broadcast; separate from
+  // the admin-ownership country/region/town/activityCentre above). Empty = All.
+  targetRegions?: string[];
+  targetTowns?: string[];
+  targetCentres?: string[];
+  targetMemberIds?: string[];   // set when inviting specific members only
 
   // Target audience filters
   filterAgeCategories?: ('bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha')[];
   filterGenders?: ('male' | 'female')[];
   filterJobTitles?: string[];
+  filterResponsibilityLevels?: string[];
+  filterResponsibilityTypes?: string[];
 
-  // Guest registration
+  // Guest registration — payment is configured separately from member pricing,
+  // since a Karyakram may charge guests a different amount (or nothing) than members.
   guestRegistrationEnabled?: boolean;
+  guestPaymentType?: 'paid' | 'free';
+  guestPrice?: number;   // GBP; only meaningful when guestPaymentType === 'paid'
 
   // Custom registration questions
   customQuestions?: EventCustomQuestion[];
@@ -167,7 +186,28 @@ export interface EventParticipant {
   isCoordinator?: boolean;
   // Answers to the event's customQuestions, keyed by EventCustomQuestion.id
   customAnswers?: Record<string, string | boolean>;
+  // Set when this registration was accepted onto the waiting list because
+  // capacity was already full at the time of registration.
+  waitlisted?: boolean;
+  // Coupon code applied at registration (from HSS UK Setup > Lists and Options >
+  // Events > Coupons) — overrides the payable amount to £0 when valid and active.
+  discountCodeUsed?: string;
 }
+
+// ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
+// Reusable, org-wide codes — not tied to a specific event. Shared by reference
+// with ConfigurableListsMaster.tsx, which is the admin CRUD surface for this list.
+export interface EventCoupon {
+  id: string;
+  name: string;           // the code itself, e.g. "PRACHARAK2026"
+  status: 'active' | 'inactive';
+  lastUpdated: string;
+}
+
+export const mockCoupons: EventCoupon[] = [
+  { id: 'CPN-001', name: 'PRACHARAK2026', status: 'active', lastUpdated: '2026-01-05' },
+  { id: 'CPN-002', name: 'INVITED-GUEST', status: 'active', lastUpdated: '2026-01-05' },
+];
 
 export const mockParticipants: Record<string, EventParticipant[]> = {
   'EVT-101': [
