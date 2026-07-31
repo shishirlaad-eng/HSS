@@ -1,6 +1,7 @@
 export interface EventPriceCategory {
   id: string;
   label: string;
+  description?: string;   // short description shown alongside this ticket type
   price: number;
 }
 

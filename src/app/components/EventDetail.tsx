@@ -654,58 +654,30 @@ export default function EventDetail({
                     </div>
                   )}
 
-                  {/* Karyakram Details + Additional Questions: 2-col for member, stacked for admin */}
-                  {isMember ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Karyakram Details — member: 4 fields only, dashboard style */}
-                      <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                          <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Karyakram Details</h4>
-                        </div>
-                        <div className="px-5 py-4 space-y-4">
-                          {[
-                            { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
-                            { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
-                            { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
-                          ].map(({ label, value }) => (
-                            <div key={label}>
-                              <label className="text-[12px] text-neutral-500 dark:text-neutral-400 block mb-0.5">{label}</label>
-                              {label === 'Location' && event.locationType === 'online' && value ? (
-                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-[15px] text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all font-semibold">
-                                  <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
-                                </a>
-                              ) : (
-                                <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">{value}</p>
+                  {/* Ticket Type options — member view */}
+                  {isMember && event.paymentType === 'paid' && event.priceCategories && event.priceCategories.length > 0 && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <CreditCard className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Ticket Type Options</h4>
+                      </div>
+                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {event.priceCategories.map(cat => (
+                          <div key={cat.id} className="px-5 py-3.5 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">{cat.label}</p>
+                              {cat.description && (
+                                <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-0.5">{cat.description}</p>
                               )}
                             </div>
-                          ))}
-                        </div>
+                            <span className="text-[15px] font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price}</span>
+                          </div>
+                        ))}
                       </div>
-
-                      {/* Additional Registration Questions — member, dashboard style */}
-                      {event.customQuestions && event.customQuestions.length > 0 && (
-                        <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                          <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                            <ListChecks className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                            <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Registration Questions</h4>
-                          </div>
-                          <div className="px-5 py-4 space-y-3">
-                            {event.customQuestions.map(q => {
-                              const answer = myParticipation?.customAnswers?.[q.id];
-                              return (
-                                <div key={q.id} className="flex items-start justify-between gap-3">
-                                  <span className="text-[13px] text-neutral-600 dark:text-neutral-400">{q.label}</span>
-                                  <span className="text-[14px] font-semibold text-neutral-900 dark:text-white text-right">
-                                    {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : q.type === 'date' ? (answer ? formatDate(String(answer)) : '—') : (answer ? String(answer) : '—')}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  ) : (
+                  )}
+
+                  {!isMember && (
                     <>
                       {/* Karyakram Summary — admin: all fields */}
                       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -841,18 +813,12 @@ export default function EventDetail({
                     </>
                   )}
 
-                  {/* Terms & Conditions */}
-                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
-                    {isMember ? (
-                      <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <ScrollText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Terms &amp; Conditions</h4>
-                      </div>
-                    ) : (
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
-                      </h4>
-                    )}
+                  {/* Terms & Conditions — admin only */}
+                  {!isMember && (
+                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                      <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
+                    </h4>
                     {event.termsSections && event.termsSections.length > 0 ? (
                       event.termsSections.map(section => (
                         <div key={section.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
@@ -869,6 +835,7 @@ export default function EventDetail({
                       </p>
                     )}
                   </div>
+                  )}
                 </div>
               )}
 

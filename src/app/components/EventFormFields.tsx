@@ -54,10 +54,11 @@ export function PriceCategoriesEditor({
   const addCategory = () => {
     onChange([...categories, { id: `PC-${Date.now()}`, label: '', price: 0 }]);
   };
-  const updateCategory = (id: string, field: 'label' | 'price', value: string) => {
+  const updateCategory = (id: string, field: 'label' | 'price' | 'description', value: string) => {
     onChange(categories.map(c => {
       if (c.id !== id) return c;
       if (field === 'label') return { ...c, label: value };
+      if (field === 'description') return { ...c, description: value };
       return { ...c, price: parseFloat(value) || 0 };
     }));
   };
@@ -75,35 +76,44 @@ export function PriceCategoriesEditor({
         </div>
       )}
       {categories.map(cat => (
-        <div key={cat.id} className="flex items-center gap-2">
-          <FormInput
-            value={cat.label}
-            onChange={e => updateCategory(cat.id, 'label', e.target.value)}
-            placeholder="e.g. Adult, Child, Helper, Adult (part-time)"
-            disabled={disabled}
-            className="flex-1"
-          />
-          <div className="relative w-32">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+        <div key={cat.id} className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-2.5 space-y-2">
+          <div className="flex items-center gap-2">
             <FormInput
-              type="number"
-              value={String(cat.price)}
-              onChange={e => updateCategory(cat.id, 'price', e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
+              value={cat.label}
+              onChange={e => updateCategory(cat.id, 'label', e.target.value)}
+              placeholder="e.g. Adult, Child, Helper, Adult (part-time)"
               disabled={disabled}
-              className="pl-6"
+              className="flex-1"
             />
+            <div className="relative w-32">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+              <FormInput
+                type="number"
+                value={String(cat.price)}
+                onChange={e => updateCategory(cat.id, 'price', e.target.value)}
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                disabled={disabled}
+                className="pl-6"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeCategory(cat.id)}
+              disabled={disabled}
+              className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => removeCategory(cat.id)}
+          <FormInput
+            value={cat.description ?? ''}
+            onChange={e => updateCategory(cat.id, 'description', e.target.value)}
+            placeholder="Short description for this ticket type (optional)"
             disabled={disabled}
-            className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            className="text-xs"
+          />
         </div>
       ))}
       <button
