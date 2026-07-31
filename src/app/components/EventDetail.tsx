@@ -144,6 +144,7 @@ interface EventDetailProps {
   onModify: () => void;
   onCancel: () => void;
   onDelete: () => void;
+  onClone?: () => void;
   onViewMember?: (memberId: string) => void;
 }
 
@@ -154,6 +155,7 @@ export default function EventDetail({
   onModify,
   onCancel,
   onDelete,
+  onClone,
   onViewMember,
 }: EventDetailProps) {
 
@@ -567,6 +569,11 @@ export default function EventDetail({
                 ) : (
                   <button className={btnDisabled} title={event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'} disabled><Edit className="w-3.5 h-3.5" /> Modify</button>
                 )
+              )}
+              {!isMember && onClone && (
+                <button className={btnGhost} onClick={onClone} title="Create a new Karyakram pre-filled with this one's details">
+                  <Copy className="w-3.5 h-3.5" /> Clone Event
+                </button>
               )}
               {!isMember && !isCancelledOrCompleted && (
                 <button className={btnWarn} onClick={onCancel}><XCircle className="w-3.5 h-3.5" /> Cancel Karyakram</button>

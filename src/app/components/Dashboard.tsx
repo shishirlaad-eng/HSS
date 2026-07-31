@@ -30,13 +30,18 @@ import {
   ListChecks,
   IdCard,
   ArrowLeft,
+  Info,
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, Legend,
+} from 'recharts';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
-import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS } from '../../mockAPI/membersData';
+import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS, RESPONSIBILITY_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
 import { mockEvents, type Event as HSSSEvent } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
-import { mockDonations } from '../../mockAPI/donationsData';
+import { mockDonations, type IncomeStream } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
 import { formatDate as sharedFormatDate } from '../../utils/formatDate';
@@ -909,6 +914,101 @@ function KpiCard({
   );
 }
 
+// â”€â”€ Shakha analytics charts â”€â”€ colours/helpers, mirrors KaryakartaReport.tsx's
+// established chart styling so the visual language matches the rest of the app.
+
+const CHART_PALETTE = [
+  '#f59e0b', '#3b82f6', '#22c55e', '#ec4899', '#8b5cf6',
+  '#06b6d4', '#ef4444', '#84cc16', '#f97316', '#6366f1',
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: '#22c55e',
+  pending: '#f59e0b',
+  'pending-parental-consent': '#8b5cf6',
+  inactive: '#9ca3af',
+  rejected: '#ef4444',
+};
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  pending: 'Pending Approval',
+  'pending-parental-consent': 'Parental Consent',
+  inactive: 'Inactive',
+  rejected: 'Rejected',
+};
+
+const AGE_COLORS: Record<AgeGroup, string> = {
+  bal:     '#fde68a',
+  shishu:  '#fbbf24',
+  kishor:  '#f59e0b',
+  tarun:   '#d97706',
+  yuva:    '#b45309',
+  jyestha: '#92400e',
+};
+
+const INCOME_COLORS: Record<string, string> = {
+  'online-donation': '#3b82f6',
+  'cash-income': '#22c55e',
+  'standing-order': '#f59e0b',
+};
+const INCOME_LABELS: Record<string, string> = {
+  'online-donation': 'Online Donations',
+  'cash-income': 'Cash Income',
+  'standing-order': 'Regular Standing Order Payments',
+};
+
+const COMPLIANCE_NOT_SET = 'Not Set';
+
+function chartFmt(n: number) { return n.toLocaleString(); }
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 shadow-lg text-xs">
+      {label && <p className="font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{label}</p>}
+      {payload.map((p: any, i: number) => (
+        <p key={i} style={{ color: p.color ?? p.fill }} className="font-medium">
+          {p.name}: {typeof p.value === 'number' ? chartFmt(p.value) : p.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function ChartCard({ title, subtitle, hint, onClick, children }: {
+  title: string;
+  subtitle?: string;
+  hint?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e => e.key === 'Enter' && onClick()) : undefined}
+      className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm ${onClick ? 'cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors' : ''}`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
+          {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
+        </div>
+        {hint && (
+          <div className="group relative flex-shrink-0">
+            <Info className="w-3.5 h-3.5 text-neutral-400" />
+            <div className="hidden group-hover:block absolute right-0 top-5 z-10 w-56 p-2.5 rounded-lg bg-neutral-900 dark:bg-neutral-800 text-white text-[11px] leading-relaxed shadow-xl">
+              {hint}
+            </div>
+          </div>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function HierarchyKpiSection({
   scope,
   onNavigate,
@@ -983,6 +1083,71 @@ function HierarchyKpiSection({
     const dbsApproved  = scopedMembers.filter(m => m.compliance.dbs === 'Approved').length;
     const safeguarding = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Certified').length;
 
+    // â”€â”€ Chart: Membership Status Breakdown â”€â”€
+    const statusOrder: (typeof scopedMembers[number]['status'])[] = ['active', 'pending', 'pending-parental-consent', 'inactive', 'rejected'];
+    const statusData = statusOrder
+      .map(s => ({ key: s, name: STATUS_LABELS[s], value: scopedMembers.filter(m => m.status === s).length }))
+      .filter(d => d.value > 0);
+
+    // â”€â”€ Chart: Age Group Distribution â”€â”€
+    const ageOrder: AgeGroup[] = ['bal', 'shishu', 'kishor', 'tarun', 'yuva', 'jyestha'];
+    const ageData = ageOrder.map(g => ({
+      key: g,
+      group: AGE_GROUP_LABELS[g].split(' ')[0],
+      count: scopedMembers.filter(m => getAgeGroup(m.dateOfBirth) === g).length,
+    }));
+
+    // â”€â”€ Chart: Income Stream Split â”€â”€
+    const incomeStreamOrder: IncomeStream[] = ['online-donation', 'cash-income', 'standing-order'];
+    const incomeStreamData = incomeStreamOrder
+      .map(s => ({ key: s, name: INCOME_LABELS[s], value: receivedDonations.filter(d => d.incomeStream === s).reduce((sum, d) => sum + d.amount, 0) }))
+      .filter(d => d.value > 0);
+
+    // â”€â”€ Chart: Monthly Attendance Trend â”€â”€ last 8 Shakhas held, oldest to newest
+    const last8Sessions = [...sortedSessions].slice(0, 8).reverse();
+    const last8AvgRate = last8Sessions.length
+      ? Math.round(last8Sessions.reduce((sum, s) => sum + rateOf(s), 0) / last8Sessions.length) : 0;
+    const attendanceTrendData = last8Sessions.map(s => ({
+      date: sharedFormatDate(s.date),
+      rate: Math.round(rateOf(s)),
+      average: last8AvgRate,
+      present: s.attendanceRecords.filter(r => r.status === 'present').length,
+    }));
+
+    // â”€â”€ Chart: Responsibility Type â”€â”€
+    const respTypeData = [...RESPONSIBILITY_TYPE_OPTIONS, COMPLIANCE_NOT_SET]
+      .map(t => ({
+        key: t,
+        name: t,
+        value: t === COMPLIANCE_NOT_SET
+          ? scopedMembers.filter(m => !m.responsibilityType).length
+          : scopedMembers.filter(m => m.responsibilityType === t).length,
+      }))
+      .filter(d => d.value > 0);
+
+    // â”€â”€ Chart: this Shakha's own recent Sankhya history (Held vs Present) â”€â”€
+    // Kept scoped to the admin's own Shakha rather than comparing other centres —
+    // a Shakha Admin has no visibility into other centres anywhere else in the app.
+    const recentSessionsData = last8Sessions.map(s => ({
+      date: sharedFormatDate(s.date),
+      held: 1,
+      present: s.attendanceRecords.filter(r => r.status === 'present').length,
+    }));
+
+    // â”€â”€ Chart: Compliance â€” DBS / First Aid / Safeguarding â”€â”€
+    const dbsData = [
+      { name: 'Approved', value: scopedMembers.filter(m => m.compliance.dbs === 'Approved').length },
+      { name: 'Pending',  value: scopedMembers.filter(m => m.compliance.dbs === 'Pending').length },
+    ];
+    const firstAidData = [
+      { name: 'Certified', value: scopedMembers.filter(m => m.compliance.firstAid === 'Certified').length },
+      { name: 'Expired',   value: scopedMembers.filter(m => m.compliance.firstAid === 'Expired').length },
+    ];
+    const safeguardingData = [
+      { name: 'Certified', value: scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Certified').length },
+      { name: 'Expired',   value: scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Expired').length },
+    ];
+
     return {
       avgLast4, avgYTD, sessionsHeldYTD,
       suchanaActive, suchanaHigh,
@@ -992,11 +1157,14 @@ function HierarchyKpiSection({
       totalIncome, onlineTotal, cashTotal, giftAidClaimable,
       firstAiders, dbsApproved, safeguarding,
       gbp,
+      statusData, ageData, incomeStreamData, attendanceTrendData, respTypeData,
+      recentSessionsData, dbsData, firstAidData, safeguardingData,
     };
   }, [scope]);
 
   return (
     <div className="mb-8">
+      {scope.level !== 'centre' && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* 1. Sankhya */}
@@ -1037,17 +1205,6 @@ function HierarchyKpiSection({
           />
         )}
 
-        {/* 5. Shakha Karyakartas */}
-        <KpiCard
-          title="Shakha Karyakartas"
-          value={kpis.karyakartas}
-          icon={Award}
-          onClick={() => onNavigate?.('members')}
-          subMetrics={[
-            { label: 'Holding sangh responsibility', value: kpis.karyakartas, tone: 'primary' },
-          ]}
-        />
-
         {/* 6. Nidhi */}
         <KpiCard
           title="Nidhi"
@@ -1086,6 +1243,184 @@ function HierarchyKpiSection({
         />
 
       </div>
+      )}
+
+      {/* â”€â”€ Shakha analytics charts (Shakha Admin only) â”€â”€ */}
+      {scope.level === 'centre' && (
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Membership Status Breakdown */}
+          <ChartCard
+            title="Membership Status Breakdown"
+            subtitle="Distribution of members by current status"
+            onClick={() => onNavigate?.('members')}
+          >
+            <div className="flex items-center gap-6">
+              <ResponsiveContainer width={160} height={160}>
+                <PieChart>
+                  <Pie data={kpis.statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {kpis.statusData.map((d, i) => <Cell key={i} fill={STATUS_COLORS[d.key]} />)}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-1.5">
+                {kpis.statusData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[d.key] }} />
+                      {d.name}
+                    </span>
+                    <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">{chartFmt(d.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+
+          {/* Monthly Attendance Trend */}
+          <ChartCard
+            title="Monthly Attendance Trend"
+            subtitle="Shakhas and attendance rate over time"
+            hint="Shows the last 8 Shakhas held. The line is the attendance rate for each Shakha; the flat reference line is the average across those 8. Hover a point to see the exact rate."
+            onClick={() => onNavigate?.('attendance-log')}
+          >
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={kpis.attendanceTrendData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} unit="%" />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="rate" name="Attendance Rate %" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="average" name="Average %" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Age Group Distribution */}
+          <ChartCard
+            title="Age Group Distribution"
+            subtitle="Members across HSS age groups"
+            onClick={() => onNavigate?.('members')}
+          >
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={kpis.ageData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
+                  {kpis.ageData.map((entry, i) => <Cell key={i} fill={AGE_COLORS[entry.key]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Responsibility Type */}
+          <ChartCard
+            title="Responsibility Type"
+            subtitle="Pramukh / Pramukh (Saha) / Toli breakdown"
+            hint="Shows the different Karyakarta responsibilities held in the Shakha."
+            onClick={() => onNavigate?.('karyakartas')}
+          >
+            <div className="flex items-center gap-6">
+              <ResponsiveContainer width={160} height={160}>
+                <PieChart>
+                  <Pie data={kpis.respTypeData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {kpis.respTypeData.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-1.5">
+                {kpis.respTypeData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                      {d.name}
+                    </span>
+                    <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">{chartFmt(d.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+
+          {/* Income Stream Split */}
+          <ChartCard
+            title="Income Stream Split"
+            subtitle="Online donations, cash income and regular standing order payments"
+            onClick={() => onNavigate?.('report-donations')}
+          >
+            <div className="flex items-center gap-6">
+              <ResponsiveContainer width={160} height={160}>
+                <PieChart>
+                  <Pie data={kpis.incomeStreamData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {kpis.incomeStreamData.map((d, i) => <Cell key={i} fill={INCOME_COLORS[d.key]} />)}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} formatter={(v: number) => kpis.gbp(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-1.5">
+                {kpis.incomeStreamData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: INCOME_COLORS[d.key] }} />
+                      {d.name}
+                    </span>
+                    <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">{kpis.gbp(d.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+
+          {/* Recent Sankhya history + Compliance box */}
+          <ChartCard
+            title="Recent Shakhas"
+            subtitle="Held vs present, last 8 Shakhas at this centre"
+            onClick={() => onNavigate?.('compliance')}
+          >
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={kpis.recentSessionsData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="held" name="Shakha" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+
+            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-4 mb-2">
+              Compliance — Certified vs Expired/Pending
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'DBS', data: kpis.dbsData },
+                { label: 'First Aid', data: kpis.firstAidData },
+                { label: 'Safeguarding', data: kpis.safeguardingData },
+              ].map((box, i) => (
+                <div key={i}>
+                  <p className="text-[10px] text-center text-neutral-500 dark:text-neutral-400 mb-1">{box.label}</p>
+                  <ResponsiveContainer width="100%" height={80}>
+                    <BarChart data={box.data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 8, fill: '#6b7280' }} interval={0} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                        {box.data.map((d, j) => <Cell key={j} fill={d.name === 'Approved' || d.name === 'Certified' ? '#22c55e' : '#f59e0b'} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ))}
+            </div>
+          </ChartCard>
+
+        </div>
+      )}
     </div>
   );
 }
@@ -1202,7 +1537,8 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       >
       </PageHeader>
 
-      {/* â”€â”€ Row 1: Org structure KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â”€â”€ Row 1: Org structure KPIs (hidden for Shakha Admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {scope.level !== 'centre' && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard
           title="Total Members"
@@ -1246,6 +1582,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           />
         )}
       </div>
+      )}
 
       {/* â”€â”€ Hierarchy-scoped KPIs (Regional / Town / Activity Centre) â”€â”€ */}
       {showHierarchyKpis && (
@@ -1506,11 +1843,12 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       </div>
       )}
 
-      {/* â”€â”€ Section: Announcements + Recent Registrations â”€â”€ */}
+      {/* â”€â”€ Section: Announcements + Recent Registrations (hidden for Shakha Admin â€” removed per request) â”€â”€ */}
+      {scope.level !== 'centre' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Announcements (2/3, or full-width for AC Admin) */}
-        <div className={scope.level === 'centre' ? 'lg:col-span-3' : 'lg:col-span-2'}>
+        {/* Announcements (2/3) */}
+        <div className="lg:col-span-2">
           <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
@@ -1562,8 +1900,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
           </div>
         </div>
 
-        {/* Recent Registrations (1/3) - hidden for AC Admin */}
-        {scope.level !== 'centre' && (
+        {/* Recent Registrations (1/3) */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 h-full">
               <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -1614,8 +1951,8 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
               </div>
             </div>
           </div>
-        )}
       </div>
+      )}
 
     </div>
   );

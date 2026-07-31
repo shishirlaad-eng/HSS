@@ -17,6 +17,10 @@ interface EventCreateProps {
   onBack: () => void;
   onSave: (data: Partial<Event>) => void;
   onPublish?: (data: Partial<Event>) => void;
+  // When set, the form starts pre-filled with this event's details (Clone Event) —
+  // venue is collapsed into Address Line 1 since Event only stores the composed
+  // string, not the structured fields the form edits.
+  cloneFrom?: Event;
 }
 
 type CreateTab = 'basics' | 'location' | 'audience' | 'payment' | 'questions' | 'terms';
@@ -52,7 +56,6 @@ const EMPTY_FORM = {
   capacity: '',
   waitlistEnabled: false,
   guestRegistrationEnabled: false,
-  guestPaymentType: 'free' as 'paid' | 'free',
   guestPrice: '',
   customQuestions: [] as { id: string; question: string; required: boolean }[],
   filterAgeCategories: [] as AgeGroup[],
@@ -91,6 +94,43 @@ function deriveOwnerScope(f: typeof EMPTY_FORM, creatorScope: { country?: string
 const composeVenueAddress = (f: typeof EMPTY_FORM) =>
   [f.venueBuildingName, f.venueAddressLine1, f.venueAddressLine2, f.venueTownCity, f.venuePostCode]
     .map(s => s.trim()).filter(Boolean).join(', ');
+
+// Reverse-maps a saved Event back into the create-form shape, for "Clone Event".
+// Venue address can't be split back into its structured fields (Event only
+// stores the composed string), so the whole thing lands in Address Line 1.
+function formStateFromEvent(event: Event): typeof EMPTY_FORM {
+  return {
+    ...EMPTY_FORM,
+    name: `${event.name} (Copy)`,
+    description: event.description ?? '',
+    imageUrl: event.imageUrl ?? '',
+    locationType: event.locationType,
+    venueAddressLine1: event.venueAddress ?? '',
+    onlineUrl: event.onlineUrl ?? '',
+    startDate: event.startDate.split('T')[0],
+    startTime: event.startDate.split('T')[1]?.substring(0, 5) ?? '',
+    endDate: event.endDate.split('T')[0],
+    endTime: event.endDate.split('T')[1]?.substring(0, 5) ?? '',
+    paymentType: event.paymentType,
+    priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
+    couponCode: event.couponCode ?? '',
+    capacity: event.capacity ? String(event.capacity) : '',
+    waitlistEnabled: event.waitlistEnabled ?? false,
+    guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
+    guestPrice: event.guestPrice !== undefined ? String(event.guestPrice) : '',
+    customQuestions: event.customQuestions ?? [],
+    filterAgeCategories: event.filterAgeCategories ?? [],
+    filterGenders: event.filterGenders ?? [],
+    filterJobTitles: event.filterJobTitles ?? [],
+    filterResponsibilityLevels: event.filterResponsibilityLevels ?? [],
+    filterResponsibilityTypes: event.filterResponsibilityTypes ?? [],
+    targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
+    targetMemberIds: event.targetMemberIds ?? [],
+    targetRegions: event.targetRegions ?? [],
+    targetTowns: event.targetTowns ?? [],
+    targetCentres: event.targetCentres ?? [],
+  };
+}
 
 // ── Mock postcode lookup (matches the pattern used on the member address form) ─
 const MOCK_STREET_NAMES = ['High Street', 'Church Road', 'Kings Avenue', 'Mill Lane', 'Victoria Street'];
@@ -284,14 +324,16 @@ function MemberMultiSelect({ selectedIds, onChange }: { selectedIds: string[]; o
   );
 }
 
-export default function EventCreate({ onBack, onSave, onPublish }: EventCreateProps) {
+export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: EventCreateProps) {
   const { scope } = useRoleScope();
-  const [formData, setFormData] = useState(() => ({
-    ...EMPTY_FORM,
-    targetRegions: scope.showRegionFilter ? [] : (scope.region ? [scope.region] : []),
-    targetTowns:   scope.showTownFilter   ? [] : (scope.town   ? [scope.town]   : []),
-    targetCentres: scope.showCentreFilter ? [] : (scope.centre ? [scope.centre] : []),
-  }));
+  const [formData, setFormData] = useState(() =>
+    cloneFrom ? formStateFromEvent(cloneFrom) : {
+      ...EMPTY_FORM,
+      targetRegions: scope.showRegionFilter ? [] : (scope.region ? [scope.region] : []),
+      targetTowns:   scope.showTownFilter   ? [] : (scope.town   ? [scope.town]   : []),
+      targetCentres: scope.showCentreFilter ? [] : (scope.centre ? [scope.centre] : []),
+    }
+  );
   const [errors, setErrors]     = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched]   = useState(false);
@@ -317,12 +359,12 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venuePostCode', 'venueAddressLine1', 'venueTownCity', 'onlineUrl', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode', 'guestPrice'];
+  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venuePostCode', 'venueAddressLine1', 'venueTownCity', 'onlineUrl', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode'];
   const FIELD_TAB: Record<string, CreateTab> = {
     name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
     venuePostCode: 'location', venueAddressLine1: 'location', venueTownCity: 'location', onlineUrl: 'location',
     targetMemberIds: 'audience',
-    paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment', guestPrice: 'payment',
+    paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment',
   };
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -360,9 +402,6 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
     if (formData.paymentType === 'paid' && formData.priceCategories.length === 0) {
       errs.priceCategories = 'Add at least one ticket type for paid Karyakrams.';
     }
-    if (formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' && !formData.guestPrice.trim()) {
-      errs.guestPrice = 'Enter a guest amount, or set Guest Payment Type to Free.';
-    }
     if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
       const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
       if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
@@ -399,8 +438,8 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
       waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
-      guestPaymentType: formData.guestRegistrationEnabled ? formData.guestPaymentType : undefined,
-      guestPrice: formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' ? parseFloat(formData.guestPrice) || 0 : undefined,
+      guestPaymentType: formData.guestRegistrationEnabled ? (formData.guestPrice.trim() ? 'paid' : 'free') : undefined,
+      guestPrice: formData.guestRegistrationEnabled && formData.guestPrice.trim() ? (parseFloat(formData.guestPrice) || 0) : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
       filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
       filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
@@ -455,10 +494,10 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
     <div className="px-6 py-6">
       {/* PAGE HEADER */}
       <PageHeader
-        title="Create Karyakram"
+        title={cloneFrom ? 'Clone Karyakram' : 'Create Karyakram'}
         breadcrumbs={[
           { label: 'Karyakrams', onClick: onBack },
-          { label: 'Create', current: true },
+          { label: cloneFrom ? 'Clone' : 'Create', current: true },
         ]}
       >
         <div className="flex items-center gap-3">
@@ -845,34 +884,20 @@ export default function EventCreate({ onBack, onSave, onPublish }: EventCreatePr
                   {formData.guestRegistrationEnabled && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField>
-                        <FormLabel required>Guest Payment Type</FormLabel>
-                        <FormSelect value={formData.guestPaymentType} onChange={e => set('guestPaymentType', e.target.value)}>
-                          <option value="free">Free</option>
-                          <option value="paid">Paid</option>
-                        </FormSelect>
-                        <p className="text-xs text-neutral-400 mt-1">
-                          Set separately from member pricing — guests can be charged a different amount, or nothing.
-                        </p>
+                        <FormLabel>Guest Amount</FormLabel>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                          <FormInput
+                            type="number"
+                            value={formData.guestPrice}
+                            onChange={e => set('guestPrice', e.target.value)}
+                            placeholder="0.00 (leave blank if free)"
+                            min="0"
+                            step="0.01"
+                            className="pl-6"
+                          />
+                        </div>
                       </FormField>
-                      {formData.guestPaymentType === 'paid' && (
-                        <FormField>
-                          <FormLabel required>Guest Amount</FormLabel>
-                          <div className="relative">
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                            <FormInput
-                              ref={el => { fieldRefs.current.guestPrice = el; }}
-                              type="number"
-                              value={formData.guestPrice}
-                              onChange={e => set('guestPrice', e.target.value)}
-                              placeholder="0.00"
-                              min="0"
-                              step="0.01"
-                              className={`pl-6 ${errCls('guestPrice')}`}
-                            />
-                          </div>
-                          <ErrorText>{touched && errors.guestPrice}</ErrorText>
-                        </FormField>
-                      )}
                     </div>
                   )}
                 </div>

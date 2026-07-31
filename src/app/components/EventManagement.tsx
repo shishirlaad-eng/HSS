@@ -423,6 +423,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   // ── Navigation ─────────────────────────────────────────────────────────────
   const openDetail = (event: Event) => { setSelectedEvent(event); setPageState('detail'); scrollToTop(); };
   const openEdit   = (event: Event) => { setSelectedEvent(event); setPageState('edit'); scrollToTop();   };
+  const openClone  = (event: Event) => { setSelectedEvent(event); setPageState('create'); scrollToTop(); };
   const backToList = ()              => { setPageState('list'); setSelectedEvent(null); scrollToTop();   };
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
@@ -579,6 +580,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           onModify={() => openEdit(live)}
           onCancel={() => openModal('cancel', live)}
           onDelete={() => openModal('delete', live)}
+          onClone={() => openClone(live)}
           onViewMember={onNavigateToMember}
         />
         {/* Modals can still show above detail */}
@@ -629,7 +631,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   if (pageState === 'create') {
     return (
       <EventCreate
-        onBack={() => { setPageState('list'); scrollToTop(); }}
+        cloneFrom={selectedEvent ?? undefined}
+        onBack={() => { setPageState('list'); setSelectedEvent(null); scrollToTop(); }}
         onSave={handleCreateSave}
         onPublish={handleCreatePublish}
       />
@@ -749,7 +752,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             <IconButton icon={BarChart3} onClick={() => setShowMemberSummary(s => !s)} title="Summary" />
           )}
           {ep.canAdd && (
-            <PrimaryButton icon={Plus} onClick={() => { setPageState('create'); scrollToTop(); }}>
+            <PrimaryButton icon={Plus} onClick={() => { setSelectedEvent(null); setPageState('create'); scrollToTop(); }}>
               Create Karyakram
             </PrimaryButton>
           )}

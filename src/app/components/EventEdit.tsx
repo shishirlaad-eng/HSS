@@ -66,7 +66,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     capacity:       event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
-    guestPaymentType: (event.guestPaymentType ?? 'free') as 'paid' | 'free',
     guestPrice: event.guestPrice !== undefined ? String(event.guestPrice) : '',
     customQuestions: event.customQuestions ?? [],
     filterAgeCategories: event.filterAgeCategories ?? [],
@@ -96,7 +95,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode', 'guestPrice'];
+  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode'];
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const focusFirstError = (errs: Record<string, string>) => {
@@ -128,9 +127,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
       const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
       if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
-    }
-    if (formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' && !formData.guestPrice.trim()) {
-      errs.guestPrice = 'Enter a guest amount, or set Guest Payment Type to Free.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -178,8 +174,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         capacity:       formData.capacity ? parseInt(formData.capacity) : undefined,
         waitlistEnabled: formData.waitlistEnabled,
         guestRegistrationEnabled: formData.guestRegistrationEnabled,
-        guestPaymentType: formData.guestRegistrationEnabled ? formData.guestPaymentType : undefined,
-        guestPrice: formData.guestRegistrationEnabled && formData.guestPaymentType === 'paid' ? (parseFloat(formData.guestPrice) || 0) : undefined,
+        guestPaymentType: formData.guestRegistrationEnabled ? (formData.guestPrice.trim() ? 'paid' : 'free') : undefined,
+        guestPrice: formData.guestRegistrationEnabled && formData.guestPrice.trim() ? (parseFloat(formData.guestPrice) || 0) : undefined,
         customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
         filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
         filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
@@ -616,35 +612,21 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               {formData.guestRegistrationEnabled && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <FormField>
-                    <FormLabel required>Guest Payment Type</FormLabel>
-                    <FormSelect value={formData.guestPaymentType} onChange={e => set('guestPaymentType', e.target.value)} disabled={blocked}>
-                      <option value="free">Free</option>
-                      <option value="paid">Paid</option>
-                    </FormSelect>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      Set separately from member pricing — guests can be charged a different amount, or nothing.
-                    </p>
+                    <FormLabel>Guest Amount</FormLabel>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                      <FormInput
+                        type="number"
+                        value={formData.guestPrice}
+                        onChange={e => set('guestPrice', e.target.value)}
+                        placeholder="0.00 (leave blank if free)"
+                        min="0"
+                        step="0.01"
+                        disabled={blocked}
+                        className="pl-6"
+                      />
+                    </div>
                   </FormField>
-                  {formData.guestPaymentType === 'paid' && (
-                    <FormField>
-                      <FormLabel required>Guest Amount</FormLabel>
-                      <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                        <FormInput
-                          ref={el => { fieldRefs.current.guestPrice = el; }}
-                          type="number"
-                          value={formData.guestPrice}
-                          onChange={e => set('guestPrice', e.target.value)}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          disabled={blocked}
-                          className={`pl-6 ${errCls('guestPrice')}`}
-                        />
-                      </div>
-                      <ErrorText>{touched && errors.guestPrice}</ErrorText>
-                    </FormField>
-                  )}
                 </div>
               )}
             </div>
