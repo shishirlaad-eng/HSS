@@ -68,6 +68,11 @@ export interface Event {
   termsAndConditions?: string;   // legacy single-blob field, kept for older events
   termsSections?: EventTermsSection[];   // editable Terms/Privacy Policy/etc. sections
 
+  // Registration confirmation email sent to a member once their request to
+  // attend is accepted. Body supports the EVENT_CONFIRMATION_VARIABLES tokens.
+  confirmationSubject?: string;
+  confirmationMessage?: string;   // rich-text HTML
+
   // Target audience — multi-select scope (Suchana-style broadcast; separate from
   // the admin-ownership country/region/town/activityCentre above). Empty = All.
   targetRegions?: string[];
@@ -115,6 +120,26 @@ export const EVENT_TERMS_AND_CONDITIONS = `By registering for this event, you ag
 4. Participants are responsible for their own conduct and must follow all on-site safety instructions.
 5. Photographs and videos may be taken during the event for promotional purposes.
 6. Personal data submitted during registration will be handled in accordance with the HSS (UK) Privacy Policy.`;
+
+// ─── Variables available in the Event Confirmation email body ───────────────
+export const EVENT_CONFIRMATION_VARIABLES: { token: string; description: string }[] = [
+  { token: '{{member_name}}',      description: 'Full name of the registering member' },
+  { token: '{{event_name}}',       description: 'Karyakram title' },
+  { token: '{{event_date}}',       description: 'Karyakram start date' },
+  { token: '{{event_time}}',       description: 'Karyakram start time' },
+  { token: '{{event_location}}',   description: 'Venue address or online link' },
+  { token: '{{ticket_type}}',      description: 'Ticket type selected at registration' },
+  { token: '{{amount_paid}}',      description: 'Amount paid for the registration' },
+  { token: '{{registration_id}}',  description: 'Unique registration reference' },
+];
+
+export const DEFAULT_CONFIRMATION_SUBJECT = 'Your registration for {{event_name}} is confirmed';
+export const DEFAULT_CONFIRMATION_MESSAGE =
+  '<p>Dear {{member_name}},</p>' +
+  '<p>Your registration for <strong>{{event_name}}</strong> on {{event_date}} at {{event_time}} has been confirmed.</p>' +
+  '<p><strong>Venue:</strong> {{event_location}}<br/><strong>Ticket Type:</strong> {{ticket_type}}<br/><strong>Amount Paid:</strong> {{amount_paid}}</p>' +
+  '<p>Your registration reference is {{registration_id}}. Please keep this for your records.</p>' +
+  '<p>We look forward to seeing you there.</p>';
 
 // ─── Media data ──────────────────────────────────────────────────────────────
 export interface EventMedia {

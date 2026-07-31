@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Save, Globe, MapPin, Ticket, ChevronDown, Search, X } from 'lucide-react';
+import { ArrowLeft, Save, Globe, MapPin, Ticket, ChevronDown, Search, X, Copy } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
-import { Event, EVENT_TERMS_AND_CONDITIONS, mockCoupons } from '../../mockAPI/eventsData';
+import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import {
@@ -24,15 +24,16 @@ interface EventCreateProps {
   cloneFrom?: Event;
 }
 
-type CreateTab = 'basics' | 'location' | 'audience' | 'payment' | 'questions' | 'terms';
+type CreateTab = 'basics' | 'location' | 'audience' | 'payment' | 'questions' | 'terms' | 'confirmation';
 
 const TABS: { id: CreateTab; label: string }[] = [
-  { id: 'basics',    label: 'Karyakram Basics'     },
-  { id: 'location',  label: 'Location'             },
-  { id: 'audience',  label: 'Target Audience'      },
-  { id: 'payment',   label: 'Payment Type'         },
-  { id: 'questions', label: 'Additional Questions' },
-  { id: 'terms',     label: 'Terms & Conditions'   },
+  { id: 'basics',       label: 'Karyakram Basics'     },
+  { id: 'location',     label: 'Location'             },
+  { id: 'audience',     label: 'Target Audience'      },
+  { id: 'payment',      label: 'Payment Type'         },
+  { id: 'questions',    label: 'Additional Questions' },
+  { id: 'terms',        label: 'Terms & Conditions'   },
+  { id: 'confirmation', label: 'Event Confirmation'   },
 ];
 
 const EMPTY_FORM = {
@@ -72,6 +73,8 @@ const EMPTY_FORM = {
   targetTowns: [] as string[],
   targetCentres: [] as string[],
   termsSections: [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }] as { id: string; title: string; description: string }[],
+  confirmationSubject: DEFAULT_CONFIRMATION_SUBJECT,
+  confirmationMessage: DEFAULT_CONFIRMATION_MESSAGE,
 };
 
 // Cascade options — empty selection OR every option selected both mean "All" and widen to the full available set
@@ -138,6 +141,8 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     termsSections: event.termsSections ?? (event.termsAndConditions
       ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
       : [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }]),
+    confirmationSubject: event.confirmationSubject ?? DEFAULT_CONFIRMATION_SUBJECT,
+    confirmationMessage: event.confirmationMessage ?? DEFAULT_CONFIRMATION_MESSAGE,
   };
 }
 
@@ -455,6 +460,8 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
       targetMemberIds: formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
       termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
+      confirmationSubject: formData.confirmationSubject.trim() || undefined,
+      confirmationMessage: formData.confirmationMessage.trim() || undefined,
       status,
       createdDate: now,
       lastUpdated: now,
@@ -879,7 +886,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       onChange={e => set('donationEnabled', e.target.checked)}
                       className="rounded border-neutral-300 dark:border-neutral-700"
                     />
-                    Enable Gift Aid
+                    Enable Donation Option
                   </label>
                   <p className="text-xs text-neutral-400 -mt-2">
                     If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
@@ -933,6 +940,71 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                 onChange={sections => set('termsSections', sections)}
               />
             </Card>
+          )}
+
+          {/* ── Event Confirmation ── */}
+          {activeTab === 'confirmation' && (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+              <div className="xl:col-span-2">
+                <Card title="Confirmation Email">
+                  <div className="space-y-4">
+                    <FormField>
+                      <FormLabel required>Subject</FormLabel>
+                      <FormInput
+                        value={formData.confirmationSubject}
+                        onChange={e => set('confirmationSubject', e.target.value)}
+                        placeholder="e.g. Your registration for {{event_name}} is confirmed"
+                      />
+                    </FormField>
+
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                        Click a variable to copy it, then paste it into the Subject or Description.
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {EVENT_CONFIRMATION_VARIABLES.map(v => (
+                          <button
+                            type="button"
+                            key={v.token}
+                            title={v.description}
+                            onClick={() => { navigator.clipboard.writeText(v.token); toast.success(`Copied ${v.token}`); }}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono font-semibold rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-primary-600 dark:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors"
+                          >
+                            <Copy className="w-3 h-3" /> {v.token}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <FormField>
+                      <FormLabel>Description</FormLabel>
+                      <RichTextEditor
+                        value={formData.confirmationMessage}
+                        onChange={html => set('confirmationMessage', html)}
+                        placeholder="Write the confirmation email body…"
+                        minHeight="260px"
+                        maxHeight="520px"
+                      />
+                    </FormField>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="xl:col-span-1">
+                <Card title="Event Confirmation">
+                  <FormField>
+                    <FormLabel>Description</FormLabel>
+                    <RichTextEditor
+                      value={formData.confirmationMessage}
+                      onChange={html => set('confirmationMessage', html)}
+                      placeholder="Write the confirmation email body…"
+                      minHeight="260px"
+                      maxHeight="520px"
+                    />
+                  </FormField>
+                </Card>
+              </div>
+            </div>
           )}
 
         </div>

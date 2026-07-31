@@ -1600,7 +1600,7 @@ export default function EventDetail({
             {event.donationEnabled && (
               <div>
                 <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-2">
-                  Gift Aid Donation <span className="text-neutral-400 font-normal">(optional)</span>
+                  Donation <span className="text-neutral-400 font-normal">(optional)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 dark:text-neutral-400">£</span>

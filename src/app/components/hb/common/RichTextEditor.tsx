@@ -8,11 +8,13 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  minHeight?: string;
+  maxHeight?: string;
 }
 
-export function RichTextEditor({ value, onChange, placeholder, className, disabled }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, className, disabled, minHeight, maxHeight }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const lastValue = useRef(value);
+  const lastValue = useRef<string | null>(null);
 
   useEffect(() => {
     if (editorRef.current && lastValue.current !== value && editorRef.current.innerHTML !== value) {
@@ -152,8 +154,8 @@ export function RichTextEditor({ value, onChange, placeholder, className, disabl
           lastValue.current = html;
           onChange(html);
         }}
-        className="w-full min-h-[100px] max-h-[280px] overflow-y-auto slim-scroll p-3 text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-950 focus:outline-none leading-relaxed prose dark:prose-invert max-w-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-neutral-400"
-        style={{ outline: 'none' }}
+        className="w-full overflow-y-auto slim-scroll p-3 text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-950 focus:outline-none leading-relaxed prose dark:prose-invert max-w-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-neutral-400"
+        style={{ outline: 'none', minHeight: minHeight ?? '100px', maxHeight: maxHeight ?? '280px' }}
       />
     </div>
   );

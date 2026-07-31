@@ -2017,7 +2017,9 @@ export default function MemberManagement({
                       )}
                       {karyakartasOnly && (
                         <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
-                          <IconButton icon={Edit} borderless title="Edit" onClick={() => { setAssignMemberId(m.id); setShowAssignModal(true); }} />
+                          <PrimaryButton onClick={() => { setAssignMemberId(m.id); setShowAssignModal(true); }}>
+                            Edit
+                          </PrimaryButton>
                         </td>
                       )}
                     </tr>

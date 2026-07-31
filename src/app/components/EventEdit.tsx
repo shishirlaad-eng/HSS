@@ -13,11 +13,13 @@ import {
   Ticket,
   ListChecks,
   ScrollText,
+  Mail,
+  Copy,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormSection, FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
-import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS, mockCoupons } from '../../mockAPI/eventsData';
+import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import {
@@ -74,6 +76,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     termsSections: event.termsSections ?? (event.termsAndConditions
       ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
       : [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }]),
+    confirmationSubject: event.confirmationSubject ?? DEFAULT_CONFIRMATION_SUBJECT,
+    confirmationMessage: event.confirmationMessage ?? DEFAULT_CONFIRMATION_MESSAGE,
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders:       event.filterGenders ?? [],
     filterJobTitles:     event.filterJobTitles ?? [],
@@ -184,6 +188,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
         customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
         termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
+        confirmationSubject: formData.confirmationSubject.trim() || undefined,
+        confirmationMessage: formData.confirmationMessage.trim() || undefined,
         filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
         filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
         filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
@@ -624,7 +630,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   disabled={blocked}
                   className="rounded border-neutral-300 dark:border-neutral-700"
                 />
-                Enable Gift Aid
+                Enable Donation Option
               </label>
               <p className="text-xs text-neutral-400 mt-1">
                 If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
@@ -682,6 +688,75 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 onChange={sections => set('termsSections', sections)}
                 disabled={blocked}
               />
+            </div>
+
+            {/* Event Confirmation */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                  <Mail className="w-4 h-4 text-primary-600" /> Confirmation Email
+                </div>
+                <div className="space-y-4">
+                  <FormField>
+                    <FormLabel required>Subject</FormLabel>
+                    <FormInput
+                      value={formData.confirmationSubject}
+                      onChange={e => set('confirmationSubject', e.target.value)}
+                      placeholder="e.g. Your registration for {{event_name}} is confirmed"
+                      disabled={blocked}
+                    />
+                  </FormField>
+
+                  <div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                      Click a variable to copy it, then paste it into the Subject or Description.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {EVENT_CONFIRMATION_VARIABLES.map(v => (
+                        <button
+                          type="button"
+                          key={v.token}
+                          title={v.description}
+                          onClick={() => { navigator.clipboard.writeText(v.token); toast.success(`Copied ${v.token}`); }}
+                          disabled={blocked}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono font-semibold rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-primary-600 dark:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <Copy className="w-3 h-3" /> {v.token}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <FormField>
+                    <FormLabel>Description</FormLabel>
+                    <RichTextEditor
+                      value={formData.confirmationMessage}
+                      onChange={html => set('confirmationMessage', html)}
+                      placeholder="Write the confirmation email body…"
+                      minHeight="260px"
+                      maxHeight="520px"
+                      disabled={blocked}
+                    />
+                  </FormField>
+                </div>
+              </div>
+
+              <div className="xl:col-span-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                  <Mail className="w-4 h-4 text-primary-600" /> Event Confirmation
+                </div>
+                <FormField>
+                  <FormLabel>Description</FormLabel>
+                  <RichTextEditor
+                    value={formData.confirmationMessage}
+                    onChange={html => set('confirmationMessage', html)}
+                    placeholder="Write the confirmation email body…"
+                    minHeight="260px"
+                    maxHeight="520px"
+                    disabled={blocked}
+                  />
+                </FormField>
+              </div>
             </div>
 
             {/* Chat Room */}

@@ -524,6 +524,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     customQuestions: data.customQuestions,
     termsAndConditions: data.termsAndConditions,
     termsSections: data.termsSections,
+    confirmationSubject: data.confirmationSubject,
+    confirmationMessage: data.confirmationMessage,
     targetRegions: data.targetRegions,
     targetTowns: data.targetTowns,
     targetCentres: data.targetCentres,
