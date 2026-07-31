@@ -213,6 +213,11 @@ export default function EventDetail({
   const [attendAnswers, setAttendAnswers] = useState<Record<string, string | boolean>>({});
   const [discountCode, setDiscountCode] = useState('');
   const [discountCodeError, setDiscountCodeError] = useState('');
+  const [selectedTicketId, setSelectedTicketId] = useState('');
+  const [ticketError, setTicketError] = useState('');
+  const [donationAmount, setDonationAmount] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
 
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
@@ -220,7 +225,14 @@ export default function EventDetail({
   const isFull = !!event.capacity && nonDeniedCount >= event.capacity;
   const blockedByCapacity = isFull && !event.waitlistEnabled;
 
-  const handleAttend = (customAnswers?: Record<string, string | boolean>, appliedCode?: string) => {
+  const hasTicketTypes = event.paymentType === 'paid' && !!event.priceCategories && event.priceCategories.length > 0;
+
+  const handleAttend = (
+    customAnswers?: Record<string, string | boolean>,
+    appliedCode?: string,
+    ticket?: { id: string; label: string },
+    donation?: number,
+  ) => {
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
     const willWaitlist = isFull && !!event.waitlistEnabled;
@@ -236,6 +248,8 @@ export default function EventDetail({
         ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
         ...(appliedCode ? { discountCodeUsed: appliedCode } : {}),
         ...(willWaitlist ? { waitlisted: true } : {}),
+        ...(ticket ? { ticketTypeId: ticket.id, ticketTypeLabel: ticket.label } : {}),
+        ...(donation ? { donationAmount: donation } : {}),
       },
     ]));
     toast.success(
@@ -252,21 +266,28 @@ export default function EventDetail({
   const eventHasCoupon = event.paymentType === 'paid' && !!event.couponCode;
 
   const handleRequestToAttendClick = () => {
-    if ((event.customQuestions && event.customQuestions.length > 0) || eventHasCoupon) {
-      setAttendAnswers({});
-      setDiscountCode('');
-      setDiscountCodeError('');
-      setShowAttendQuestions(true);
-    } else {
-      handleAttend();
-    }
+    setAttendAnswers({});
+    setDiscountCode('');
+    setDiscountCodeError('');
+    setSelectedTicketId('');
+    setTicketError('');
+    setDonationAmount('');
+    setAgreedToTerms(false);
+    setTermsError('');
+    setShowAttendQuestions(true);
   };
 
   const handleSubmitAttendQuestions = () => {
+    if (hasTicketTypes && !selectedTicketId) {
+      setTicketError('Please select a ticket type.');
+      return;
+    }
+    setTicketError('');
+
     const missing = (event.customQuestions ?? []).find(q => {
       if (!q.required) return false;
       const ans = attendAnswers[q.id];
-      if (q.type === 'checkbox') return ans !== true;
+      if (q.type === 'checkbox') return !Array.isArray(ans) || ans.length === 0;
       return !ans || (typeof ans === 'string' && !ans.trim());
     });
     if (missing) {
@@ -286,7 +307,23 @@ export default function EventDetail({
       appliedCode = assigned;
     }
 
-    handleAttend(attendAnswers, appliedCode);
+    if (!agreedToTerms) {
+      setTermsError('Please agree to the Terms and Conditions to continue.');
+      return;
+    }
+    setTermsError('');
+
+    const ticket = hasTicketTypes
+      ? event.priceCategories!.find(c => c.id === selectedTicketId)
+      : undefined;
+    const donation = parseFloat(donationAmount) || 0;
+
+    handleAttend(
+      attendAnswers,
+      appliedCode,
+      ticket ? { id: ticket.id, label: ticket.label } : undefined,
+      donation > 0 ? donation : undefined,
+    );
     setShowAttendQuestions(false);
   };
 
@@ -502,14 +539,24 @@ export default function EventDetail({
                   </>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                {!isMember && <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>}
-                <div className="flex items-center gap-1">
-                  {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
-                  <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+              {isMember ? (
+                <div className="flex flex-col gap-1 text-base text-neutral-700 dark:text-neutral-300 mb-3">
+                  <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 flex-shrink-0" /><span>{formatDateTime(event.startDate)}</span></div>
+                  <div className="flex items-center gap-1.5">
+                    {event.locationType === 'online' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <MapPin className="w-4 h-4 flex-shrink-0" />}
+                    <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
-              </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                  <div className="flex items-center gap-1"><UserIcon className="w-3.5 h-3.5" /><span>Host: {event.host}</span></div>
+                  <div className="flex items-center gap-1">
+                    {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                    <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+                  </div>
+                  <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
+                </div>
+              )}
               {!isMember && (
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge status={event.status} />
@@ -1388,31 +1435,91 @@ export default function EventDetail({
         onClick={() => setShowAttendQuestions(false)}
       >
         <div
-          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 flex flex-col"
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-200 dark:border-neutral-800">
-            <h4 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              <ListChecks className="w-4 h-4 text-primary-600" /> Registration Questions
+          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+            <h4 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+              <ListChecks className="w-5 h-5 text-primary-600" /> Register for Karyakram
             </h4>
             <button onClick={() => setShowAttendQuestions(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
+
+            {/* 1. Ticket type (if applicable) */}
+            {hasTicketTypes && (
+              <div>
+                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 mb-2">
+                  <CreditCard className="w-3.5 h-3.5 text-primary-600" /> Ticket Type <span className="text-error-500">*</span>
+                </label>
+                <div className="space-y-1.5">
+                  {event.priceCategories!.map(cat => (
+                    <label
+                      key={cat.id}
+                      className={`flex items-start gap-2 text-sm px-3 py-2 rounded-lg border cursor-pointer ${
+                        selectedTicketId === cat.id
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
+                          : 'border-neutral-300 dark:border-neutral-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="ticketType"
+                        value={cat.id}
+                        checked={selectedTicketId === cat.id}
+                        onChange={() => { setSelectedTicketId(cat.id); setTicketError(''); }}
+                        className="mt-0.5 border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-neutral-900 dark:text-white">{cat.label}</span>
+                          <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price}</span>
+                        </span>
+                        {cat.description && (
+                          <span className="block text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{cat.description}</span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {ticketError && <p className="text-xs text-error-600 mt-1">{ticketError}</p>}
+              </div>
+            )}
+
+            {eventHasCoupon && (
+              <div>
+                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                  Discount / Free Registration Code <span className="text-neutral-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={e => { setDiscountCode(e.target.value); setDiscountCodeError(''); }}
+                  placeholder="Enter code if you have one"
+                  className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    discountCodeError
+                      ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+                      : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+                {discountCodeError && <p className="text-xs text-error-600 mt-1">{discountCodeError}</p>}
+              </div>
+            )}
+
+            {/* 2. Additional questions (if applicable) */}
             {(event.customQuestions ?? []).map(q => (
               <div key={q.id}>
-                {q.type !== 'checkbox' && (
-                  <div className="mb-2">
-                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block">
-                      {q.label} {q.required && <span className="text-error-500">*</span>}
-                    </label>
-                    {q.description && (
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{q.description}</p>
-                    )}
-                  </div>
-                )}
+                <div className="mb-2">
+                  <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block">
+                    {q.label} {q.required && <span className="text-error-500">*</span>}
+                  </label>
+                  {q.description && (
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{q.description}</p>
+                  )}
+                </div>
 
                 {q.type === 'text' && (
                   <input
@@ -1437,19 +1544,26 @@ export default function EventDetail({
                 )}
 
                 {q.type === 'checkbox' && (
-                  <div>
-                    <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={(attendAnswers[q.id] as boolean) ?? false}
-                        onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
-                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span>{q.label} {q.required && <span className="text-error-500">*</span>}</span>
-                    </label>
-                    {q.description && (
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 pl-6">{q.description}</p>
-                    )}
+                  <div className="space-y-1.5">
+                    {(q.options ?? []).map(opt => {
+                      const selected = (attendAnswers[q.id] as string[]) ?? [];
+                      const checked = selected.includes(opt);
+                      return (
+                        <label key={opt} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={e => setAttendAnswers(prev => {
+                              const cur = (prev[q.id] as string[]) ?? [];
+                              const next = e.target.checked ? [...cur, opt] : cur.filter(o => o !== opt);
+                              return { ...prev, [q.id]: next };
+                            })}
+                            className="rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span>{opt}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1482,28 +1596,63 @@ export default function EventDetail({
               </div>
             ))}
 
-            {eventHasCoupon && (
+            {/* 3. Donation (if applicable) */}
+            {event.donationEnabled && (
               <div>
-                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
-                  Discount / Free Registration Code <span className="text-neutral-400 font-normal">(optional)</span>
+                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-2">
+                  Gift Aid Donation <span className="text-neutral-400 font-normal">(optional)</span>
                 </label>
-                <input
-                  type="text"
-                  value={discountCode}
-                  onChange={e => { setDiscountCode(e.target.value); setDiscountCodeError(''); }}
-                  placeholder="Enter code if you have one"
-                  className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
-                    discountCodeError
-                      ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
-                      : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
-                  }`}
-                />
-                {discountCodeError && <p className="text-xs text-error-600 mt-1">{discountCodeError}</p>}
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 dark:text-neutral-400">£</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={donationAmount}
+                    onChange={e => setDonationAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full text-sm pl-6 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             )}
+
+            {/* 4. Terms & Conditions — always shown */}
+            <div>
+              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 mb-2">
+                <ScrollText className="w-3.5 h-3.5 text-primary-600" /> Terms &amp; Conditions
+              </label>
+              <div className="max-h-52 overflow-y-auto rounded-lg border border-neutral-200 dark:border-neutral-800 px-3 py-2 bg-neutral-50 dark:bg-neutral-900">
+                {event.termsSections && event.termsSections.length > 0 ? (
+                  event.termsSections.map(section => (
+                    <div key={section.id} className="mb-2 last:mb-0">
+                      <p className="text-xs font-semibold text-neutral-900 dark:text-white">{section.title}</p>
+                      <div
+                        className="text-xs text-neutral-600 dark:text-neutral-400 prose dark:prose-invert prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: section.description }}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                    {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
+                  </p>
+                )}
+              </div>
+              <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer mt-2">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={e => { setAgreedToTerms(e.target.checked); setTermsError(''); }}
+                  className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                />
+                <span>I agree to the Terms and Conditions <span className="text-error-500">*</span></span>
+              </label>
+              {termsError && <p className="text-xs text-error-600 mt-1">{termsError}</p>}
+            </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
             <SecondaryButton onClick={() => setShowAttendQuestions(false)}>Cancel</SecondaryButton>
             <button
               className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}

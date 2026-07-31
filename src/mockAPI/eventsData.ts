@@ -10,7 +10,7 @@ export interface EventCustomQuestion {
   label: string;
   description?: string;    // shown below the question to explain why it's asked
   type: 'text' | 'dropdown' | 'checkbox' | 'radio' | 'date';
-  options?: string[];      // for 'dropdown' and 'radio'
+  options?: string[];      // for 'dropdown', 'radio' and 'checkbox' (multi-select)
   required: boolean;
 }
 
@@ -200,13 +200,18 @@ export interface EventParticipant {
   // Participant designated as a coordinator for this event (set by event admin):
   isCoordinator?: boolean;
   // Answers to the event's customQuestions, keyed by EventCustomQuestion.id
-  customAnswers?: Record<string, string | boolean>;
+  customAnswers?: Record<string, string | boolean | string[]>;
   // Set when this registration was accepted onto the waiting list because
   // capacity was already full at the time of registration.
   waitlisted?: boolean;
   // Coupon code applied at registration (from HSS UK Setup > Lists and Options >
   // Events > Coupons) — overrides the payable amount to £0 when valid and active.
   discountCodeUsed?: string;
+  // Ticket type chosen at registration (from the event's priceCategories).
+  ticketTypeId?: string;
+  ticketTypeLabel?: string;
+  // Optional custom donation amount added at registration (GBP).
+  donationAmount?: number;
 }
 
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────

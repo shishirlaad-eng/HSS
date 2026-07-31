@@ -247,7 +247,7 @@ function MemberDashboard({
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 80); return () => clearTimeout(t); }, []);
 
   const [registerEvent, setRegisterEvent] = useState<HSSSEvent | null>(null);
-  const [registerAnswers, setRegisterAnswers] = useState<Record<string, string | boolean>>({});
+  const [registerAnswers, setRegisterAnswers] = useState<Record<string, string | boolean | string[]>>({});
   const [registered, setRegistered] = useState<Set<string>>(new Set());
 
   const upcomingEvents = useMemo(
@@ -783,11 +783,9 @@ function MemberDashboard({
                 </p>
               ) : registerEvent.customQuestions.map(q => (
                 <div key={q.id}>
-                  {q.type !== 'checkbox' && (
-                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
-                      {q.label} {q.required && <span className="text-red-500">*</span>}
-                    </label>
-                  )}
+                  <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                    {q.label} {q.required && <span className="text-red-500">*</span>}
+                  </label>
                   {q.type === 'text' && (
                     <input
                       type="text"
@@ -807,15 +805,27 @@ function MemberDashboard({
                     </select>
                   )}
                   {q.type === 'checkbox' && (
-                    <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={(registerAnswers[q.id] as boolean) ?? false}
-                        onChange={e => setRegisterAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
-                        className="mt-0.5 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span>{q.label} {q.required && <span className="text-red-500">*</span>}</span>
-                    </label>
+                    <div className="space-y-1.5">
+                      {(q.options ?? []).map(opt => {
+                        const selected = (registerAnswers[q.id] as string[]) ?? [];
+                        const checked = selected.includes(opt);
+                        return (
+                          <label key={opt} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={e => setRegisterAnswers(prev => {
+                                const cur = (prev[q.id] as string[]) ?? [];
+                                const next = e.target.checked ? [...cur, opt] : cur.filter(o => o !== opt);
+                                return { ...prev, [q.id]: next };
+                              })}
+                              className="rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               ))}
@@ -833,7 +843,7 @@ function MemberDashboard({
                   const missing = (registerEvent.customQuestions ?? []).find(q => {
                     if (!q.required) return false;
                     const ans = registerAnswers[q.id];
-                    return q.type === 'checkbox' ? ans !== true : !ans || !(ans as string).trim();
+                    return q.type === 'checkbox' ? !Array.isArray(ans) || ans.length === 0 : !ans || !(ans as string).trim();
                   });
                   if (missing) { alert(`Please answer: "${missing.label}"`); return; }
                   setRegistered(prev => new Set([...prev, registerEvent.id]));

@@ -303,6 +303,23 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </div>
             </div>
 
+            {/* Guest Registration */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.guestRegistrationEnabled}
+                  onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                  disabled={blocked}
+                  className="rounded border-neutral-300 dark:border-neutral-700"
+                />
+                Allow non-members to register via a guest registration link
+              </label>
+            </div>
+
             {/* Location */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
@@ -607,7 +624,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   disabled={blocked}
                   className="rounded border-neutral-300 dark:border-neutral-700"
                 />
-                Enable donation option
+                Enable Gift Aid
               </label>
               <p className="text-xs text-neutral-400 mt-1">
                 If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
@@ -642,23 +659,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </FormField>
                 </div>
               )}
-            </div>
-
-            {/* Guest Registration */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
-              </div>
-              <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={formData.guestRegistrationEnabled}
-                  onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-                  disabled={blocked}
-                  className="rounded border-neutral-300 dark:border-neutral-700"
-                />
-                Allow non-members to register via a guest registration link
-              </label>
             </div>
 
             {/* Custom Questions */}

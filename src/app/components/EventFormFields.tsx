@@ -176,7 +176,7 @@ export function CustomQuestionsEditor({
             />
             <FormSelect
               value={q.type}
-              onChange={e => updateQuestion(q.id, { type: e.target.value as EventCustomQuestion['type'], options: (e.target.value === 'dropdown' || e.target.value === 'radio') ? (q.options ?? ['']) : undefined })}
+              onChange={e => updateQuestion(q.id, { type: e.target.value as EventCustomQuestion['type'], options: (e.target.value === 'dropdown' || e.target.value === 'radio' || e.target.value === 'checkbox') ? (q.options ?? ['']) : undefined })}
               className="w-40"
             >
               <option value="text">Single-line text</option>

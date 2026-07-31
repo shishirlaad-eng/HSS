@@ -538,7 +538,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
         {/* Tab content */}
         <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
 
-          {/* ── Karyakram Basics + Schedule ── */}
+          {/* ── Karyakram Basics (incl. Schedule) ── */}
           {activeTab === 'basics' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <Card title="Karyakram Details">
@@ -585,12 +585,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       Enable waiting list — allow registration once capacity is full
                     </label>
                   </FormField>
-                  <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
-                </div>
-              </Card>
-
-              <Card title="Schedule">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormField>
                     <FormLabel required>Start Date</FormLabel>
                     <FormInput ref={el => { fieldRefs.current.startDate = el; }} type="date" value={formData.startDate} onChange={e => set('startDate', e.target.value)} className={errCls('startDate')} />
@@ -611,24 +605,42 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     <FormInput ref={el => { fieldRefs.current.endTime = el; }} type="time" value={formData.endTime} onChange={e => set('endTime', e.target.value)} className={errCls('endTime')} />
                     <ErrorText>{touched && errors.endTime}</ErrorText>
                   </FormField>
+                  <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
                 </div>
               </Card>
 
-              <Card title="Registration Window">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                  Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FormField>
-                    <FormLabel>Registration Start Date</FormLabel>
-                    <FormInput type="date" value={formData.registrationStartDate} onChange={e => set('registrationStartDate', e.target.value)} />
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Registration Close Date</FormLabel>
-                    <FormInput type="date" value={formData.registrationEndDate} onChange={e => set('registrationEndDate', e.target.value)} />
-                  </FormField>
-                </div>
-              </Card>
+              <div className="flex flex-col gap-5">
+                <Card title="Guest Registration">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.guestRegistrationEnabled}
+                        onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                      Allow non-members to register via a guest registration link
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Registration Window">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                    Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField>
+                      <FormLabel>Registration Start Date</FormLabel>
+                      <FormInput type="date" value={formData.registrationStartDate} onChange={e => set('registrationStartDate', e.target.value)} />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Registration Close Date</FormLabel>
+                      <FormInput type="date" value={formData.registrationEndDate} onChange={e => set('registrationEndDate', e.target.value)} />
+                    </FormField>
+                  </div>
+                </Card>
+              </div>
             </div>
           )}
 
@@ -847,7 +859,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
             </div>
           )}
 
-          {/* ── Payment Type + Guest Registration ── */}
+          {/* ── Payment Type ── */}
           {activeTab === 'payment' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <Card title="Payment Type">
@@ -867,7 +879,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       onChange={e => set('donationEnabled', e.target.checked)}
                       className="rounded border-neutral-300 dark:border-neutral-700"
                     />
-                    Enable donation option
+                    Enable Gift Aid
                   </label>
                   <p className="text-xs text-neutral-400 -mt-2">
                     If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
@@ -898,22 +910,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       </p>
                     </FormField>
                   )}
-                </div>
-              </Card>
-
-              <Card title="Guest Registration">
-                <div className="space-y-4">
-                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formData.guestRegistrationEnabled}
-                      onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-                      className="rounded border-neutral-300 dark:border-neutral-700"
-                    />
-                    <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                    Allow non-members to register via a guest registration link
-                  </label>
-
                 </div>
               </Card>
             </div>
