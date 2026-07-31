@@ -10,6 +10,7 @@ import {
   PriceCategoriesEditor,
   CustomQuestionsEditor,
   EventImageField,
+  TermsSectionsEditor,
   AGE_GROUP_OPTIONS,
 } from './EventFormFields';
 
@@ -50,13 +51,15 @@ const EMPTY_FORM = {
   startTime: '',
   endDate: '',
   endTime: '',
+  registrationStartDate: '',
+  registrationEndDate: '',
   paymentType: 'free' as 'paid' | 'free',
   priceCategories: [] as { id: string; label: string; price: number }[],
   couponCode: '',
+  donationEnabled: false,
   capacity: '',
   waitlistEnabled: false,
   guestRegistrationEnabled: false,
-  guestPrice: '',
   customQuestions: [] as { id: string; question: string; required: boolean }[],
   filterAgeCategories: [] as AgeGroup[],
   filterGenders: [] as ('male' | 'female')[],
@@ -68,6 +71,7 @@ const EMPTY_FORM = {
   targetRegions: [] as string[],
   targetTowns: [] as string[],
   targetCentres: [] as string[],
+  termsSections: [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }] as { id: string; title: string; description: string }[],
 };
 
 // Cascade options — empty selection OR every option selected both mean "All" and widen to the full available set
@@ -111,13 +115,15 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     startTime: event.startDate.split('T')[1]?.substring(0, 5) ?? '',
     endDate: event.endDate.split('T')[0],
     endTime: event.endDate.split('T')[1]?.substring(0, 5) ?? '',
+    registrationStartDate: event.registrationStartDate ?? '',
+    registrationEndDate: event.registrationEndDate ?? '',
     paymentType: event.paymentType,
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode: event.couponCode ?? '',
+    donationEnabled: event.donationEnabled ?? false,
     capacity: event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
-    guestPrice: event.guestPrice !== undefined ? String(event.guestPrice) : '',
     customQuestions: event.customQuestions ?? [],
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders: event.filterGenders ?? [],
@@ -129,6 +135,9 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     targetRegions: event.targetRegions ?? [],
     targetTowns: event.targetTowns ?? [],
     targetCentres: event.targetCentres ?? [],
+    termsSections: event.termsSections ?? (event.termsAndConditions
+      ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
+      : [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }]),
   };
 }
 
@@ -359,10 +368,9 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'venuePostCode', 'venueAddressLine1', 'venueTownCity', 'onlineUrl', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode'];
+  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode'];
   const FIELD_TAB: Record<string, CreateTab> = {
     name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
-    venuePostCode: 'location', venueAddressLine1: 'location', venueTownCity: 'location', onlineUrl: 'location',
     targetMemberIds: 'audience',
     paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment',
   };
@@ -388,12 +396,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
     if (formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
       errs.targetMemberIds = 'Please select at least one member.';
     }
-    if (formData.locationType === 'physical') {
-      if (!formData.venuePostCode.trim())     errs.venuePostCode     = 'Post code is required.';
-      if (!formData.venueAddressLine1.trim()) errs.venueAddressLine1 = 'Address line 1 is required.';
-      if (!formData.venueTownCity.trim())     errs.venueTownCity     = 'Town / city is required.';
-    }
-    if (formData.locationType === 'online' && !formData.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online Karyakrams.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -431,15 +433,17 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       onlineUrl:    formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
       startDate: `${formData.startDate}T${formData.startTime}:00Z`,
       endDate:   `${formData.endDate}T${formData.endTime}:00Z`,
+      registrationStartDate: formData.registrationStartDate || undefined,
+      registrationEndDate: formData.registrationEndDate || undefined,
       paymentType: formData.paymentType,
       price: formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
       priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
       couponCode: formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
+      donationEnabled: formData.donationEnabled,
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
       waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
-      guestPaymentType: formData.guestRegistrationEnabled ? (formData.guestPrice.trim() ? 'paid' : 'free') : undefined,
-      guestPrice: formData.guestRegistrationEnabled && formData.guestPrice.trim() ? (parseFloat(formData.guestPrice) || 0) : undefined,
+      guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
       filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
       filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
@@ -450,6 +454,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
       targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
       targetMemberIds: formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
+      termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
       status,
       createdDate: now,
       lastUpdated: now,
@@ -608,6 +613,22 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                   </FormField>
                 </div>
               </Card>
+
+              <Card title="Registration Window">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                  Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <FormField>
+                    <FormLabel>Registration Start Date</FormLabel>
+                    <FormInput type="date" value={formData.registrationStartDate} onChange={e => set('registrationStartDate', e.target.value)} />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Registration Close Date</FormLabel>
+                    <FormInput type="date" value={formData.registrationEndDate} onChange={e => set('registrationEndDate', e.target.value)} />
+                  </FormField>
+                </div>
+              </Card>
             </div>
           )}
 
@@ -642,7 +663,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                   {formData.locationType === 'physical' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField>
-                        <FormLabel required>Post Code</FormLabel>
+                        <FormLabel>Post Code</FormLabel>
                         <FormInput
                           ref={el => { fieldRefs.current.venuePostCode = el; }}
                           value={formData.venuePostCode}
@@ -680,7 +701,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         <FormInput value={formData.venueBuildingName} onChange={e => set('venueBuildingName', e.target.value)} placeholder="Building name" />
                       </FormField>
                       <FormField>
-                        <FormLabel required>Address Line 1</FormLabel>
+                        <FormLabel>Address Line 1</FormLabel>
                         <FormInput
                           ref={el => { fieldRefs.current.venueAddressLine1 = el; }}
                           value={formData.venueAddressLine1}
@@ -695,7 +716,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         <FormInput value={formData.venueAddressLine2} onChange={e => set('venueAddressLine2', e.target.value)} placeholder="Address line 2" />
                       </FormField>
                       <FormField>
-                        <FormLabel required>Town / City</FormLabel>
+                        <FormLabel>Town / City</FormLabel>
                         <FormInput
                           ref={el => { fieldRefs.current.venueTownCity = el; }}
                           value={formData.venueTownCity}
@@ -708,7 +729,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     </div>
                   ) : (
                     <FormField>
-                      <FormLabel required>Online Call URL</FormLabel>
+                      <FormLabel>Online Call URL</FormLabel>
                       <FormInput
                         ref={el => { fieldRefs.current.onlineUrl = el; }}
                         value={formData.onlineUrl}
@@ -839,6 +860,18 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     </FormSelect>
                     <ErrorText>{touched && errors.paymentType}</ErrorText>
                   </FormField>
+                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.donationEnabled}
+                      onChange={e => set('donationEnabled', e.target.checked)}
+                      className="rounded border-neutral-300 dark:border-neutral-700"
+                    />
+                    Enable donation option
+                  </label>
+                  <p className="text-xs text-neutral-400 -mt-2">
+                    If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
+                  </p>
                   {formData.paymentType === 'paid' && (
                     <div ref={el => { fieldRefs.current.priceCategories = el; }}>
                       <FormLabel required>Ticket Types</FormLabel>
@@ -881,25 +914,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     Allow non-members to register via a guest registration link
                   </label>
 
-                  {formData.guestRegistrationEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField>
-                        <FormLabel>Guest Amount</FormLabel>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                          <FormInput
-                            type="number"
-                            value={formData.guestPrice}
-                            onChange={e => set('guestPrice', e.target.value)}
-                            placeholder="0.00 (leave blank if free)"
-                            min="0"
-                            step="0.01"
-                            className="pl-6"
-                          />
-                        </div>
-                      </FormField>
-                    </div>
-                  )}
                 </div>
               </Card>
             </div>
@@ -918,9 +932,10 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
           {/* ── Terms & Conditions ── */}
           {activeTab === 'terms' && (
             <Card title="Terms & Conditions">
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
-                {EVENT_TERMS_AND_CONDITIONS}
-              </p>
+              <TermsSectionsEditor
+                sections={formData.termsSections}
+                onChange={sections => set('termsSections', sections)}
+              />
             </Card>
           )}
 

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Plus, Trash2, Image as ImageIcon, X, CheckCircle2 } from 'lucide-react';
-import { FormField, FormLabel, FormInput, FormSelect } from './hb/common';
-import type { EventPriceCategory, EventCustomQuestion } from '../../mockAPI/eventsData';
+import { FormField, FormLabel, FormInput, FormSelect, RichTextEditor } from './hb/common';
+import type { EventPriceCategory, EventCustomQuestion, EventTermsSection } from '../../mockAPI/eventsData';
 import type { AgeGroup } from '../../mockAPI/membersData';
 
 // ─── Target Audience helpers (shared across Create/Edit forms) ───────────────
@@ -173,6 +173,7 @@ export function CustomQuestionsEditor({
               <option value="dropdown">Dropdown</option>
               <option value="checkbox">Checkbox</option>
               <option value="radio">Radio Button</option>
+              <option value="date">Date Input</option>
             </FormSelect>
             <button
               type="button"
@@ -260,7 +261,7 @@ export function EventImageField({
 
   return (
     <FormField className="md:col-span-2">
-      <FormLabel>Event Image</FormLabel>
+      <FormLabel>Event Banner</FormLabel>
       <div className="flex items-center gap-3">
         {value ? (
           <img src={value} alt="Event" className="w-24 h-24 rounded-lg object-cover border border-neutral-200 dark:border-neutral-800" />
@@ -282,7 +283,7 @@ export function EventImageField({
             onClick={() => inputRef.current?.click()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
-            <ImageIcon className="w-3.5 h-3.5" /> Upload Image
+            <ImageIcon className="w-3.5 h-3.5" /> Upload Banner
           </button>
           {value && (
             <button
@@ -290,11 +291,74 @@ export function EventImageField({
               onClick={() => onChange('')}
               className="text-xs font-medium text-error-600 hover:underline text-left"
             >
-              Remove image
+              Remove banner
             </button>
           )}
         </div>
       </div>
     </FormField>
+  );
+}
+
+// ─── Terms & Conditions Sections Editor ───────────────────────────────────────
+// Lets an admin define multiple editable sections (Terms and Conditions,
+// Privacy Policy, etc.) — each with a title and a rich-text description.
+export function TermsSectionsEditor({
+  sections,
+  onChange,
+  disabled,
+}: {
+  sections: EventTermsSection[];
+  onChange: (next: EventTermsSection[]) => void;
+  disabled?: boolean;
+}) {
+  const addSection = () => {
+    onChange([...sections, { id: `TS-${Date.now()}`, title: '', description: '' }]);
+  };
+  const updateSection = (id: string, patch: Partial<EventTermsSection>) => {
+    onChange(sections.map(s => s.id === id ? { ...s, ...patch } : s));
+  };
+  const removeSection = (id: string) => {
+    onChange(sections.filter(s => s.id !== id));
+  };
+
+  return (
+    <div className="space-y-4">
+      {sections.map(section => (
+        <div key={section.id} className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-3 bg-white dark:bg-neutral-900">
+          <div className="flex items-center gap-2">
+            <FormInput
+              value={section.title}
+              onChange={e => updateSection(section.id, { title: e.target.value })}
+              placeholder="Section title (e.g. Terms and Conditions, Privacy Policy)"
+              disabled={disabled}
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={() => removeSection(section.id)}
+              disabled={disabled}
+              className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+          <RichTextEditor
+            value={section.description}
+            onChange={html => updateSection(section.id, { description: html })}
+            placeholder="Section description…"
+            disabled={disabled}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addSection}
+        disabled={disabled}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-300 dark:disabled:hover:border-neutral-700 disabled:hover:text-neutral-600 dark:disabled:hover:text-neutral-400"
+      >
+        <Plus className="w-3.5 h-3.5" /> Add Section
+      </button>
+    </div>
   );
 }

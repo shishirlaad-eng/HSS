@@ -696,7 +696,7 @@ export default function EventDetail({
                                 <div key={q.id} className="flex items-start justify-between gap-3">
                                   <span className="text-[13px] text-neutral-600 dark:text-neutral-400">{q.label}</span>
                                   <span className="text-[14px] font-semibold text-neutral-900 dark:text-white text-right">
-                                    {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : (answer ? String(answer) : '—')}
+                                    {q.type === 'checkbox' ? (answer === true ? 'Yes' : 'No') : q.type === 'date' ? (answer ? formatDate(String(answer)) : '—') : (answer ? String(answer) : '—')}
                                   </span>
                                 </div>
                               );
@@ -853,9 +853,21 @@ export default function EventDetail({
                         <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
                       </h4>
                     )}
-                    <p className="px-5 py-4 text-[13px] text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
-                      {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
-                    </p>
+                    {event.termsSections && event.termsSections.length > 0 ? (
+                      event.termsSections.map(section => (
+                        <div key={section.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
+                          <h5 className="px-5 pt-4 text-sm font-semibold text-neutral-900 dark:text-white">{section.title}</h5>
+                          <div
+                            className="px-5 py-3 text-[13px] text-neutral-600 dark:text-neutral-400 prose dark:prose-invert prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: section.description }}
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <p className="px-5 py-4 text-[13px] text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                        {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1490,6 +1502,15 @@ export default function EventDetail({
                       </label>
                     ))}
                   </div>
+                )}
+
+                {q.type === 'date' && (
+                  <input
+                    type="date"
+                    value={(attendAnswers[q.id] as string) ?? ''}
+                    onChange={e => setAttendAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
                 )}
               </div>
             ))}

@@ -24,6 +24,7 @@ import {
   PriceCategoriesEditor,
   CustomQuestionsEditor,
   EventImageField,
+  TermsSectionsEditor,
   AGE_GROUP_OPTIONS,
   CheckChip,
   toggleArr,
@@ -60,14 +61,19 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     startTime:      event.startDate.split('T')[1]?.substring(0, 5) ?? '09:00',
     endDate:        event.endDate.split('T')[0],
     endTime:        event.endDate.split('T')[1]?.substring(0, 5) ?? '17:00',
+    registrationStartDate: event.registrationStartDate ?? '',
+    registrationEndDate: event.registrationEndDate ?? '',
     paymentType:    event.paymentType as 'paid' | 'free',
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode:     event.couponCode ?? '',
+    donationEnabled: event.donationEnabled ?? false,
     capacity:       event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
-    guestPrice: event.guestPrice !== undefined ? String(event.guestPrice) : '',
     customQuestions: event.customQuestions ?? [],
+    termsSections: event.termsSections ?? (event.termsAndConditions
+      ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
+      : [{ id: 'TS-1', title: 'Terms and Conditions', description: EVENT_TERMS_AND_CONDITIONS }]),
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders:       event.filterGenders ?? [],
     filterJobTitles:     event.filterJobTitles ?? [],
@@ -95,7 +101,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'venueAddress', 'onlineUrl', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode'];
+  const FIELD_ORDER = ['name', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode'];
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const focusFirstError = (errs: Record<string, string>) => {
@@ -114,8 +120,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     if (!formData.region)              errs.region         = 'This field is required.';
     if (!formData.town)                errs.town           = 'This field is required.';
     if (!formData.activityCentre)      errs.activityCentre = 'This field is required.';
-    if (formData.locationType === 'physical' && !formData.venueAddress.trim()) errs.venueAddress = 'Venue address is required for physical events.';
-    if (formData.locationType === 'online' && !formData.onlineUrl.trim())      errs.onlineUrl    = 'Online meeting URL is required for online events.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -167,16 +171,19 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         onlineUrl:      formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
         startDate:      `${formData.startDate}T${formData.startTime}:00Z`,
         endDate:        `${formData.endDate}T${formData.endTime}:00Z`,
+        registrationStartDate: formData.registrationStartDate || undefined,
+        registrationEndDate: formData.registrationEndDate || undefined,
         paymentType:    formData.paymentType,
         price:          formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
         priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
         couponCode:      formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
+        donationEnabled: formData.donationEnabled,
         capacity:       formData.capacity ? parseInt(formData.capacity) : undefined,
         waitlistEnabled: formData.waitlistEnabled,
         guestRegistrationEnabled: formData.guestRegistrationEnabled,
-        guestPaymentType: formData.guestRegistrationEnabled ? (formData.guestPrice.trim() ? 'paid' : 'free') : undefined,
-        guestPrice: formData.guestRegistrationEnabled && formData.guestPrice.trim() ? (parseFloat(formData.guestPrice) || 0) : undefined,
+        guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
         customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
+        termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
         filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
         filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
         filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
@@ -330,7 +337,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 </div>
                 {formData.locationType === 'physical' ? (
                   <FormField>
-                    <FormLabel required>Venue Address</FormLabel>
+                    <FormLabel>Venue Address</FormLabel>
                     <FormInput
                       ref={el => { fieldRefs.current.venueAddress = el; }}
                       value={formData.venueAddress}
@@ -343,7 +350,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </FormField>
                 ) : (
                   <FormField>
-                    <FormLabel required>Online Call URL</FormLabel>
+                    <FormLabel>Online Call URL</FormLabel>
                     <FormInput
                       ref={el => { fieldRefs.current.onlineUrl = el; }}
                       value={formData.onlineUrl}
@@ -541,6 +548,36 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </div>
             </div>
 
+            {/* Registration Window */}
+            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                <Clock className="w-4 h-4 text-primary-600" /> Registration Window
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField>
+                  <FormLabel>Registration Start Date</FormLabel>
+                  <FormInput
+                    type="date"
+                    value={formData.registrationStartDate}
+                    onChange={e => set('registrationStartDate', e.target.value)}
+                    disabled={blocked}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Registration Close Date</FormLabel>
+                  <FormInput
+                    type="date"
+                    value={formData.registrationEndDate}
+                    onChange={e => set('registrationEndDate', e.target.value)}
+                    disabled={blocked}
+                  />
+                </FormField>
+              </div>
+            </div>
+
             {/* Payment */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
@@ -562,6 +599,19 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   <ErrorText>{touched && errors.paymentType}</ErrorText>
                 </FormField>
               </div>
+              <label className="inline-flex items-center gap-2 mt-4 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.donationEnabled}
+                  onChange={e => set('donationEnabled', e.target.checked)}
+                  disabled={blocked}
+                  className="rounded border-neutral-300 dark:border-neutral-700"
+                />
+                Enable donation option
+              </label>
+              <p className="text-xs text-neutral-400 mt-1">
+                If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
+              </p>
               {formData.paymentType === 'paid' && (
                 <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-4">
                   <FormLabel required>Ticket Types</FormLabel>
@@ -609,26 +659,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                 />
                 Allow non-members to register via a guest registration link
               </label>
-              {formData.guestRegistrationEnabled && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <FormField>
-                    <FormLabel>Guest Amount</FormLabel>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                      <FormInput
-                        type="number"
-                        value={formData.guestPrice}
-                        onChange={e => set('guestPrice', e.target.value)}
-                        placeholder="0.00 (leave blank if free)"
-                        min="0"
-                        step="0.01"
-                        disabled={blocked}
-                        className="pl-6"
-                      />
-                    </div>
-                  </FormField>
-                </div>
-              )}
             </div>
 
             {/* Custom Questions */}
@@ -647,9 +677,11 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
                 <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
               </div>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
-                {EVENT_TERMS_AND_CONDITIONS}
-              </p>
+              <TermsSectionsEditor
+                sections={formData.termsSections}
+                onChange={sections => set('termsSections', sections)}
+                disabled={blocked}
+              />
             </div>
 
             {/* Chat Room */}

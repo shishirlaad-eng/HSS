@@ -8,9 +8,15 @@ export interface EventCustomQuestion {
   id: string;
   label: string;
   description?: string;    // shown below the question to explain why it's asked
-  type: 'text' | 'dropdown' | 'checkbox' | 'radio';
+  type: 'text' | 'dropdown' | 'checkbox' | 'radio' | 'date';
   options?: string[];      // for 'dropdown' and 'radio'
   required: boolean;
+}
+
+export interface EventTermsSection {
+  id: string;
+  title: string;
+  description: string;   // rich-text HTML
 }
 
 export interface Event {
@@ -35,6 +41,10 @@ export interface Event {
   endDate: string;     // ISO datetime (renamed from expiryDate)
   createdDate: string;
   lastUpdated: string;
+  // Registration window — when members are allowed to register, separate from
+  // when the Karyakram itself runs. Optional; blank = registration always open.
+  registrationStartDate?: string;   // date (yyyy-mm-dd)
+  registrationEndDate?: string;     // date (yyyy-mm-dd)
 
   // Payment
   paymentType: 'paid' | 'free';
@@ -44,6 +54,9 @@ export interface Event {
   // pool at HSS UK Setup > Lists and Options > Events > Coupons. Shared manually
   // with the relevant attendee; overrides the payable amount to £0 when applied.
   couponCode?: string;
+  // Optional donation add-on — when enabled, a member registering can choose to
+  // donate a custom amount on top of/regardless of the ticket price.
+  donationEnabled?: boolean;
 
   // Configuration
   capacity?: number;
@@ -51,7 +64,8 @@ export interface Event {
   waitlistEnabled?: boolean;
   description?: string;
   imageUrl?: string;
-  termsAndConditions?: string;
+  termsAndConditions?: string;   // legacy single-blob field, kept for older events
+  termsSections?: EventTermsSection[];   // editable Terms/Privacy Policy/etc. sections
 
   // Target audience — multi-select scope (Suchana-style broadcast; separate from
   // the admin-ownership country/region/town/activityCentre above). Empty = All.
