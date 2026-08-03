@@ -239,6 +239,7 @@ export interface EventParticipant {
   ticketTypeLabel?: string;
   // Optional custom donation amount added at registration (GBP).
   donationAmount?: number;
+  giftAidClaimed?: boolean;
 }
 
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
@@ -525,6 +526,9 @@ export const mockEvents: Event[] = [
       { id: 'PC-107-2', label: 'Yuva', price: 25 },
       { id: 'PC-107-3', label: 'Jyeshtha', price: 20 },
     ],
+    donationEnabled: true,
+    donationDescription: 'Support the Iftar programme with an optional donation on top of your ticket price.',
+    donationAmounts: [10, 25, 50],
     capacity: 80,
     description: 'A community Iftar gathering to foster interfaith friendships and celebrate shared values. All are welcome to break bread together in a spirit of unity, respect, and community.',
     customQuestions: [

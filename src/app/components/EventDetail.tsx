@@ -34,6 +34,7 @@ import {
   Copy,
   ShieldCheck,
   ShieldOff,
+  Heart,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -216,8 +217,29 @@ export default function EventDetail({
   const [selectedTicketId, setSelectedTicketId] = useState('');
   const [ticketError, setTicketError] = useState('');
   const [donationAmount, setDonationAmount] = useState('');
+  const [giftAidChecked, setGiftAidChecked] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
+
+  // ── Payment Details popup — shown after "Pay and Register" when a paid
+  // ticket and/or donation is involved; free registrations skip straight to
+  // handleAttend.
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentEmail, setPaymentEmail] = useState('');
+  const [paymentCardNumber, setPaymentCardNumber] = useState('');
+  const [paymentExpiry, setPaymentExpiry] = useState('');
+  const [paymentCVC, setPaymentCVC] = useState('');
+  const [paymentCardholderName, setPaymentCardholderName] = useState('');
+  const [paymentBillingPostcode, setPaymentBillingPostcode] = useState('');
+  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+  const [pendingRegistration, setPendingRegistration] = useState<{
+    customAnswers?: Record<string, string | boolean>;
+    appliedCode?: string;
+    ticket?: { id: string; label: string };
+    donation?: number;
+    giftAid?: boolean;
+  } | null>(null);
 
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
@@ -232,6 +254,7 @@ export default function EventDetail({
     appliedCode?: string,
     ticket?: { id: string; label: string },
     donation?: number,
+    giftAid?: boolean,
   ) => {
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
@@ -250,6 +273,7 @@ export default function EventDetail({
         ...(willWaitlist ? { waitlisted: true } : {}),
         ...(ticket ? { ticketTypeId: ticket.id, ticketTypeLabel: ticket.label } : {}),
         ...(donation ? { donationAmount: donation } : {}),
+        ...(donation && giftAid ? { giftAidClaimed: true } : {}),
       },
     ]));
     toast.success(
@@ -265,6 +289,13 @@ export default function EventDetail({
   // (Payment Type tab, Coupon Code field) — no point prompting otherwise.
   const eventHasCoupon = event.paymentType === 'paid' && !!event.couponCode;
 
+  // Whether the current selection in the Register popup involves a real charge
+  // (unapplied ticket price and/or donation) — drives the Submit/Pay button label.
+  const selectedTicketPrice = hasTicketTypes
+    ? (event.priceCategories!.find(c => c.id === selectedTicketId)?.price ?? 0)
+    : 0;
+  const requiresPayment = !discountCode.trim() && (selectedTicketPrice + (parseFloat(donationAmount) || 0)) > 0;
+
   const handleRequestToAttendClick = () => {
     setAttendAnswers({});
     setDiscountCode('');
@@ -272,6 +303,7 @@ export default function EventDetail({
     setSelectedTicketId('');
     setTicketError('');
     setDonationAmount('');
+    setGiftAidChecked(false);
     setAgreedToTerms(false);
     setTermsError('');
     setShowAttendQuestions(true);
@@ -317,14 +349,65 @@ export default function EventDetail({
       ? event.priceCategories!.find(c => c.id === selectedTicketId)
       : undefined;
     const donation = parseFloat(donationAmount) || 0;
+    const ticketPrice = appliedCode ? 0 : (ticket?.price ?? 0);
+    const totalPayable = ticketPrice + donation;
+
+    if (totalPayable > 0) {
+      setPendingRegistration({
+        customAnswers: attendAnswers,
+        appliedCode,
+        ticket: ticket ? { id: ticket.id, label: ticket.label } : undefined,
+        donation: donation > 0 ? donation : undefined,
+        giftAid: giftAidChecked,
+      });
+      const me = mockMembers.find(m => m.id === myMemberId);
+      setPaymentAmount(totalPayable.toFixed(2));
+      setPaymentEmail(me?.email ?? '');
+      setPaymentCardNumber('');
+      setPaymentExpiry('');
+      setPaymentCVC('');
+      setPaymentCardholderName(me?.name ?? '');
+      setPaymentBillingPostcode('');
+      setPaymentErrors({});
+      setShowAttendQuestions(false);
+      setShowPaymentDetails(true);
+      return;
+    }
 
     handleAttend(
       attendAnswers,
       appliedCode,
       ticket ? { id: ticket.id, label: ticket.label } : undefined,
       donation > 0 ? donation : undefined,
+      giftAidChecked,
     );
     setShowAttendQuestions(false);
+  };
+
+  const handleSubmitPayment = () => {
+    const errs: Record<string, string> = {};
+    if (!paymentAmount.trim() || (parseFloat(paymentAmount) || 0) <= 0) errs.amount = 'Enter a valid amount.';
+    if (!paymentEmail.trim()) errs.email = 'Email address is required.';
+    if (!paymentCardNumber.trim()) errs.cardNumber = 'Card number is required.';
+    if (!paymentExpiry.trim()) errs.expiry = 'Expiry date is required.';
+    if (!paymentCVC.trim()) errs.cvc = 'CVC is required.';
+    if (!paymentCardholderName.trim()) errs.cardholderName = 'Cardholder name is required.';
+    if (!paymentBillingPostcode.trim()) errs.billingPostcode = 'Billing postcode is required.';
+    if (Object.keys(errs).length > 0) {
+      setPaymentErrors(errs);
+      return;
+    }
+    if (pendingRegistration) {
+      handleAttend(
+        pendingRegistration.customAnswers,
+        pendingRegistration.appliedCode,
+        pendingRegistration.ticket,
+        pendingRegistration.donation,
+        pendingRegistration.giftAid,
+      );
+    }
+    setShowPaymentDetails(false);
+    setPendingRegistration(null);
   };
 
   // ── Export participants as CSV ─────────────────────────────────────────────
@@ -1601,6 +1684,27 @@ export default function EventDetail({
                 <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-2">
                   Donation <span className="text-neutral-400 font-normal">(optional)</span>
                 </label>
+                {event.donationDescription && (
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-2">{event.donationDescription}</p>
+                )}
+                {event.donationAmounts && event.donationAmounts.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {event.donationAmounts.map(amt => (
+                      <button
+                        type="button"
+                        key={amt}
+                        onClick={() => setDonationAmount(String(amt))}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                          donationAmount === String(amt)
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-primary-300 dark:hover:border-primary-700'
+                        }`}
+                      >
+                        £{amt}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 dark:text-neutral-400">£</span>
                   <input
@@ -1613,6 +1717,15 @@ export default function EventDetail({
                     className="w-full text-sm pl-6 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
+                <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer mt-2">
+                  <input
+                    type="checkbox"
+                    checked={giftAidChecked}
+                    onChange={e => setGiftAidChecked(e.target.checked)}
+                    className="rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Receive Gift Aid</span>
+                </label>
               </div>
             )}
 
@@ -1657,7 +1770,164 @@ export default function EventDetail({
               className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
               onClick={handleSubmitAttendQuestions}
             >
-              <Check className="w-3.5 h-3.5" /> Submit Request
+              <Check className="w-3.5 h-3.5" /> {requiresPayment ? 'Pay and Register' : 'Submit Request'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── PAYMENT DETAILS ──────────────────────────────────────────────────── */}
+    {showPaymentDetails && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowPaymentDetails(false)}
+      >
+        <div
+          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 flex flex-col max-h-[90vh]"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+            <h4 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+              <Heart className="w-4 h-4 text-primary-600" /> Payment Details
+            </h4>
+            <p className="text-xs text-neutral-400 mt-0.5">All fields are required</p>
+          </div>
+
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Amount</label>
+              {event.donationAmounts && event.donationAmounts.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {event.donationAmounts.map(amt => (
+                    <button
+                      type="button"
+                      key={amt}
+                      onClick={() => { setPaymentAmount(String(amt)); setPaymentErrors(prev => ({ ...prev, amount: '' })); }}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                        paymentAmount === String(amt)
+                          ? 'bg-primary-600 border-primary-600 text-white'
+                          : 'bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-primary-300 dark:hover:border-primary-700'
+                      }`}
+                    >
+                      £{amt}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 dark:text-neutral-400">£</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={e => { setPaymentAmount(e.target.value); setPaymentErrors(prev => ({ ...prev, amount: '' })); }}
+                  placeholder="0.00"
+                  className={`w-full text-sm pl-6 pr-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    paymentErrors.amount ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+              </div>
+              {paymentErrors.amount && <p className="text-xs text-error-600 mt-1">{paymentErrors.amount}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Email address</label>
+              <input
+                type="email"
+                value={paymentEmail}
+                onChange={e => { setPaymentEmail(e.target.value); setPaymentErrors(prev => ({ ...prev, email: '' })); }}
+                placeholder="you@example.com"
+                className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                  paymentErrors.email ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                }`}
+              />
+              {paymentErrors.email && <p className="text-xs text-error-600 mt-1">{paymentErrors.email}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Card number</label>
+              <div className="relative">
+                <CreditCard className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={paymentCardNumber}
+                  onChange={e => { setPaymentCardNumber(e.target.value); setPaymentErrors(prev => ({ ...prev, cardNumber: '' })); }}
+                  placeholder="1234 5678 9012 3456"
+                  className={`w-full text-sm pl-9 pr-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    paymentErrors.cardNumber ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+              </div>
+              {paymentErrors.cardNumber && <p className="text-xs text-error-600 mt-1">{paymentErrors.cardNumber}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Expiry date</label>
+                <input
+                  type="text"
+                  value={paymentExpiry}
+                  onChange={e => { setPaymentExpiry(e.target.value); setPaymentErrors(prev => ({ ...prev, expiry: '' })); }}
+                  placeholder="MM / YY"
+                  className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    paymentErrors.expiry ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+                {paymentErrors.expiry && <p className="text-xs text-error-600 mt-1">{paymentErrors.expiry}</p>}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">CVC / CVV</label>
+                <input
+                  type="text"
+                  value={paymentCVC}
+                  onChange={e => { setPaymentCVC(e.target.value); setPaymentErrors(prev => ({ ...prev, cvc: '' })); }}
+                  placeholder="•••"
+                  className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    paymentErrors.cvc ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                  }`}
+                />
+                {paymentErrors.cvc && <p className="text-xs text-error-600 mt-1">{paymentErrors.cvc}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Cardholder name</label>
+              <input
+                type="text"
+                value={paymentCardholderName}
+                onChange={e => { setPaymentCardholderName(e.target.value); setPaymentErrors(prev => ({ ...prev, cardholderName: '' })); }}
+                placeholder="Name as it appears on card"
+                className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                  paymentErrors.cardholderName ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                }`}
+              />
+              {paymentErrors.cardholderName && <p className="text-xs text-error-600 mt-1">{paymentErrors.cardholderName}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Billing postcode</label>
+              <input
+                type="text"
+                value={paymentBillingPostcode}
+                onChange={e => { setPaymentBillingPostcode(e.target.value); setPaymentErrors(prev => ({ ...prev, billingPostcode: '' })); }}
+                placeholder="e.g. SW1A 1AA"
+                className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                  paymentErrors.billingPostcode ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500'
+                }`}
+              />
+              {paymentErrors.billingPostcode && <p className="text-xs text-error-600 mt-1">{paymentErrors.billingPostcode}</p>}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+            <SecondaryButton onClick={() => { setShowPaymentDetails(false); setPendingRegistration(null); }}>Cancel</SecondaryButton>
+            <button
+              className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+              onClick={handleSubmitPayment}
+            >
+              <Check className="w-3.5 h-3.5" /> Pay and Register
             </button>
           </div>
         </div>
