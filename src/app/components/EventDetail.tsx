@@ -241,6 +241,10 @@ export default function EventDetail({
     giftAid?: boolean;
   } | null>(null);
 
+  // ── Karyakram Confirmation popup — shown right after a successful registration.
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationNote, setConfirmationNote] = useState('');
+
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
   const nonDeniedCount = allParticipants.filter(p => p.rsvp !== 'denied').length;
@@ -276,13 +280,12 @@ export default function EventDetail({
         ...(donation && giftAid ? { giftAidClaimed: true } : {}),
       },
     ]));
-    toast.success(
+    setConfirmationNote(
       willWaitlist
-        ? 'Karyakram is full — you have been added to the waiting list.'
-        : appliedCode
-          ? 'Request to attend sent — no payment required (code applied).'
-          : 'Request to attend sent for approval.'
+        ? 'This Karyakram is full — you have been added to the waiting list. We will email you if a spot opens up.'
+        : 'A confirmation email has been sent to your registered email address.'
     );
+    setShowConfirmation(true);
   };
 
   // Only offer the code field when this Karyakram actually has one assigned
@@ -1928,6 +1931,51 @@ export default function EventDetail({
               onClick={handleSubmitPayment}
             >
               <Check className="w-3.5 h-3.5" /> Pay and Register
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── KARYAKRAM CONFIRMATION ───────────────────────────────────────────── */}
+    {showConfirmation && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowConfirmation(false)}
+      >
+        <div
+          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-success-50 dark:bg-success-950/30 flex items-center justify-center mb-3">
+              <CheckCircle2 className="w-7 h-7 text-success-600 dark:text-success-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Registration Confirmed</h4>
+          </div>
+
+          <div className="px-6 py-4 space-y-4">
+            <div className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-semibold text-neutral-900 dark:text-white">{event.name}</p>
+              <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{formatDateTime(event.startDate)}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5 flex-shrink-0" /> : <MapPin className="w-3.5 h-3.5 flex-shrink-0" />}
+                <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
+              </div>
+            </div>
+
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">{confirmationNote}</p>
+          </div>
+
+          <div className="flex items-center justify-center px-6 py-4 border-t border-neutral-200 dark:border-neutral-800">
+            <button
+              className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+              onClick={() => setShowConfirmation(false)}
+            >
+              Done
             </button>
           </div>
         </div>
