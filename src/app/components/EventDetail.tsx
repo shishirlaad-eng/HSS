@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Heart,
+  Undo2,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -130,7 +131,7 @@ function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab         = 'overview' | 'participants' | 'media';
-type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied';
+type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'refund';
 type MediaFilter = 'all' | 'image' | 'video';
 
 interface LightboxState {
@@ -181,11 +182,13 @@ export default function EventDetail({
   const requestedList   = allParticipants.filter(p => p.rsvp === 'requested');
   const goingList       = allParticipants.filter(p => p.rsvp === 'going');
   const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
+  const refundList      = allParticipants.filter(p => p.refundRequested);
   const filteredParticipants =
     rsvpFilter === 'all'       ? allParticipants :
     rsvpFilter === 'requested' ? requestedList :
     rsvpFilter === 'going'     ? goingList :
-                                 deniedList;
+    rsvpFilter === 'denied'    ? deniedList :
+                                 refundList;
 
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
@@ -195,6 +198,17 @@ export default function EventDetail({
   const handleDeny = (memberId: string) => {
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
     toast('Registration denied.');
+  };
+
+  // ── Resend the Event Confirmation email to a participant ─────────────────────
+  const handleResendConfirmation = (email: string) => {
+    toast.success(`Confirmation email resent to ${email}.`);
+  };
+
+  // ── Process a member's refund request ────────────────────────────────────────
+  const handleProcessRefund = (memberId: string) => {
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, refundRequested: false } : p));
+    toast.success('Refund processed.');
   };
 
   // ── Make / remove participant coordinator (admins) ───────────────────────────
@@ -442,7 +456,7 @@ export default function EventDetail({
     ];
 
     const rsvpLabel = (r: EventParticipant['rsvp']) =>
-      r === 'going' ? 'Going' : r === 'requested' ? 'Requested' : 'Denied';
+      r === 'going' ? 'Approved' : r === 'requested' ? 'Requested' : 'Denied';
 
     const escape = (v: string | undefined | null) =>
       `"${(v ?? '').toString().replace(/"/g, '""')}"`;
@@ -970,8 +984,9 @@ export default function EventDetail({
                       {([
                         { id: 'all',       label: 'All',       count: allParticipants.length },
                         { id: 'requested', label: 'Requested', count: requestedList.length   },
-                        { id: 'going',     label: 'Going',     count: goingList.length       },
+                        { id: 'going',     label: 'Approved',  count: goingList.length       },
                         { id: 'denied',    label: 'Denied',    count: deniedList.length      },
+                        { id: 'refund',    label: 'Refund',    count: refundList.length      },
                       ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
                         <button
                           key={f.id}
@@ -1002,7 +1017,7 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
@@ -1054,8 +1069,28 @@ export default function EventDetail({
                               </td>
                               <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{postCode ?? '—'}</td>
                               <td className="px-4 py-3"><TypeBadge type={p.memberType} /></td>
+                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{p.ticketTypeLabel ?? <span className="text-neutral-400">—</span>}</td>
                               {!isMember && (
                                 <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleResendConfirmation(p.email)}
+                                    title="Resend confirmation email"
+                                    aria-label="Resend confirmation email"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                                  >
+                                    <Mail className="w-4 h-4" />
+                                  </button>
+                                  {p.refundRequested && (
+                                    <button
+                                      onClick={() => handleProcessRefund(p.memberId)}
+                                      title="Refund requested"
+                                      aria-label="Refund requested"
+                                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors flex-shrink-0"
+                                    >
+                                      <Undo2 className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   {p.rsvp === 'requested' ? (
                                     <div className="flex items-center gap-2">
                                       <button
@@ -1098,6 +1133,7 @@ export default function EventDetail({
                                   ) : (
                                     <span className="text-xs text-neutral-400">—</span>
                                   )}
+                                  </div>
                                 </td>
                               )}
                             </tr>

@@ -240,6 +240,8 @@ export interface EventParticipant {
   // Optional custom donation amount added at registration (GBP).
   donationAmount?: number;
   giftAidClaimed?: boolean;
+  // Set when the participant has asked for a refund on their paid registration.
+  refundRequested?: boolean;
 }
 
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
@@ -260,9 +262,9 @@ export const mockCoupons: EventCoupon[] = [
 export const mockParticipants: Record<string, EventParticipant[]> = {
   'EVT-101': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going'    },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', refundRequested: true },
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going'    },
+    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going', refundRequested: true },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested'    },
     { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
