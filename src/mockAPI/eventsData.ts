@@ -58,6 +58,8 @@ export interface Event {
   // Optional donation add-on — when enabled, a member registering can choose to
   // donate a custom amount on top of/regardless of the ticket price.
   donationEnabled?: boolean;
+  donationDescription?: string;   // short blurb shown above the donation option
+  donationAmounts?: number[];     // preset quick-select amounts (GBP), admin-configured
 
   // Configuration
   capacity?: number;
@@ -512,16 +514,26 @@ export const mockEvents: Event[] = [
     activityCentre: 'Cardiff Activity Centre',
     locationType: 'physical',
     venueAddress: 'Cardiff Activity Centre, Cathays, Cardiff, CF24 4HQ',
-    startDate: '2026-08-01T18:00:00Z',
-    endDate: '2026-08-01T21:00:00Z',
+    startDate: '2026-09-01T18:00:00Z',
+    endDate: '2026-09-01T21:00:00Z',
     createdDate: '2026-05-22T10:00:00Z',
     lastUpdated: '2026-05-22T10:00:00Z',
-    paymentType: 'free',
+    paymentType: 'paid',
+    price: 10,
+    priceCategories: [
+      { id: 'PC-107-1', label: 'Child', price: 10 },
+      { id: 'PC-107-2', label: 'Yuva', price: 25 },
+      { id: 'PC-107-3', label: 'Jyeshtha', price: 20 },
+    ],
     capacity: 80,
     description: 'A community Iftar gathering to foster interfaith friendships and celebrate shared values. All are welcome to break bread together in a spirit of unity, respect, and community.',
     customQuestions: [
       { id: 'CQ-107-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Halal only', 'Other'], required: true },
       { id: 'CQ-107-2', label: 'How many guests are you bringing?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
+      { id: 'CQ-107-3', label: 'Any allergies we should know about?', description: 'List any food allergies for you or your guests', type: 'text', required: false },
+      { id: 'CQ-107-4', label: 'Which sitting would you prefer?', type: 'radio', options: ['First sitting (6:00 PM)', 'Second sitting (7:30 PM)'], required: true },
+      { id: 'CQ-107-5', label: 'Which of the following apply to you?', type: 'checkbox', options: ['First-time attendee', 'Bringing children', 'Need wheelchair access', 'Interested in volunteering'], required: false },
+      { id: 'CQ-107-6', label: 'Preferred arrival date to confirm attendance', type: 'date', required: false },
     ],
     metrics: {
       going: 0,

@@ -514,6 +514,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     priceCategories: data.priceCategories,
     couponCode: data.couponCode,
     donationEnabled: data.donationEnabled,
+    donationDescription: data.donationDescription,
+    donationAmounts: data.donationAmounts,
     capacity: data.capacity,
     waitlistEnabled: data.waitlistEnabled,
     description: data.description,

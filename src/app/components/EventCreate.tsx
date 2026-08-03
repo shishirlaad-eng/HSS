@@ -11,6 +11,7 @@ import {
   CustomQuestionsEditor,
   EventImageField,
   TermsSectionsEditor,
+  DonationAmountsEditor,
   AGE_GROUP_OPTIONS,
 } from './EventFormFields';
 
@@ -58,6 +59,8 @@ const EMPTY_FORM = {
   priceCategories: [] as { id: string; label: string; price: number }[],
   couponCode: '',
   donationEnabled: false,
+  donationDescription: '',
+  donationAmounts: [] as number[],
   capacity: '',
   waitlistEnabled: false,
   guestRegistrationEnabled: false,
@@ -124,6 +127,8 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode: event.couponCode ?? '',
     donationEnabled: event.donationEnabled ?? false,
+    donationDescription: event.donationDescription ?? '',
+    donationAmounts: event.donationAmounts ?? [],
     capacity: event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
@@ -445,6 +450,8 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
       couponCode: formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
       donationEnabled: formData.donationEnabled,
+      donationDescription: formData.donationEnabled ? (formData.donationDescription.trim() || undefined) : undefined,
+      donationAmounts: formData.donationEnabled && formData.donationAmounts.length > 0 ? formData.donationAmounts : undefined,
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
       waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
@@ -521,10 +528,10 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       </PageHeader>
 
       {/* TABBED CONTENT */}
-      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg">
 
         {/* Tab bar */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+        <div className="rounded-t-lg border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
           <div className="flex overflow-x-auto">
             {TABS.map(tab => (
               <button
@@ -543,7 +550,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
         </div>
 
         {/* Tab content */}
-        <div className="p-6 bg-white dark:bg-neutral-950 space-y-5">
+        <div className="rounded-b-lg p-6 bg-white dark:bg-neutral-950 space-y-5">
 
           {/* ── Karyakram Basics (incl. Schedule) ── */}
           {activeTab === 'basics' && (
@@ -879,18 +886,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     </FormSelect>
                     <ErrorText>{touched && errors.paymentType}</ErrorText>
                   </FormField>
-                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formData.donationEnabled}
-                      onChange={e => set('donationEnabled', e.target.checked)}
-                      className="rounded border-neutral-300 dark:border-neutral-700"
-                    />
-                    Enable Donation Option
-                  </label>
-                  <p className="text-xs text-neutral-400 -mt-2">
-                    If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
-                  </p>
                   {formData.paymentType === 'paid' && (
                     <div ref={el => { fieldRefs.current.priceCategories = el; }}>
                       <FormLabel required>Ticket Types</FormLabel>
@@ -916,6 +911,42 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
                       </p>
                     </FormField>
+                  )}
+                </div>
+              </Card>
+
+              <Card title="Donation">
+                <div className="space-y-4">
+                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.donationEnabled}
+                      onChange={e => set('donationEnabled', e.target.checked)}
+                      className="rounded border-neutral-300 dark:border-neutral-700"
+                    />
+                    Enable Donation Option
+                  </label>
+                  {formData.donationEnabled && (
+                    <>
+                      <p className="text-xs text-neutral-400 -mt-2">
+                        If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
+                      </p>
+                      <FormField>
+                        <FormLabel>Description</FormLabel>
+                        <FormInput
+                          value={formData.donationDescription}
+                          onChange={e => set('donationDescription', e.target.value)}
+                          placeholder="Short description shown to members before the donation option (optional)"
+                        />
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Donation Amounts</FormLabel>
+                        <DonationAmountsEditor
+                          amounts={formData.donationAmounts}
+                          onChange={amts => set('donationAmounts', amts)}
+                        />
+                      </FormField>
+                    </>
                   )}
                 </div>
               </Card>

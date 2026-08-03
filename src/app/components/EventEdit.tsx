@@ -27,6 +27,7 @@ import {
   CustomQuestionsEditor,
   EventImageField,
   TermsSectionsEditor,
+  DonationAmountsEditor,
   AGE_GROUP_OPTIONS,
   CheckChip,
   toggleArr,
@@ -69,6 +70,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode:     event.couponCode ?? '',
     donationEnabled: event.donationEnabled ?? false,
+    donationDescription: event.donationDescription ?? '',
+    donationAmounts: event.donationAmounts ?? [],
     capacity:       event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
@@ -182,6 +185,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
         couponCode:      formData.paymentType === 'paid' ? (formData.couponCode || undefined) : undefined,
         donationEnabled: formData.donationEnabled,
+        donationDescription: formData.donationEnabled ? (formData.donationDescription.trim() || undefined) : undefined,
+        donationAmounts: formData.donationEnabled && formData.donationAmounts.length > 0 ? formData.donationAmounts : undefined,
         capacity:       formData.capacity ? parseInt(formData.capacity) : undefined,
         waitlistEnabled: formData.waitlistEnabled,
         guestRegistrationEnabled: formData.guestRegistrationEnabled,
@@ -601,12 +606,12 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </div>
             </div>
 
-            {/* Payment */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <CreditCard className="w-4 h-4 text-primary-600" /> Payment Type
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Payment + Donation */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                  <CreditCard className="w-4 h-4 text-primary-600" /> Payment Type
+                </div>
                 <FormField>
                   <FormLabel required>Payment Type</FormLabel>
                   <FormSelect
@@ -621,50 +626,77 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </FormSelect>
                   <ErrorText>{touched && errors.paymentType}</ErrorText>
                 </FormField>
-              </div>
-              <label className="inline-flex items-center gap-2 mt-4 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={formData.donationEnabled}
-                  onChange={e => set('donationEnabled', e.target.checked)}
-                  disabled={blocked}
-                  className="rounded border-neutral-300 dark:border-neutral-700"
-                />
-                Enable Donation Option
-              </label>
-              <p className="text-xs text-neutral-400 mt-1">
-                If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
-              </p>
-              {formData.paymentType === 'paid' && (
-                <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-4">
-                  <FormLabel required>Ticket Types</FormLabel>
-                  <PriceCategoriesEditor
-                    categories={formData.priceCategories}
-                    onChange={cats => set('priceCategories', cats)}
-                    disabled={blocked}
-                  />
-                  <ErrorText>{touched && errors.priceCategories}</ErrorText>
-                </div>
-              )}
-              {formData.paymentType === 'paid' && (
-                <div className="mt-4">
-                  <FormField>
-                    <FormLabel>Coupon Code</FormLabel>
-                    <FormInput
-                      ref={el => { fieldRefs.current.couponCode = el; }}
-                      value={formData.couponCode}
-                      onChange={e => set('couponCode', e.target.value)}
-                      placeholder="e.g. PRACHARAK2026"
+                {formData.paymentType === 'paid' && (
+                  <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-4">
+                    <FormLabel required>Ticket Types</FormLabel>
+                    <PriceCategoriesEditor
+                      categories={formData.priceCategories}
+                      onChange={cats => set('priceCategories', cats)}
                       disabled={blocked}
-                      className={errCls('couponCode')}
                     />
-                    <ErrorText>{touched && errors.couponCode}</ErrorText>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
-                    </p>
-                  </FormField>
+                    <ErrorText>{touched && errors.priceCategories}</ErrorText>
+                  </div>
+                )}
+                {formData.paymentType === 'paid' && (
+                  <div className="mt-4">
+                    <FormField>
+                      <FormLabel>Coupon Code</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.couponCode = el; }}
+                        value={formData.couponCode}
+                        onChange={e => set('couponCode', e.target.value)}
+                        placeholder="e.g. PRACHARAK2026"
+                        disabled={blocked}
+                        className={errCls('couponCode')}
+                      />
+                      <ErrorText>{touched && errors.couponCode}</ErrorText>
+                      <p className="text-xs text-neutral-400 mt-1">
+                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
+                      </p>
+                    </FormField>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                  <CreditCard className="w-4 h-4 text-primary-600" /> Donation
                 </div>
-              )}
+                <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.donationEnabled}
+                    onChange={e => set('donationEnabled', e.target.checked)}
+                    disabled={blocked}
+                    className="rounded border-neutral-300 dark:border-neutral-700"
+                  />
+                  Enable Donation Option
+                </label>
+                {formData.donationEnabled && (
+                  <>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
+                    </p>
+                    <FormField className="mt-4">
+                      <FormLabel>Description</FormLabel>
+                      <FormInput
+                        value={formData.donationDescription}
+                        onChange={e => set('donationDescription', e.target.value)}
+                        placeholder="Short description shown to members before the donation option (optional)"
+                        disabled={blocked}
+                      />
+                    </FormField>
+                    <div className="mt-4">
+                      <FormLabel>Donation Amounts</FormLabel>
+                      <DonationAmountsEditor
+                        amounts={formData.donationAmounts}
+                        onChange={amts => set('donationAmounts', amts)}
+                        disabled={blocked}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Custom Questions */}

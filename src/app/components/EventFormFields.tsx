@@ -128,6 +128,63 @@ export function PriceCategoriesEditor({
   );
 }
 
+// ─── Donation Amounts Editor ───────────────────────────────────────────────────
+// Preset donation amounts an admin can offer alongside the free-text donation
+// field, e.g. £10 / £25 / £50 quick-select chips at registration.
+export function DonationAmountsEditor({
+  amounts,
+  onChange,
+  disabled,
+}: {
+  amounts: number[];
+  onChange: (next: number[]) => void;
+  disabled?: boolean;
+}) {
+  const addAmount = () => onChange([...amounts, 0]);
+  const updateAmount = (idx: number, value: string) => {
+    onChange(amounts.map((a, i) => i === idx ? (parseFloat(value) || 0) : a));
+  };
+  const removeAmount = (idx: number) => onChange(amounts.filter((_, i) => i !== idx));
+
+  return (
+    <div className="space-y-2">
+      {amounts.map((amt, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+            <FormInput
+              type="number"
+              value={String(amt)}
+              onChange={e => updateAmount(idx, e.target.value)}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              disabled={disabled}
+              className="pl-6"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => removeAmount(idx)}
+            disabled={disabled}
+            className="p-2 rounded-lg text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addAmount}
+        disabled={disabled}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-300 dark:disabled:hover:border-neutral-700 disabled:hover:text-neutral-600 dark:disabled:hover:text-neutral-400"
+      >
+        <Plus className="w-3.5 h-3.5" /> Add donation amount
+      </button>
+    </div>
+  );
+}
+
 // ─── Custom Questions Editor ──────────────────────────────────────────────────
 export function CustomQuestionsEditor({
   questions,
