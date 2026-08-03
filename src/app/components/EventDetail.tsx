@@ -253,6 +253,17 @@ export default function EventDetail({
 
   const hasTicketTypes = event.paymentType === 'paid' && !!event.priceCategories && event.priceCategories.length > 0;
 
+  // Total revenue collected so far — ticket price (waived when a coupon was
+  // applied) plus any donation, summed across all non-denied registrations.
+  const totalRevenue = allParticipants
+    .filter(p => p.rsvp !== 'denied')
+    .reduce((sum, p) => {
+      const ticketPrice = !p.discountCodeUsed && p.ticketTypeId
+        ? (event.priceCategories?.find(c => c.id === p.ticketTypeId)?.price ?? 0)
+        : 0;
+      return sum + ticketPrice + (p.donationAmount ?? 0);
+    }, 0);
+
   const handleAttend = (
     customAnswers?: Record<string, string | boolean>,
     appliedCode?: string,
@@ -615,7 +626,7 @@ export default function EventDetail({
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                <span className="text-sm text-neutral-500 font-mono">{event.id}</span>
+                <span className="text-sm text-neutral-500 font-mono">Event Id: {event.id}</span>
                 {isMember && (
                   <>
                     <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
@@ -635,11 +646,11 @@ export default function EventDetail({
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                  <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
                   <div className="flex items-center gap-1">
                     {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
                     <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
                   </div>
-                  <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
                 </div>
               )}
               {!isMember && (
@@ -762,10 +773,21 @@ export default function EventDetail({
               {activeTab === 'overview' && (
                 <div className="space-y-6">
                   {!isMember && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <StatCard label="Requested" value={requestedList.length} icon={ClockIcon}    valueClassName="text-amber-600 dark:text-amber-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
-                      <StatCard label="Going"     value={goingList.length}     icon={CheckCircle2} valueClassName="text-success-600 dark:text-success-400" className="bg-neutral-50 dark:bg-neutral-900/50" />
-                      <StatCard label="Denied"    value={deniedList.length}    icon={XCircle}      valueClassName="text-error-600 dark:text-error-400"     className="bg-neutral-50 dark:bg-neutral-900/50" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <StatCard
+                        label="Registrants"
+                        value={`${nonDeniedCount}${event.capacity ? ` / ${event.capacity}` : ''}`}
+                        icon={UsersIcon}
+                        valueClassName="text-primary-600 dark:text-primary-400"
+                        className="bg-neutral-50 dark:bg-neutral-900/50"
+                      />
+                      <StatCard
+                        label="Total Revenue"
+                        value={`£${totalRevenue.toFixed(2)}`}
+                        icon={CreditCard}
+                        valueClassName="text-success-600 dark:text-success-400"
+                        className="bg-neutral-50 dark:bg-neutral-900/50"
+                      />
                     </div>
                   )}
 
@@ -811,37 +833,6 @@ export default function EventDetail({
 
                   {!isMember && (
                     <>
-                      {/* Karyakram Summary — admin: all fields */}
-                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">Karyakram Summary</h4>
-                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          {[
-                            { label: 'Karyakram ID',    value: event.id,           mono: true  },
-                            { label: 'Karyakram Title', value: event.name                      },
-                            { label: 'Country',         value: event.country                   },
-                            { label: 'Vibhag',         value: event.region                    },
-                            { label: 'Nagar',           value: event.town                      },
-                            { label: 'Shakha',          value: event.activityCentre            },
-                            { label: 'Location',        value: event.locationType === 'online' ? (event.onlineUrl ?? '') : (event.venueAddress ?? '') },
-                            { label: 'Start Date/Time', value: formatDateTime(event.startDate) },
-                            { label: 'End Date/Time',   value: formatDateTime(event.endDate)   },
-                            { label: 'Payment Type',    value: event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free' },
-                            ...(event.capacity ? [{ label: 'Capacity', value: String(event.capacity) }] : []),
-                          ].map(({ label, value, mono }) => (
-                            <div key={label}>
-                              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">{label}</label>
-                              {label === 'Location' && event.locationType === 'online' && value ? (
-                                <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 break-all">
-                                  <Link2 className="w-3.5 h-3.5 flex-shrink-0" /> {value}
-                                </a>
-                              ) : (
-                                <p className={`text-sm text-neutral-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
                       {/* Target Audience — admin only */}
                       {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
