@@ -54,7 +54,9 @@ const EMPTY_FORM = {
   endDate: '',
   endTime: '',
   registrationStartDate: '',
+  registrationStartTime: '',
   registrationEndDate: '',
+  registrationEndTime: '',
   paymentType: 'free' as 'paid' | 'free',
   priceCategories: [] as { id: string; label: string; price: number }[],
   couponCode: '',
@@ -121,8 +123,10 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     startTime: event.startDate.split('T')[1]?.substring(0, 5) ?? '',
     endDate: event.endDate.split('T')[0],
     endTime: event.endDate.split('T')[1]?.substring(0, 5) ?? '',
-    registrationStartDate: event.registrationStartDate ?? '',
-    registrationEndDate: event.registrationEndDate ?? '',
+    registrationStartDate: event.registrationStartDate ? event.registrationStartDate.split('T')[0] : '',
+    registrationStartTime: event.registrationStartDate ? (event.registrationStartDate.split('T')[1]?.substring(0, 5) ?? '') : '',
+    registrationEndDate: event.registrationEndDate ? event.registrationEndDate.split('T')[0] : '',
+    registrationEndTime: event.registrationEndDate ? (event.registrationEndDate.split('T')[1]?.substring(0, 5) ?? '') : '',
     paymentType: event.paymentType,
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode: event.couponCode ?? '',
@@ -443,8 +447,8 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       onlineUrl:    formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
       startDate: `${formData.startDate}T${formData.startTime}:00Z`,
       endDate:   `${formData.endDate}T${formData.endTime}:00Z`,
-      registrationStartDate: formData.registrationStartDate || undefined,
-      registrationEndDate: formData.registrationEndDate || undefined,
+      registrationStartDate: formData.registrationStartDate ? `${formData.registrationStartDate}T${formData.registrationStartTime || '00:00'}:00Z` : undefined,
+      registrationEndDate: formData.registrationEndDate ? `${formData.registrationEndDate}T${formData.registrationEndTime || '23:59'}:00Z` : undefined,
       paymentType: formData.paymentType,
       price: formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
       priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
@@ -580,25 +584,27 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       />
                     </FormField>
                   </div>
-                  <FormField>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormInput
-                      type="number"
-                      value={formData.capacity}
-                      onChange={e => set('capacity', e.target.value)}
-                      placeholder="Max participants"
-                      min="1"
-                    />
-                    <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={formData.waitlistEnabled}
-                        onChange={e => set('waitlistEnabled', e.target.checked)}
-                        className="rounded border-neutral-300 dark:border-neutral-700"
+                  <div className="md:col-span-2">
+                    <FormField>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormInput
+                        type="number"
+                        value={formData.capacity}
+                        onChange={e => set('capacity', e.target.value)}
+                        placeholder="Max participants"
+                        min="1"
                       />
-                      Enable waiting list — allow registration once capacity is full
-                    </label>
-                  </FormField>
+                      <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.waitlistEnabled}
+                          onChange={e => set('waitlistEnabled', e.target.checked)}
+                          className="rounded border-neutral-300 dark:border-neutral-700"
+                        />
+                        Enable waiting list — allow registration once capacity is full
+                      </label>
+                    </FormField>
+                  </div>
                   <FormField>
                     <FormLabel required>Start Date</FormLabel>
                     <FormInput ref={el => { fieldRefs.current.startDate = el; }} type="date" value={formData.startDate} onChange={e => set('startDate', e.target.value)} className={errCls('startDate')} />
@@ -649,8 +655,16 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       <FormInput type="date" value={formData.registrationStartDate} onChange={e => set('registrationStartDate', e.target.value)} />
                     </FormField>
                     <FormField>
+                      <FormLabel>Registration Start Time</FormLabel>
+                      <FormInput type="time" value={formData.registrationStartTime} onChange={e => set('registrationStartTime', e.target.value)} />
+                    </FormField>
+                    <FormField>
                       <FormLabel>Registration Close Date</FormLabel>
                       <FormInput type="date" value={formData.registrationEndDate} onChange={e => set('registrationEndDate', e.target.value)} />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Registration Close Time</FormLabel>
+                      <FormInput type="time" value={formData.registrationEndTime} onChange={e => set('registrationEndTime', e.target.value)} />
                     </FormField>
                   </div>
                 </Card>

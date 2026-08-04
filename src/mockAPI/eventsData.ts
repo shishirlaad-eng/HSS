@@ -44,8 +44,8 @@ export interface Event {
   lastUpdated: string;
   // Registration window — when members are allowed to register, separate from
   // when the Karyakram itself runs. Optional; blank = registration always open.
-  registrationStartDate?: string;   // date (yyyy-mm-dd)
-  registrationEndDate?: string;     // date (yyyy-mm-dd)
+  registrationStartDate?: string;   // ISO datetime
+  registrationEndDate?: string;     // ISO datetime
 
   // Payment
   paymentType: 'paid' | 'free';
@@ -293,6 +293,22 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'requested'    },
     { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'denied' },
   ],
+  'EVT-108': [
+    { memberId: 'WBL-001', name: 'Vikram Singh',    email: 'vikram.singh@hssuk.org',    phone: '+44 7700 100001', memberType: 'adult', rsvp: 'going',
+      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult',
+      customAnswers: { 'CQ-108-1': '2', 'CQ-108-2': 'Vegetarian', 'CQ-108-3': true } },
+    { memberId: 'WBL-004', name: 'Kavya Reddy',     email: 'kavya.reddy@hssuk.org',      phone: '+44 7700 100004', memberType: 'teen',  rsvp: 'going',
+      ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
+      customAnswers: { 'CQ-108-1': '0', 'CQ-108-2': 'None', 'CQ-108-3': false } },
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going',
+      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult',
+      customAnswers: { 'CQ-108-1': '1', 'CQ-108-2': 'None', 'CQ-108-3': true } },
+    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going',
+      ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
+      customAnswers: { 'CQ-108-1': '0', 'CQ-108-2': 'Vegan', 'CQ-108-3': false } },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going'    },
+    { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'requested'    },
+  ],
   'EVT-109': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going'    },
@@ -523,6 +539,7 @@ export const mockEvents: Event[] = [
     lastUpdated: '2026-05-22T10:00:00Z',
     paymentType: 'paid',
     price: 10,
+    imageUrl: 'https://hssuk.org/wp-content/uploads/2025/09/Large-Banner-1-scaled.jpg',
     priceCategories: [
       { id: 'PC-107-1', label: 'Child', price: 10 },
       { id: 'PC-107-2', label: 'Yuva', price: 25 },
@@ -567,6 +584,7 @@ export const mockEvents: Event[] = [
     lastUpdated: '2026-05-23T09:00:00Z',
     paymentType: 'paid',
     price: 15,
+    imageUrl: 'https://hssuk.org/wp-content/uploads/2025/09/Large-Banner-1-scaled.jpg',
     priceCategories: [
       { id: 'PC-1', label: 'Adult', price: 15 },
       { id: 'PC-2', label: 'Child', price: 8 },
@@ -574,6 +592,7 @@ export const mockEvents: Event[] = [
     ],
     capacity: 300,
     description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
+    guestRegistrationEnabled: true,
     customQuestions: [
       { id: 'CQ-108-1', label: 'How many children (under 12) are attending with you?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
       { id: 'CQ-108-2', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Jain', 'Nut allergy', 'Other'], required: true },

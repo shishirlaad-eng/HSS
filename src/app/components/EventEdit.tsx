@@ -64,8 +64,10 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     startTime:      event.startDate.split('T')[1]?.substring(0, 5) ?? '09:00',
     endDate:        event.endDate.split('T')[0],
     endTime:        event.endDate.split('T')[1]?.substring(0, 5) ?? '17:00',
-    registrationStartDate: event.registrationStartDate ?? '',
-    registrationEndDate: event.registrationEndDate ?? '',
+    registrationStartDate: event.registrationStartDate ? event.registrationStartDate.split('T')[0] : '',
+    registrationStartTime: event.registrationStartDate ? (event.registrationStartDate.split('T')[1]?.substring(0, 5) ?? '') : '',
+    registrationEndDate: event.registrationEndDate ? event.registrationEndDate.split('T')[0] : '',
+    registrationEndTime: event.registrationEndDate ? (event.registrationEndDate.split('T')[1]?.substring(0, 5) ?? '') : '',
     paymentType:    event.paymentType as 'paid' | 'free',
     priceCategories: event.priceCategories ?? (event.price ? [{ id: 'PC-1', label: 'Standard', price: event.price }] : []),
     couponCode:     event.couponCode ?? '',
@@ -178,8 +180,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         onlineUrl:      formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
         startDate:      `${formData.startDate}T${formData.startTime}:00Z`,
         endDate:        `${formData.endDate}T${formData.endTime}:00Z`,
-        registrationStartDate: formData.registrationStartDate || undefined,
-        registrationEndDate: formData.registrationEndDate || undefined,
+        registrationStartDate: formData.registrationStartDate ? `${formData.registrationStartDate}T${formData.registrationStartTime || '00:00'}:00Z` : undefined,
+        registrationEndDate: formData.registrationEndDate ? `${formData.registrationEndDate}T${formData.registrationEndTime || '23:59'}:00Z` : undefined,
         paymentType:    formData.paymentType,
         price:          formData.paymentType === 'paid' ? formData.priceCategories[0]?.price : undefined,
         priceCategories: formData.paymentType === 'paid' ? formData.priceCategories : undefined,
@@ -595,11 +597,29 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   />
                 </FormField>
                 <FormField>
+                  <FormLabel>Registration Start Time</FormLabel>
+                  <FormInput
+                    type="time"
+                    value={formData.registrationStartTime}
+                    onChange={e => set('registrationStartTime', e.target.value)}
+                    disabled={blocked}
+                  />
+                </FormField>
+                <FormField>
                   <FormLabel>Registration Close Date</FormLabel>
                   <FormInput
                     type="date"
                     value={formData.registrationEndDate}
                     onChange={e => set('registrationEndDate', e.target.value)}
+                    disabled={blocked}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Registration Close Time</FormLabel>
+                  <FormInput
+                    type="time"
+                    value={formData.registrationEndTime}
+                    onChange={e => set('registrationEndTime', e.target.value)}
                     disabled={blocked}
                   />
                 </FormField>

@@ -503,7 +503,7 @@ export default function SystemSettings() {
                       <ErrorText>{errors.sessionTimeout && 'Enter a valid number.'}</ErrorText>
                     </FormField>
                     <FormField>
-                      <FormLabel required>Block Duration (Minutes)</FormLabel>
+                      <FormLabel required>Lock Duration (Minutes)</FormLabel>
                       <FormInput
                         ref={el => { fieldRefs.current.blockDuration = el; }}
                         type="number"

@@ -1309,10 +1309,8 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           </td>
                         )}
                         {visibleColumns.participants && (
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 text-xs text-neutral-500 whitespace-nowrap">
-                              <span className="flex items-center gap-0.5 text-success-600"><CheckCircle2 className="w-3 h-3" />{event.metrics.going}</span>
-                            </div>
+                          <td className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                            {(mockParticipants[event.id] ?? []).filter(p => p.rsvp !== 'denied').length}{event.capacity ? ` / ${event.capacity}` : ''}
                           </td>
                         )}
                         {visibleColumns.lastUpdated && (

@@ -620,7 +620,8 @@ export default function EventDetail({
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview',     label: 'Karyakram Overview'                       },
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
-    { id: 'media',        label: `Media (${mediaPosts.length})`             },
+    // Members only see Media once the Karyakram has happened — nothing to post beforehand.
+    ...((!isMember || past) ? [{ id: 'media' as Tab, label: `Media (${mediaPosts.length})` }] : []),
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -755,6 +756,13 @@ export default function EventDetail({
           )}
         </div>
 
+        {/* Event Banner — member view (same treatment as the Suchana detail page image) */}
+        {isMember && event.imageUrl && (
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-6">
+            <img src={event.imageUrl} alt={event.name} className="w-full object-cover max-h-96" />
+          </div>
+        )}
+
         {/* TWO-COLUMN LAYOUT */}
         <div className="flex flex-col lg:flex-row gap-6">
 
@@ -785,9 +793,9 @@ export default function EventDetail({
 
               {/* ── EVENT OVERVIEW ── */}
               {activeTab === 'overview' && (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {!isMember && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <StatCard
                         label="Registrants"
                         value={`${nonDeniedCount}${event.capacity ? ` / ${event.capacity}` : ''}`}
@@ -807,7 +815,7 @@ export default function EventDetail({
 
                   {/* Description */}
                   {event.description && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                    <div className={`bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden ${!isMember ? 'md:col-span-2' : ''}`} style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                       {isMember ? (
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                           <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Karyakram Description</h4>
@@ -841,6 +849,32 @@ export default function EventDetail({
                             <span className="text-[15px] font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price}</span>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Your Responses — member view, only once registered */}
+                  {isMember && myParticipation && event.customQuestions && event.customQuestions.length > 0 && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <ListChecks className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Your Responses</h4>
+                      </div>
+                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {event.customQuestions.map(q => {
+                          const ans = myParticipation.customAnswers?.[q.id];
+                          const display =
+                            ans === undefined || ans === '' ? '—' :
+                            Array.isArray(ans) ? (ans.length > 0 ? ans.join(', ') : '—') :
+                            typeof ans === 'boolean' ? (ans ? 'Yes' : 'No') :
+                            String(ans);
+                          return (
+                            <div key={q.id} className="px-5 py-3.5">
+                              <p className="text-[13px] text-neutral-500 dark:text-neutral-400">{q.label}</p>
+                              <p className="text-[15px] font-medium text-neutral-900 dark:text-white mt-0.5">{display}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -900,32 +934,6 @@ export default function EventDetail({
                         </div>
                       )}
 
-                      {/* Guest Registration — admin only */}
-                      {event.guestRegistrationEnabled && (
-                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                            <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
-                          </h4>
-                          <div className="px-6 py-4">
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
-                            <div className="flex items-center gap-2">
-                              <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
-                                {`https://hssuk.org/events/${event.id}/register`}
-                              </code>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(`https://hssuk.org/events/${event.id}/register`);
-                                  toast.success('Registration link copied to clipboard.');
-                                }}
-                                className="p-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Additional Questions — admin */}
                       {event.customQuestions && event.customQuestions.length > 0 && (
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -950,9 +958,35 @@ export default function EventDetail({
                     </>
                   )}
 
-                  {/* Terms & Conditions — admin only */}
-                  {!isMember && (
-                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                  {/* Guest Registration — admin always; members once registered for an upcoming Karyakram */}
+                  {event.guestRegistrationEnabled && (!isMember || (myParticipation && !past)) && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+                      </h4>
+                      <div className="px-6 py-4">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
+                            {`https://hssuk.org/events/${event.id}/register`}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://hssuk.org/events/${event.id}/register`);
+                              toast.success('Registration link copied to clipboard.');
+                            }}
+                            className="p-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Terms & Conditions — admin always; members once registered for an upcoming Karyakram */}
+                  {(!isMember || (myParticipation && !past)) && (
+                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                     <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                       <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
                     </h4>
