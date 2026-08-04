@@ -88,6 +88,13 @@ export interface Event {
   filterJobTitles?: string[];
   filterResponsibilityLevels?: string[];
   filterResponsibilityTypes?: string[];
+  // Precise age targeting, separate from the broader Age Category bands above.
+  filterSpecificAge?: {
+    operator: '=' | '>' | '<' | 'between';
+    value?: number;       // for '=' | '>' | '<'
+    from?: string;        // date (yyyy-mm-dd), for 'between'
+    to?: string;           // date (yyyy-mm-dd), for 'between'
+  };
 
   // Guest registration — payment is configured separately from member pricing,
   // since a Karyakram may charge guests a different amount (or nothing) than members.

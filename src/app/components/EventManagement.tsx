@@ -535,6 +535,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     filterAgeCategories: data.filterAgeCategories,
     filterGenders: data.filterGenders,
     filterJobTitles: data.filterJobTitles,
+    filterSpecificAge: data.filterSpecificAge,
     filterResponsibilityLevels: data.filterResponsibilityLevels,
     filterResponsibilityTypes: data.filterResponsibilityTypes,
     metrics: data.metrics ?? { going: 0, maybe: 0, notGoing: 0, participantCount: 0, mediaCount: 0 },
@@ -1273,7 +1274,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           </td>
                         )}
                         {visibleColumns.id && (
-                          <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 underline-offset-4 whitespace-nowrap">
+                          <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
                             {event.id}
                           </td>
                         )}

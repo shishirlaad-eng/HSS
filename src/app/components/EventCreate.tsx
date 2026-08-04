@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Save, Globe, MapPin, Ticket, ChevronDown, Search, X, Copy } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge } from '../../mockAPI/membersData';
 import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -72,6 +72,10 @@ const EMPTY_FORM = {
   filterJobTitles: [] as string[],
   filterResponsibilityLevels: [] as string[],
   filterResponsibilityTypes: [] as string[],
+  specificAgeOperator: '' as '' | '=' | '>' | '<' | 'between',
+  specificAgeValue: '',
+  specificAgeFrom: '',
+  specificAgeTo: '',
   targetSpecificOnly: false,
   targetMemberIds: [] as string[],
   targetRegions: [] as string[],
@@ -142,6 +146,10 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     filterJobTitles: event.filterJobTitles ?? [],
     filterResponsibilityLevels: event.filterResponsibilityLevels ?? [],
     filterResponsibilityTypes: event.filterResponsibilityTypes ?? [],
+    specificAgeOperator: event.filterSpecificAge?.operator ?? '',
+    specificAgeValue: event.filterSpecificAge?.value !== undefined ? String(event.filterSpecificAge.value) : '',
+    specificAgeFrom: event.filterSpecificAge?.from ?? '',
+    specificAgeTo: event.filterSpecificAge?.to ?? '',
     targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
     targetMemberIds: event.targetMemberIds ?? [],
     targetRegions: event.targetRegions ?? [],
@@ -466,6 +474,11 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
       filterResponsibilityLevels: formData.filterResponsibilityLevels.length > 0 ? formData.filterResponsibilityLevels : undefined,
       filterResponsibilityTypes:  formData.filterResponsibilityTypes.length > 0  ? formData.filterResponsibilityTypes  : undefined,
+      filterSpecificAge: formData.specificAgeOperator ? (
+        formData.specificAgeOperator === 'between'
+          ? { operator: 'between' as const, from: formData.specificAgeFrom || undefined, to: formData.specificAgeTo || undefined }
+          : { operator: formData.specificAgeOperator, value: formData.specificAgeValue ? parseInt(formData.specificAgeValue) : undefined }
+      ) : undefined,
       targetRegions: !isFullSelection(formData.targetRegions, regionOptions) ? formData.targetRegions : undefined,
       targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
       targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
@@ -880,6 +893,54 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         selected={formData.filterResponsibilityTypes}
                         onChange={v => set('filterResponsibilityTypes', v)}
                       />
+                      <FormField className="md:col-span-3">
+                        <FormLabel>Specific Age</FormLabel>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <FormSelect
+                            value={formData.specificAgeOperator}
+                            onChange={e => set('specificAgeOperator', e.target.value)}
+                            className="w-40"
+                          >
+                            <option value="">Not filtered</option>
+                            <option value="=">Equals to</option>
+                            <option value=">">Greater than</option>
+                            <option value="<">Smaller than</option>
+                            <option value="between">Between</option>
+                          </FormSelect>
+                          {(formData.specificAgeOperator === '=' || formData.specificAgeOperator === '>' || formData.specificAgeOperator === '<') && (
+                            <FormInput
+                              type="number"
+                              min="0"
+                              value={formData.specificAgeValue}
+                              onChange={e => set('specificAgeValue', e.target.value)}
+                              placeholder="Age"
+                              className="w-32"
+                            />
+                          )}
+                          {formData.specificAgeOperator === 'between' && (
+                            <>
+                              <FormInput
+                                type="date"
+                                value={formData.specificAgeFrom}
+                                onChange={e => set('specificAgeFrom', e.target.value)}
+                                className="w-44"
+                              />
+                              <span className="text-sm text-neutral-400">to</span>
+                              <FormInput
+                                type="date"
+                                value={formData.specificAgeTo}
+                                onChange={e => set('specificAgeTo', e.target.value)}
+                                className="w-44"
+                              />
+                              {formData.specificAgeFrom && formData.specificAgeTo && (
+                                <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                                  Age {getAge(formData.specificAgeTo)} – {getAge(formData.specificAgeFrom)}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </FormField>
                     </div>
                   </Card>
                 </>

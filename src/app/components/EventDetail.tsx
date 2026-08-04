@@ -522,7 +522,6 @@ export default function EventDetail({
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploadType, setUploadType]         = useState<'image' | 'video'>('image');
   const [uploadCaption, setUploadCaption]   = useState('');
-  const [uploadAuthor, setUploadAuthor]     = useState('');
   const [uploadFiles, setUploadFiles]       = useState<File[]>([]);
   const fileInputRef                        = useRef<HTMLInputElement>(null);
 
@@ -547,13 +546,12 @@ export default function EventDetail({
   const cancelUpload = () => {
     setShowUploadForm(false);
     setUploadCaption('');
-    setUploadAuthor('');
     setUploadFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handlePostMedia = () => {
-    const author  = uploadAuthor.trim() || 'Admin';
+    const author  = 'Admin';
     const caption = uploadCaption.trim() || undefined;
     const count   = uploadFiles.length || 1;
     const now     = Date.now();
@@ -1232,18 +1230,6 @@ export default function EventDetail({
                             ))}
                           </div>
                         </div>
-                        {!isMember && (
-                        <div>
-                          <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Posted by</label>
-                          <input
-                            type="text"
-                            value={uploadAuthor}
-                            onChange={e => setUploadAuthor(e.target.value)}
-                            placeholder="Admin"
-                            className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          />
-                        </div>
-                        )}
                       </div>
 
                       {/* Caption */}
