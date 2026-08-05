@@ -66,6 +66,7 @@ const EMPTY_FORM = {
   capacity: '',
   waitlistEnabled: false,
   guestRegistrationEnabled: false,
+  shakhaKaryawahaApprovalRequired: false,
   customQuestions: [] as { id: string; question: string; required: boolean }[],
   filterAgeCategories: [] as AgeGroup[],
   filterGenders: [] as ('male' | 'female')[],
@@ -140,6 +141,7 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     capacity: event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
+    shakhaKaryawahaApprovalRequired: event.shakhaKaryawahaApprovalRequired ?? false,
     customQuestions: event.customQuestions ?? [],
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders: event.filterGenders ?? [],
@@ -467,6 +469,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
       waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
+      shakhaKaryawahaApprovalRequired: formData.shakhaKaryawahaApprovalRequired,
       guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
       filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
@@ -654,6 +657,20 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       />
                       <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                       Allow non-members to register via a guest registration link
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Approvals">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.shakhaKaryawahaApprovalRequired}
+                        onChange={e => set('shakhaKaryawahaApprovalRequired', e.target.checked)}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Shakha Karyawaha approval
                     </label>
                   </div>
                 </Card>
@@ -868,31 +885,6 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         selected={formData.filterAgeCategories}
                         onChange={v => set('filterAgeCategories', v as AgeGroup[])}
                       />
-                      <MultiSelectField
-                        label="Gender"
-                        options={['male', 'female']}
-                        getLabel={v => v === 'male' ? 'Male' : 'Female'}
-                        selected={formData.filterGenders}
-                        onChange={v => set('filterGenders', v as ('male' | 'female')[])}
-                      />
-                      <MultiSelectField
-                        label="Responsibility Level"
-                        options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
-                        selected={formData.filterResponsibilityLevels}
-                        onChange={v => set('filterResponsibilityLevels', v)}
-                      />
-                      <MultiSelectField
-                        label="Sangh Responsibility"
-                        options={ROLE_TYPE_OPTIONS}
-                        selected={formData.filterJobTitles}
-                        onChange={v => set('filterJobTitles', v)}
-                      />
-                      <MultiSelectField
-                        label="Responsibility Type"
-                        options={[...RESPONSIBILITY_TYPE_OPTIONS]}
-                        selected={formData.filterResponsibilityTypes}
-                        onChange={v => set('filterResponsibilityTypes', v)}
-                      />
                       <FormField className="md:col-span-3">
                         <FormLabel>Specific Age</FormLabel>
                         <div className="flex flex-wrap items-center gap-3">
@@ -941,6 +933,31 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                           )}
                         </div>
                       </FormField>
+                      <MultiSelectField
+                        label="Gender"
+                        options={['male', 'female']}
+                        getLabel={v => v === 'male' ? 'Male' : 'Female'}
+                        selected={formData.filterGenders}
+                        onChange={v => set('filterGenders', v as ('male' | 'female')[])}
+                      />
+                      <MultiSelectField
+                        label="Responsibility Level"
+                        options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                        selected={formData.filterResponsibilityLevels}
+                        onChange={v => set('filterResponsibilityLevels', v)}
+                      />
+                      <MultiSelectField
+                        label="Sangh Responsibility"
+                        options={ROLE_TYPE_OPTIONS}
+                        selected={formData.filterJobTitles}
+                        onChange={v => set('filterJobTitles', v)}
+                      />
+                      <MultiSelectField
+                        label="Responsibility Type"
+                        options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                        selected={formData.filterResponsibilityTypes}
+                        onChange={v => set('filterResponsibilityTypes', v)}
+                      />
                     </div>
                   </Card>
                 </>

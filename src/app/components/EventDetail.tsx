@@ -36,6 +36,10 @@ import {
   ShieldOff,
   Heart,
   Undo2,
+  Download,
+  Eye,
+  Search,
+  Megaphone,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
@@ -43,8 +47,10 @@ import {
   Event,
   EventParticipant,
   EventMedia,
+  EventAnnouncement,
   mockParticipants,
   mockMediaPosts,
+  mockEventAnnouncements,
   mockCoupons,
   EVENT_TERMS_AND_CONDITIONS,
 } from '../../mockAPI/eventsData';
@@ -129,9 +135,26 @@ function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
   );
 }
 
+const COMPLIANCE_BADGE: Record<string, { text: string; dot: string; textCls: string }> = {
+  Approved:  { text: 'Approved',  dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
+  Certified: { text: 'Certified', dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
+  Pending:   { text: 'Pending',   dot: 'bg-amber-500',   textCls: 'text-amber-700 dark:text-amber-400'     },
+  Expired:   { text: 'Expired',   dot: 'bg-error-500',   textCls: 'text-error-700 dark:text-error-400'     },
+  'N/A':     { text: 'N/A',       dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' },
+};
+function ComplianceBadge({ status }: { status?: string }) {
+  const cfg = COMPLIANCE_BADGE[status ?? ''] ?? { text: status || 'N/A', dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' };
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+      <span className={`text-sm font-medium ${cfg.textCls}`}>{cfg.text}</span>
+    </span>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab         = 'overview' | 'participants' | 'media';
-type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'refund';
+type Tab         = 'overview' | 'participants' | 'media' | 'announcements';
+type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'refund' | 'waitlisted';
 type MediaFilter = 'all' | 'image' | 'video';
 
 interface LightboxState {
@@ -177,18 +200,33 @@ export default function EventDetail({
 
   // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
+  const [participantSearch, setParticipantSearch] = useState('');
+  const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
+  const [editingRegistration, setEditingRegistration] = useState(false);
+  const [editAnswers, setEditAnswers] = useState<Record<string, string | boolean | string[]>>({});
   const [participants, setParticipants] = useState<EventParticipant[]>(mockParticipants[event.id] ?? []);
   const allParticipants = participants;
   const requestedList   = allParticipants.filter(p => p.rsvp === 'requested');
   const goingList       = allParticipants.filter(p => p.rsvp === 'going');
   const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
   const refundList      = allParticipants.filter(p => p.refundRequested);
-  const filteredParticipants =
-    rsvpFilter === 'all'       ? allParticipants :
-    rsvpFilter === 'requested' ? requestedList :
-    rsvpFilter === 'going'     ? goingList :
-    rsvpFilter === 'denied'    ? deniedList :
-                                 refundList;
+  const waitlistedList  = allParticipants.filter(p => p.waitlisted);
+  const rsvpFilteredParticipants =
+    rsvpFilter === 'all'        ? allParticipants :
+    rsvpFilter === 'requested'  ? requestedList :
+    rsvpFilter === 'going'      ? goingList :
+    rsvpFilter === 'denied'     ? deniedList :
+    rsvpFilter === 'waitlisted' ? waitlistedList :
+                                  refundList;
+  const participantSearchQuery = participantSearch.trim().toLowerCase();
+  const filteredParticipants = participantSearchQuery
+    ? rsvpFilteredParticipants.filter(p =>
+        p.name.toLowerCase().includes(participantSearchQuery) ||
+        p.email.toLowerCase().includes(participantSearchQuery) ||
+        p.memberId.toLowerCase().includes(participantSearchQuery) ||
+        (p.phone ?? '').toLowerCase().includes(participantSearchQuery)
+      )
+    : rsvpFilteredParticipants;
 
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
@@ -209,6 +247,20 @@ export default function EventDetail({
   const handleProcessRefund = (memberId: string) => {
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, refundRequested: false } : p));
     toast.success('Refund processed.');
+  };
+
+  // ── Cancel an existing (approved or pending) registration ────────────────────
+  const handleCancelRegistration = (memberId: string) => {
+    if (!confirm('Cancel this registration? The participant will be marked as denied.')) return;
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
+    toast.success('Registration cancelled.');
+  };
+
+  // ── Admin-initiated refund (as opposed to a member's own refund request) ─────
+  const handleTriggerRefund = (memberId: string, amount: number) => {
+    if (!confirm(`Trigger a refund of £${amount.toFixed(2)} for this participant?`)) return;
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, refundRequested: false } : p));
+    toast.success(`Refund of £${amount.toFixed(2)} triggered.`);
   };
 
   // ── Make / remove participant coordinator (admins) ───────────────────────────
@@ -258,6 +310,7 @@ export default function EventDetail({
   // ── Karyakram Confirmation popup — shown right after a successful registration.
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationNote, setConfirmationNote] = useState('');
+  const [confirmationTicketLabel, setConfirmationTicketLabel] = useState('');
 
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
@@ -297,6 +350,8 @@ export default function EventDetail({
         phone: me?.phone ?? '',
         memberType: me?.memberType ?? 'adult',
         rsvp: 'requested',
+        registeredAt: new Date().toISOString(),
+        termsAccepted: true,
         ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
         ...(appliedCode ? { discountCodeUsed: appliedCode } : {}),
         ...(willWaitlist ? { waitlisted: true } : {}),
@@ -310,7 +365,38 @@ export default function EventDetail({
         ? 'This Karyakram is full — you have been added to the waiting list. We will email you if a spot opens up.'
         : 'A confirmation email has been sent to your registered email address.'
     );
+    setConfirmationTicketLabel(ticket?.label ?? '');
     setShowConfirmation(true);
+  };
+
+  // ── Download a .ics calendar invite for the registered Karyakram ─────────────
+  const handleDownloadIcs = () => {
+    const toIcsDate = (iso: string) => iso.replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const location = event.locationType === 'online'
+      ? (event.onlineUrl ?? 'Online')
+      : (event.venueAddress || `${event.activityCentre}, ${event.town}, ${event.region}, ${event.country}`);
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//MyHSS//Karyakram//EN',
+      'BEGIN:VEVENT',
+      `UID:${event.id}@myhss.hssuk.org`,
+      `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
+      `DTSTART:${toIcsDate(event.startDate)}`,
+      `DTEND:${toIcsDate(event.endDate)}`,
+      `SUMMARY:${event.name}`,
+      `LOCATION:${location}`,
+      `DESCRIPTION:${(event.description ?? '').replace(/<[^>]+>/g, '').replace(/\n/g, '\\n')}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${event.name.replace(/[^a-z0-9]+/gi, '_')}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Only offer the code field when this Karyakram actually has one assigned
@@ -516,6 +602,42 @@ export default function EventDetail({
     toast.success(`${filteredParticipants.length} participant${filteredParticipants.length !== 1 ? 's' : ''} exported successfully.`);
   };
 
+  // ── Event Announcements (local, starts from mock) ──────────────────────────
+  const [eventAnnouncements, setEventAnnouncements] = useState<EventAnnouncement[]>(mockEventAnnouncements[event.id] ?? []);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [announcementTitle, setAnnouncementTitle]   = useState('');
+  const [announcementBody, setAnnouncementBody]     = useState('');
+  const [announcementTargets, setAnnouncementTargets] = useState<('requested' | 'going' | 'waitlisted')[]>([]);
+
+  const handlePostAnnouncement = () => {
+    if (!announcementTitle.trim() || !announcementBody.trim()) {
+      toast.error('Please enter a title and message.');
+      return;
+    }
+    setEventAnnouncements(prev => [
+      {
+        id: `ANN-${Date.now()}`,
+        title: announcementTitle.trim(),
+        body: announcementBody.trim(),
+        postedAt: new Date().toISOString(),
+        postedBy: 'Admin',
+        ...(announcementTargets.length > 0 ? { targetStatuses: announcementTargets } : {}),
+      },
+      ...prev,
+    ]);
+    setAnnouncementTitle('');
+    setAnnouncementBody('');
+    setAnnouncementTargets([]);
+    setShowAnnouncementForm(false);
+    toast.success('Announcement posted.');
+  };
+
+  const handleDeleteAnnouncement = (id: string) => {
+    if (!confirm('Delete this announcement?')) return;
+    setEventAnnouncements(prev => prev.filter(a => a.id !== id));
+    toast.success('Announcement deleted.');
+  };
+
   // ── Media list (local, starts from mock) ───────────────────────────────────
   const [mediaPosts, setMediaPosts]         = useState<EventMedia[]>(mockMediaPosts[event.id] ?? []);
   const [mediaFilter, setMediaFilter]       = useState<MediaFilter>('all');
@@ -620,6 +742,7 @@ export default function EventDetail({
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     // Members only see Media once the Karyakram has happened — nothing to post beforehand.
     ...((!isMember || past) ? [{ id: 'media' as Tab, label: `Media (${mediaPosts.length})` }] : []),
+    { id: 'announcements', label: `Event Announcements (${eventAnnouncements.length})` },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -693,9 +816,13 @@ export default function EventDetail({
               {isMember && !isCancelledOrCompleted && (
                 !myParticipation ? (
                   blockedByCapacity ? (
-                    <span className={`${btnBase} border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900`} title="This Karyakram has reached capacity.">
-                      <UsersIcon className="w-3.5 h-3.5" /> Karyakram Full
-                    </span>
+                    <button
+                      className={`${btnBase} border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/20 hover:bg-primary-100 dark:hover:bg-primary-950/40`}
+                      title="This Karyakram has reached capacity — let us know you'd like to join if a spot opens up."
+                      onClick={() => toast.success("Thanks — we've noted your interest and will notify you if a spot opens up.")}
+                    >
+                      <UsersIcon className="w-3.5 h-3.5" /> Interested to Join
+                    </button>
                   ) : (
                     <button
                       className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
@@ -1009,16 +1136,340 @@ export default function EventDetail({
               )}
 
               {/* ── PARTICIPANTS ── */}
-              {activeTab === 'participants' && (
+              {activeTab === 'participants' && (viewingParticipantId ? (() => {
+                const vp = allParticipants.find(p => p.memberId === viewingParticipantId);
+                if (!vp) return null;
+                const vMember = mockMembers.find(mem => mem.id === vp.memberId);
+                const vTicket = event.priceCategories?.find(c => c.id === vp.ticketTypeId);
+                const vTicketPrice = vp.discountCodeUsed ? 0 : (vTicket?.price ?? 0);
+                const vAmountPaid = vTicketPrice + (vp.donationAmount ?? 0);
+                const vRegDate = vp.registeredAt ? new Date(vp.registeredAt) : null;
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <button
+                        onClick={() => setViewingParticipantId(null)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" /> Back to Participants
+                      </button>
+
+                      {editingRegistration ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingRegistration(false)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              setParticipants(prev => prev.map(p => p.memberId === vp.memberId ? { ...p, customAnswers: editAnswers } : p));
+                              setEditingRegistration(false);
+                              toast.success('Registration updated.');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => handleResendConfirmation(vp.email)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                          >
+                            <Mail className="w-3.5 h-3.5" /> Resend Confirmation Email
+                          </button>
+                          {event.customQuestions && event.customQuestions.length > 0 && (
+                            <button
+                              onClick={() => {
+                                setEditAnswers(vp.customAnswers ?? {});
+                                setEditingRegistration(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5" /> Edit Registration
+                            </button>
+                          )}
+                          {vAmountPaid > 0 && (
+                            <button
+                              onClick={() => handleTriggerRefund(vp.memberId, vAmountPaid)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" /> Trigger Refund
+                            </button>
+                          )}
+                          {vp.rsvp !== 'denied' && (
+                            <button
+                              onClick={() => handleCancelRegistration(vp.memberId)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
+                            >
+                              <Ban className="w-3.5 h-3.5" /> Cancel Registration
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Registration Details
+                      </h4>
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Name</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vMember?.name ?? vp.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Member ID</label>
+                          <p className="text-sm font-mono text-neutral-900 dark:text-white">{vp.memberId}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Date of Registration</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vRegDate ? formatDate(vRegDate.toISOString()) : 'Not recorded'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Time of Registration</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vRegDate ? vRegDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Not recorded'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Type</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.ticketTypeLabel ?? '—'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Status</label>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                              vp.rsvp === 'going'
+                                ? 'bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800'
+                                : vp.rsvp === 'requested'
+                                  ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                  : 'bg-error-50 dark:bg-error-950/20 text-error-700 dark:text-error-400 border border-error-200 dark:border-error-800'
+                            }`}>
+                              {vp.rsvp === 'going' ? 'Approved' : vp.rsvp}
+                            </span>
+                            {vp.waitlisted && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                Waitlisted
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Payment Information
+                      </h4>
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Price</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vTicket ? `£${vTicket.price}` : 'Free event'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Discount Code Applied</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.discountCodeUsed ?? 'None'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Amount Paid</label>
+                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">£{vAmountPaid.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Donation Information
+                      </h4>
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Donation Amount</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.donationAmount ? `£${vp.donationAmount}` : 'No donation'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Gift Aid Claimed</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.giftAidClaimed ? 'Yes' : 'No'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {event.customQuestions && event.customQuestions.length > 0 && (
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          Additional Registration Questions
+                        </h4>
+                        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {event.customQuestions.map(q => {
+                            const ans = vp.customAnswers?.[q.id];
+                            const display =
+                              ans === undefined || ans === '' ? '—' :
+                              Array.isArray(ans) ? (ans.length > 0 ? ans.join(', ') : '—') :
+                              typeof ans === 'boolean' ? (ans ? 'Yes' : 'No') :
+                              String(ans);
+                            if (!editingRegistration) {
+                              return (
+                                <div key={q.id} className="px-6 py-3.5">
+                                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{q.label}</p>
+                                  <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">{display}</p>
+                                </div>
+                              );
+                            }
+                            const editAns = editAnswers[q.id];
+                            return (
+                              <div key={q.id} className="px-6 py-3.5">
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">{q.label}</p>
+                                {q.type === 'text' && (
+                                  <input
+                                    type="text"
+                                    value={(editAns as string) ?? ''}
+                                    onChange={e => setEditAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                    className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                                  />
+                                )}
+                                {q.type === 'date' && (
+                                  <input
+                                    type="date"
+                                    value={(editAns as string) ?? ''}
+                                    onChange={e => setEditAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                    className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                                  />
+                                )}
+                                {q.type === 'dropdown' && (
+                                  <select
+                                    value={(editAns as string) ?? ''}
+                                    onChange={e => setEditAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                    className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                                  >
+                                    <option value="">Select…</option>
+                                    {(q.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                  </select>
+                                )}
+                                {q.type === 'radio' && (
+                                  <div className="space-y-1">
+                                    {(q.options ?? []).map(opt => (
+                                      <label key={opt} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          name={`edit-${q.id}`}
+                                          checked={editAns === opt}
+                                          onChange={() => setEditAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                                        />
+                                        {opt}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                {q.type === 'checkbox' && (q.options && q.options.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {q.options.map(opt => {
+                                      const sel = (editAns as string[]) ?? [];
+                                      return (
+                                        <label key={opt} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={sel.includes(opt)}
+                                            onChange={e => setEditAnswers(prev => {
+                                              const cur = (prev[q.id] as string[]) ?? [];
+                                              return { ...prev, [q.id]: e.target.checked ? [...cur, opt] : cur.filter(o => o !== opt) };
+                                            })}
+                                          />
+                                          {opt}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={(editAns as boolean) ?? false}
+                                      onChange={e => setEditAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
+                                    />
+                                    Yes
+                                  </label>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Terms &amp; Conditions
+                      </h4>
+                      <div className="px-6 py-4">
+                        <p className="text-sm text-neutral-900 dark:text-white">
+                          {vp.termsAccepted ? 'Accepted at the time of registration.' : 'Not recorded.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Other Registration Data
+                      </h4>
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Email</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.email}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.phone || '—'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Type</label>
+                          <p className="text-sm text-neutral-900 dark:text-white capitalize">{vp.memberType}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Coordinator</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.isCoordinator ? 'Yes' : 'No'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Requested</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.refundRequested ? 'Yes' : 'No'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                        Compliance Status
+                      </h4>
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">First Aid</label>
+                          <ComplianceBadge status={vMember?.compliance.firstAid} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Safeguarding</label>
+                          <ComplianceBadge status={vMember?.compliance.safeguardingTraining} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">DBS</label>
+                          <ComplianceBadge status={vMember?.compliance.dbs} />
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                );
+              })() : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1 flex-wrap">
                       {([
-                        { id: 'all',       label: 'All',       count: allParticipants.length },
-                        { id: 'requested', label: 'Requested', count: requestedList.length   },
-                        { id: 'going',     label: 'Approved',  count: goingList.length       },
-                        { id: 'denied',    label: 'Denied',    count: deniedList.length      },
-                        { id: 'refund',    label: 'Refund',    count: refundList.length      },
+                        { id: 'all',        label: 'All',          count: allParticipants.length },
+                        { id: 'requested',  label: 'Requested',    count: requestedList.length   },
+                        { id: 'going',      label: 'Approved',     count: goingList.length       },
+                        { id: 'denied',     label: 'Denied',       count: deniedList.length      },
+                        { id: 'waitlisted', label: 'Waiting List', count: waitlistedList.length  },
+                        { id: 'refund',     label: 'Refund',       count: refundList.length      },
                       ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
                         <button
                           key={f.id}
@@ -1036,13 +1487,25 @@ export default function EventDetail({
                         </button>
                       ))}
                     </div>
-                    <button
-                      onClick={handleExportParticipants}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5" />
-                      Export Participants
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={participantSearch}
+                          onChange={e => setParticipantSearch(e.target.value)}
+                          placeholder="Search participants..."
+                          className="text-xs pl-8 pr-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-48"
+                        />
+                      </div>
+                      <button
+                        onClick={handleExportParticipants}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        Export Participants
+                      </button>
+                    </div>
                   </div>
                   {filteredParticipants.length > 0 ? (
                     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -1086,25 +1549,33 @@ export default function EventDetail({
                               <td className="px-4 py-3">
                                 <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{lastName}</button>
                               </td>
-                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{p.memberId}</td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.memberId}</td>
+                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>
                                 <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
                                   <Mail className="w-3 h-3 flex-shrink-0 text-neutral-400" /><span className="truncate max-w-[160px]">{p.email}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>
                                 {p.phone ? (
                                   <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
                                     <Phone className="w-3 h-3 flex-shrink-0 text-neutral-400" /><span>{p.phone}</span>
                                   </div>
                                 ) : <span className="text-xs text-neutral-400">—</span>}
                               </td>
-                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">{postCode ?? '—'}</td>
-                              <td className="px-4 py-3"><TypeBadge type={p.memberType} /></td>
-                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{p.ticketTypeLabel ?? <span className="text-neutral-400">—</span>}</td>
+                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{postCode ?? '—'}</td>
+                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}><TypeBadge type={p.memberType} /></td>
+                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.ticketTypeLabel ?? <span className="text-neutral-400">—</span>}</td>
                               {!isMember && (
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setViewingParticipantId(p.memberId)}
+                                    title="View registration details"
+                                    aria-label="View registration details"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
                                   <button
                                     onClick={() => handleResendConfirmation(p.email)}
                                     title="Resend confirmation email"
@@ -1182,7 +1653,7 @@ export default function EventDetail({
                     </div>
                   )}
                 </div>
-              )}
+              ))}
 
               {/* ── MEDIA ── */}
               {activeTab === 'media' && (
@@ -1425,6 +1896,154 @@ export default function EventDetail({
                           ? `No ${mediaFilter}s have been posted for this event.`
                           : 'Upload the first image or video using the button above.'}
                       </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── EVENT ANNOUNCEMENTS ── */}
+              {activeTab === 'announcements' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Event Announcements</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                        {eventAnnouncements.length} {eventAnnouncements.length === 1 ? 'item' : 'items'}
+                      </span>
+                    </div>
+                    {!isMember && (
+                      <button
+                        onClick={() => setShowAnnouncementForm(v => !v)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs font-medium transition-colors"
+                      >
+                        <Megaphone className="w-3.5 h-3.5" /> Post Announcement
+                      </button>
+                    )}
+                  </div>
+
+                  {showAnnouncementForm && (
+                    <div className="border border-primary-200 dark:border-primary-900/40 bg-primary-50/40 dark:bg-primary-950/10 rounded-xl p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">New Announcement</h4>
+                        <button onClick={() => { setShowAnnouncementForm(false); setAnnouncementTitle(''); setAnnouncementBody(''); setAnnouncementTargets([]); }} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Title</label>
+                        <input
+                          type="text"
+                          value={announcementTitle}
+                          onChange={e => setAnnouncementTitle(e.target.value)}
+                          placeholder="e.g. Parking update"
+                          className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Message</label>
+                        <textarea
+                          value={announcementBody}
+                          onChange={e => setAnnouncementBody(e.target.value)}
+                          placeholder="Write the announcement..."
+                          rows={3}
+                          className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                          Demographic Filters <span className="text-neutral-400 font-normal">(optional — leave blank to notify all participants)</span>
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {([
+                            { id: 'requested',  label: 'Requested'    },
+                            { id: 'going',      label: 'Approved'     },
+                            { id: 'waitlisted', label: 'Waiting List' },
+                          ] as { id: 'requested' | 'going' | 'waitlisted'; label: string }[]).map(opt => {
+                            const checked = announcementTargets.includes(opt.id);
+                            return (
+                              <label
+                                key={opt.id}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
+                                  checked
+                                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="sr-only"
+                                  checked={checked}
+                                  onChange={() => setAnnouncementTargets(prev => prev.includes(opt.id) ? prev.filter(t => t !== opt.id) : [...prev, opt.id])}
+                                />
+                                {checked && <Check className="w-3.5 h-3.5" />}
+                                {opt.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <SecondaryButton onClick={() => { setShowAnnouncementForm(false); setAnnouncementTitle(''); setAnnouncementBody(''); setAnnouncementTargets([]); }}>Cancel</SecondaryButton>
+                        <button
+                          onClick={handlePostAnnouncement}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                        >
+                          Post Announcement
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {eventAnnouncements.length > 0 ? (
+                    <div className="space-y-3">
+                      {eventAnnouncements.map(a => (
+                        <div key={a.id} className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center text-primary-600 dark:text-primary-400 flex-shrink-0">
+                                <Megaphone className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{a.title}</h4>
+                                <p className="text-xs text-neutral-400 mt-0.5">{a.postedBy} · {formatDateTime(a.postedAt)}</p>
+                              </div>
+                            </div>
+                            {!isMember && (
+                              <button
+                                onClick={() => handleDeleteAnnouncement(a.id)}
+                                title="Delete announcement"
+                                aria-label="Delete announcement"
+                                className="p-1.5 rounded-lg text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 leading-relaxed">{a.body}</p>
+                          {!isMember && (
+                            <div className="flex items-center gap-1.5 flex-wrap mt-3">
+                              <span className="text-xs text-neutral-400">Sent to:</span>
+                              {a.targetStatuses && a.targetStatuses.length > 0 ? (
+                                a.targetStatuses.map(s => (
+                                  <span key={s} className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                                    {s === 'going' ? 'Approved' : s === 'waitlisted' ? 'Waiting List' : 'Requested'}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                                  All Participants
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <Megaphone className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mb-3" />
+                      <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No announcements yet</p>
+                      <p className="text-xs text-neutral-400 mt-1">Updates about this Karyakram will appear here.</p>
                     </div>
                   )}
                 </div>
@@ -1810,6 +2429,7 @@ export default function EventDetail({
                 />
                 <span>I agree to the Terms and Conditions <span className="text-error-500">*</span></span>
               </label>
+              <p className="text-xs text-neutral-400 mt-1 pl-6">This is mandatory and will be recorded with your registration.</p>
               {termsError && <p className="text-xs text-error-600 mt-1">{termsError}</p>}
             </div>
           </div>
@@ -2012,9 +2632,22 @@ export default function EventDetail({
                 {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5 flex-shrink-0" /> : <MapPin className="w-3.5 h-3.5 flex-shrink-0" />}
                 <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
               </div>
+              {confirmationTicketLabel && (
+                <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                  <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Ticket Type: {confirmationTicketLabel}</span>
+                </div>
+              )}
             </div>
 
             <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">{confirmationNote}</p>
+
+            <button
+              onClick={handleDownloadIcs}
+              className={`${btnBase} w-full justify-center border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800`}
+            >
+              <Download className="w-3.5 h-3.5" /> Download .ics (Add to Calendar)
+            </button>
           </div>
 
           <div className="flex items-center justify-center px-6 py-4 border-t border-neutral-200 dark:border-neutral-800">

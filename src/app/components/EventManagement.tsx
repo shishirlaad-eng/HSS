@@ -521,6 +521,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     description: data.description,
     imageUrl: data.imageUrl,
     guestRegistrationEnabled: data.guestRegistrationEnabled,
+    shakhaKaryawahaApprovalRequired: data.shakhaKaryawahaApprovalRequired,
     guestPaymentType: data.guestPaymentType,
     guestPrice: data.guestPrice,
     customQuestions: data.customQuestions,

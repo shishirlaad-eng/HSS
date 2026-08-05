@@ -101,6 +101,8 @@ export interface Event {
   guestRegistrationEnabled?: boolean;
   guestPaymentType?: 'paid' | 'free';
   guestPrice?: number;   // GBP; only meaningful when guestPaymentType === 'paid'
+  // Requires the local Shakha Karyawaha to approve registrations before they're confirmed.
+  shakhaKaryawahaApprovalRequired?: boolean;
 
   // Custom registration questions
   customQuestions?: EventCustomQuestion[];
@@ -219,6 +221,25 @@ export const mockMediaPosts: Record<string, EventMedia[]> = {
   ],
 };
 
+// ─── Event Announcements ──────────────────────────────────────────────────────
+export interface EventAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  postedAt: string;   // ISO datetime
+  postedBy: string;
+  // Demographic filter — which participant statuses this announcement is
+  // targeted at. Empty/undefined = sent to all participants.
+  targetStatuses?: ('requested' | 'going' | 'waitlisted')[];
+}
+
+export const mockEventAnnouncements: Record<string, EventAnnouncement[]> = {
+  'EVT-101': [
+    { id: 'ANN-101-1', title: 'Parking update', body: 'Overflow parking is now available at the Wembley Activity Centre rear lot — follow the signage from the main entrance.', postedAt: '2026-05-18T09:00:00Z', postedBy: 'Sarah Johnson' },
+    { id: 'ANN-101-2', title: 'Dress code reminder', body: 'Please wear your Shakha uniform for the group photograph at 10:00 AM sharp.', postedAt: '2026-05-19T14:30:00Z', postedBy: 'Sarah Johnson' },
+  ],
+};
+
 // ─── Participant data ────────────────────────────────────────────────────────
 export interface EventParticipant {
   memberId: string;
@@ -249,6 +270,10 @@ export interface EventParticipant {
   giftAidClaimed?: boolean;
   // Set when the participant has asked for a refund on their paid registration.
   refundRequested?: boolean;
+  // When the member registered (ISO datetime) and whether they accepted the
+  // event's Terms & Conditions at that time.
+  registeredAt?: string;
+  termsAccepted?: boolean;
 }
 
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
@@ -268,16 +293,16 @@ export const mockCoupons: EventCoupon[] = [
 
 export const mockParticipants: Record<string, EventParticipant[]> = {
   'EVT-101': [
-    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', refundRequested: true },
-    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going', refundRequested: true },
-    { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going'    },
-    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested'    },
-    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'General Admission' },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', refundRequested: true, ticketTypeLabel: 'General Admission' },
+    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'Speaker' },
+    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going', refundRequested: true, ticketTypeLabel: 'Youth Delegate' },
+    { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'General Admission' },
+    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested', ticketTypeLabel: 'General Admission' },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested', ticketTypeLabel: 'Youth Delegate' },
     { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
     { memberId: 'MBR-009', name: 'Deepak Rao',      email: 'deepak.rao@example.com',    phone: '+44 7799 012345', memberType: 'adult', rsvp: 'denied' },
-    { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',phone: '',               memberType: 'child', rsvp: 'going'    },
+    { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',phone: '',               memberType: 'child', rsvp: 'going', waitlisted: true, ticketTypeLabel: 'Youth Delegate' },
   ],
   'EVT-103': [
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going'    },
@@ -336,6 +361,13 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'going'    },
     { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',   phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'requested'    },
     { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',   phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
+  ],
+  'EVT-118': [
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going' },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going' },
+    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going' },
+    { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going' },
+    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'going' },
   ],
 };
 
@@ -870,6 +902,33 @@ export const mockEvents: Event[] = [
       maybe: 0,
       notGoing: 0,
       participantCount: 0,
+      mediaCount: 0,
+    },
+    chatState: 'archived',
+  },
+  {
+    id: 'EVT-118',
+    name: 'Community Sports Day',
+    host: 'Michael Chen',
+    status: 'published',
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Wembley',
+    activityCentre: 'Wembley Activity Centre',
+    locationType: 'physical',
+    venueAddress: 'Wembley Activity Centre, Forty Avenue, Wembley, HA9 8JX',
+    startDate: '2026-09-10T10:00:00Z',
+    endDate: '2026-09-10T16:00:00Z',
+    createdDate: '2026-08-01T09:00:00Z',
+    lastUpdated: '2026-08-01T09:00:00Z',
+    paymentType: 'free',
+    capacity: 5,
+    description: 'A day of friendly sporting competitions and team games for members of all ages.',
+    metrics: {
+      going: 5,
+      maybe: 0,
+      notGoing: 0,
+      participantCount: 5,
       mediaCount: 0,
     },
     chatState: 'archived',

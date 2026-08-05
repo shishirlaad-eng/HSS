@@ -100,6 +100,15 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
             We have sent a verification email to {form.email}. Please verify your email address to continue setting up your Member account.
           </p>
+          {onRegistrationComplete && (
+            <PrimaryButton
+              type="button"
+              className="justify-center w-full mb-3"
+              onClick={() => onRegistrationComplete('Adult Member')}
+            >
+              Continue Registration
+            </PrimaryButton>
+          )}
           <button type="button" onClick={onBackToLogin} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
             Back to Login
           </button>
