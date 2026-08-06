@@ -40,9 +40,12 @@ import {
   Eye,
   Search,
   Megaphone,
+  Bell,
+  QrCode,
 } from 'lucide-react';
 import { SecondaryButton } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
+import { RichTextEditor } from './hb/common';
 import {
   Event,
   EventParticipant,
@@ -122,6 +125,13 @@ function StatusBadge({ status }: { status: Event['status'] }) {
 }
 
 // ─── Member type badge ─────────────────────────────────────────────────────────
+// Generates a scannable QR code image via a public QR rendering service —
+// no client-side QR library needed, consistent with how other external
+// images are already embedded in this app.
+function qrCodeUrl(data: string, size = 160): string {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+}
+
 function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
   const map = {
     adult: 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400',
@@ -311,6 +321,7 @@ export default function EventDetail({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationNote, setConfirmationNote] = useState('');
   const [confirmationTicketLabel, setConfirmationTicketLabel] = useState('');
+  const [confirmationTicketPrice, setConfirmationTicketPrice] = useState<number | null>(null);
 
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
@@ -366,6 +377,8 @@ export default function EventDetail({
         : 'A confirmation email has been sent to your registered email address.'
     );
     setConfirmationTicketLabel(ticket?.label ?? '');
+    const ticketPrice = ticket ? (event.priceCategories?.find(c => c.id === ticket.id)?.price ?? 0) : null;
+    setConfirmationTicketPrice(appliedCode ? 0 : ticketPrice);
     setShowConfirmation(true);
   };
 
@@ -607,11 +620,45 @@ export default function EventDetail({
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [announcementTitle, setAnnouncementTitle]   = useState('');
   const [announcementBody, setAnnouncementBody]     = useState('');
+  const [announcementBodyWordCount, setAnnouncementBodyWordCount] = useState(0);
   const [announcementTargets, setAnnouncementTargets] = useState<('requested' | 'going' | 'waitlisted')[]>([]);
+  const [announcementPushEnabled, setAnnouncementPushEnabled] = useState(true);
+  const [announcementPushSchedule, setAnnouncementPushSchedule] = useState<'instant' | 'scheduled'>('instant');
+  const [announcementPushScheduledAt, setAnnouncementPushScheduledAt] = useState('');
+  const [announcementEmailEnabled, setAnnouncementEmailEnabled] = useState(true);
+  const [announcementEmailSchedule, setAnnouncementEmailSchedule] = useState<'instant' | 'scheduled'>('instant');
+  const [announcementEmailScheduledAt, setAnnouncementEmailScheduledAt] = useState('');
+  const announcementBodyIsOver = announcementBodyWordCount > 150;
+
+  const resetAnnouncementForm = () => {
+    setShowAnnouncementForm(false);
+    setAnnouncementTitle('');
+    setAnnouncementBody('');
+    setAnnouncementBodyWordCount(0);
+    setAnnouncementTargets([]);
+    setAnnouncementPushEnabled(true);
+    setAnnouncementPushSchedule('instant');
+    setAnnouncementPushScheduledAt('');
+    setAnnouncementEmailEnabled(true);
+    setAnnouncementEmailSchedule('instant');
+    setAnnouncementEmailScheduledAt('');
+  };
 
   const handlePostAnnouncement = () => {
     if (!announcementTitle.trim() || !announcementBody.trim()) {
       toast.error('Please enter a title and message.');
+      return;
+    }
+    if (announcementBodyIsOver) {
+      toast.error('Message exceeds the 150-word limit.');
+      return;
+    }
+    if (announcementPushEnabled && announcementPushSchedule === 'scheduled' && !announcementPushScheduledAt) {
+      toast.error('Please pick a push notification schedule date & time.');
+      return;
+    }
+    if (announcementEmailEnabled && announcementEmailSchedule === 'scheduled' && !announcementEmailScheduledAt) {
+      toast.error('Please pick an email notification schedule date & time.');
       return;
     }
     setEventAnnouncements(prev => [
@@ -621,15 +668,20 @@ export default function EventDetail({
         body: announcementBody.trim(),
         postedAt: new Date().toISOString(),
         postedBy: 'Admin',
+        pushEnabled: announcementPushEnabled,
+        ...(announcementPushEnabled ? { pushSchedule: announcementPushSchedule, ...(announcementPushSchedule === 'scheduled' ? { pushScheduledAt: announcementPushScheduledAt } : {}) } : {}),
+        emailEnabled: announcementEmailEnabled,
+        ...(announcementEmailEnabled ? { emailSchedule: announcementEmailSchedule, ...(announcementEmailSchedule === 'scheduled' ? { emailScheduledAt: announcementEmailScheduledAt } : {}) } : {}),
         ...(announcementTargets.length > 0 ? { targetStatuses: announcementTargets } : {}),
       },
       ...prev,
     ]);
-    setAnnouncementTitle('');
-    setAnnouncementBody('');
-    setAnnouncementTargets([]);
-    setShowAnnouncementForm(false);
-    toast.success('Announcement posted.');
+    resetAnnouncementForm();
+    toast.success(
+      (announcementPushEnabled && announcementPushSchedule === 'scheduled') || (announcementEmailEnabled && announcementEmailSchedule === 'scheduled')
+        ? 'Announcement scheduled.'
+        : 'Announcement posted.'
+    );
   };
 
   const handleDeleteAnnouncement = (id: string) => {
@@ -1104,6 +1156,28 @@ export default function EventDetail({
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Event Check-in QR Code — admin only */}
+                  {!isMember && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <QrCode className="w-4 h-4 text-primary-600" /> Event Check-in QR Code
+                      </h4>
+                      <div className="px-6 py-4 flex items-center gap-4">
+                        <img
+                          src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin`, 140)}
+                          alt="Event check-in QR code"
+                          className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Scan at the venue to check in participants for this Karyakram.</p>
+                          <code className="block text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
+                            {`https://hssuk.org/events/${event.id}/checkin`}
+                          </code>
                         </div>
                       </div>
                     </div>
@@ -1925,10 +1999,12 @@ export default function EventDetail({
                     <div className="border border-primary-200 dark:border-primary-900/40 bg-primary-50/40 dark:bg-primary-950/10 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">New Announcement</h4>
-                        <button onClick={() => { setShowAnnouncementForm(false); setAnnouncementTitle(''); setAnnouncementBody(''); setAnnouncementTargets([]); }} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                        <button onClick={resetAnnouncementForm} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
+
+                      {/* Title */}
                       <div>
                         <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Title</label>
                         <input
@@ -1939,16 +2015,40 @@ export default function EventDetail({
                           className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
+
+                      {/* Message */}
                       <div>
                         <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Message</label>
-                        <textarea
+                        <RichTextEditor
                           value={announcementBody}
-                          onChange={e => setAnnouncementBody(e.target.value)}
+                          onChange={html => {
+                            setAnnouncementBody(html);
+                            const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+                            setAnnouncementBodyWordCount(text === '' ? 0 : text.split(/\s+/).filter(Boolean).length);
+                          }}
                           placeholder="Write the announcement..."
-                          rows={3}
-                          className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                         />
+                        <div className="flex items-center justify-end mt-1.5">
+                          <span className={`text-xs font-medium ${
+                            announcementBodyIsOver ? 'text-red-600 dark:text-red-400'
+                            : announcementBodyWordCount >= 130 ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-neutral-400 dark:text-neutral-500'
+                          }`}>
+                            {announcementBodyWordCount} / 150 words{announcementBodyIsOver ? ' — limit exceeded' : ''}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Cooldown — fixed, informational */}
+                      <div>
+                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">How long before a member sees this again</label>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/50">
+                          <span className="text-sm text-neutral-900 dark:text-white font-medium">5 minutes</span>
+                          <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">Fixed</span>
+                        </div>
+                      </div>
+
+                      {/* Demographic Filters */}
                       <div>
                         <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
                           Demographic Filters <span className="text-neutral-400 font-normal">(optional — leave blank to notify all participants)</span>
@@ -1982,13 +2082,109 @@ export default function EventDetail({
                           })}
                         </div>
                       </div>
+
+                      {/* Notification Channels */}
+                      <div>
+                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">Notification Channels</label>
+                        <div className="space-y-3">
+                          {/* Push */}
+                          <div className="bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                <span className="text-sm font-medium text-neutral-900 dark:text-white">Push Notification</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={announcementPushEnabled} onChange={e => setAnnouncementPushEnabled(e.target.checked)} />
+                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
+                              </label>
+                            </div>
+                            {announcementPushEnabled && (
+                              <div className="space-y-3">
+                                <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                                  {([{ value: 'instant', label: '⚡ Send Instantly' }, { value: 'scheduled', label: '🕐 Schedule' }] as const).map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      onClick={() => setAnnouncementPushSchedule(opt.value)}
+                                      className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                                        announcementPushSchedule === opt.value ? 'bg-primary-600 text-white' : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                {announcementPushSchedule === 'scheduled' && (
+                                  <input
+                                    type="datetime-local"
+                                    value={announcementPushScheduledAt}
+                                    onChange={e => setAnnouncementPushScheduledAt(e.target.value)}
+                                    className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Email */}
+                          <div className="bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                <span className="text-sm font-medium text-neutral-900 dark:text-white">Email Notification</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={announcementEmailEnabled} onChange={e => setAnnouncementEmailEnabled(e.target.checked)} />
+                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
+                              </label>
+                            </div>
+                            {announcementEmailEnabled && (
+                              <div className="space-y-3">
+                                <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                                  {([{ value: 'instant', label: '⚡ Send Instantly' }, { value: 'scheduled', label: '🕐 Schedule' }] as const).map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      onClick={() => setAnnouncementEmailSchedule(opt.value)}
+                                      className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                                        announcementEmailSchedule === opt.value ? 'bg-primary-600 text-white' : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                {announcementEmailSchedule === 'scheduled' && (
+                                  <input
+                                    type="datetime-local"
+                                    value={announcementEmailScheduledAt}
+                                    onChange={e => setAnnouncementEmailScheduledAt(e.target.value)}
+                                    className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* In-app bell — always on, informational */}
+                          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg">
+                            <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">In-App Bell Notification</p>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Participants always receive this announcement in their notification bell. This cannot be disabled.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-end gap-2">
-                        <SecondaryButton onClick={() => { setShowAnnouncementForm(false); setAnnouncementTitle(''); setAnnouncementBody(''); setAnnouncementTargets([]); }}>Cancel</SecondaryButton>
+                        <SecondaryButton onClick={resetAnnouncementForm}>Cancel</SecondaryButton>
                         <button
                           onClick={handlePostAnnouncement}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                         >
-                          Post Announcement
+                          {(announcementPushEnabled && announcementPushSchedule === 'scheduled') || (announcementEmailEnabled && announcementEmailSchedule === 'scheduled') ? 'Schedule Announcement' : 'Post Announcement'}
                         </button>
                       </div>
                     </div>
@@ -2019,7 +2215,7 @@ export default function EventDetail({
                               </button>
                             )}
                           </div>
-                          <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 leading-relaxed">{a.body}</p>
+                          <div className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 leading-relaxed prose dark:prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: a.body }} />
                           {!isMember && (
                             <div className="flex items-center gap-1.5 flex-wrap mt-3">
                               <span className="text-xs text-neutral-400">Sent to:</span>
@@ -2635,9 +2831,18 @@ export default function EventDetail({
               {confirmationTicketLabel && (
                 <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                   <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Ticket Type: {confirmationTicketLabel}</span>
+                  <span>Ticket Type: {confirmationTicketLabel}{confirmationTicketPrice !== null ? ` (£${confirmationTicketPrice})` : ''}</span>
                 </div>
               )}
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <img
+                src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 150)}
+                alt="Your check-in QR code"
+                className="w-[150px] h-[150px] rounded-lg border border-neutral-200 dark:border-neutral-800"
+              />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Show this QR code at the venue to check in.</p>
             </div>
 
             <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">{confirmationNote}</p>

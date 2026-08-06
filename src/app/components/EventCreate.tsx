@@ -75,6 +75,7 @@ const EMPTY_FORM = {
   filterResponsibilityTypes: [] as string[],
   specificAgeOperator: '' as '' | '=' | '>' | '<' | 'between',
   specificAgeValue: '',
+  specificAgeAsAtDate: '',
   specificAgeFrom: '',
   specificAgeTo: '',
   targetSpecificOnly: false,
@@ -150,6 +151,7 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     filterResponsibilityTypes: event.filterResponsibilityTypes ?? [],
     specificAgeOperator: event.filterSpecificAge?.operator ?? '',
     specificAgeValue: event.filterSpecificAge?.value !== undefined ? String(event.filterSpecificAge.value) : '',
+    specificAgeAsAtDate: event.filterSpecificAge?.asAtDate ?? '',
     specificAgeFrom: event.filterSpecificAge?.from ?? '',
     specificAgeTo: event.filterSpecificAge?.to ?? '',
     targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
@@ -480,7 +482,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       filterSpecificAge: formData.specificAgeOperator ? (
         formData.specificAgeOperator === 'between'
           ? { operator: 'between' as const, from: formData.specificAgeFrom || undefined, to: formData.specificAgeTo || undefined }
-          : { operator: formData.specificAgeOperator, value: formData.specificAgeValue ? parseInt(formData.specificAgeValue) : undefined }
+          : { operator: formData.specificAgeOperator, value: formData.specificAgeValue ? parseInt(formData.specificAgeValue) : undefined, asAtDate: formData.specificAgeAsAtDate || undefined }
       ) : undefined,
       targetRegions: !isFullSelection(formData.targetRegions, regionOptions) ? formData.targetRegions : undefined,
       targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
@@ -845,8 +847,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                 </div>
               </Card>
 
-              {!formData.targetSpecificOnly && (
-                <>
+              <>
                   <Card title="Scope">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <MultiSelectField
@@ -890,24 +891,39 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         <div className="flex flex-wrap items-center gap-3">
                           <FormSelect
                             value={formData.specificAgeOperator}
-                            onChange={e => set('specificAgeOperator', e.target.value)}
+                            onChange={e => {
+                              const op = e.target.value;
+                              set('specificAgeOperator', op);
+                              if ((op === '=' || op === '>' || op === '<') && !formData.specificAgeAsAtDate) {
+                                set('specificAgeAsAtDate', new Date().toISOString().split('T')[0]);
+                              }
+                            }}
                             className="w-40"
                           >
                             <option value="">Not filtered</option>
                             <option value="=">Equals to</option>
-                            <option value=">">Greater than</option>
-                            <option value="<">Smaller than</option>
+                            <option value=">">Greater than or equal to</option>
+                            <option value="<">Less than or equal to</option>
                             <option value="between">Between</option>
                           </FormSelect>
                           {(formData.specificAgeOperator === '=' || formData.specificAgeOperator === '>' || formData.specificAgeOperator === '<') && (
-                            <FormInput
-                              type="number"
-                              min="0"
-                              value={formData.specificAgeValue}
-                              onChange={e => set('specificAgeValue', e.target.value)}
-                              placeholder="Age"
-                              className="w-32"
-                            />
+                            <>
+                              <FormInput
+                                type="number"
+                                min="0"
+                                value={formData.specificAgeValue}
+                                onChange={e => set('specificAgeValue', e.target.value)}
+                                placeholder="Age"
+                                className="w-32"
+                              />
+                              <span className="text-sm text-neutral-400">as at</span>
+                              <FormInput
+                                type="date"
+                                value={formData.specificAgeAsAtDate}
+                                onChange={e => set('specificAgeAsAtDate', e.target.value)}
+                                className="w-44"
+                              />
+                            </>
                           )}
                           {formData.specificAgeOperator === 'between' && (
                             <>
@@ -960,8 +976,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       />
                     </div>
                   </Card>
-                </>
-              )}
+              </>
             </div>
           )}
 

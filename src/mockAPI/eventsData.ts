@@ -92,6 +92,7 @@ export interface Event {
   filterSpecificAge?: {
     operator: '=' | '>' | '<' | 'between';
     value?: number;       // for '=' | '>' | '<'
+    asAtDate?: string;     // date (yyyy-mm-dd) — the age must be met as at this date, for '=' | '>' | '<'
     from?: string;        // date (yyyy-mm-dd), for 'between'
     to?: string;           // date (yyyy-mm-dd), for 'between'
   };
@@ -231,6 +232,12 @@ export interface EventAnnouncement {
   // Demographic filter — which participant statuses this announcement is
   // targeted at. Empty/undefined = sent to all participants.
   targetStatuses?: ('requested' | 'going' | 'waitlisted')[];
+  pushEnabled?: boolean;
+  pushSchedule?: 'instant' | 'scheduled';
+  pushScheduledAt?: string;
+  emailEnabled?: boolean;
+  emailSchedule?: 'instant' | 'scheduled';
+  emailScheduledAt?: string;
 }
 
 export const mockEventAnnouncements: Record<string, EventAnnouncement[]> = {
