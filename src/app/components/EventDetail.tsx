@@ -286,6 +286,16 @@ export default function EventDetail({
   // ── Member self-registration ("Request to Attend") ──────────────────────────
   const myMemberId = scope.selfMemberId;
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
+  const [showCheckInConfirm, setShowCheckInConfirm] = useState(false);
+  const [expressedInterest, setExpressedInterest] = useState(false);
+
+  const handleCheckIn = () => {
+    if (!myMemberId) return;
+    setParticipants(prev => prev.map(p => p.memberId === myMemberId ? { ...p, checkedIn: true, checkedInAt: new Date().toISOString() } : p));
+    setShowCheckInConfirm(false);
+    toast.success('You are checked in.');
+  };
+
   const [showAttendQuestions, setShowAttendQuestions] = useState(false);
   const [attendAnswers, setAttendAnswers] = useState<Record<string, string | boolean>>({});
   const [discountCode, setDiscountCode] = useState('');
@@ -868,13 +878,22 @@ export default function EventDetail({
               {isMember && !isCancelledOrCompleted && (
                 !myParticipation ? (
                   blockedByCapacity ? (
-                    <button
-                      className={`${btnBase} border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/20 hover:bg-primary-100 dark:hover:bg-primary-950/40`}
-                      title="This Karyakram has reached capacity — let us know you'd like to join if a spot opens up."
-                      onClick={() => toast.success("Thanks — we've noted your interest and will notify you if a spot opens up.")}
-                    >
-                      <UsersIcon className="w-3.5 h-3.5" /> Interested to Join
-                    </button>
+                    expressedInterest ? (
+                      <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
+                        <UsersIcon className="w-3.5 h-3.5" /> Waiting List
+                      </span>
+                    ) : (
+                      <button
+                        className={`${btnBase} border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/20 hover:bg-primary-100 dark:hover:bg-primary-950/40`}
+                        title="This Karyakram has reached capacity — let us know you'd like to join if a spot opens up."
+                        onClick={() => {
+                          setExpressedInterest(true);
+                          toast.success("Thanks — we've noted your interest and will notify you if a spot opens up.");
+                        }}
+                      >
+                        <UsersIcon className="w-3.5 h-3.5" /> Interested to Join
+                      </button>
+                    )
                   ) : (
                     <button
                       className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
@@ -888,9 +907,23 @@ export default function EventDetail({
                     <ClockIcon className="w-3.5 h-3.5" /> {myParticipation.waitlisted ? 'Waitlisted — awaiting a spot' : 'Requested — awaiting approval'}
                   </span>
                 ) : myParticipation.rsvp === 'going' ? (
-                  <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Going
-                  </span>
+                  <>
+                    <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Going
+                    </span>
+                    {myParticipation.checkedIn ? (
+                      <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
+                        <QrCode className="w-3.5 h-3.5" /> Checked In
+                      </span>
+                    ) : (
+                      <button
+                        className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+                        onClick={() => setShowCheckInConfirm(true)}
+                      >
+                        <QrCode className="w-3.5 h-3.5" /> Check In
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <span className={`${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-error-50 dark:bg-error-950/20`}>
                     <XCircle className="w-3.5 h-3.5" /> Request Denied
@@ -2861,6 +2894,36 @@ export default function EventDetail({
               onClick={() => setShowConfirmation(false)}
             >
               Done
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── CHECK-IN CONFIRMATION ─────────────────────────────────────────────── */}
+    {showCheckInConfirm && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowCheckInConfirm(false)}
+      >
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center mb-3">
+              <QrCode className="w-7 h-7 text-primary-600 dark:text-primary-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Check In</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Are you sure to check in?</p>
+          </div>
+          <div className="flex items-center justify-center gap-2 px-6 py-5">
+            <SecondaryButton onClick={() => setShowCheckInConfirm(false)}>Cancel</SecondaryButton>
+            <button
+              className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
+              onClick={handleCheckIn}
+            >
+              <Check className="w-3.5 h-3.5" /> Check In
             </button>
           </div>
         </div>

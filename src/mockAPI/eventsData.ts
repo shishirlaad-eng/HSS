@@ -281,6 +281,9 @@ export interface EventParticipant {
   // event's Terms & Conditions at that time.
   registeredAt?: string;
   termsAccepted?: boolean;
+  // Set when the member has checked in at the venue.
+  checkedIn?: boolean;
+  checkedInAt?: string;
 }
 
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
@@ -928,9 +931,27 @@ export const mockEvents: Event[] = [
     endDate: '2026-09-10T16:00:00Z',
     createdDate: '2026-08-01T09:00:00Z',
     lastUpdated: '2026-08-01T09:00:00Z',
-    paymentType: 'free',
+    paymentType: 'paid',
+    price: 10,
+    imageUrl: 'https://hssuk.org/wp-content/uploads/2025/09/Large-Banner-1-scaled.jpg',
+    priceCategories: [
+      { id: 'PC-118-1', label: 'Child', price: 10 },
+      { id: 'PC-118-2', label: 'Yuva', price: 25 },
+      { id: 'PC-118-3', label: 'Jyeshtha', price: 20 },
+    ],
+    donationEnabled: true,
+    donationDescription: 'Support the Sports Day programme with an optional donation on top of your ticket price.',
+    donationAmounts: [10, 25, 50],
     capacity: 5,
     description: 'A day of friendly sporting competitions and team games for members of all ages.',
+    customQuestions: [
+      { id: 'CQ-118-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Halal only', 'Other'], required: true },
+      { id: 'CQ-118-2', label: 'How many guests are you bringing?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
+      { id: 'CQ-118-3', label: 'Any allergies we should know about?', description: 'List any food allergies for you or your guests', type: 'text', required: false },
+      { id: 'CQ-118-4', label: 'Which team event would you prefer?', type: 'radio', options: ['Morning session (10:00 AM)', 'Afternoon session (1:00 PM)'], required: true },
+      { id: 'CQ-118-5', label: 'Which of the following apply to you?', type: 'checkbox', options: ['First-time attendee', 'Bringing children', 'Need wheelchair access', 'Interested in volunteering'], required: false },
+      { id: 'CQ-118-6', label: 'Preferred arrival date to confirm attendance', type: 'date', required: false },
+    ],
     metrics: {
       going: 5,
       maybe: 0,
