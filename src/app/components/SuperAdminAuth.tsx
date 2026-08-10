@@ -7,13 +7,14 @@ import {
   ErrorText
 } from "./hb/common";
 import { PrimaryButton } from "./hb/listing";
-import { Mail, Lock, KeyRound, UserPlus, Baby, X } from "lucide-react";
+import { Mail, Lock, KeyRound, UserPlus, Baby, X, CalendarCheck } from "lucide-react";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
 import { toast } from "sonner";
 import { LanguageProvider } from "../../i18n/LanguageContext";
 import { Toaster } from "sonner";
 import MemberRegistration from "./MemberRegistration";
+import EventGuestRegistration from "./EventGuestRegistration";
 
 // ── Trusted-device cookie helpers (30-day remember) ───────────────────────────
 const DEVICE_COOKIE_KEY = "hss_trusted_device";
@@ -29,7 +30,7 @@ function getTrustedDeviceEmail(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-type Screen = "login" | "otp" | "forgot" | "reset" | "register";
+type Screen = "login" | "otp" | "forgot" | "reset" | "register" | "event-registration";
 
 interface SuperAdminAuthProps {
   onLoginSuccess: () => void;
@@ -215,6 +216,8 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
             />
           </div>
         </div>
+      ) : currentScreen === "event-registration" ? (
+        <EventGuestRegistration onBack={() => setCurrentScreen("login")} />
       ) : (
       <>
       <style>{`
@@ -352,7 +355,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                   {' '}apply.
                 </p>
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   <button
                     type="button"
                     onClick={() => setShowRegisterChoice(true)}
@@ -361,6 +364,15 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                   >
                     <UserPlus className="w-4 h-4" />
                     Create Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen("event-registration")}
+                    disabled={isLoading}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
+                  >
+                    <CalendarCheck className="w-4 h-4" />
+                    Event Registration
                   </button>
                 </div>
               </form>

@@ -58,6 +58,7 @@ import {
   mockEventAnnouncements,
   mockCoupons,
   EVENT_TERMS_AND_CONDITIONS,
+  mockEventGuestProfiles,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
 import { formatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
@@ -1329,9 +1330,9 @@ export default function EventDetail({
                     </>
                   )}
 
-                  {/* Non-Member Registration — admin always; members once registered for an upcoming Karyakram */}
-                  {event.guestRegistrationEnabled && (!isMember || (myParticipation && !past)) && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                  {/* Non-Member Registration — admin only */}
+                  {event.guestRegistrationEnabled && !isMember && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
                       <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                         <Ticket className="w-4 h-4 text-primary-600" /> Non-Member Registration
                       </h4>
@@ -1569,6 +1570,54 @@ export default function EventDetail({
                         </div>
                       </div>
                     </div>
+
+                    {mockEventGuestProfiles[vp.memberId] && (() => {
+                      const gp = mockEventGuestProfiles[vp.memberId];
+                      return (
+                      <div className="md:col-span-2 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          Non-Member Registration Details
+                        </h4>
+                        <p className="px-6 pt-3 text-xs text-neutral-400">Captured from the public Event Registration page — this participant has no MyHSS account.</p>
+                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Date of Birth</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{formatDate(gp.dateOfBirth)}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Gender</label>
+                            <p className="text-sm text-neutral-900 dark:text-white capitalize">{gp.gender}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Address</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{[gp.buildingName, gp.addressLine1, gp.addressLine2, gp.town, gp.postCode].filter(Boolean).join(', ')}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Emergency Contact</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{gp.emergencyContactName} ({gp.emergencyContactRelationship}) · {gp.emergencyContactPhone}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Medical Conditions</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{gp.hasMedicalConditions ? (gp.medicalConditionsDetails ?? 'Yes') : 'None declared'}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Allergies</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{gp.hasAllergies ? (gp.allergyDetails ?? 'Yes') : 'None declared'}{gp.hasAllergies && gp.carriesEpiPen ? ' · carries EpiPen' : ''}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Dietary Requirements</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{gp.dietaryRequirements && gp.dietaryRequirements.length > 0 ? gp.dietaryRequirements.join(', ') : 'None'}</p>
+                          </div>
+                          {(gp.affiliatedCentre || gp.affiliatedTown) && (
+                            <div className="md:col-span-2">
+                              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">HSS Affiliation</label>
+                              <p className="text-sm text-neutral-900 dark:text-white">{[gp.affiliatedCentre, gp.affiliatedTown, gp.affiliatedRegion, gp.affiliatedCountry].filter(Boolean).join(' · ')}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      );
+                    })()}
 
                     {event.customQuestions && event.customQuestions.length > 0 && (
                       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -2978,15 +3027,6 @@ export default function EventDetail({
                   <span>Ticket Type: {confirmationTicketLabel}{confirmationTicketPrice !== null ? ` (£${confirmationTicketPrice})` : ''}</span>
                 </div>
               )}
-            </div>
-
-            <div className="flex flex-col items-center gap-2">
-              <img
-                src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 150)}
-                alt="Your check-in QR code"
-                className="w-[150px] h-[150px] rounded-lg border border-neutral-200 dark:border-neutral-800"
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Show this QR code at the venue to check in.</p>
             </div>
 
             <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">{confirmationNote}</p>

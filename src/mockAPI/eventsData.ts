@@ -295,6 +295,62 @@ export interface EventParticipant {
   checkedInAt?: string;
 }
 
+// ─── Event Guest Registration (non-member) ────────────────────────────────────
+// A member of the public registering for one Karyakram without any MyHSS
+// account. Named "EventGuest" (not "NonMember") to avoid colliding with the
+// unrelated guardian/child "Non Member Account" concept in NonMemberDashboard.tsx.
+// The guest's own EventParticipant row (same shape as a member's) is what
+// flows through approval/refund/check-in; this profile holds the extra
+// personal/contact/medical/organisation info that only a guest has to supply
+// (a member already has all of this in their MyHSS profile).
+export interface EventGuestProfile {
+  guestId: string;              // e.g. GST-482913 — provisional format, see MoM Open Question V.4
+  eventId: string;
+  firstName: string;
+  middleName?: string;
+  surname: string;
+  gender: 'male' | 'female';
+  dateOfBirth: string;
+  phone: string;
+  email: string;
+  buildingName?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  town: string;
+  postCode: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactEmail: string;
+  emergencyContactRelationship: string;
+  hasMedicalConditions: boolean;
+  medicalConditionsDetails?: string;
+  hasAllergies: boolean;
+  allergyDetails?: string;
+  carriesEpiPen?: boolean;
+  dietaryRequirements?: string[];
+  // Optional — a guest may not be connected to HSS at all.
+  affiliatedCountry?: string;
+  affiliatedRegion?: string;
+  affiliatedTown?: string;
+  affiliatedCentre?: string;
+  registeredAt: string;
+}
+
+export const mockEventGuestProfiles: Record<string, EventGuestProfile> = {};
+
+export function addEventGuestProfile(profile: EventGuestProfile) {
+  mockEventGuestProfiles[profile.guestId] = profile;
+}
+
+export function isEventGuestEmailTaken(email: string): boolean {
+  const needle = email.trim().toLowerCase();
+  return Object.values(mockEventGuestProfiles).some(p => p.email.toLowerCase() === needle);
+}
+
+export function addEventParticipant(eventId: string, participant: EventParticipant) {
+  mockParticipants[eventId] = [...(mockParticipants[eventId] ?? []), participant];
+}
+
 // ─── Coupons (HSS UK Setup > Lists and Options > Events > Coupons) ────────────
 // Reusable, org-wide codes — not tied to a specific event. Shared by reference
 // with ConfigurableListsMaster.tsx, which is the admin CRUD surface for this list.
@@ -667,8 +723,12 @@ export const mockEvents: Event[] = [
       { id: 'PC-3', label: 'Family (2+2)', price: 40 },
     ],
     capacity: 300,
+    donationEnabled: true,
+    donationDescription: 'Support the Winter Carnival programme with an optional donation on top of your ticket price.',
+    donationAmounts: [5, 10, 20],
     description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
     guestRegistrationEnabled: true,
+    selfCheckInEnabled: true,
     customQuestions: [
       { id: 'CQ-108-1', label: 'How many children (under 12) are attending with you?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
       { id: 'CQ-108-2', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Jain', 'Nut allergy', 'Other'], required: true },
