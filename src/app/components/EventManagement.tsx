@@ -106,6 +106,15 @@ const utcFull = (iso: string) => {
   const { day, mon, year } = utcDMY(iso);
   return `${String(day).padStart(2,'0')} ${mon} ${year}, ${utcHHMM(iso)}`;
 };
+const isMultiDayEvent = (ev: Event) => {
+  const s = utcDMY(ev.startDate), e = utcDMY(ev.endDate);
+  return s.day !== e.day || s.mon !== e.mon || s.year !== e.year;
+};
+// Single-day cards show just the time range; multi-day cards append the end
+// date so the duration doesn't silently collapse to the start day only.
+const timeRangeLabel = (ev: Event) => isMultiDayEvent(ev)
+  ? `${utcHHMM(ev.startDate)} – ${utcHHMM(ev.endDate)} (ends ${String(utcDMY(ev.endDate).day).padStart(2,'0')} ${utcDMY(ev.endDate).mon})`
+  : `${utcHHMM(ev.startDate)} – ${utcHHMM(ev.endDate)}`;
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Event['status'] }) {
@@ -522,6 +531,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     imageUrl: data.imageUrl,
     guestRegistrationEnabled: data.guestRegistrationEnabled,
     shakhaKaryawahaApprovalRequired: data.shakhaKaryawahaApprovalRequired,
+    selfCheckInEnabled: data.selfCheckInEnabled,
     guestPaymentType: data.guestPaymentType,
     guestPrice: data.guestPrice,
     customQuestions: data.customQuestions,
@@ -881,7 +891,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                             <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 whitespace-nowrap">Not Yet Registered</span>
                           </div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                            <span className="flex items-center gap-1"><Clock size={10} />{utcHHMM(ev.startDate)} – {utcHHMM(ev.endDate)}</span>
+                            <span className="flex items-center gap-1"><Clock size={10} />{timeRangeLabel(ev)}</span>
                             <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
                           </div>
                         </div>
@@ -918,7 +928,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                             <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 whitespace-nowrap">Registered</span>
                           </div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                            <span className="flex items-center gap-1"><Clock size={10} />{utcHHMM(ev.startDate)} – {utcHHMM(ev.endDate)}</span>
+                            <span className="flex items-center gap-1"><Clock size={10} />{timeRangeLabel(ev)}</span>
                             <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
                             <span className="flex items-center gap-1"><UsersIcon size={10} />{ev.metrics.participantCount} registered</span>
                           </div>
@@ -1057,7 +1067,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>{formatDate(event.startDate)}</span>
+                            <span>{formatDate(event.startDate)}{isMultiDayEvent(event) ? ` → ${formatDate(event.endDate)}` : ''}</span>
                           </span>
                           <span className="flex items-center gap-1.5">
                             <UsersIcon className="w-3.5 h-3.5 text-neutral-400" />
@@ -1163,7 +1173,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                       </div>
                       <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                         <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                        <span>{formatDate(event.startDate)}</span>
+                        <span>{formatDate(event.startDate)}{isMultiDayEvent(event) ? ` → ${formatDate(event.endDate)}` : ''}</span>
                       </div>
                     </div>
                   </div>

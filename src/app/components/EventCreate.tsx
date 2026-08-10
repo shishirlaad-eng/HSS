@@ -67,6 +67,7 @@ const EMPTY_FORM = {
   waitlistEnabled: false,
   guestRegistrationEnabled: false,
   shakhaKaryawahaApprovalRequired: false,
+  selfCheckInEnabled: false,
   customQuestions: [] as { id: string; question: string; required: boolean }[],
   filterAgeCategories: [] as AgeGroup[],
   filterGenders: [] as ('male' | 'female')[],
@@ -143,6 +144,7 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
     shakhaKaryawahaApprovalRequired: event.shakhaKaryawahaApprovalRequired ?? false,
+    selfCheckInEnabled: event.selfCheckInEnabled ?? false,
     customQuestions: event.customQuestions ?? [],
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders: event.filterGenders ?? [],
@@ -472,6 +474,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       waitlistEnabled: formData.waitlistEnabled,
       guestRegistrationEnabled: formData.guestRegistrationEnabled,
       shakhaKaryawahaApprovalRequired: formData.shakhaKaryawahaApprovalRequired,
+      selfCheckInEnabled: formData.selfCheckInEnabled,
       guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
       filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
@@ -648,7 +651,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
               </Card>
 
               <div className="flex flex-col gap-5">
-                <Card title="Guest Registration">
+                <Card title="Non-Member Registration">
                   <div className="space-y-4">
                     <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
                       <input
@@ -658,7 +661,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         className="rounded border-neutral-300 dark:border-neutral-700"
                       />
                       <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                      Allow non-members to register via a guest registration link
+                      Allow non-members to register via a Non-Member Registration link
                     </label>
                   </div>
                 </Card>
@@ -673,6 +676,20 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                         className="rounded border-neutral-300 dark:border-neutral-700"
                       />
                       Shakha Karyawaha approval
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Check-In">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.selfCheckInEnabled}
+                        onChange={e => set('selfCheckInEnabled', e.target.checked)}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Enable self check-in — members can check themselves in via QR at the venue
                     </label>
                   </div>
                 </Card>

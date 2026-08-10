@@ -42,8 +42,10 @@ import {
   Megaphone,
   Bell,
   QrCode,
+  MoreVertical,
 } from 'lucide-react';
-import { SecondaryButton } from './hb/listing';
+import { SecondaryButton, IconButton, Pagination } from './hb/listing';
+import type { MenuItem } from './hb/listing/IconButton';
 import { StatCard } from './hb/common/StatCard';
 import { RichTextEditor } from './hb/common';
 import {
@@ -145,6 +147,30 @@ function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
   );
 }
 
+// Single derived status chip per participant — priority order matters since a
+// participant can match more than one condition (e.g. checked in AND has a
+// pending refund request); doesn't touch rsvp/waitlisted/checkedIn/refundRequested
+// themselves, purely a read-only view over them. Styled to match Members > All
+// Members' StatusBadge chip (bg/border/text pill) for visual consistency.
+function ParticipantStatusBadge({ p }: { p: EventParticipant }) {
+  const cfg = p.rsvp === 'denied'
+    ? { label: 'Rejected', text: 'text-error-700 dark:text-error-400', bg: 'bg-error-50 dark:bg-error-950/20', border: 'border-error-200 dark:border-error-800' }
+    : p.refundRequested
+    ? { label: 'Refund Requested', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
+    : p.checkedIn
+    ? { label: 'Checked In', text: 'text-success-700 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/20', border: 'border-success-200 dark:border-success-800' }
+    : p.waitlisted
+    ? { label: 'Waiting List', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
+    : p.rsvp === 'requested'
+    ? { label: 'Waiting for Approval', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
+    : { label: 'Approved', text: 'text-success-700 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/20', border: 'border-success-200 dark:border-success-800' };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${cfg.bg} ${cfg.border} ${cfg.text} whitespace-nowrap`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 const COMPLIANCE_BADGE: Record<string, { text: string; dot: string; textCls: string }> = {
   Approved:  { text: 'Approved',  dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
   Certified: { text: 'Certified', dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
@@ -196,6 +222,14 @@ export default function EventDetail({
 
   const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
 
+  // Single-day: date once + start–end time. Multi-day: full start and end
+  // date/time so the duration is unambiguous on both member and admin views.
+  const isMultiDayEvent = (ev: Event) => formatDate(ev.startDate) !== formatDate(ev.endDate);
+  const eventTimeOnly = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const eventDateTimeLabel = (ev: Event) => isMultiDayEvent(ev)
+    ? `${formatDateTime(ev.startDate)} – ${formatDateTime(ev.endDate)}`
+    : `${formatDate(ev.startDate)} · ${eventTimeOnly(ev.startDate)} – ${eventTimeOnly(ev.endDate)}`;
+
   const past                   = isPastStart(event);
   const modifyOk               = canModify(event);
   const deleteOk               = canDelete(event);
@@ -238,6 +272,15 @@ export default function EventDetail({
       )
     : rsvpFilteredParticipants;
 
+  const [participantsPage, setParticipantsPage] = useState(1);
+  const [participantsPerPage, setParticipantsPerPage] = useState(10);
+  const participantsTotalPages = Math.max(1, Math.ceil(filteredParticipants.length / participantsPerPage));
+  const paginatedParticipants = filteredParticipants.slice(
+    (participantsPage - 1) * participantsPerPage,
+    participantsPage * participantsPerPage
+  );
+  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantSearch]);
+
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'going' } : p));
@@ -253,10 +296,27 @@ export default function EventDetail({
     toast.success(`Confirmation email resent to ${email}.`);
   };
 
-  // ── Process a member's refund request ────────────────────────────────────────
-  const handleProcessRefund = (memberId: string) => {
-    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, refundRequested: false } : p));
-    toast.success('Refund processed.');
+  // ── Refund (full or partial) — covers both a member's own refund request and
+  // an admin-initiated refund; both open the same amount-entry modal so a
+  // partial amount can be given instead of always refunding the full balance.
+  const [refundTarget, setRefundTarget] = useState<{ memberId: string; maxAmount: number } | null>(null);
+  const [refundAmountInput, setRefundAmountInput] = useState('');
+
+  const openRefundModal = (memberId: string, maxAmount: number) => {
+    setRefundTarget({ memberId, maxAmount });
+    setRefundAmountInput(maxAmount.toFixed(2));
+  };
+  const handleTriggerRefund = (memberId: string, maxAmount: number) => openRefundModal(memberId, maxAmount);
+
+  const handleConfirmRefund = () => {
+    if (!refundTarget) return;
+    const amount = parseFloat(refundAmountInput);
+    if (isNaN(amount) || amount <= 0 || amount > refundTarget.maxAmount) return;
+    setParticipants(prev => prev.map(p => p.memberId === refundTarget.memberId
+      ? { ...p, refundedAmount: (p.refundedAmount ?? 0) + amount, refundRequested: false }
+      : p));
+    toast.success(`Refund of £${amount.toFixed(2)} triggered.`);
+    setRefundTarget(null);
   };
 
   // ── Cancel an existing (approved or pending) registration ────────────────────
@@ -264,13 +324,6 @@ export default function EventDetail({
     if (!confirm('Cancel this registration? The participant will be marked as denied.')) return;
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
     toast.success('Registration cancelled.');
-  };
-
-  // ── Admin-initiated refund (as opposed to a member's own refund request) ─────
-  const handleTriggerRefund = (memberId: string, amount: number) => {
-    if (!confirm(`Trigger a refund of £${amount.toFixed(2)} for this participant?`)) return;
-    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, refundRequested: false } : p));
-    toast.success(`Refund of £${amount.toFixed(2)} triggered.`);
   };
 
   // ── Make / remove participant coordinator (admins) ───────────────────────────
@@ -283,17 +336,71 @@ export default function EventDetail({
     toast('Coordinator role removed.');
   };
 
+  // ── Participants table Action column — single "more" menu per row ───────────
+  const getParticipantMenuItems = (p: EventParticipant): MenuItem[] => {
+    const items: MenuItem[] = [
+      { icon: Eye, label: 'View Registration Details', onClick: () => setViewingParticipantId(p.memberId) },
+      { icon: Mail, label: 'Resend Confirmation Email', onClick: () => handleResendConfirmation(p.email) },
+    ];
+    if (refundableAmountFor(p) > 0) {
+      items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p)) });
+    }
+    if (p.rsvp === 'requested') {
+      items.push(
+        { divider: true },
+        { icon: Check, label: 'Approve', onClick: () => handleApprove(p.memberId) },
+        { icon: Ban, label: 'Deny', onClick: () => handleDeny(p.memberId) },
+      );
+    } else if (p.rsvp === 'going') {
+      items.push(
+        { divider: true },
+        { icon: QrCode, label: p.checkedIn ? 'Checked In' : 'Check In', onClick: () => handleAdminCheckIn(p.memberId) },
+        p.isCoordinator
+          ? { icon: ShieldOff, label: 'Remove as Coordinator', onClick: () => handleRemoveCoordinator(p.memberId) }
+          : { icon: ShieldCheck, label: 'Make Coordinator', onClick: () => handleMakeCoordinator(p.memberId) },
+      );
+    }
+    return items;
+  };
+
   // ── Member self-registration ("Request to Attend") ──────────────────────────
   const myMemberId = scope.selfMemberId;
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
   const [showCheckInConfirm, setShowCheckInConfirm] = useState(false);
   const [expressedInterest, setExpressedInterest] = useState(false);
 
+  // Geolocation is required for self check-in only (not admin-scanned check-in).
+  // No venue coordinates are stored on the event yet, so this is a permission
+  // gate rather than a true distance-to-venue validation.
   const handleCheckIn = () => {
     if (!myMemberId) return;
-    setParticipants(prev => prev.map(p => p.memberId === myMemberId ? { ...p, checkedIn: true, checkedInAt: new Date().toISOString() } : p));
-    setShowCheckInConfirm(false);
-    toast.success('You are checked in.');
+    if (!navigator.geolocation) {
+      toast.error('Location access is required to check in.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setParticipants(prev => prev.map(p => p.memberId === myMemberId ? { ...p, checkedIn: true, checkedInAt: new Date().toISOString() } : p));
+        setShowCheckInConfirm(false);
+        toast.success('You are checked in.');
+      },
+      () => {
+        toast.error('Location access is required to check in. Enable location services and try again.');
+      }
+    );
+  };
+
+  // ── Admin check-in — stand-in for scanning the attendee's own QR (each
+  // registration has a unique code); re-checking an already-checked-in
+  // participant is a no-op with feedback rather than silently re-succeeding.
+  const handleAdminCheckIn = (memberId: string) => {
+    const p = allParticipants.find(pp => pp.memberId === memberId);
+    if (p?.checkedIn) {
+      toast.warning('Already checked in.');
+      return;
+    }
+    setParticipants(prev => prev.map(pp => pp.memberId === memberId ? { ...pp, checkedIn: true, checkedInAt: new Date().toISOString() } : pp));
+    toast.success('Participant checked in.');
   };
 
   const [showAttendQuestions, setShowAttendQuestions] = useState(false);
@@ -307,7 +414,7 @@ export default function EventDetail({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
 
-  // ── Payment Details popup — shown after "Pay and Register" when a paid
+  // ── Payment Details popup — shown after "Proceed to Payment" when a paid
   // ticket and/or donation is involved; free registrations skip straight to
   // handleAttend.
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
@@ -341,16 +448,29 @@ export default function EventDetail({
 
   const hasTicketTypes = event.paymentType === 'paid' && !!event.priceCategories && event.priceCategories.length > 0;
 
-  // Total revenue collected so far — ticket price (waived when a coupon was
-  // applied) plus any donation, summed across all non-denied registrations.
-  const totalRevenue = allParticipants
-    .filter(p => p.rsvp !== 'denied')
-    .reduce((sum, p) => {
-      const ticketPrice = !p.discountCodeUsed && p.ticketTypeId
-        ? (event.priceCategories?.find(c => c.id === p.ticketTypeId)?.price ?? 0)
-        : 0;
-      return sum + ticketPrice + (p.donationAmount ?? 0);
-    }, 0);
+  // Ticket revenue and donations tracked separately — donations exclude any
+  // Gift Aid uplift (giftAidClaimed is a claim-eligibility flag only, not an
+  // amount), summed across all non-denied registrations.
+  const nonDeniedForRevenue = allParticipants.filter(p => p.rsvp !== 'denied');
+  const ticketRevenue = nonDeniedForRevenue.reduce((sum, p) => {
+    const ticketPrice = !p.discountCodeUsed && p.ticketTypeId
+      ? (event.priceCategories?.find(c => c.id === p.ticketTypeId)?.price ?? 0)
+      : 0;
+    return sum + ticketPrice;
+  }, 0);
+  const donationTotal = nonDeniedForRevenue.reduce((sum, p) => sum + (p.donationAmount ?? 0), 0);
+  const totalRefunded = allParticipants.reduce((sum, p) => sum + (p.refundedAmount ?? 0), 0);
+  const ticketRevenueNet = ticketRevenue - totalRefunded;
+
+  // Ticket price + donation this participant paid at registration, and how
+  // much of that is still refundable given what's already been refunded.
+  const amountPaidFor = (p: EventParticipant) => {
+    const ticketPrice = !p.discountCodeUsed && p.ticketTypeId
+      ? (event.priceCategories?.find(c => c.id === p.ticketTypeId)?.price ?? 0)
+      : 0;
+    return ticketPrice + (p.donationAmount ?? 0);
+  };
+  const refundableAmountFor = (p: EventParticipant) => Math.max(0, amountPaidFor(p) - (p.refundedAmount ?? 0));
 
   const handleAttend = (
     customAnswers?: Record<string, string | boolean>,
@@ -836,7 +956,7 @@ export default function EventDetail({
               </div>
               {isMember ? (
                 <div className="flex flex-col gap-1 text-base text-neutral-700 dark:text-neutral-300 mb-3">
-                  <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 flex-shrink-0" /><span>{formatDateTime(event.startDate)}</span></div>
+                  <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 flex-shrink-0" /><span>{eventDateTimeLabel(event)}</span></div>
                   <div className="flex items-center gap-1.5">
                     {event.locationType === 'online' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <MapPin className="w-4 h-4 flex-shrink-0" />}
                     <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
@@ -844,7 +964,7 @@ export default function EventDetail({
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                  <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{formatDateTime(event.startDate)}</span></div>
+                  <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{eventDateTimeLabel(event)}</span></div>
                   <div className="flex items-center gap-1">
                     {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
                     <span>{event.locationType === 'online' ? 'Online Karyakram' : (event.venueAddress || `${event.activityCentre} · ${event.town} · ${event.region} · ${event.country}`)}</span>
@@ -915,14 +1035,14 @@ export default function EventDetail({
                       <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
                         <QrCode className="w-3.5 h-3.5" /> Checked In
                       </span>
-                    ) : (
+                    ) : event.selfCheckInEnabled ? (
                       <button
                         className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
                         onClick={() => setShowCheckInConfirm(true)}
                       >
                         <QrCode className="w-3.5 h-3.5" /> Check In
                       </button>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <span className={`${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-error-50 dark:bg-error-950/20`}>
@@ -1005,7 +1125,7 @@ export default function EventDetail({
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {!isMember && (
-                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <StatCard
                         label="Registrants"
                         value={`${nonDeniedCount}${event.capacity ? ` / ${event.capacity}` : ''}`}
@@ -1014,9 +1134,17 @@ export default function EventDetail({
                         className="bg-neutral-50 dark:bg-neutral-900/50"
                       />
                       <StatCard
-                        label="Total Revenue"
-                        value={`£${totalRevenue.toFixed(2)}`}
-                        icon={CreditCard}
+                        label="Ticket Revenue"
+                        value={`£${ticketRevenueNet.toFixed(2)}`}
+                        icon={Ticket}
+                        valueClassName="text-success-600 dark:text-success-400"
+                        className="bg-neutral-50 dark:bg-neutral-900/50"
+                        trend={totalRefunded > 0 ? { value: `£${totalRefunded.toFixed(2)} refunded`, positive: false } : undefined}
+                      />
+                      <StatCard
+                        label="Total Donations"
+                        value={`£${donationTotal.toFixed(2)}`}
+                        icon={Heart}
                         valueClassName="text-success-600 dark:text-success-400"
                         className="bg-neutral-50 dark:bg-neutral-900/50"
                       />
@@ -1168,11 +1296,11 @@ export default function EventDetail({
                     </>
                   )}
 
-                  {/* Guest Registration — admin always; members once registered for an upcoming Karyakram */}
+                  {/* Non-Member Registration — admin always; members once registered for an upcoming Karyakram */}
                   {event.guestRegistrationEnabled && (!isMember || (myParticipation && !past)) && (
                     <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                       <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
+                        <Ticket className="w-4 h-4 text-primary-600" /> Non-Member Registration
                       </h4>
                       <div className="px-6 py-4">
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
@@ -1299,9 +1427,9 @@ export default function EventDetail({
                               <Edit className="w-3.5 h-3.5" /> Edit Registration
                             </button>
                           )}
-                          {vAmountPaid > 0 && (
+                          {refundableAmountFor(vp) > 0 && (
                             <button
-                              onClick={() => handleTriggerRefund(vp.memberId, vAmountPaid)}
+                              onClick={() => handleTriggerRefund(vp.memberId, refundableAmountFor(vp))}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
                             >
                               <Undo2 className="w-3.5 h-3.5" /> Trigger Refund
@@ -1384,6 +1512,12 @@ export default function EventDetail({
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Amount Paid</label>
                           <p className="text-sm font-semibold text-neutral-900 dark:text-white">£{vAmountPaid.toFixed(2)}</p>
                         </div>
+                        {(vp.refundedAmount ?? 0) > 0 && (
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refunded</label>
+                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">£{(vp.refundedAmount ?? 0).toFixed(2)} of £{vAmountPaid.toFixed(2)}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1619,20 +1753,20 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type','Status','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                          {filteredParticipants.map((p, idx) => {
+                          {paginatedParticipants.map((p, idx) => {
                             const member = mockMembers.find(mem => mem.id === p.memberId);
                             const postCode = member?.postCode;
                             const firstName = member?.firstName ?? p.name.split(' ')[0];
                             const lastName = member?.surname ?? p.name.split(' ').slice(1).join(' ');
                             return (
                             <tr key={p.memberId} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
-                              <td className="px-4 py-3 text-xs text-neutral-400">{idx + 1}</td>
+                              <td className="px-4 py-3 text-xs text-neutral-400">{(participantsPage - 1) * participantsPerPage + idx + 1}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1.5">
                                   <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{firstName}</button>
@@ -1656,7 +1790,7 @@ export default function EventDetail({
                               <td className="px-4 py-3">
                                 <button onClick={() => onViewMember?.(p.memberId)} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline underline-offset-2 text-left">{lastName}</button>
                               </td>
-                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.memberId}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-primary-600 dark:text-primary-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.memberId}</td>
                               <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>
                                 <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
                                   <Mail className="w-3 h-3 flex-shrink-0 text-neutral-400" /><span className="truncate max-w-[160px]">{p.email}</span>
@@ -1669,81 +1803,13 @@ export default function EventDetail({
                                   </div>
                                 ) : <span className="text-xs text-neutral-400">—</span>}
                               </td>
-                              <td className="px-4 py-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{postCode ?? '—'}</td>
+                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{postCode ?? '—'}</td>
                               <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}><TypeBadge type={p.memberType} /></td>
+                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}><ParticipantStatusBadge p={p} /></td>
                               <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.ticketTypeLabel ?? <span className="text-neutral-400">—</span>}</td>
                               {!isMember && (
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setViewingParticipantId(p.memberId)}
-                                    title="View registration details"
-                                    aria-label="View registration details"
-                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleResendConfirmation(p.email)}
-                                    title="Resend confirmation email"
-                                    aria-label="Resend confirmation email"
-                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
-                                  >
-                                    <Mail className="w-4 h-4" />
-                                  </button>
-                                  {p.refundRequested && (
-                                    <button
-                                      onClick={() => handleProcessRefund(p.memberId)}
-                                      title="Refund requested"
-                                      aria-label="Refund requested"
-                                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors flex-shrink-0"
-                                    >
-                                      <Undo2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                  {p.rsvp === 'requested' ? (
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        onClick={() => handleApprove(p.memberId)}
-                                        title="Approve"
-                                        aria-label="Approve"
-                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-success-600 hover:bg-success-700 text-white transition-colors"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeny(p.memberId)}
-                                        title="Deny"
-                                        aria-label="Deny"
-                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
-                                      >
-                                        <Ban className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  ) : p.rsvp === 'going' ? (
-                                    p.isCoordinator ? (
-                                      <button
-                                        onClick={() => handleRemoveCoordinator(p.memberId)}
-                                        title="Remove as Coordinator"
-                                        aria-label="Remove as Coordinator"
-                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
-                                      >
-                                        <ShieldOff className="w-4 h-4" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleMakeCoordinator(p.memberId)}
-                                        title="Make Coordinator"
-                                        aria-label="Make Coordinator"
-                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 bg-white dark:bg-neutral-900 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors"
-                                      >
-                                        <ShieldCheck className="w-4 h-4" />
-                                      </button>
-                                    )
-                                  ) : (
-                                    <span className="text-xs text-neutral-400">—</span>
-                                  )}
-                                  </div>
+                                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                  <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getParticipantMenuItems(p)} />
                                 </td>
                               )}
                             </tr>
@@ -1757,6 +1823,18 @@ export default function EventDetail({
                       <UsersIcon className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mb-3" />
                       <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No participants in this category</p>
                       <p className="text-xs text-neutral-400 mt-1">Try switching to a different RSVP filter above.</p>
+                    </div>
+                  )}
+                  {filteredParticipants.length > 0 && (
+                    <div className="mt-4">
+                      <Pagination
+                        currentPage={participantsPage}
+                        totalPages={participantsTotalPages}
+                        onPageChange={setParticipantsPage}
+                        totalItems={filteredParticipants.length}
+                        itemsPerPage={participantsPerPage}
+                        onItemsPerPageChange={(n) => { setParticipantsPerPage(n); setParticipantsPage(1); }}
+                      />
                     </div>
                   )}
                 </div>
@@ -2669,7 +2747,7 @@ export default function EventDetail({
               className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
               onClick={handleSubmitAttendQuestions}
             >
-              <Check className="w-3.5 h-3.5" /> {requiresPayment ? 'Pay and Register' : 'Submit Request'}
+              <Check className="w-3.5 h-3.5" /> {requiresPayment ? 'Proceed to Payment' : 'Submit Request'}
             </button>
           </div>
         </div>
@@ -2855,7 +2933,7 @@ export default function EventDetail({
               <p className="text-sm font-semibold text-neutral-900 dark:text-white">{event.name}</p>
               <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                 <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{formatDateTime(event.startDate)}</span>
+                <span>{eventDateTimeLabel(event)}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                 {event.locationType === 'online' ? <Globe className="w-3.5 h-3.5 flex-shrink-0" /> : <MapPin className="w-3.5 h-3.5 flex-shrink-0" />}
@@ -2901,6 +2979,55 @@ export default function EventDetail({
     )}
 
     {/* ── CHECK-IN CONFIRMATION ─────────────────────────────────────────────── */}
+    {refundTarget && (() => {
+      const amount = parseFloat(refundAmountInput);
+      const amountValid = !isNaN(amount) && amount > 0 && amount <= refundTarget.maxAmount;
+      return (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setRefundTarget(null)}
+      >
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
+              <Undo2 className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Trigger Refund</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Up to £{refundTarget.maxAmount.toFixed(2)} can be refunded — enter the full amount or a partial amount.</p>
+          </div>
+          <div className="px-6 pt-3 pb-1">
+            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Amount (£)</label>
+            <input
+              type="number"
+              min="0.01"
+              max={refundTarget.maxAmount}
+              step="0.01"
+              value={refundAmountInput}
+              onChange={e => setRefundAmountInput(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            {!amountValid && (
+              <p className="text-xs text-error-600 dark:text-error-400 mt-1">Enter an amount between £0.01 and £{refundTarget.maxAmount.toFixed(2)}.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-2 px-6 py-5">
+            <SecondaryButton onClick={() => setRefundTarget(null)}>Cancel</SecondaryButton>
+            <button
+              className={`${btnBase} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={handleConfirmRefund}
+              disabled={!amountValid}
+            >
+              <Check className="w-3.5 h-3.5" /> Confirm Refund
+            </button>
+          </div>
+        </div>
+      </div>
+      );
+    })()}
+
     {showCheckInConfirm && (
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"

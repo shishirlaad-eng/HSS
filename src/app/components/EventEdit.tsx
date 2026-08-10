@@ -2,24 +2,16 @@ import { useState, useRef } from 'react';
 import {
   ArrowLeft,
   Save,
-  Calendar,
-  Clock,
-  Users as UsersIcon,
   MapPin,
-  CreditCard,
-  AlertCircle,
   AlertTriangle,
   Globe,
   Ticket,
-  ListChecks,
-  ScrollText,
-  Mail,
   Copy,
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormSection, FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
-import { Event, EventPriceCategory, EventCustomQuestion, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
+import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import {
@@ -45,8 +37,42 @@ interface EventEditProps {
 // in EventManagement.tsx/EventDetail.tsx.
 const canModify = (event: Event) => event.status !== 'completed' && event.status !== 'cancelled';
 
+// ── Same tab set as EventCreate, minus Location's structured postcode fields
+// and Target Audience's org-wide targeting (Edit works off the event's own
+// already-assigned scope, not a fresh targeting selection).
+type EditTab = 'basics' | 'location' | 'audience' | 'payment' | 'questions' | 'terms' | 'confirmation';
+
+const TABS: { id: EditTab; label: string }[] = [
+  { id: 'basics',       label: 'Karyakram Basics'     },
+  { id: 'location',     label: 'Location'             },
+  { id: 'audience',     label: 'Target Audience'      },
+  { id: 'payment',      label: 'Payment Type'         },
+  { id: 'questions',    label: 'Additional Questions' },
+  { id: 'terms',        label: 'Terms & Conditions'   },
+  { id: 'confirmation', label: 'Event Confirmation'   },
+];
+
+// ── Reusable card matching EventCreate's Card style ───────────────────────────
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg"
+      style={{ borderTop: '3px solid #172E4D' }}
+    >
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 rounded-t-lg">
+        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">{title}</h4>
+      </div>
+      <div className="px-6 pb-6 pt-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const blocked = !canModify(event);
+
+  const [activeTab, setActiveTab] = useState<EditTab>('basics');
 
   const [formData, setFormData] = useState({
     name:                event.name,
@@ -77,6 +103,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     capacity:       event.capacity ? String(event.capacity) : '',
     waitlistEnabled: event.waitlistEnabled ?? false,
     guestRegistrationEnabled: event.guestRegistrationEnabled ?? false,
+    shakhaKaryawahaApprovalRequired: event.shakhaKaryawahaApprovalRequired ?? false,
+    selfCheckInEnabled: event.selfCheckInEnabled ?? false,
     customQuestions: event.customQuestions ?? [],
     termsSections: event.termsSections ?? (event.termsAndConditions
       ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
@@ -193,6 +221,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         waitlistEnabled: formData.waitlistEnabled,
         guestRegistrationEnabled: formData.guestRegistrationEnabled,
         guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
+        shakhaKaryawahaApprovalRequired: formData.shakhaKaryawahaApprovalRequired,
+        selfCheckInEnabled: formData.selfCheckInEnabled,
         customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
         termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
         confirmationSubject: formData.confirmationSubject.trim() || undefined,
@@ -217,127 +247,279 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   };
 
   return (
-    <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
-      <div className="max-w-[100%] mx-auto">
-        {/* PAGE HEADER */}
-        <PageHeader
-          title="Modify Karyakram"
-          breadcrumbs={[
-            { label: 'Karyakrams', onClick: () => { onBack(); onBack(); } },
-            { label: event.name, onClick: onBack },
-            { label: 'Modify', current: true },
-          ]}
-        >
-          <div className="flex items-center gap-3">
-            <SecondaryButton icon={ArrowLeft} onClick={onBack}>
-              Cancel
-            </SecondaryButton>
-            <PrimaryButton
-              icon={Save}
-              onClick={handleSave}
-              isLoading={isSaving}
-              disabled={blocked}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </PrimaryButton>
+    <div className="px-6 py-6">
+      {/* PAGE HEADER */}
+      <PageHeader
+        title="Modify Karyakram"
+        breadcrumbs={[
+          { label: 'Karyakrams', onClick: () => { onBack(); onBack(); } },
+          { label: event.name, onClick: onBack },
+          { label: 'Modify', current: true },
+        ]}
+      >
+        <div className="flex items-center gap-3">
+          <SecondaryButton icon={ArrowLeft} onClick={onBack}>
+            Cancel
+          </SecondaryButton>
+          <PrimaryButton
+            icon={Save}
+            onClick={handleSave}
+            isLoading={isSaving}
+            disabled={blocked}
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </PrimaryButton>
+        </div>
+      </PageHeader>
+
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 font-mono mb-4">
+        Event Id: {event.id} · Status: <span className="capitalize">{event.status}</span> · Last updated: {formatDate(event.lastUpdated)}
+      </p>
+
+      {/* Cutoff warning */}
+      {blocked && (
+        <div className="mb-6 flex items-center gap-3 px-5 py-3.5 bg-error-50 dark:bg-error-950/20 border border-error-200 dark:border-error-900/40 rounded-lg text-sm text-error-700 dark:text-error-400">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'} All fields are locked.</span>
+        </div>
+      )}
+
+      {/* TABBED CONTENT */}
+      <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg">
+
+        {/* Tab bar */}
+        <div className="rounded-t-lg border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <div className="flex overflow-x-auto">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        </PageHeader>
+        </div>
 
-        {/* Cutoff warning */}
-        {blocked && (
-          <div className="mb-6 flex items-center gap-3 px-5 py-3.5 bg-error-50 dark:bg-error-950/20 border border-error-200 dark:border-error-900/40 rounded-lg text-sm text-error-700 dark:text-error-400">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span>{event.status === 'completed' ? 'Completed Karyakrams cannot be edited.' : 'Cancelled Karyakrams cannot be edited.'} All fields are locked.</span>
-          </div>
-        )}
+        {/* Tab content */}
+        <div className="rounded-b-lg p-6 bg-white dark:bg-neutral-950 space-y-5">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* MAIN FORM AREA */}
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* Karyakram Basics */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Calendar className="w-4 h-4 text-primary-600" /> Karyakram Basics
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField span={2 as any}>
-                  <FormLabel required>Karyakram Title</FormLabel>
-                  <FormInput
-                    ref={el => { fieldRefs.current.name = el; }}
-                    value={formData.name}
-                    onChange={e => set('name', e.target.value)}
-                    placeholder="Enter event title"
-                    disabled={blocked}
-                    className={errCls('name')}
-                  />
-                  <ErrorText>{touched && errors.name}</ErrorText>
-                </FormField>
-                <FormField span={2 as any}>
-                  <FormLabel>Karyakram Description</FormLabel>
-                  <RichTextEditor
-                    value={formData.description}
-                    onChange={html => set('description', html)}
-                    placeholder="Describe the event — purpose, agenda, what to expect…"
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
-                  <FormLabel required>Primary Host</FormLabel>
-                  <FormInput
-                    value={formData.host}
-                    onChange={e => set('host', e.target.value)}
-                    placeholder="Host name"
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
-                  <FormLabel>Capacity</FormLabel>
-                  <FormInput
-                    type="number"
-                    value={formData.capacity}
-                    onChange={e => set('capacity', e.target.value)}
-                    placeholder="Max participants"
-                    min="1"
-                    disabled={blocked}
-                  />
-                  <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formData.waitlistEnabled}
-                      onChange={e => set('waitlistEnabled', e.target.checked)}
+          {/* ── Karyakram Basics (incl. Schedule) ── */}
+          {activeTab === 'basics' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <Card title="Karyakram Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <FormField>
+                      <FormLabel required>Karyakram Title</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.name = el; }}
+                        value={formData.name}
+                        onChange={e => set('name', e.target.value)}
+                        placeholder="Enter Karyakram title"
+                        disabled={blocked}
+                        className={errCls('name')}
+                      />
+                      <ErrorText>{touched && errors.name}</ErrorText>
+                    </FormField>
+                  </div>
+                  <div className="md:col-span-2">
+                    <FormField>
+                      <FormLabel>Karyakram Description</FormLabel>
+                      <RichTextEditor
+                        value={formData.description}
+                        onChange={html => set('description', html)}
+                        placeholder="Describe the Karyakram — purpose, agenda, what to expect…"
+                        disabled={blocked}
+                      />
+                    </FormField>
+                  </div>
+                  <div className="md:col-span-2">
+                    <FormField>
+                      <FormLabel required>Primary Host</FormLabel>
+                      <FormInput
+                        value={formData.host}
+                        onChange={e => set('host', e.target.value)}
+                        placeholder="Host name"
+                        disabled={blocked}
+                      />
+                    </FormField>
+                  </div>
+                  <FormField>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormInput
+                      type="number"
+                      value={formData.capacity}
+                      onChange={e => set('capacity', e.target.value)}
+                      placeholder="Max participants"
+                      min="1"
                       disabled={blocked}
-                      className="rounded border-neutral-300 dark:border-neutral-700"
                     />
-                    Enable waiting list — allow registration once capacity is full
-                  </label>
-                </FormField>
-                <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
+                    <label className="inline-flex items-center gap-2 mt-2 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.waitlistEnabled}
+                        onChange={e => set('waitlistEnabled', e.target.checked)}
+                        disabled={blocked}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Enable waiting list — allow registration once capacity is full
+                    </label>
+                  </FormField>
+                  <EventImageField value={formData.imageUrl} onChange={v => set('imageUrl', v)} />
+                  <FormField>
+                    <FormLabel required>Start Date</FormLabel>
+                    <FormInput
+                      ref={el => { fieldRefs.current.startDate = el; }}
+                      type="date"
+                      value={formData.startDate}
+                      onChange={e => set('startDate', e.target.value)}
+                      disabled={blocked}
+                      className={errCls('startDate')}
+                    />
+                    <ErrorText>{touched && errors.startDate}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>Start Time</FormLabel>
+                    <FormInput
+                      ref={el => { fieldRefs.current.startTime = el; }}
+                      type="time"
+                      value={formData.startTime}
+                      onChange={e => set('startTime', e.target.value)}
+                      disabled={blocked}
+                      className={errCls('startTime')}
+                    />
+                    <ErrorText>{touched && errors.startTime}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>End Date</FormLabel>
+                    <FormInput
+                      ref={el => { fieldRefs.current.endDate = el; }}
+                      type="date"
+                      value={formData.endDate}
+                      onChange={e => set('endDate', e.target.value)}
+                      disabled={blocked}
+                      className={errCls('endDate')}
+                    />
+                    <ErrorText>{touched && errors.endDate}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>End Time</FormLabel>
+                    <FormInput
+                      ref={el => { fieldRefs.current.endTime = el; }}
+                      type="time"
+                      value={formData.endTime}
+                      onChange={e => set('endTime', e.target.value)}
+                      disabled={blocked}
+                      className={errCls('endTime')}
+                    />
+                    <ErrorText>{touched && errors.endTime}</ErrorText>
+                  </FormField>
+                </div>
+              </Card>
+
+              <div className="flex flex-col gap-5">
+                <Card title="Non-Member Registration">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.guestRegistrationEnabled}
+                        onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                        disabled={blocked}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                      Allow non-members to register via a Non-Member Registration link
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Approvals">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.shakhaKaryawahaApprovalRequired}
+                        onChange={e => set('shakhaKaryawahaApprovalRequired', e.target.checked)}
+                        disabled={blocked}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Shakha Karyawaha approval
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Check-In">
+                  <div className="space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formData.selfCheckInEnabled}
+                        onChange={e => set('selfCheckInEnabled', e.target.checked)}
+                        disabled={blocked}
+                        className="rounded border-neutral-300 dark:border-neutral-700"
+                      />
+                      Enable self check-in — members can check themselves in via QR at the venue
+                    </label>
+                  </div>
+                </Card>
+
+                <Card title="Registration Window">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                    Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField>
+                      <FormLabel>Registration Start Date</FormLabel>
+                      <FormInput
+                        type="date"
+                        value={formData.registrationStartDate}
+                        onChange={e => set('registrationStartDate', e.target.value)}
+                        disabled={blocked}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Registration Start Time</FormLabel>
+                      <FormInput
+                        type="time"
+                        value={formData.registrationStartTime}
+                        onChange={e => set('registrationStartTime', e.target.value)}
+                        disabled={blocked}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Registration Close Date</FormLabel>
+                      <FormInput
+                        type="date"
+                        value={formData.registrationEndDate}
+                        onChange={e => set('registrationEndDate', e.target.value)}
+                        disabled={blocked}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Registration Close Time</FormLabel>
+                      <FormInput
+                        type="time"
+                        value={formData.registrationEndTime}
+                        onChange={e => set('registrationEndTime', e.target.value)}
+                        disabled={blocked}
+                      />
+                    </FormField>
+                  </div>
+                </Card>
               </div>
             </div>
+          )}
 
-            {/* Guest Registration */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Ticket className="w-4 h-4 text-primary-600" /> Guest Registration
-              </div>
-              <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={formData.guestRegistrationEnabled}
-                  onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-                  disabled={blocked}
-                  className="rounded border-neutral-300 dark:border-neutral-700"
-                />
-                Allow non-members to register via a guest registration link
-              </label>
-            </div>
-
-            {/* Location */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <MapPin className="w-4 h-4 text-primary-600" /> Location
-              </div>
+          {/* ── Location ── */}
+          {activeTab === 'location' && (
+            <Card title="Location">
               <div className="space-y-4">
                 <div className="flex gap-2">
                   <button
@@ -393,88 +575,86 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </FormField>
                 )}
               </div>
-            </div>
+            </Card>
+          )}
 
-            {/* Target Audience */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <UsersIcon className="w-4 h-4 text-primary-600" /> Target Audience
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Sangh Scope</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField>
-                      <FormLabel required>Country</FormLabel>
-                      <FormSelect
-                        ref={el => { fieldRefs.current.country = el; }}
-                        value={formData.country}
-                        onChange={e => set('country', e.target.value)}
-                        disabled={blocked}
-                        className={errCls('country')}
-                      >
-                        <option value="">Select Country</option>
-                        {MASTERS_CASCADE.countries.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </FormSelect>
-                      <ErrorText>{touched && errors.country}</ErrorText>
-                    </FormField>
-                    <FormField>
-                      <FormLabel required>Vibhag</FormLabel>
-                      <FormSelect
-                        ref={el => { fieldRefs.current.region = el; }}
-                        value={formData.region}
-                        onChange={e => set('region', e.target.value)}
-                        disabled={blocked || !formData.country}
-                        className={errCls('region')}
-                      >
-                        <option value="">Select Vibhag</option>
-                        {availableRegions.map(r => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </FormSelect>
-                      <ErrorText>{touched && errors.region}</ErrorText>
-                    </FormField>
-                    <FormField>
-                      <FormLabel required>Nagar</FormLabel>
-                      <FormSelect
-                        ref={el => { fieldRefs.current.town = el; }}
-                        value={formData.town}
-                        onChange={e => set('town', e.target.value)}
-                        disabled={blocked || !formData.region}
-                        className={errCls('town')}
-                      >
-                        <option value="">Select Nagar</option>
-                        {availableTowns.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </FormSelect>
-                      <ErrorText>{touched && errors.town}</ErrorText>
-                    </FormField>
-                    <FormField>
-                      <FormLabel required>Shakha</FormLabel>
-                      <FormSelect
-                        ref={el => { fieldRefs.current.activityCentre = el; }}
-                        value={formData.activityCentre}
-                        onChange={e => set('activityCentre', e.target.value)}
-                        disabled={blocked || !formData.town}
-                        className={errCls('activityCentre')}
-                      >
-                        <option value="">Select Shakha</option>
-                        {availableCentres.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </FormSelect>
-                      <ErrorText>{touched && errors.activityCentre}</ErrorText>
-                    </FormField>
-                  </div>
+          {/* ── Target Audience ── */}
+          {activeTab === 'audience' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <Card title="Scope">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <FormField>
+                    <FormLabel required>Country</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.country = el; }}
+                      value={formData.country}
+                      onChange={e => set('country', e.target.value)}
+                      disabled={blocked}
+                      className={errCls('country')}
+                    >
+                      <option value="">Select Country</option>
+                      {MASTERS_CASCADE.countries.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </FormSelect>
+                    <ErrorText>{touched && errors.country}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>Vibhag</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.region = el; }}
+                      value={formData.region}
+                      onChange={e => set('region', e.target.value)}
+                      disabled={blocked || !formData.country}
+                      className={errCls('region')}
+                    >
+                      <option value="">Select Vibhag</option>
+                      {availableRegions.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </FormSelect>
+                    <ErrorText>{touched && errors.region}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>Nagar</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.town = el; }}
+                      value={formData.town}
+                      onChange={e => set('town', e.target.value)}
+                      disabled={blocked || !formData.region}
+                      className={errCls('town')}
+                    >
+                      <option value="">Select Nagar</option>
+                      {availableTowns.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </FormSelect>
+                    <ErrorText>{touched && errors.town}</ErrorText>
+                  </FormField>
+                  <FormField>
+                    <FormLabel required>Shakha</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.activityCentre = el; }}
+                      value={formData.activityCentre}
+                      onChange={e => set('activityCentre', e.target.value)}
+                      disabled={blocked || !formData.town}
+                      className={errCls('activityCentre')}
+                    >
+                      <option value="">Select Shakha</option>
+                      {availableCentres.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </FormSelect>
+                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
+                  </FormField>
                 </div>
+              </Card>
 
-                <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-4">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Optional demographic filters — leave unchecked to target all members within scope.
-                  </p>
+              <Card title="Demographic Filters">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                  Optional — leave unchecked to target all members within scope.
+                </p>
+                <div className="space-y-4">
                   <div>
                     <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age Category</p>
                     <div className="flex flex-wrap gap-2">
@@ -518,147 +698,41 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
+          )}
 
-            {/* Schedule */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Clock className="w-4 h-4 text-primary-600" /> Schedule
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField>
-                  <FormLabel required>Start Date</FormLabel>
-                  <FormInput
-                    ref={el => { fieldRefs.current.startDate = el; }}
-                    type="date"
-                    value={formData.startDate}
-                    onChange={e => set('startDate', e.target.value)}
-                    disabled={blocked}
-                    className={errCls('startDate')}
-                  />
-                  <ErrorText>{touched && errors.startDate}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>Start Time</FormLabel>
-                  <FormInput
-                    ref={el => { fieldRefs.current.startTime = el; }}
-                    type="time"
-                    value={formData.startTime}
-                    onChange={e => set('startTime', e.target.value)}
-                    disabled={blocked}
-                    className={errCls('startTime')}
-                  />
-                  <ErrorText>{touched && errors.startTime}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>End Date</FormLabel>
-                  <FormInput
-                    ref={el => { fieldRefs.current.endDate = el; }}
-                    type="date"
-                    value={formData.endDate}
-                    onChange={e => set('endDate', e.target.value)}
-                    disabled={blocked}
-                    className={errCls('endDate')}
-                  />
-                  <ErrorText>{touched && errors.endDate}</ErrorText>
-                </FormField>
-                <FormField>
-                  <FormLabel required>End Time</FormLabel>
-                  <FormInput
-                    ref={el => { fieldRefs.current.endTime = el; }}
-                    type="time"
-                    value={formData.endTime}
-                    onChange={e => set('endTime', e.target.value)}
-                    disabled={blocked}
-                    className={errCls('endTime')}
-                  />
-                  <ErrorText>{touched && errors.endTime}</ErrorText>
-                </FormField>
-              </div>
-            </div>
-
-            {/* Registration Window */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <Clock className="w-4 h-4 text-primary-600" /> Registration Window
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                Optional — controls when members can register. Leave blank to keep registration open until the Karyakram starts.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField>
-                  <FormLabel>Registration Start Date</FormLabel>
-                  <FormInput
-                    type="date"
-                    value={formData.registrationStartDate}
-                    onChange={e => set('registrationStartDate', e.target.value)}
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
-                  <FormLabel>Registration Start Time</FormLabel>
-                  <FormInput
-                    type="time"
-                    value={formData.registrationStartTime}
-                    onChange={e => set('registrationStartTime', e.target.value)}
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
-                  <FormLabel>Registration Close Date</FormLabel>
-                  <FormInput
-                    type="date"
-                    value={formData.registrationEndDate}
-                    onChange={e => set('registrationEndDate', e.target.value)}
-                    disabled={blocked}
-                  />
-                </FormField>
-                <FormField>
-                  <FormLabel>Registration Close Time</FormLabel>
-                  <FormInput
-                    type="time"
-                    value={formData.registrationEndTime}
-                    onChange={e => set('registrationEndTime', e.target.value)}
-                    disabled={blocked}
-                  />
-                </FormField>
-              </div>
-            </div>
-
-            {/* Payment + Donation */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                  <CreditCard className="w-4 h-4 text-primary-600" /> Payment Type
-                </div>
-                <FormField>
-                  <FormLabel required>Payment Type</FormLabel>
-                  <FormSelect
-                    ref={el => { fieldRefs.current.paymentType = el; }}
-                    value={formData.paymentType}
-                    onChange={e => set('paymentType', e.target.value)}
-                    disabled={blocked}
-                    className={errCls('paymentType')}
-                  >
-                    <option value="free">Free</option>
-                    <option value="paid">Paid</option>
-                  </FormSelect>
-                  <ErrorText>{touched && errors.paymentType}</ErrorText>
-                </FormField>
-                {formData.paymentType === 'paid' && (
-                  <div ref={el => { fieldRefs.current.priceCategories = el; }} className="mt-4">
-                    <FormLabel required>Ticket Types</FormLabel>
-                    <PriceCategoriesEditor
-                      categories={formData.priceCategories}
-                      onChange={cats => set('priceCategories', cats)}
+          {/* ── Payment Type ── */}
+          {activeTab === 'payment' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <Card title="Payment Type">
+                <div className="space-y-4">
+                  <FormField>
+                    <FormLabel required>Payment Type</FormLabel>
+                    <FormSelect
+                      ref={el => { fieldRefs.current.paymentType = el; }}
+                      value={formData.paymentType}
+                      onChange={e => set('paymentType', e.target.value)}
                       disabled={blocked}
-                    />
-                    <ErrorText>{touched && errors.priceCategories}</ErrorText>
-                  </div>
-                )}
-                {formData.paymentType === 'paid' && (
-                  <div className="mt-4">
+                      className={errCls('paymentType')}
+                    >
+                      <option value="free">Free</option>
+                      <option value="paid">Paid</option>
+                    </FormSelect>
+                    <ErrorText>{touched && errors.paymentType}</ErrorText>
+                  </FormField>
+                  {formData.paymentType === 'paid' && (
+                    <div ref={el => { fieldRefs.current.priceCategories = el; }}>
+                      <FormLabel required>Ticket Types</FormLabel>
+                      <PriceCategoriesEditor
+                        categories={formData.priceCategories}
+                        onChange={cats => set('priceCategories', cats)}
+                        disabled={blocked}
+                      />
+                      <ErrorText>{touched && errors.priceCategories}</ErrorText>
+                    </div>
+                  )}
+                  {formData.paymentType === 'paid' && (
                     <FormField>
                       <FormLabel>Coupon Code</FormLabel>
                       <FormInput
@@ -674,111 +748,125 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                         Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
                       </p>
                     </FormField>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                  <CreditCard className="w-4 h-4 text-primary-600" /> Donation
+                  )}
                 </div>
-                <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={formData.donationEnabled}
-                    onChange={e => set('donationEnabled', e.target.checked)}
-                    disabled={blocked}
-                    className="rounded border-neutral-300 dark:border-neutral-700"
-                  />
-                  Enable Donation Option
-                </label>
-                {formData.donationEnabled && (
-                  <>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
-                    </p>
-                    <FormField className="mt-4">
-                      <FormLabel>Description</FormLabel>
-                      <FormInput
-                        value={formData.donationDescription}
-                        onChange={e => set('donationDescription', e.target.value)}
-                        placeholder="Short description shown to members before the donation option (optional)"
-                        disabled={blocked}
-                      />
-                    </FormField>
-                    <div className="mt-4">
-                      <FormLabel>Donation Amounts</FormLabel>
-                      <DonationAmountsEditor
-                        amounts={formData.donationAmounts}
-                        onChange={amts => set('donationAmounts', amts)}
-                        disabled={blocked}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+              </Card>
 
-            {/* Custom Questions */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <ListChecks className="w-4 h-4 text-primary-600" /> Additional Questions
-              </div>
+              <Card title="Donation">
+                <div className="space-y-4">
+                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.donationEnabled}
+                      onChange={e => set('donationEnabled', e.target.checked)}
+                      disabled={blocked}
+                      className="rounded border-neutral-300 dark:border-neutral-700"
+                    />
+                    Enable Donation Option
+                  </label>
+                  {formData.donationEnabled && (
+                    <>
+                      <p className="text-xs text-neutral-400 -mt-2">
+                        If enabled, members can optionally donate a custom amount during registration — independent of ticket price.
+                      </p>
+                      <FormField>
+                        <FormLabel>Description</FormLabel>
+                        <FormInput
+                          value={formData.donationDescription}
+                          onChange={e => set('donationDescription', e.target.value)}
+                          placeholder="Short description shown to members before the donation option (optional)"
+                          disabled={blocked}
+                        />
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Donation Amounts</FormLabel>
+                        <DonationAmountsEditor
+                          amounts={formData.donationAmounts}
+                          onChange={amts => set('donationAmounts', amts)}
+                          disabled={blocked}
+                        />
+                      </FormField>
+                    </>
+                  )}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* ── Additional Questions ── */}
+          {activeTab === 'questions' && (
+            <Card title="Additional Questions">
               <CustomQuestionsEditor
                 questions={formData.customQuestions}
                 onChange={qs => set('customQuestions', qs)}
               />
-            </div>
+            </Card>
+          )}
 
-            {/* Terms & Conditions */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
-              </div>
+          {/* ── Terms & Conditions ── */}
+          {activeTab === 'terms' && (
+            <Card title="Terms & Conditions">
               <TermsSectionsEditor
                 sections={formData.termsSections}
                 onChange={sections => set('termsSections', sections)}
                 disabled={blocked}
               />
-            </div>
+            </Card>
+          )}
 
-            {/* Event Confirmation */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                  <Mail className="w-4 h-4 text-primary-600" /> Confirmation Email
-                </div>
-                <div className="space-y-4">
-                  <FormField>
-                    <FormLabel required>Subject</FormLabel>
-                    <FormInput
-                      value={formData.confirmationSubject}
-                      onChange={e => set('confirmationSubject', e.target.value)}
-                      placeholder="e.g. Your registration for {{event_name}} is confirmed"
-                      disabled={blocked}
-                    />
-                  </FormField>
+          {/* ── Event Confirmation ── */}
+          {activeTab === 'confirmation' && (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+              <div className="xl:col-span-2">
+                <Card title="Confirmation Email">
+                  <div className="space-y-4">
+                    <FormField>
+                      <FormLabel required>Subject</FormLabel>
+                      <FormInput
+                        value={formData.confirmationSubject}
+                        onChange={e => set('confirmationSubject', e.target.value)}
+                        placeholder="e.g. Your registration for {{event_name}} is confirmed"
+                        disabled={blocked}
+                      />
+                    </FormField>
 
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                      Click a variable to copy it, then paste it into the Subject or Description.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {EVENT_CONFIRMATION_VARIABLES.map(v => (
-                        <button
-                          type="button"
-                          key={v.token}
-                          title={v.description}
-                          onClick={() => { navigator.clipboard.writeText(v.token); toast.success(`Copied ${v.token}`); }}
-                          disabled={blocked}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono font-semibold rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-primary-600 dark:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          <Copy className="w-3 h-3" /> {v.token}
-                        </button>
-                      ))}
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                        Click a variable to copy it, then paste it into the Subject or Description.
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {EVENT_CONFIRMATION_VARIABLES.map(v => (
+                          <button
+                            type="button"
+                            key={v.token}
+                            title={v.description}
+                            onClick={() => { navigator.clipboard.writeText(v.token); toast.success(`Copied ${v.token}`); }}
+                            disabled={blocked}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono font-semibold rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-primary-600 dark:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            <Copy className="w-3 h-3" /> {v.token}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
+                    <FormField>
+                      <FormLabel>Description</FormLabel>
+                      <RichTextEditor
+                        value={formData.confirmationMessage}
+                        onChange={html => set('confirmationMessage', html)}
+                        placeholder="Write the confirmation email body…"
+                        minHeight="260px"
+                        maxHeight="520px"
+                        disabled={blocked}
+                      />
+                    </FormField>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="xl:col-span-1">
+                <Card title="Event Confirmation">
                   <FormField>
                     <FormLabel>Description</FormLabel>
                     <RichTextEditor
@@ -790,85 +878,11 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       disabled={blocked}
                     />
                   </FormField>
-                </div>
-              </div>
-
-              <div className="xl:col-span-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                  <Mail className="w-4 h-4 text-primary-600" /> Event Confirmation
-                </div>
-                <FormField>
-                  <FormLabel>Description</FormLabel>
-                  <RichTextEditor
-                    value={formData.confirmationMessage}
-                    onChange={html => set('confirmationMessage', html)}
-                    placeholder="Write the confirmation email body…"
-                    minHeight="260px"
-                    maxHeight="520px"
-                    disabled={blocked}
-                  />
-                </FormField>
+                </Card>
               </div>
             </div>
+          )}
 
-            {/* Chat Room */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <UsersIcon className="w-4 h-4 text-primary-600" /> Event Controls
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField>
-                  <FormLabel>Chat Room State</FormLabel>
-                  <FormSelect
-                    value={formData.chatState}
-                    onChange={e => set('chatState', e.target.value)}
-                    disabled={blocked}
-                  >
-                    <option value="active">Active (Enabled)</option>
-                    <option value="archived">Archived</option>
-                  </FormSelect>
-                </FormField>
-              </div>
-            </div>
-          </div>
-
-          {/* SIDEBAR */}
-          <div className="space-y-6">
-            <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Admin Policy</h3>
-              </div>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed italic">
-                Modifying event dates will automatically update participants' calendars.
-                Changes to location or payment type may trigger participant notifications.
-              </p>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Event Reference</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Karyakram ID</label>
-                  <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-neutral-600 dark:text-neutral-400">{event.id}</code>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Current Status</label>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{event.status}</p>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Created By</label>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">{event.host}</p>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 block mb-1">Last Updated</label>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                    {formatDate(event.lastUpdated)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

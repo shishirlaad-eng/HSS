@@ -104,6 +104,9 @@ export interface Event {
   guestPrice?: number;   // GBP; only meaningful when guestPaymentType === 'paid'
   // Requires the local Shakha Karyawaha to approve registrations before they're confirmed.
   shakhaKaryawahaApprovalRequired?: boolean;
+  // When true, members can check themselves in via QR at the venue (geolocation-verified);
+  // when false/unset, check-in is admin-scan only and no self-check-in action is shown.
+  selfCheckInEnabled?: boolean;
 
   // Custom registration questions
   customQuestions?: EventCustomQuestion[];
@@ -277,6 +280,9 @@ export interface EventParticipant {
   giftAidClaimed?: boolean;
   // Set when the participant has asked for a refund on their paid registration.
   refundRequested?: boolean;
+  // Cumulative amount actually refunded so far (GBP) — supports partial refunds;
+  // a second refund adds to this rather than replacing it.
+  refundedAmount?: number;
   // When the member registered (ISO datetime) and whether they accepted the
   // event's Terms & Conditions at that time.
   registeredAt?: string;
@@ -302,10 +308,27 @@ export const mockCoupons: EventCoupon[] = [
 ];
 
 export const mockParticipants: Record<string, EventParticipant[]> = {
+  'EVT-102': [
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',    phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard' },
+    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',     phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', isCoordinator: true, checkedIn: true, checkedInAt: '2026-07-15T09:05:00Z' },
+    { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',     phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', discountCodeUsed: 'PRACHARAK2026' },
+    { memberId: 'MBR-011', name: 'Sanjay Kulkarni',  email: 'sanjay.kulkarni@example.com', phone: '+44 7700 200011', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', refundedAmount: 10 },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',     phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', refundRequested: true },
+    { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',     phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going', ticketTypeId: 'PC-2', ticketTypeLabel: 'Student', refundRequested: true },
+    { memberId: 'MBR-012', name: 'Meenal Joshi',    email: 'meenal.joshi@example.com',    phone: '+44 7700 200012', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', checkedIn: true, checkedInAt: '2026-07-15T09:10:00Z' },
+    { memberId: 'MBR-013', name: 'Rakesh Iyer',     email: 'rakesh.iyer@example.com',     phone: '+44 7700 200013', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard', waitlisted: true },
+    { memberId: 'MBR-007', name: 'Rohan Verma',     email: 'rohan.verma@example.com',     phone: '+44 7777 890123', memberType: 'teen',  rsvp: 'going', ticketTypeId: 'PC-2', ticketTypeLabel: 'Student', waitlisted: true },
+    { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',    phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard' },
+    { memberId: 'MBR-010', name: 'Divya Krishnan',  email: 'divya.krishnan@example.com',  phone: '',               memberType: 'child', rsvp: 'requested', ticketTypeId: 'PC-2', ticketTypeLabel: 'Student' },
+    { memberId: 'MBR-014', name: 'Kavya Reddy',     email: 'kavya.reddy@example.com',     phone: '+44 7700 200014', memberType: 'adult', rsvp: 'requested', ticketTypeId: 'PC-1', ticketTypeLabel: 'Standard' },
+    { memberId: 'MBR-008', name: 'Kavita Nair',     email: 'kavita.nair@example.com',     phone: '+44 7788 901234', memberType: 'adult', rsvp: 'denied' },
+    { memberId: 'MBR-009', name: 'Deepak Rao',      email: 'deepak.rao@example.com',      phone: '+44 7799 012345', memberType: 'adult', rsvp: 'denied' },
+    { memberId: 'MBR-015', name: 'Vivek Desai',     email: 'vivek.desai@example.com',     phone: '+44 7700 200015', memberType: 'adult', rsvp: 'denied' },
+  ],
   'EVT-101': [
-    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'General Admission' },
+    { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'General Admission', isCoordinator: true, checkedIn: true, checkedInAt: '2026-05-10T09:15:00Z' },
     { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', refundRequested: true, ticketTypeLabel: 'General Admission' },
-    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'Speaker' },
+    { memberId: 'MBR-003', name: 'Rahul Mehta',     email: 'rahul.mehta@example.com',   phone: '+44 7733 456789', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'Speaker', discountCodeUsed: 'PRACHARAK2026' },
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going', refundRequested: true, ticketTypeLabel: 'Youth Delegate' },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'going', ticketTypeLabel: 'General Admission' },
     { memberId: 'MBR-006', name: 'Ananya Joshi',    email: 'ananya.joshi@example.com',  phone: '+44 7766 789012', memberType: 'adult', rsvp: 'requested', ticketTypeLabel: 'General Admission' },
@@ -443,6 +466,7 @@ export const mockEvents: Event[] = [
       { id: 'PC-2', label: 'Student', price: 15 },
     ],
     capacity: 50,
+    waitlistEnabled: true,
     description: 'An intensive hands-on workshop series covering modern web development, AI tools, and digital skills for HSS members. Suitable for beginners and intermediate participants. Refreshments included.',
     metrics: {
       going: 0,
@@ -583,7 +607,7 @@ export const mockEvents: Event[] = [
     locationType: 'physical',
     venueAddress: 'Cardiff Activity Centre, Cathays, Cardiff, CF24 4HQ',
     startDate: '2026-09-01T18:00:00Z',
-    endDate: '2026-09-01T21:00:00Z',
+    endDate: '2026-09-02T21:00:00Z',
     createdDate: '2026-05-22T10:00:00Z',
     lastUpdated: '2026-05-22T10:00:00Z',
     paymentType: 'paid',
@@ -628,7 +652,7 @@ export const mockEvents: Event[] = [
     locationType: 'physical',
     venueAddress: 'Glasgow Activity Centre, Pollok Park, Glasgow, G43 1AT',
     startDate: '2026-09-20T14:00:00Z',
-    endDate: '2026-09-20T20:00:00Z',
+    endDate: '2026-09-22T20:00:00Z',
     createdDate: '2026-05-18T12:00:00Z',
     lastUpdated: '2026-05-23T09:00:00Z',
     paymentType: 'paid',
@@ -943,6 +967,7 @@ export const mockEvents: Event[] = [
     donationDescription: 'Support the Sports Day programme with an optional donation on top of your ticket price.',
     donationAmounts: [10, 25, 50],
     capacity: 5,
+    selfCheckInEnabled: true,
     description: 'A day of friendly sporting competitions and team games for members of all ages.',
     customQuestions: [
       { id: 'CQ-118-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Halal only', 'Other'], required: true },
