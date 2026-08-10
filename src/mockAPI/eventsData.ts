@@ -280,6 +280,9 @@ export interface EventParticipant {
   giftAidClaimed?: boolean;
   // Set when the participant has asked for a refund on their paid registration.
   refundRequested?: boolean;
+  // Amount (GBP) the member asked for when they submitted the request — may be
+  // a partial amount; admins see this prefilled when they process the refund.
+  refundRequestedAmount?: number;
   // Cumulative amount actually refunded so far (GBP) — supports partial refunds;
   // a second refund adds to this rather than replacing it.
   refundedAmount?: number;

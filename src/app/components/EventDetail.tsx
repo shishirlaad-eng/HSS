@@ -302,18 +302,18 @@ export default function EventDetail({
   const [refundTarget, setRefundTarget] = useState<{ memberId: string; maxAmount: number } | null>(null);
   const [refundAmountInput, setRefundAmountInput] = useState('');
 
-  const openRefundModal = (memberId: string, maxAmount: number) => {
+  const openRefundModal = (memberId: string, maxAmount: number, prefill?: number) => {
     setRefundTarget({ memberId, maxAmount });
-    setRefundAmountInput(maxAmount.toFixed(2));
+    setRefundAmountInput(Math.min(prefill ?? maxAmount, maxAmount).toFixed(2));
   };
-  const handleTriggerRefund = (memberId: string, maxAmount: number) => openRefundModal(memberId, maxAmount);
+  const handleTriggerRefund = (memberId: string, maxAmount: number, prefill?: number) => openRefundModal(memberId, maxAmount, prefill);
 
   const handleConfirmRefund = () => {
     if (!refundTarget) return;
     const amount = parseFloat(refundAmountInput);
     if (isNaN(amount) || amount <= 0 || amount > refundTarget.maxAmount) return;
     setParticipants(prev => prev.map(p => p.memberId === refundTarget.memberId
-      ? { ...p, refundedAmount: (p.refundedAmount ?? 0) + amount, refundRequested: false }
+      ? { ...p, refundedAmount: (p.refundedAmount ?? 0) + amount, refundRequested: false, refundRequestedAmount: undefined }
       : p));
     toast.success(`Refund of £${amount.toFixed(2)} triggered.`);
     setRefundTarget(null);
@@ -343,7 +343,7 @@ export default function EventDetail({
       { icon: Mail, label: 'Resend Confirmation Email', onClick: () => handleResendConfirmation(p.email) },
     ];
     if (refundableAmountFor(p) > 0) {
-      items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p)) });
+      items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p), p.refundRequestedAmount) });
     }
     if (p.rsvp === 'requested') {
       items.push(
@@ -368,6 +368,27 @@ export default function EventDetail({
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
   const [showCheckInConfirm, setShowCheckInConfirm] = useState(false);
   const [expressedInterest, setExpressedInterest] = useState(false);
+
+  // ── Member self-service refund request — full or partial; doesn't refund
+  // anything itself, just flags the request for an admin to process.
+  const [showRefundRequest, setShowRefundRequest] = useState(false);
+  const [refundRequestInput, setRefundRequestInput] = useState('');
+  const openRefundRequest = () => {
+    if (!myParticipation) return;
+    setRefundRequestInput(refundableAmountFor(myParticipation).toFixed(2));
+    setShowRefundRequest(true);
+  };
+  const handleSubmitRefundRequest = () => {
+    if (!myMemberId || !myParticipation) return;
+    const maxAmount = refundableAmountFor(myParticipation);
+    const amount = parseFloat(refundRequestInput);
+    if (isNaN(amount) || amount <= 0 || amount > maxAmount) return;
+    setParticipants(prev => prev.map(p => p.memberId === myMemberId
+      ? { ...p, refundRequested: true, refundRequestedAmount: amount }
+      : p));
+    toast.success('Refund request submitted.');
+    setShowRefundRequest(false);
+  };
 
   // Geolocation is required for self check-in only (not admin-scanned check-in).
   // No venue coordinates are stored on the event yet, so this is a permission
@@ -1043,6 +1064,18 @@ export default function EventDetail({
                         <QrCode className="w-3.5 h-3.5" /> Check In
                       </button>
                     ) : null}
+                    {myParticipation.refundRequested ? (
+                      <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
+                        <Undo2 className="w-3.5 h-3.5" /> Refund Requested
+                      </span>
+                    ) : refundableAmountFor(myParticipation) > 0 ? (
+                      <button
+                        className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20`}
+                        onClick={openRefundRequest}
+                      >
+                        <Undo2 className="w-3.5 h-3.5" /> Request Refund
+                      </button>
+                    ) : null}
                   </>
                 ) : (
                   <span className={`${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-error-50 dark:bg-error-950/20`}>
@@ -1429,7 +1462,7 @@ export default function EventDetail({
                           )}
                           {refundableAmountFor(vp) > 0 && (
                             <button
-                              onClick={() => handleTriggerRefund(vp.memberId, refundableAmountFor(vp))}
+                              onClick={() => handleTriggerRefund(vp.memberId, refundableAmountFor(vp), vp.refundRequestedAmount)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
                             >
                               <Undo2 className="w-3.5 h-3.5" /> Trigger Refund
@@ -3021,6 +3054,56 @@ export default function EventDetail({
               disabled={!amountValid}
             >
               <Check className="w-3.5 h-3.5" /> Confirm Refund
+            </button>
+          </div>
+        </div>
+      </div>
+      );
+    })()}
+
+    {showRefundRequest && myParticipation && (() => {
+      const maxAmount = refundableAmountFor(myParticipation);
+      const amount = parseFloat(refundRequestInput);
+      const amountValid = !isNaN(amount) && amount > 0 && amount <= maxAmount;
+      return (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowRefundRequest(false)}
+      >
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
+              <Undo2 className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Request Refund</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">You paid £{maxAmount.toFixed(2)} for this Karyakram. Request a full or partial refund — an admin will review it.</p>
+          </div>
+          <div className="px-6 pt-3 pb-1">
+            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Amount (£)</label>
+            <input
+              type="number"
+              min="0.01"
+              max={maxAmount}
+              step="0.01"
+              value={refundRequestInput}
+              onChange={e => setRefundRequestInput(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            {!amountValid && (
+              <p className="text-xs text-error-600 dark:text-error-400 mt-1">Enter an amount between £0.01 and £{maxAmount.toFixed(2)}.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-2 px-6 py-5">
+            <SecondaryButton onClick={() => setShowRefundRequest(false)}>Cancel</SecondaryButton>
+            <button
+              className={`${btnBase} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={handleSubmitRefundRequest}
+              disabled={!amountValid}
+            >
+              <Check className="w-3.5 h-3.5" /> Submit Request
             </button>
           </div>
         </div>
