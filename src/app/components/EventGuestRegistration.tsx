@@ -322,11 +322,9 @@ export default function EventGuestRegistration({ onBack }: EventGuestRegistratio
   // ── Registration form ────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-3 flex items-center justify-between">
-        <div className="inline-flex items-center rounded-lg px-3 py-1.5" style={{ backgroundColor: '#172E4D' }}>
-          <img src={myHssLogo} alt="My HSS" className="h-6 w-auto object-contain" />
-        </div>
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+      <div className="sticky top-0 z-50 h-[53px] px-6 flex items-center justify-between" style={{ backgroundColor: '#172E4D' }}>
+        <img src={myHssLogo} alt="My HSS" className="h-6 w-auto object-contain" />
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/90 hover:text-white transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Login
         </button>
       </div>

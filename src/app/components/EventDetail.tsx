@@ -45,8 +45,9 @@ import {
   MoreVertical,
   Loader2,
 } from 'lucide-react';
-import { SecondaryButton, IconButton, Pagination } from './hb/listing';
+import { SecondaryButton, IconButton, Pagination, SearchBar, AdvancedSearchPanel } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
+import type { FilterCondition } from './hb/listing';
 import { StatCard } from './hb/common/StatCard';
 import { RichTextEditor } from './hb/common';
 import {
@@ -234,10 +235,13 @@ export default function EventDetail({
 
   // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
-  const [shakhaFilter, setShakhaFilter] = useState('all');
+  const [participantFilters, setParticipantFilters] = useState<FilterCondition[]>([]);
+  const [showParticipantFilters, setShowParticipantFilters] = useState(false);
   const [participantSearch, setParticipantSearch] = useState('');
   const shakhaFor = (p: EventParticipant) =>
     mockMembers.find(m => m.id === p.memberId)?.activityCentre ?? mockEventGuestProfiles[p.memberId]?.affiliatedCentre;
+  const postCodeFor = (p: EventParticipant) =>
+    mockMembers.find(m => m.id === p.memberId)?.postCode ?? mockEventGuestProfiles[p.memberId]?.postCode;
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
   const [editingRegistration, setEditingRegistration] = useState(false);
   const [editAnswers, setEditAnswers] = useState<Record<string, string | boolean | string[]>>({});
@@ -256,18 +260,33 @@ export default function EventDetail({
     rsvpFilter === 'cancelled'  ? cancelledList :
                                   waitlistedList;
   const shakhaOptions = Array.from(new Set(allParticipants.map(shakhaFor).filter((s): s is string => !!s))).sort();
-  const shakhaFilteredParticipants = shakhaFilter === 'all'
-    ? rsvpFilteredParticipants
-    : rsvpFilteredParticipants.filter(p => shakhaFor(p) === shakhaFilter);
+  const ticketTypeOptions = Array.from(new Set(allParticipants.map(p => p.ticketTypeLabel).filter((t): t is string => !!t))).sort();
+  const postCodeOptions = Array.from(new Set(allParticipants.map(postCodeFor).filter((s): s is string => !!s))).sort();
+  const evalParticipantFilter = (f: FilterCondition, p: EventParticipant): boolean => {
+    switch (f.field) {
+      case 'Shakha':       return f.values.includes(shakhaFor(p) ?? '');
+      case 'Ticket Type':   return f.values.includes(p.ticketTypeLabel ?? '');
+      case 'Post Code':     return f.values.includes(postCodeFor(p) ?? '');
+      default: return true;
+    }
+  };
+  const advancedFilteredParticipants = rsvpFilteredParticipants.filter(p => {
+    const activeFilters = participantFilters.filter(f => f.values.length > 0);
+    if (activeFilters.length === 0) return true;
+    return activeFilters.reduce<boolean>((acc, f, i) => {
+      if (i === 0) return evalParticipantFilter(f, p);
+      return f.logicOp === 'OR' ? (acc || evalParticipantFilter(f, p)) : (acc && evalParticipantFilter(f, p));
+    }, true);
+  });
   const participantSearchQuery = participantSearch.trim().toLowerCase();
   const filteredParticipants = participantSearchQuery
-    ? shakhaFilteredParticipants.filter(p =>
+    ? advancedFilteredParticipants.filter(p =>
         p.name.toLowerCase().includes(participantSearchQuery) ||
         p.email.toLowerCase().includes(participantSearchQuery) ||
         p.memberId.toLowerCase().includes(participantSearchQuery) ||
         (p.phone ?? '').toLowerCase().includes(participantSearchQuery)
       )
-    : shakhaFilteredParticipants;
+    : advancedFilteredParticipants;
 
   const [participantsPage, setParticipantsPage] = useState(1);
   const [participantsPerPage, setParticipantsPerPage] = useState(10);
@@ -276,7 +295,7 @@ export default function EventDetail({
     (participantsPage - 1) * participantsPerPage,
     participantsPage * participantsPerPage
   );
-  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, shakhaFilter, participantSearch]);
+  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantFilters, participantSearch]);
 
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
@@ -1783,22 +1802,26 @@ export default function EventDetail({
                       ))}
                     </div>
                     <div className="flex items-center gap-2">
-                      <select
-                        value={shakhaFilter}
-                        onChange={e => setShakhaFilter(e.target.value)}
-                        className="text-xs px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      >
-                        <option value="all">All Shakhas</option>
-                        {shakhaOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
                       <div className="relative">
-                        <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
+                        <SearchBar
                           value={participantSearch}
-                          onChange={e => setParticipantSearch(e.target.value)}
+                          onChange={setParticipantSearch}
+                          onAdvancedSearch={() => setShowParticipantFilters(true)}
+                          activeFilterCount={participantFilters.filter(f => f.values.length > 0).length}
                           placeholder="Search participants..."
-                          className="text-xs pl-8 pr-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-48"
+                        />
+                        <AdvancedSearchPanel
+                          isOpen={showParticipantFilters}
+                          onClose={() => setShowParticipantFilters(false)}
+                          filters={participantFilters}
+                          onFiltersChange={setParticipantFilters}
+                          showMatchModeToggle
+                          filterOptions={{
+                            'Shakha':      shakhaOptions,
+                            'Ticket Type': ticketTypeOptions,
+                            'Post Code':   postCodeOptions,
+                          }}
+                          title="Filter Participants"
                         />
                       </div>
                       <button

@@ -735,7 +735,7 @@ export const mockEvents: Event[] = [
     donationEnabled: true,
     donationDescription: 'Support the Winter Carnival programme with an optional donation on top of your ticket price.',
     donationAmounts: [5, 10, 20],
-    description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink.',
+    description: 'A festive family carnival featuring stalls, games, seasonal food, live music, and activities for children and adults alike. Tickets include entry, two activity tokens, and a hot drink. Enjoy funfair-style stalls run by local Shakhas, a craft corner for younger children, a seasonal food court with hot snacks and drinks, and a main stage with live music and dance performances throughout the day. Volunteers will be on hand at the welcome desk to help with directions, lost property, and any accessibility needs. Free parking is available on site, and the venue is a short walk from Pollok Park train station. Please arrive at least 15 minutes before your selected time slot to allow time for check-in and to collect your activity tokens and wristband at the registration desk near the main entrance.',
     guestRegistrationEnabled: true,
     selfCheckInEnabled: true,
     customQuestions: [
