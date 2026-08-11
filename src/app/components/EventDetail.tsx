@@ -43,6 +43,7 @@ import {
   Bell,
   QrCode,
   MoreVertical,
+  Loader2,
 } from 'lucide-react';
 import { SecondaryButton, IconButton, Pagination } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
@@ -135,32 +136,20 @@ function qrCodeUrl(data: string, size = 160): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }
 
-function TypeBadge({ type }: { type: EventParticipant['memberType'] }) {
-  const map = {
-    adult: 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400',
-    teen:  'bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-400',
-    child: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400',
-  };
-  return (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium capitalize ${map[type]}`}>
-      {type}
-    </span>
-  );
-}
-
-// Single derived status chip per participant — priority order matters since a
-// participant can match more than one condition (e.g. checked in AND has a
-// pending refund request); doesn't touch rsvp/waitlisted/checkedIn/refundRequested
-// themselves, purely a read-only view over them. Styled to match Members > All
-// Members' StatusBadge chip (bg/border/text pill) for visual consistency.
+// Single derived status chip per participant — refunds are deliberately excluded
+// (financial data, not a registration status, per MoM); priority order still
+// matters since a participant can match more than one remaining condition (e.g.
+// checked in AND waitlisted). Read-only view over rsvp/waitlisted/checkedIn —
+// doesn't touch them. Styled to match Members > All Members' StatusBadge chip
+// (bg/border/text pill) for visual consistency.
 function ParticipantStatusBadge({ p }: { p: EventParticipant }) {
   const cfg = p.rsvp === 'denied'
     ? { label: 'Rejected', text: 'text-error-700 dark:text-error-400', bg: 'bg-error-50 dark:bg-error-950/20', border: 'border-error-200 dark:border-error-800' }
-    : p.refundRequested
-    ? { label: 'Refund Requested', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
+    : p.rsvp === 'cancelled'
+    ? { label: 'Cancelled', text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' }
     : p.checkedIn
     ? { label: 'Checked In', text: 'text-success-700 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/20', border: 'border-success-200 dark:border-success-800' }
-    : p.waitlisted
+    : p.rsvp === 'requested' && p.waitlisted
     ? { label: 'Waiting List', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
     : p.rsvp === 'requested'
     ? { label: 'Waiting for Approval', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
@@ -191,7 +180,7 @@ function ComplianceBadge({ status }: { status?: string }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab         = 'overview' | 'participants' | 'media' | 'announcements';
-type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'refund' | 'waitlisted';
+type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'cancelled' | 'waitlisted';
 type MediaFilter = 'all' | 'image' | 'video';
 
 interface LightboxState {
@@ -245,7 +234,10 @@ export default function EventDetail({
 
   // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
+  const [shakhaFilter, setShakhaFilter] = useState('all');
   const [participantSearch, setParticipantSearch] = useState('');
+  const shakhaFor = (p: EventParticipant) =>
+    mockMembers.find(m => m.id === p.memberId)?.activityCentre ?? mockEventGuestProfiles[p.memberId]?.affiliatedCentre;
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
   const [editingRegistration, setEditingRegistration] = useState(false);
   const [editAnswers, setEditAnswers] = useState<Record<string, string | boolean | string[]>>({});
@@ -254,24 +246,28 @@ export default function EventDetail({
   const requestedList   = allParticipants.filter(p => p.rsvp === 'requested');
   const goingList       = allParticipants.filter(p => p.rsvp === 'going');
   const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
-  const refundList      = allParticipants.filter(p => p.refundRequested);
-  const waitlistedList  = allParticipants.filter(p => p.waitlisted);
+  const cancelledList   = allParticipants.filter(p => p.rsvp === 'cancelled');
+  const waitlistedList  = allParticipants.filter(p => p.waitlisted && p.rsvp === 'requested');
   const rsvpFilteredParticipants =
     rsvpFilter === 'all'        ? allParticipants :
     rsvpFilter === 'requested'  ? requestedList :
     rsvpFilter === 'going'      ? goingList :
     rsvpFilter === 'denied'     ? deniedList :
-    rsvpFilter === 'waitlisted' ? waitlistedList :
-                                  refundList;
+    rsvpFilter === 'cancelled'  ? cancelledList :
+                                  waitlistedList;
+  const shakhaOptions = Array.from(new Set(allParticipants.map(shakhaFor).filter((s): s is string => !!s))).sort();
+  const shakhaFilteredParticipants = shakhaFilter === 'all'
+    ? rsvpFilteredParticipants
+    : rsvpFilteredParticipants.filter(p => shakhaFor(p) === shakhaFilter);
   const participantSearchQuery = participantSearch.trim().toLowerCase();
   const filteredParticipants = participantSearchQuery
-    ? rsvpFilteredParticipants.filter(p =>
+    ? shakhaFilteredParticipants.filter(p =>
         p.name.toLowerCase().includes(participantSearchQuery) ||
         p.email.toLowerCase().includes(participantSearchQuery) ||
         p.memberId.toLowerCase().includes(participantSearchQuery) ||
         (p.phone ?? '').toLowerCase().includes(participantSearchQuery)
       )
-    : rsvpFilteredParticipants;
+    : shakhaFilteredParticipants;
 
   const [participantsPage, setParticipantsPage] = useState(1);
   const [participantsPerPage, setParticipantsPerPage] = useState(10);
@@ -280,7 +276,7 @@ export default function EventDetail({
     (participantsPage - 1) * participantsPerPage,
     participantsPage * participantsPerPage
   );
-  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantSearch]);
+  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, shakhaFilter, participantSearch]);
 
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
@@ -300,30 +296,40 @@ export default function EventDetail({
   // ── Refund (full or partial) — covers both a member's own refund request and
   // an admin-initiated refund; both open the same amount-entry modal so a
   // partial amount can be given instead of always refunding the full balance.
-  const [refundTarget, setRefundTarget] = useState<{ memberId: string; maxAmount: number } | null>(null);
+  const [refundTarget, setRefundTarget] = useState<{ memberId: string; maxAmount: number; paidAmount: number } | null>(null);
   const [refundAmountInput, setRefundAmountInput] = useState('');
 
-  const openRefundModal = (memberId: string, maxAmount: number, prefill?: number) => {
-    setRefundTarget({ memberId, maxAmount });
+  const openRefundModal = (memberId: string, maxAmount: number, paidAmount: number, prefill?: number) => {
+    setRefundTarget({ memberId, maxAmount, paidAmount });
     setRefundAmountInput(Math.min(prefill ?? maxAmount, maxAmount).toFixed(2));
   };
-  const handleTriggerRefund = (memberId: string, maxAmount: number, prefill?: number) => openRefundModal(memberId, maxAmount, prefill);
+  const handleTriggerRefund = (memberId: string, maxAmount: number, paidAmount: number, prefill?: number) => openRefundModal(memberId, maxAmount, paidAmount, prefill);
 
+  // No backend/Stripe secret key exists in this prototype, so no real charge
+  // is ever refunded — this simulates the Stripe processing UX (brief delay +
+  // a mock refund reference) so the flow reads like a real gateway round trip.
+  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const handleConfirmRefund = () => {
     if (!refundTarget) return;
     const amount = parseFloat(refundAmountInput);
     if (isNaN(amount) || amount <= 0 || amount > refundTarget.maxAmount) return;
-    setParticipants(prev => prev.map(p => p.memberId === refundTarget.memberId
-      ? { ...p, refundedAmount: (p.refundedAmount ?? 0) + amount, refundRequested: false, refundRequestedAmount: undefined }
-      : p));
-    toast.success(`Refund of £${amount.toFixed(2)} triggered.`);
-    setRefundTarget(null);
+    setIsProcessingRefund(true);
+    const memberId = refundTarget.memberId;
+    setTimeout(() => {
+      const reference = `re_${Math.random().toString(36).slice(2, 12)}`;
+      setParticipants(prev => prev.map(p => p.memberId === memberId
+        ? { ...p, refundedAmount: (p.refundedAmount ?? 0) + amount, refundRequested: false, refundRequestedAmount: undefined, lastRefundReference: reference }
+        : p));
+      toast.success(`Refund of £${amount.toFixed(2)} processed via Stripe — ref ${reference}.`);
+      setIsProcessingRefund(false);
+      setRefundTarget(null);
+    }, 1200);
   };
 
   // ── Cancel an existing (approved or pending) registration ────────────────────
   const handleCancelRegistration = (memberId: string) => {
-    if (!confirm('Cancel this registration? The participant will be marked as denied.')) return;
-    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
+    if (!confirm('Cancel this registration?')) return;
+    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'cancelled' } : p));
     toast.success('Registration cancelled.');
   };
 
@@ -344,18 +350,11 @@ export default function EventDetail({
       { icon: Mail, label: 'Resend Confirmation Email', onClick: () => handleResendConfirmation(p.email) },
     ];
     if (refundableAmountFor(p) > 0) {
-      items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p), p.refundRequestedAmount) });
+      items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p), amountPaidFor(p), p.refundRequestedAmount) });
     }
-    if (p.rsvp === 'requested') {
+    if (p.rsvp === 'going') {
       items.push(
         { divider: true },
-        { icon: Check, label: 'Approve', onClick: () => handleApprove(p.memberId) },
-        { icon: Ban, label: 'Deny', onClick: () => handleDeny(p.memberId) },
-      );
-    } else if (p.rsvp === 'going') {
-      items.push(
-        { divider: true },
-        { icon: QrCode, label: p.checkedIn ? 'Checked In' : 'Check In', onClick: () => handleAdminCheckIn(p.memberId) },
         p.isCoordinator
           ? { icon: ShieldOff, label: 'Remove as Coordinator', onClick: () => handleRemoveCoordinator(p.memberId) }
           : { icon: ShieldCheck, label: 'Make Coordinator', onClick: () => handleMakeCoordinator(p.memberId) },
@@ -367,50 +366,10 @@ export default function EventDetail({
   // ── Member self-registration ("Request to Attend") ──────────────────────────
   const myMemberId = scope.selfMemberId;
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
-  const [showCheckInConfirm, setShowCheckInConfirm] = useState(false);
+  // A denied or cancelled registration isn't a dead end — the member can
+  // register again, same as if they'd never registered at all.
+  const canRegisterFresh = !myParticipation || myParticipation.rsvp === 'denied' || myParticipation.rsvp === 'cancelled';
   const [expressedInterest, setExpressedInterest] = useState(false);
-
-  // ── Member self-service refund request — full or partial; doesn't refund
-  // anything itself, just flags the request for an admin to process.
-  const [showRefundRequest, setShowRefundRequest] = useState(false);
-  const [refundRequestInput, setRefundRequestInput] = useState('');
-  const openRefundRequest = () => {
-    if (!myParticipation) return;
-    setRefundRequestInput(refundableAmountFor(myParticipation).toFixed(2));
-    setShowRefundRequest(true);
-  };
-  const handleSubmitRefundRequest = () => {
-    if (!myMemberId || !myParticipation) return;
-    const maxAmount = refundableAmountFor(myParticipation);
-    const amount = parseFloat(refundRequestInput);
-    if (isNaN(amount) || amount <= 0 || amount > maxAmount) return;
-    setParticipants(prev => prev.map(p => p.memberId === myMemberId
-      ? { ...p, refundRequested: true, refundRequestedAmount: amount }
-      : p));
-    toast.success('Refund request submitted.');
-    setShowRefundRequest(false);
-  };
-
-  // Geolocation is required for self check-in only (not admin-scanned check-in).
-  // No venue coordinates are stored on the event yet, so this is a permission
-  // gate rather than a true distance-to-venue validation.
-  const handleCheckIn = () => {
-    if (!myMemberId) return;
-    if (!navigator.geolocation) {
-      toast.error('Location access is required to check in.');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setParticipants(prev => prev.map(p => p.memberId === myMemberId ? { ...p, checkedIn: true, checkedInAt: new Date().toISOString() } : p));
-        setShowCheckInConfirm(false);
-        toast.success('You are checked in.');
-      },
-      () => {
-        toast.error('Location access is required to check in. Enable location services and try again.');
-      }
-    );
-  };
 
   // ── Admin check-in — stand-in for scanning the attendee's own QR (each
   // registration has a unique code); re-checking an already-checked-in
@@ -464,7 +423,7 @@ export default function EventDetail({
 
   // Capacity — a 'requested' registration already holds a spot pending approval,
   // same as 'going'; only 'denied' frees it up.
-  const nonDeniedCount = allParticipants.filter(p => p.rsvp !== 'denied').length;
+  const nonDeniedCount = allParticipants.filter(p => p.rsvp !== 'denied' && p.rsvp !== 'cancelled').length;
   const isFull = !!event.capacity && nonDeniedCount >= event.capacity;
   const blockedByCapacity = isFull && !event.waitlistEnabled;
 
@@ -504,25 +463,29 @@ export default function EventDetail({
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
     const willWaitlist = isFull && !!event.waitlistEnabled;
-    setParticipants(prev => ([
-      ...prev,
-      {
-        memberId: myMemberId,
-        name: me?.name ?? 'You',
-        email: me?.email ?? '',
-        phone: me?.phone ?? '',
-        memberType: me?.memberType ?? 'adult',
-        rsvp: 'requested',
-        registeredAt: new Date().toISOString(),
-        termsAccepted: true,
-        ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
-        ...(appliedCode ? { discountCodeUsed: appliedCode } : {}),
-        ...(willWaitlist ? { waitlisted: true } : {}),
-        ...(ticket ? { ticketTypeId: ticket.id, ticketTypeLabel: ticket.label } : {}),
-        ...(donation ? { donationAmount: donation } : {}),
-        ...(donation && giftAid ? { giftAidClaimed: true } : {}),
-      },
-    ]));
+    const freshRecord: EventParticipant = {
+      memberId: myMemberId,
+      name: me?.name ?? 'You',
+      email: me?.email ?? '',
+      phone: me?.phone ?? '',
+      memberType: me?.memberType ?? 'adult',
+      rsvp: 'requested',
+      registeredAt: new Date().toISOString(),
+      termsAccepted: true,
+      ...(customAnswers && Object.keys(customAnswers).length > 0 ? { customAnswers } : {}),
+      ...(appliedCode ? { discountCodeUsed: appliedCode } : {}),
+      ...(willWaitlist ? { waitlisted: true } : {}),
+      ...(ticket ? { ticketTypeId: ticket.id, ticketTypeLabel: ticket.label } : {}),
+      ...(donation ? { donationAmount: donation } : {}),
+      ...(donation && giftAid ? { giftAidClaimed: true } : {}),
+    };
+    // Re-registering after a cancellation/denial replaces the old record in
+    // place rather than appending a duplicate row — no special re-registration
+    // history is needed (confirmed out of scope per MoM), so this fresh record
+    // simply overwrites whatever was there before for this member.
+    setParticipants(prev => prev.some(p => p.memberId === myMemberId)
+      ? prev.map(p => p.memberId === myMemberId ? freshRecord : p)
+      : [...prev, freshRecord]);
     setConfirmationNote(
       willWaitlist
         ? 'This Karyakram is full — you have been added to the waiting list. We will email you if a spot opens up.'
@@ -704,10 +667,11 @@ export default function EventDetail({
       'Occupation', 'Originating State (India)', 'DBS Status', 'First Aid Status',
       'Member Status', 'Registration Date',
       'RSVP', 'Participant Type', 'Discount Code',
+      'Ticket Type', 'Amount Paid', 'Amount Refunded', 'Refund Reference',
     ];
 
     const rsvpLabel = (r: EventParticipant['rsvp']) =>
-      r === 'going' ? 'Approved' : r === 'requested' ? 'Requested' : 'Denied';
+      r === 'going' ? 'Approved' : r === 'requested' ? 'Requested' : r === 'cancelled' ? 'Cancelled' : 'Denied';
 
     const escape = (v: string | undefined | null) =>
       `"${(v ?? '').toString().replace(/"/g, '""')}"`;
@@ -753,6 +717,10 @@ export default function EventDetail({
         rsvpLabel(p.rsvp),
         p.memberType.charAt(0).toUpperCase() + p.memberType.slice(1),
         escape(p.discountCodeUsed ?? ''),
+        escape(p.ticketTypeLabel ?? ''),
+        amountPaidFor(p).toFixed(2),
+        (p.refundedAmount ?? 0).toFixed(2),
+        escape(p.lastRefundReference ?? ''),
       ].join(',');
     });
 
@@ -1018,7 +986,7 @@ export default function EventDetail({
 
               {/* Member self-registration */}
               {isMember && !isCancelledOrCompleted && (
-                !myParticipation ? (
+                canRegisterFresh ? (
                   blockedByCapacity ? (
                     expressedInterest ? (
                       <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
@@ -1053,36 +1021,13 @@ export default function EventDetail({
                     <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
                       <CheckCircle2 className="w-3.5 h-3.5" /> Going
                     </span>
-                    {myParticipation.checkedIn ? (
+                    {myParticipation.checkedIn && (
                       <span className={`${btnBase} border border-success-300 dark:border-success-700 text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-950/20`}>
                         <QrCode className="w-3.5 h-3.5" /> Checked In
                       </span>
-                    ) : event.selfCheckInEnabled ? (
-                      <button
-                        className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
-                        onClick={() => setShowCheckInConfirm(true)}
-                      >
-                        <QrCode className="w-3.5 h-3.5" /> Check In
-                      </button>
-                    ) : null}
-                    {myParticipation.refundRequested ? (
-                      <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
-                        <Undo2 className="w-3.5 h-3.5" /> Refund Requested
-                      </span>
-                    ) : refundableAmountFor(myParticipation) > 0 ? (
-                      <button
-                        className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20`}
-                        onClick={openRefundRequest}
-                      >
-                        <Undo2 className="w-3.5 h-3.5" /> Request Refund
-                      </button>
-                    ) : null}
+                    )}
                   </>
-                ) : (
-                  <span className={`${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-error-50 dark:bg-error-950/20`}>
-                    <XCircle className="w-3.5 h-3.5" /> Request Denied
-                  </span>
-                )
+                ) : null
               )}
 
               {!isMember && (
@@ -1356,6 +1301,27 @@ export default function EventDetail({
                     </div>
                   )}
 
+                  {/* Member's own check-in QR — persistent reference on the event
+                      detail page; self check-in itself is mobile-app only, this
+                      web page only displays the code for a coordinator to scan. */}
+                  {isMember && myParticipation?.rsvp === 'going' && !myParticipation.waitlisted && event.selfCheckInEnabled && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <QrCode className="w-4 h-4 text-primary-600" /> Your Check-In QR Code
+                      </h4>
+                      <div className="px-6 py-4 flex items-center gap-4">
+                        <img
+                          src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 140)}
+                          alt="Your check-in QR code"
+                          className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
+                        />
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to an event coordinator at the venue to check in.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Event Check-in QR Code — admin only */}
                   {!isMember && (
                     <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
@@ -1450,6 +1416,14 @@ export default function EventDetail({
                           >
                             <Mail className="w-3.5 h-3.5" /> Resend Confirmation Email
                           </button>
+                          {(vp.rsvp === 'going' || vp.rsvp === 'cancelled') && (
+                            <button
+                              onClick={() => handleTriggerRefund(vp.memberId, refundableAmountFor(vp), amountPaidFor(vp), vp.refundRequestedAmount)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" /> Trigger Refund
+                            </button>
+                          )}
                           {event.customQuestions && event.customQuestions.length > 0 && (
                             <button
                               onClick={() => {
@@ -1461,15 +1435,7 @@ export default function EventDetail({
                               <Edit className="w-3.5 h-3.5" /> Edit Registration
                             </button>
                           )}
-                          {refundableAmountFor(vp) > 0 && (
-                            <button
-                              onClick={() => handleTriggerRefund(vp.memberId, refundableAmountFor(vp), vp.refundRequestedAmount)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
-                            >
-                              <Undo2 className="w-3.5 h-3.5" /> Trigger Refund
-                            </button>
-                          )}
-                          {vp.rsvp !== 'denied' && (
+                          {vp.rsvp !== 'denied' && vp.rsvp !== 'cancelled' && (
                             <button
                               onClick={() => handleCancelRegistration(vp.memberId)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
@@ -1550,6 +1516,12 @@ export default function EventDetail({
                           <div>
                             <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refunded</label>
                             <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">£{(vp.refundedAmount ?? 0).toFixed(2)} of £{vAmountPaid.toFixed(2)}</p>
+                          </div>
+                        )}
+                        {vp.lastRefundReference && (
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Stripe Refund Reference</label>
+                            <p className="text-sm font-mono text-neutral-900 dark:text-white">{vp.lastRefundReference}</p>
                           </div>
                         )}
                       </div>
@@ -1791,8 +1763,8 @@ export default function EventDetail({
                         { id: 'requested',  label: 'Requested',    count: requestedList.length   },
                         { id: 'going',      label: 'Approved',     count: goingList.length       },
                         { id: 'denied',     label: 'Denied',       count: deniedList.length      },
+                        { id: 'cancelled',  label: 'Cancelled',    count: cancelledList.length   },
                         { id: 'waitlisted', label: 'Waiting List', count: waitlistedList.length  },
-                        { id: 'refund',     label: 'Refund',       count: refundList.length      },
                       ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
                         <button
                           key={f.id}
@@ -1811,6 +1783,14 @@ export default function EventDetail({
                       ))}
                     </div>
                     <div className="flex items-center gap-2">
+                      <select
+                        value={shakhaFilter}
+                        onChange={e => setShakhaFilter(e.target.value)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="all">All Shakhas</option>
+                        {shakhaOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
@@ -1835,7 +1815,7 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','First Name','Last Name','Member ID','Email','Phone','Post Code','Type','Status','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
+                            {['#','First Name','Last Name','Member ID','Phone','Shakha','Status','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
                               <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
                           </tr>
@@ -1843,7 +1823,7 @@ export default function EventDetail({
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                           {paginatedParticipants.map((p, idx) => {
                             const member = mockMembers.find(mem => mem.id === p.memberId);
-                            const postCode = member?.postCode;
+                            const shakha = member?.activityCentre ?? mockEventGuestProfiles[p.memberId]?.affiliatedCentre;
                             const firstName = member?.firstName ?? p.name.split(' ')[0];
                             const lastName = member?.surname ?? p.name.split(' ').slice(1).join(' ');
                             return (
@@ -1862,7 +1842,7 @@ export default function EventDetail({
                                       Free (code)
                                     </span>
                                   )}
-                                  {p.waitlisted && (
+                                  {p.waitlisted && p.rsvp === 'requested' && (
                                     <span title="Registered after capacity was reached" className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex-shrink-0">
                                       Waitlisted
                                     </span>
@@ -1874,24 +1854,54 @@ export default function EventDetail({
                               </td>
                               <td className="px-4 py-3 text-sm font-medium text-primary-600 dark:text-primary-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.memberId}</td>
                               <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>
-                                <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
-                                  <Mail className="w-3 h-3 flex-shrink-0 text-neutral-400" /><span className="truncate max-w-[160px]">{p.email}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>
                                 {p.phone ? (
                                   <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
                                     <Phone className="w-3 h-3 flex-shrink-0 text-neutral-400" /><span>{p.phone}</span>
                                   </div>
                                 ) : <span className="text-xs text-neutral-400">—</span>}
                               </td>
-                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{postCode ?? '—'}</td>
-                              <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}><TypeBadge type={p.memberType} /></td>
+                              <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{shakha ?? '—'}</td>
                               <td className="px-4 py-3 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}><ParticipantStatusBadge p={p} /></td>
                               <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer" onClick={() => onViewMember?.(p.memberId)}>{p.ticketTypeLabel ?? <span className="text-neutral-400">—</span>}</td>
                               {!isMember && (
                                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                                  <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getParticipantMenuItems(p)} />
+                                  <div className="flex items-center gap-1.5">
+                                    {p.rsvp === 'requested' ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleApprove(p.memberId)}
+                                          title="Approve"
+                                          aria-label="Approve"
+                                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-success-600 hover:bg-success-700 text-white transition-colors"
+                                        >
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeny(p.memberId)}
+                                          title="Deny"
+                                          aria-label="Deny"
+                                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
+                                        >
+                                          <Ban className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    ) : p.rsvp === 'going' && !p.waitlisted ? (
+                                      <button
+                                        onClick={() => handleAdminCheckIn(p.memberId)}
+                                        disabled={p.checkedIn}
+                                        title={p.checkedIn ? 'Already checked in' : 'Check In'}
+                                        aria-label={p.checkedIn ? 'Already checked in' : 'Check In'}
+                                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors flex-shrink-0 ${
+                                          p.checkedIn
+                                            ? 'bg-success-50 dark:bg-success-950/20 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-800 cursor-default'
+                                            : 'border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                                        }`}
+                                      >
+                                        <QrCode className="w-4 h-4" />
+                                      </button>
+                                    ) : null}
+                                    <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getParticipantMenuItems(p)} />
+                                  </div>
                                 </td>
                               )}
                             </tr>
@@ -3053,132 +3063,81 @@ export default function EventDetail({
 
     {/* ── CHECK-IN CONFIRMATION ─────────────────────────────────────────────── */}
     {refundTarget && (() => {
+      const hasBalance = refundTarget.maxAmount > 0;
       const amount = parseFloat(refundAmountInput);
-      const amountValid = !isNaN(amount) && amount > 0 && amount <= refundTarget.maxAmount;
+      const amountValid = hasBalance && !isNaN(amount) && amount > 0 && amount <= refundTarget.maxAmount;
       return (
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={() => setRefundTarget(null)}
+        onClick={() => { if (!isProcessingRefund) setRefundTarget(null); }}
       >
         <div
           className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
           onClick={e => e.stopPropagation()}
         >
+          {isProcessingRefund ? (
+            <div className="px-6 py-10 flex flex-col items-center text-center">
+              <Loader2 className="w-8 h-8 text-amber-600 dark:text-amber-400 animate-spin mb-3" />
+              <h4 className="text-base font-bold text-neutral-900 dark:text-white">Processing refund via Stripe…</h4>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">£{parseFloat(refundAmountInput || '0').toFixed(2)} — please wait.</p>
+            </div>
+          ) : (
+          <>
           <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
               <Undo2 className="w-7 h-7 text-amber-600 dark:text-amber-400" />
             </div>
             <h4 className="text-base font-bold text-neutral-900 dark:text-white">Trigger Refund</h4>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Up to £{refundTarget.maxAmount.toFixed(2)} can be refunded — enter the full amount or a partial amount.</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+              {hasBalance ? 'This participant paid the amount below for this Karyakram — trigger a full or partial refund.' : 'This participant has no paid amount on record to refund.'}
+            </p>
           </div>
-          <div className="px-6 pt-3 pb-1">
-            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Amount (£)</label>
-            <input
-              type="number"
-              min="0.01"
-              max={refundTarget.maxAmount}
-              step="0.01"
-              value={refundAmountInput}
-              onChange={e => setRefundAmountInput(e.target.value)}
-              className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-            {!amountValid && (
-              <p className="text-xs text-error-600 dark:text-error-400 mt-1">Enter an amount between £0.01 and £{refundTarget.maxAmount.toFixed(2)}.</p>
+          {hasBalance && (
+            <div className="px-6 pt-3">
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 mb-3">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">Amount Paid</span>
+                <span className="text-sm font-semibold text-neutral-900 dark:text-white">£{refundTarget.paidAmount.toFixed(2)}</span>
+              </div>
+              {refundTarget.paidAmount !== refundTarget.maxAmount && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mb-3">
+                  <span className="text-xs text-amber-700 dark:text-amber-400">Remaining Refundable</span>
+                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">£{refundTarget.maxAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Amount (£)</label>
+              <input
+                type="number"
+                min="0.01"
+                max={refundTarget.maxAmount}
+                step="0.01"
+                value={refundAmountInput}
+                onChange={e => setRefundAmountInput(e.target.value)}
+                className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {!amountValid && (
+                <p className="text-xs text-error-600 dark:text-error-400 mt-1">Enter an amount between £0.01 and £{refundTarget.maxAmount.toFixed(2)}.</p>
+              )}
+            </div>
+          )}
+          <div className="flex items-center justify-center gap-2 px-6 py-5">
+            <SecondaryButton onClick={() => setRefundTarget(null)}>{hasBalance ? 'Cancel' : 'Close'}</SecondaryButton>
+            {hasBalance && (
+              <button
+                className={`${btnBase} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={handleConfirmRefund}
+                disabled={!amountValid}
+              >
+                <Check className="w-3.5 h-3.5" /> Confirm Refund
+              </button>
             )}
           </div>
-          <div className="flex items-center justify-center gap-2 px-6 py-5">
-            <SecondaryButton onClick={() => setRefundTarget(null)}>Cancel</SecondaryButton>
-            <button
-              className={`${btnBase} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={handleConfirmRefund}
-              disabled={!amountValid}
-            >
-              <Check className="w-3.5 h-3.5" /> Confirm Refund
-            </button>
-          </div>
+          </>
+          )}
         </div>
       </div>
       );
     })()}
 
-    {showRefundRequest && myParticipation && (() => {
-      const maxAmount = refundableAmountFor(myParticipation);
-      const amount = parseFloat(refundRequestInput);
-      const amountValid = !isNaN(amount) && amount > 0 && amount <= maxAmount;
-      return (
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={() => setShowRefundRequest(false)}
-      >
-        <div
-          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
-              <Undo2 className="w-7 h-7 text-amber-600 dark:text-amber-400" />
-            </div>
-            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Request Refund</h4>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">You paid £{maxAmount.toFixed(2)} for this Karyakram. Request a full or partial refund — an admin will review it.</p>
-          </div>
-          <div className="px-6 pt-3 pb-1">
-            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Amount (£)</label>
-            <input
-              type="number"
-              min="0.01"
-              max={maxAmount}
-              step="0.01"
-              value={refundRequestInput}
-              onChange={e => setRefundRequestInput(e.target.value)}
-              className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-            {!amountValid && (
-              <p className="text-xs text-error-600 dark:text-error-400 mt-1">Enter an amount between £0.01 and £{maxAmount.toFixed(2)}.</p>
-            )}
-          </div>
-          <div className="flex items-center justify-center gap-2 px-6 py-5">
-            <SecondaryButton onClick={() => setShowRefundRequest(false)}>Cancel</SecondaryButton>
-            <button
-              className={`${btnBase} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={handleSubmitRefundRequest}
-              disabled={!amountValid}
-            >
-              <Check className="w-3.5 h-3.5" /> Submit Request
-            </button>
-          </div>
-        </div>
-      </div>
-      );
-    })()}
-
-    {showCheckInConfirm && (
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={() => setShowCheckInConfirm(false)}
-      >
-        <div
-          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center mb-3">
-              <QrCode className="w-7 h-7 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Check In</h4>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Are you sure to check in?</p>
-          </div>
-          <div className="flex items-center justify-center gap-2 px-6 py-5">
-            <SecondaryButton onClick={() => setShowCheckInConfirm(false)}>Cancel</SecondaryButton>
-            <button
-              className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
-              onClick={handleCheckIn}
-            >
-              <Check className="w-3.5 h-3.5" /> Check In
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 }

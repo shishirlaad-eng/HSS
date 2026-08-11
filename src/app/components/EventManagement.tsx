@@ -930,7 +930,6 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span className="flex items-center gap-1"><Clock size={10} />{timeRangeLabel(ev)}</span>
                             <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
-                            <span className="flex items-center gap-1"><UsersIcon size={10} />{ev.metrics.participantCount} registered</span>
                           </div>
                         </div>
                       </div>

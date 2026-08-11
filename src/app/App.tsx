@@ -94,9 +94,9 @@ export default function App() {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("colorTheme");
       const validThemes = ["hss-brand", "default-black", "ocean-blue", "emerald-green", "violet-purple", "amber-orange"];
-      return validThemes.includes(saved || "") ? saved! : "amber-orange";
+      return validThemes.includes(saved || "") ? saved! : "hss-brand";
     }
-    return "amber-orange";
+    return "hss-brand";
   });
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] =

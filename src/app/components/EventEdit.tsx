@@ -10,10 +10,11 @@ import {
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge } from '../../mockAPI/membersData';
 import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 import {
   PriceCategoriesEditor,
   CustomQuestionsEditor,
@@ -21,8 +22,11 @@ import {
   TermsSectionsEditor,
   DonationAmountsEditor,
   AGE_GROUP_OPTIONS,
-  CheckChip,
-  toggleArr,
+  MultiSelectField,
+  MemberMultiSelect,
+  isFullSelection,
+  composeVenueAddress,
+  mockAddressesForPostcode,
 } from './EventFormFields';
 
 interface EventEditProps {
@@ -37,9 +41,9 @@ interface EventEditProps {
 // in EventManagement.tsx/EventDetail.tsx.
 const canModify = (event: Event) => event.status !== 'completed' && event.status !== 'cancelled';
 
-// ── Same tab set as EventCreate, minus Location's structured postcode fields
-// and Target Audience's org-wide targeting (Edit works off the event's own
-// already-assigned scope, not a fresh targeting selection).
+// ── Same tab set as EventCreate, minus Location's structured postcode fields —
+// Target Audience now matches Create exactly (org-wide multi-select targeting,
+// specific-member search, full demographic filters).
 type EditTab = 'basics' | 'location' | 'audience' | 'payment' | 'questions' | 'terms' | 'confirmation';
 
 const TABS: { id: EditTab; label: string }[] = [
@@ -51,6 +55,23 @@ const TABS: { id: EditTab; label: string }[] = [
   { id: 'terms',        label: 'Terms & Conditions'   },
   { id: 'confirmation', label: 'Event Confirmation'   },
 ];
+
+function findCountryForRegion(region: string): string {
+  const entry = Object.entries(MASTERS_CASCADE.regions).find(([, regions]) => (regions as string[]).includes(region));
+  return entry?.[0] ?? MASTERS_CASCADE.countries[0];
+}
+
+// Karyakram scope (country/region/town/activityCentre) still drives admin
+// ownership/visibility — derived from the multi-select audience targeting
+// rather than picked directly, same as EventCreate, falling back to the
+// editing admin's own scope when the target is left as "All".
+function deriveOwnerScope(f: { targetRegions: string[]; targetTowns: string[]; targetCentres: string[] }, creatorScope: { country?: string; region?: string; town?: string; centre?: string }) {
+  const region = f.targetRegions.length === 1 ? f.targetRegions[0] : (creatorScope.region ?? f.targetRegions[0] ?? '');
+  const town   = f.targetTowns.length === 1   ? f.targetTowns[0]   : (creatorScope.town   ?? f.targetTowns[0]   ?? '');
+  const centre = f.targetCentres.length === 1 ? f.targetCentres[0] : (creatorScope.centre ?? f.targetCentres[0] ?? '');
+  const country = creatorScope.country ?? (region ? findCountryForRegion(region) : MASTERS_CASCADE.countries[0]);
+  return { country, region, town, activityCentre: centre };
+}
 
 // ── Reusable card matching EventCreate's Card style ───────────────────────────
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -71,6 +92,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const blocked = !canModify(event);
+  const { scope } = useRoleScope();
 
   const [activeTab, setActiveTab] = useState<EditTab>('basics');
 
@@ -79,12 +101,13 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     description:         event.description ?? '',
     imageUrl:            event.imageUrl ?? '',
     host:                event.host,
-    country:        event.country,
-    region:         event.region,
-    town:           event.town,
-    activityCentre: event.activityCentre,
     locationType:   event.locationType,
-    venueAddress:   event.venueAddress ?? '',
+    venuePostCode: '',
+    venueSelectedAddress: '',
+    venueBuildingName: '',
+    venueAddressLine1: event.venueAddress ?? '',
+    venueAddressLine2: '',
+    venueTownCity: '',
     onlineUrl:      event.onlineUrl ?? '',
     startDate:      event.startDate.split('T')[0],
     startTime:      event.startDate.split('T')[1]?.substring(0, 5) ?? '09:00',
@@ -114,6 +137,19 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     filterAgeCategories: event.filterAgeCategories ?? [],
     filterGenders:       event.filterGenders ?? [],
     filterJobTitles:     event.filterJobTitles ?? [],
+    filterResponsibilityLevels: event.filterResponsibilityLevels ?? [],
+    filterResponsibilityTypes:  event.filterResponsibilityTypes ?? [],
+    specificAgeOperator: event.filterSpecificAge?.operator ?? '' as '' | '=' | '>' | '<' | 'between',
+    specificAgeValue: event.filterSpecificAge?.value !== undefined ? String(event.filterSpecificAge.value) : '',
+    specificAgeAsAtDate: event.filterSpecificAge?.asAtDate ?? '',
+    specificAgeFrom: event.filterSpecificAge?.from ?? '',
+    specificAgeTo: event.filterSpecificAge?.to ?? '',
+    targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
+    targetMemberIds: event.targetMemberIds ?? [] as string[],
+    targetRegions: event.targetRegions ?? [] as string[],
+    targetTowns: event.targetTowns ?? [] as string[],
+    targetCentres: event.targetCentres ?? [] as string[],
+    eventAdminIds: event.eventAdminIds ?? [] as string[],
     chatState:      event.chatState as 'active' | 'archived',
   });
 
@@ -121,42 +157,53 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched]   = useState(false);
 
-  // Cascading dropdown options
-  const availableRegions  = formData.country ? (MASTERS_CASCADE.regions[formData.country] ?? []) : [];
-  const availableTowns    = formData.region  ? (MASTERS_CASCADE.towns[formData.region]   ?? []) : [];
-  const availableCentres  = formData.town    ? (MASTERS_CASCADE.centres[formData.town]   ?? []) : [];
+  // Org-wide targeting options — same cascade as EventCreate's Scope card.
+  const regionOptions = Object.values(MASTERS_CASCADE.regions).flat();
+  const townOptions    = !isFullSelection(formData.targetRegions, regionOptions)
+    ? formData.targetRegions.flatMap(r => MASTERS_CASCADE.towns[r] ?? [])
+    : Object.values(MASTERS_CASCADE.towns).flat();
+  const centreOptions  = !isFullSelection(formData.targetTowns, townOptions)
+    ? formData.targetTowns.flatMap(t => MASTERS_CASCADE.centres[t] ?? [])
+    : Object.values(MASTERS_CASCADE.centres).flat();
 
   const set = (field: string, value: any) => {
     setFormData(prev => {
       const next: any = { ...prev, [field]: value };
-      if (field === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-      if (field === 'region')  { next.town = ''; next.activityCentre = ''; }
-      if (field === 'town')    { next.activityCentre = ''; }
+      if (field === 'venuePostCode') { next.venueSelectedAddress = ''; }
       return next;
     });
   };
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'country', 'region', 'town', 'activityCentre', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode'];
+  const FIELD_ORDER = ['name', 'targetMemberIds', 'startDate', 'startTime', 'endDate', 'endTime', 'paymentType', 'priceCategories', 'couponCode'];
+  const FIELD_TAB: Record<string, EditTab> = {
+    name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
+    targetMemberIds: 'audience',
+    paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment',
+  };
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const focusFirstError = (errs: Record<string, string>) => {
     const firstKey = FIELD_ORDER.find(k => errs[k]);
-    const el = firstKey ? fieldRefs.current[firstKey] : null;
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.focus();
-    }
+    if (!firstKey) return;
+    const tab = FIELD_TAB[firstKey];
+    if (tab && tab !== activeTab) setActiveTab(tab);
+    setTimeout(() => {
+      const el = fieldRefs.current[firstKey];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 60);
   };
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!formData.name.trim())         errs.name           = 'This field is required.';
-    if (!formData.country)             errs.country        = 'This field is required.';
-    if (!formData.region)              errs.region         = 'This field is required.';
-    if (!formData.town)                errs.town           = 'This field is required.';
-    if (!formData.activityCentre)      errs.activityCentre = 'This field is required.';
+    if (formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
+      errs.targetMemberIds = 'Please select at least one member.';
+    }
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -193,18 +240,19 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
+      const ownerScope = deriveOwnerScope(formData, scope);
       const updated: Event = {
         ...event,
         name:           formData.name.trim(),
         description:    formData.description.trim() || undefined,
         imageUrl:       formData.imageUrl || undefined,
         host:           formData.host.trim(),
-        country:        formData.country,
-        region:         formData.region,
-        town:           formData.town,
-        activityCentre: formData.activityCentre,
+        country:        ownerScope.country,
+        region:         ownerScope.region,
+        town:           ownerScope.town,
+        activityCentre: ownerScope.activityCentre,
         locationType:   formData.locationType,
-        venueAddress:   formData.locationType === 'physical' ? formData.venueAddress.trim() : undefined,
+        venueAddress:   formData.locationType === 'physical' ? composeVenueAddress(formData) : undefined,
         onlineUrl:      formData.locationType === 'online'   ? formData.onlineUrl.trim()    : undefined,
         startDate:      `${formData.startDate}T${formData.startTime}:00Z`,
         endDate:        `${formData.endDate}T${formData.endTime}:00Z`,
@@ -230,14 +278,31 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
         filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
         filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
         filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
+        filterResponsibilityLevels: formData.filterResponsibilityLevels.length > 0 ? formData.filterResponsibilityLevels : undefined,
+        filterResponsibilityTypes:  formData.filterResponsibilityTypes.length > 0  ? formData.filterResponsibilityTypes  : undefined,
+        filterSpecificAge: formData.specificAgeOperator ? (
+          formData.specificAgeOperator === 'between'
+            ? { operator: 'between' as const, from: formData.specificAgeFrom || undefined, to: formData.specificAgeTo || undefined }
+            : { operator: formData.specificAgeOperator, value: formData.specificAgeValue ? parseInt(formData.specificAgeValue) : undefined, asAtDate: formData.specificAgeAsAtDate || undefined }
+        ) : undefined,
+        targetRegions: !isFullSelection(formData.targetRegions, regionOptions) ? formData.targetRegions : undefined,
+        targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
+        targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
+        targetMemberIds: formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
+        eventAdminIds: formData.eventAdminIds.length > 0 ? formData.eventAdminIds : undefined,
         chatState:      formData.chatState,
         lastUpdated:    new Date().toISOString(),
       };
+      const previousAdminIds = event.eventAdminIds ?? [];
+      const newlyAssignedAdmins = mockMembers.filter(m => formData.eventAdminIds.includes(m.id) && !previousAdminIds.includes(m.id));
       if (onSave) {
         onSave(updated);
       } else {
         toast.success('Event updated successfully.');
         onBack();
+      }
+      if (newlyAssignedAdmins.length > 0) {
+        toast.success(`Notified ${newlyAssignedAdmins.length} new Event Admin${newlyAssignedAdmins.length !== 1 ? 's' : ''}: ${newlyAssignedAdmins.map(m => m.name).join(', ')}.`);
       }
     } catch {
       toast.error('Unable to save. Please try again.');
@@ -424,49 +489,59 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </Card>
 
               <div className="flex flex-col gap-5">
-                <Card title="Non-Member Registration">
-                  <div className="space-y-4">
-                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={formData.guestRegistrationEnabled}
-                        onChange={e => set('guestRegistrationEnabled', e.target.checked)}
-                        disabled={blocked}
-                        className="rounded border-neutral-300 dark:border-neutral-700"
-                      />
-                      <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                      Allow non-members to register via a Non-Member Registration link
-                    </label>
-                  </div>
-                </Card>
+                <Card title="Admin Options">
+                  <div className="space-y-5">
+                    <div>
+                      <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.guestRegistrationEnabled}
+                          onChange={e => set('guestRegistrationEnabled', e.target.checked)}
+                          disabled={blocked}
+                          className="rounded border-neutral-300 dark:border-neutral-700"
+                        />
+                        <Ticket className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                        Allow non-members to register via a Non-Member Registration link
+                      </label>
+                    </div>
 
-                <Card title="Approvals">
-                  <div className="space-y-4">
-                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={formData.shakhaKaryawahaApprovalRequired}
-                        onChange={e => set('shakhaKaryawahaApprovalRequired', e.target.checked)}
+                    <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
+                      <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Event Admins</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                        Assign members who can manage this Karyakram — approve registrations, check-in attendees, edit details. Not limited to your own Shakha.
+                      </p>
+                      <MemberMultiSelect
+                        selectedIds={formData.eventAdminIds}
+                        onChange={ids => set('eventAdminIds', ids)}
                         disabled={blocked}
-                        className="rounded border-neutral-300 dark:border-neutral-700"
                       />
-                      Shakha Karyawaha approval
-                    </label>
-                  </div>
-                </Card>
+                    </div>
 
-                <Card title="Check-In">
-                  <div className="space-y-4">
-                    <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={formData.selfCheckInEnabled}
-                        onChange={e => set('selfCheckInEnabled', e.target.checked)}
-                        disabled={blocked}
-                        className="rounded border-neutral-300 dark:border-neutral-700"
-                      />
-                      Enable self check-in — members can check themselves in via QR at the venue
-                    </label>
+                    <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
+                      <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.shakhaKaryawahaApprovalRequired}
+                          onChange={e => set('shakhaKaryawahaApprovalRequired', e.target.checked)}
+                          disabled={blocked}
+                          className="rounded border-neutral-300 dark:border-neutral-700"
+                        />
+                        Shakha Karyawaha approval
+                      </label>
+                    </div>
+
+                    <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
+                      <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.selfCheckInEnabled}
+                          onChange={e => set('selfCheckInEnabled', e.target.checked)}
+                          disabled={blocked}
+                          className="rounded border-neutral-300 dark:border-neutral-700"
+                        />
+                        Enable self check-in — members can check themselves in via QR at the venue
+                      </label>
+                    </div>
                   </div>
                 </Card>
 
@@ -548,18 +623,75 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   </button>
                 </div>
                 {formData.locationType === 'physical' ? (
-                  <FormField>
-                    <FormLabel>Venue Address</FormLabel>
-                    <FormInput
-                      ref={el => { fieldRefs.current.venueAddress = el; }}
-                      value={formData.venueAddress}
-                      onChange={e => set('venueAddress', e.target.value)}
-                      placeholder="Enter full venue address"
-                      disabled={blocked}
-                      className={errCls('venueAddress')}
-                    />
-                    <ErrorText>{touched && errors.venueAddress}</ErrorText>
-                  </FormField>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField>
+                      <FormLabel>Post Code</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.venuePostCode = el; }}
+                        value={formData.venuePostCode}
+                        onChange={e => set('venuePostCode', e.target.value)}
+                        placeholder="Post code"
+                        disabled={blocked}
+                        className={errCls('venuePostCode')}
+                      />
+                      <ErrorText>{touched && errors.venuePostCode}</ErrorText>
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Select Address</FormLabel>
+                      <FormSelect
+                        value={formData.venueSelectedAddress}
+                        disabled={blocked || formData.venuePostCode.trim().length < 4}
+                        onChange={e => {
+                          const idx = e.target.value;
+                          set('venueSelectedAddress', idx);
+                          const options = mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity);
+                          const picked = options[Number(idx)];
+                          if (picked) {
+                            set('venueBuildingName', picked.buildingName);
+                            set('venueAddressLine1', picked.addressLine1);
+                            set('venueTownCity', picked.town);
+                          }
+                        }}
+                      >
+                        <option value="">{formData.venuePostCode.trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
+                        {mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity).map((opt, i) => (
+                          <option key={i} value={i}>{opt.label}</option>
+                        ))}
+                      </FormSelect>
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Building Name</FormLabel>
+                      <FormInput value={formData.venueBuildingName} onChange={e => set('venueBuildingName', e.target.value)} placeholder="Building name" disabled={blocked} />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Address Line 1</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.venueAddressLine1 = el; }}
+                        value={formData.venueAddressLine1}
+                        onChange={e => set('venueAddressLine1', e.target.value)}
+                        placeholder="Address line 1"
+                        disabled={blocked}
+                        className={errCls('venueAddressLine1')}
+                      />
+                      <ErrorText>{touched && errors.venueAddressLine1}</ErrorText>
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Address Line 2</FormLabel>
+                      <FormInput value={formData.venueAddressLine2} onChange={e => set('venueAddressLine2', e.target.value)} placeholder="Address line 2" disabled={blocked} />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Town / City</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.venueTownCity = el; }}
+                        value={formData.venueTownCity}
+                        onChange={e => set('venueTownCity', e.target.value)}
+                        placeholder="Town / City"
+                        disabled={blocked}
+                        className={errCls('venueTownCity')}
+                      />
+                      <ErrorText>{touched && errors.venueTownCity}</ErrorText>
+                    </FormField>
+                  </div>
                 ) : (
                   <FormField>
                     <FormLabel>Online Call URL</FormLabel>
@@ -578,125 +710,175 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
             </Card>
           )}
 
-          {/* ── Target Audience ── */}
+          {/* ── Target Audience — matches EventCreate exactly ── */}
           {activeTab === 'audience' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <Card title="Scope">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FormField>
-                    <FormLabel required>Country</FormLabel>
-                    <FormSelect
-                      ref={el => { fieldRefs.current.country = el; }}
-                      value={formData.country}
-                      onChange={e => set('country', e.target.value)}
+            <div className="space-y-5">
+              <Card title="Target Specific Members">
+                <div className="space-y-4">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                    <input
+                      type="checkbox"
+                      checked={formData.targetSpecificOnly}
+                      onChange={e => set('targetSpecificOnly', e.target.checked)}
                       disabled={blocked}
-                      className={errCls('country')}
-                    >
-                      <option value="">Select Country</option>
-                      {MASTERS_CASCADE.countries.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.country}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Vibhag</FormLabel>
-                    <FormSelect
-                      ref={el => { fieldRefs.current.region = el; }}
-                      value={formData.region}
-                      onChange={e => set('region', e.target.value)}
-                      disabled={blocked || !formData.country}
-                      className={errCls('region')}
-                    >
-                      <option value="">Select Vibhag</option>
-                      {availableRegions.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.region}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Nagar</FormLabel>
-                    <FormSelect
-                      ref={el => { fieldRefs.current.town = el; }}
-                      value={formData.town}
-                      onChange={e => set('town', e.target.value)}
-                      disabled={blocked || !formData.region}
-                      className={errCls('town')}
-                    >
-                      <option value="">Select Nagar</option>
-                      {availableTowns.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.town}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel required>Shakha</FormLabel>
-                    <FormSelect
-                      ref={el => { fieldRefs.current.activityCentre = el; }}
-                      value={formData.activityCentre}
-                      onChange={e => set('activityCentre', e.target.value)}
-                      disabled={blocked || !formData.town}
-                      className={errCls('activityCentre')}
-                    >
-                      <option value="">Select Shakha</option>
-                      {availableCentres.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </FormSelect>
-                    <ErrorText>{touched && errors.activityCentre}</ErrorText>
-                  </FormField>
+                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                    />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Invite specific members only
+                    </span>
+                  </label>
+                  {formData.targetSpecificOnly && (
+                    <FormField>
+                      <FormLabel required>Select Members</FormLabel>
+                      <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
+                        <MemberMultiSelect
+                          selectedIds={formData.targetMemberIds}
+                          onChange={ids => set('targetMemberIds', ids)}
+                          disabled={blocked}
+                        />
+                      </div>
+                      <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
+                    </FormField>
+                  )}
+                </div>
+              </Card>
+
+              <Card title="Scope">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <MultiSelectField
+                    label="Vibhag"
+                    options={regionOptions}
+                    selected={formData.targetRegions}
+                    disabled={blocked || !scope.showRegionFilter}
+                    onChange={v => { set('targetRegions', v); set('targetTowns', []); set('targetCentres', []); }}
+                  />
+                  <MultiSelectField
+                    label="Nagar"
+                    options={townOptions}
+                    selected={formData.targetTowns}
+                    disabled={blocked || !scope.showTownFilter}
+                    onChange={v => { set('targetTowns', v); set('targetCentres', []); }}
+                  />
+                  <MultiSelectField
+                    label="Shakha"
+                    options={centreOptions}
+                    selected={formData.targetCentres}
+                    disabled={blocked || !scope.showCentreFilter}
+                    onChange={v => set('targetCentres', v)}
+                  />
                 </div>
               </Card>
 
               <Card title="Demographic Filters">
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                  Optional — leave unchecked to target all members within scope.
+                  Optional — leave as "All" to target everyone within scope.
                 </p>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age Category</p>
-                    <div className="flex flex-wrap gap-2">
-                      {AGE_GROUP_OPTIONS.map(({ value, label }) => (
-                        <CheckChip
-                          key={value}
-                          label={label}
-                          checked={formData.filterAgeCategories.includes(value)}
-                          onChange={() => !blocked && set('filterAgeCategories', toggleArr(formData.filterAgeCategories, value))}
-                        />
-                      ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <MultiSelectField
+                    label="Age Category"
+                    options={AGE_GROUP_OPTIONS.map(o => o.value)}
+                    getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
+                    selected={formData.filterAgeCategories}
+                    disabled={blocked}
+                    onChange={v => set('filterAgeCategories', v as AgeGroup[])}
+                  />
+                  <FormField className="md:col-span-3">
+                    <FormLabel>Specific Age</FormLabel>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <FormSelect
+                        value={formData.specificAgeOperator}
+                        disabled={blocked}
+                        onChange={e => {
+                          const op = e.target.value;
+                          set('specificAgeOperator', op);
+                          if ((op === '=' || op === '>' || op === '<') && !formData.specificAgeAsAtDate) {
+                            set('specificAgeAsAtDate', new Date().toISOString().split('T')[0]);
+                          }
+                        }}
+                        className="w-40"
+                      >
+                        <option value="">Not filtered</option>
+                        <option value="=">Equals to</option>
+                        <option value=">">Greater than or equal to</option>
+                        <option value="<">Less than or equal to</option>
+                        <option value="between">Between</option>
+                      </FormSelect>
+                      {(formData.specificAgeOperator === '=' || formData.specificAgeOperator === '>' || formData.specificAgeOperator === '<') && (
+                        <>
+                          <FormInput
+                            type="number"
+                            min="0"
+                            value={formData.specificAgeValue}
+                            onChange={e => set('specificAgeValue', e.target.value)}
+                            disabled={blocked}
+                            placeholder="Age"
+                            className="w-32"
+                          />
+                          <span className="text-sm text-neutral-400">as at</span>
+                          <FormInput
+                            type="date"
+                            value={formData.specificAgeAsAtDate}
+                            onChange={e => set('specificAgeAsAtDate', e.target.value)}
+                            disabled={blocked}
+                            className="w-44"
+                          />
+                        </>
+                      )}
+                      {formData.specificAgeOperator === 'between' && (
+                        <>
+                          <FormInput
+                            type="date"
+                            value={formData.specificAgeFrom}
+                            onChange={e => set('specificAgeFrom', e.target.value)}
+                            disabled={blocked}
+                            className="w-44"
+                          />
+                          <span className="text-sm text-neutral-400">to</span>
+                          <FormInput
+                            type="date"
+                            value={formData.specificAgeTo}
+                            onChange={e => set('specificAgeTo', e.target.value)}
+                            disabled={blocked}
+                            className="w-44"
+                          />
+                          {formData.specificAgeFrom && formData.specificAgeTo && (
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                              Age {getAge(formData.specificAgeTo)} – {getAge(formData.specificAgeFrom)}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Gender</p>
-                    <div className="flex flex-wrap gap-2">
-                      {([
-                        { value: 'male',   label: 'Male'   },
-                        { value: 'female', label: 'Female' },
-                      ] as { value: 'male' | 'female'; label: string }[]).map(({ value, label }) => (
-                        <CheckChip
-                          key={value}
-                          label={label}
-                          checked={formData.filterGenders.includes(value)}
-                          onChange={() => !blocked && set('filterGenders', toggleArr(formData.filterGenders, value))}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Role Type / Job Title</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ROLE_TYPE_OPTIONS.map(role => (
-                        <CheckChip
-                          key={role}
-                          label={role}
-                          checked={formData.filterJobTitles.includes(role)}
-                          onChange={() => !blocked && set('filterJobTitles', toggleArr(formData.filterJobTitles, role))}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  </FormField>
+                  <MultiSelectField
+                    label="Gender"
+                    options={['male', 'female']}
+                    getLabel={v => v === 'male' ? 'Male' : 'Female'}
+                    selected={formData.filterGenders}
+                    disabled={blocked}
+                    onChange={v => set('filterGenders', v as ('male' | 'female')[])}
+                  />
+                  <MultiSelectField
+                    label="Responsibility Level"
+                    options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                    selected={formData.filterResponsibilityLevels}
+                    disabled={blocked}
+                    onChange={v => set('filterResponsibilityLevels', v)}
+                  />
+                  <MultiSelectField
+                    label="Sangh Responsibility"
+                    options={ROLE_TYPE_OPTIONS}
+                    selected={formData.filterJobTitles}
+                    disabled={blocked}
+                    onChange={v => set('filterJobTitles', v)}
+                  />
+                  <MultiSelectField
+                    label="Responsibility Type"
+                    options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                    selected={formData.filterResponsibilityTypes}
+                    disabled={blocked}
+                    onChange={v => set('filterResponsibilityTypes', v)}
+                  />
                 </div>
               </Card>
             </div>

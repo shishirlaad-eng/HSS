@@ -428,7 +428,7 @@ function EditableInfoItem({
 
 // ── Dietary requirements multi-select dropdown ───────────────
 
-function DietaryMultiSelect({
+export function DietaryMultiSelect({
   selected,
   onChange,
 }: {

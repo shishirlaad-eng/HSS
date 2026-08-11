@@ -1,8 +1,8 @@
-import { useRef } from 'react';
-import { Plus, Trash2, Image as ImageIcon, X, CheckCircle2 } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Plus, Trash2, Image as ImageIcon, X, CheckCircle2, ChevronDown, Search } from 'lucide-react';
 import { FormField, FormLabel, FormInput, FormSelect, RichTextEditor } from './hb/common';
 import type { EventPriceCategory, EventCustomQuestion, EventTermsSection } from '../../mockAPI/eventsData';
-import type { AgeGroup } from '../../mockAPI/membersData';
+import { mockMembers, type AgeGroup } from '../../mockAPI/membersData';
 
 // ─── Target Audience helpers (shared across Create/Edit forms) ───────────────
 export const AGE_GROUP_OPTIONS: { value: AgeGroup; label: string }[] = [
@@ -23,6 +23,29 @@ export const AUDIENCE_AGE_LABELS: Record<AgeGroup, string> = {
   jyestha: 'Jyestha(a) (60+)',
 };
 
+// ─── Venue address helpers (shared across Create/Edit forms) ─────────────────
+export const composeVenueAddress = (f: { venueBuildingName: string; venueAddressLine1: string; venueAddressLine2: string; venueTownCity: string; venuePostCode: string }) =>
+  [f.venueBuildingName, f.venueAddressLine1, f.venueAddressLine2, f.venueTownCity, f.venuePostCode]
+    .map(s => s.trim()).filter(Boolean).join(', ');
+
+// Mock postcode lookup (matches the pattern used on the member address form)
+const MOCK_STREET_NAMES = ['High Street', 'Church Road', 'Kings Avenue', 'Mill Lane', 'Victoria Street'];
+export function mockAddressesForPostcode(postcode: string, fallbackTown: string): { label: string; buildingName: string; addressLine1: string; town: string }[] {
+  const cleaned = postcode.trim();
+  if (cleaned.length < 4) return [];
+  const seed = cleaned.toUpperCase().split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return [1, 2, 3].map(n => {
+    const street = MOCK_STREET_NAMES[(seed + n) % MOCK_STREET_NAMES.length];
+    const houseNumber = ((seed * n) % 90) + 1;
+    return {
+      label: `${houseNumber} ${street}`,
+      buildingName: '',
+      addressLine1: `${houseNumber} ${street}`,
+      town: fallbackTown,
+    };
+  });
+}
+
 export function CheckChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
     <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
@@ -39,6 +62,172 @@ export function CheckChip({ label, checked, onChange }: { label: string; checked
 
 export function toggleArr<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+}
+
+// Cascade options — empty selection OR every option selected both mean "All" and widen to the full available set
+export const isFullSelection = (sel: string[], opts: string[]) => sel.length === 0 || sel.length >= opts.length;
+
+// ── Multi-select dropdown (matches the Suchana Audience & Targeting pattern) ──
+// Shared by EventCreate and EventEdit's Target Audience tabs.
+export function MultiSelectField({
+  label,
+  options,
+  selected,
+  onChange,
+  required,
+  disabled,
+  allLabel = 'All',
+  getLabel,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (v: string[]) => void;
+  required?: boolean;
+  disabled?: boolean;
+  allLabel?: string;
+  getLabel?: (v: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const fmt = (v: string) => getLabel ? getLabel(v) : v;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const isAll = selected.length === 0 || (options.length > 0 && selected.length === options.length);
+  const displayLabel = isAll ? allLabel : selected.length === 1 ? fmt(selected[0]) : `${selected.length} selected`;
+
+  return (
+    <FormField>
+      <FormLabel required={required}>{label}</FormLabel>
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(o => !o)}
+          className="w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className={isAll ? 'text-neutral-500 dark:text-neutral-400' : ''}>{displayLabel}</span>
+          <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        </button>
+        {open && !disabled && (
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-56 overflow-y-auto slim-scroll">
+            <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer border-b border-neutral-100 dark:border-neutral-800">
+              <input type="checkbox" checked={isAll} onChange={() => onChange(options)} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
+              {allLabel}
+            </label>
+            {options.map(opt => (
+              <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(opt)}
+                  onChange={() => onChange(selected.includes(opt) ? selected.filter(v => v !== opt) : [...selected, opt])}
+                  className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                />
+                {fmt(opt)}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </FormField>
+  );
+}
+
+// ── Searchable multi-select for targeting specific members ────────────────────
+// Shared by EventCreate and EventEdit's Target Audience tabs.
+export function MemberMultiSelect({ selectedIds, onChange, disabled }: { selectedIds: string[]; onChange: (ids: string[]) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const q = query.toLowerCase().trim();
+  const matches = (q
+    ? mockMembers.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.activityCentre.toLowerCase().includes(q))
+    : mockMembers
+  ).slice(0, 30);
+
+  const selectedMembers = mockMembers.filter(m => selectedIds.includes(m.id));
+
+  return (
+    <div>
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(o => !o)}
+          className="w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className={selectedIds.length === 0 ? 'text-neutral-500 dark:text-neutral-400' : ''}>
+            {selectedIds.length === 0 ? 'Search and select members…' : `${selectedIds.length} member${selectedIds.length !== 1 ? 's' : ''} selected`}
+          </span>
+          <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        </button>
+        {open && !disabled && (
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg">
+            <div className="p-2 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search by name, member ID or Shakha…"
+                  className="w-full pl-8 pr-2 h-8 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+            <div className="max-h-56 overflow-y-auto slim-scroll">
+              {matches.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-center text-neutral-400">No members found</p>
+              ) : matches.map(m => (
+                <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(m.id)}
+                    onChange={() => onChange(selectedIds.includes(m.id) ? selectedIds.filter(id => id !== m.id) : [...selectedIds, m.id])}
+                    className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                  />
+                  <span className="flex-1 min-w-0 truncate">{m.name}</span>
+                  <span className="text-xs text-neutral-400 flex-shrink-0 truncate max-w-[35%]">{m.activityCentre}</span>
+                  <span className="text-xs text-neutral-400 flex-shrink-0">{m.id}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {selectedMembers.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selectedMembers.map(m => (
+            <span key={m.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-700 dark:text-primary-300">
+              {m.name}
+              {!disabled && (
+                <button type="button" onClick={() => onChange(selectedIds.filter(id => id !== m.id))} className="hover:text-primary-900 dark:hover:text-primary-100">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Price Categories Editor ──────────────────────────────────────────────────

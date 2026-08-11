@@ -1,9 +1,9 @@
 /**
  * REUSABLE ICON BUTTON COMPONENT
- * 
+ *
  * Standard icon button used throughout listing pages
  * Supports both simple click actions and dropdown menus
- * 
+ *
  * SPECIFICATIONS:
  * - Size: 40px × 40px (w-10 h-10)
  * - Border: 1px solid neutral-200 (dark: neutral-800)
@@ -13,14 +13,14 @@
  * - Icon Size: 16px × 16px (w-4 h-4)
  * - Icon Color: neutral-600 (dark: neutral-400)
  * - Transition: all properties (transition-all)
- * 
+ *
  * USAGE:
  * Simple button:
  * <IconButton icon={Search} onClick={handleSearch} title="Search" />
- * 
+ *
  * Dropdown menu:
- * <IconButton 
- *   icon={MoreVertical} 
+ * <IconButton
+ *   icon={MoreVertical}
  *   title="More options"
  *   menuItems={[
  *     { icon: Upload, label: 'Import', onClick: handleImport },
@@ -33,6 +33,7 @@
 
 import { LucideIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface MenuItem {
   icon?: LucideIcon;
@@ -51,16 +52,22 @@ interface IconButtonProps {
   borderless?: boolean;
 }
 
-export function IconButton({ 
-  icon: Icon, 
-  onClick, 
-  title, 
-  active = false, 
+const MENU_WIDTH = 192; // w-48
+
+export function IconButton({
+  icon: Icon,
+  onClick,
+  title,
+  active = false,
   className = '',
   menuItems,
   borderless = false
 }: IconButtonProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Menu is portal-rendered to document.body so it can't be clipped by an
+  // ancestor's overflow:hidden/auto (e.g. a table wrapper) — position is
+  // tracked in viewport coordinates instead of relying on CSS positioning.
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -68,7 +75,7 @@ export function IconButton({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        menuRef.current && 
+        menuRef.current &&
         !menuRef.current.contains(event.target as Node) &&
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
@@ -83,6 +90,21 @@ export function IconButton({
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const updatePos = () => {
+      const r = buttonRef.current?.getBoundingClientRect();
+      if (r) setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    };
+    updatePos();
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
     };
   }, [isMenuOpen]);
 
@@ -101,11 +123,11 @@ export function IconButton({
         onClick={handleClick}
         title={title}
         className={`
-          ${borderless ? 'w-7 h-7' : 'w-10 h-10'} 
-          flex items-center justify-center 
-          text-neutral-600 dark:text-neutral-400 
-          ${borderless 
-            ? 'hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded' 
+          ${borderless ? 'w-7 h-7' : 'w-10 h-10'}
+          flex items-center justify-center
+          text-neutral-600 dark:text-neutral-400
+          ${borderless
+            ? 'hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded'
             : `bg-white dark:bg-neutral-950 border rounded-lg ${
                 active || isMenuOpen
                   ? 'border-primary-500 dark:border-primary-600 text-primary-600 dark:text-primary-400'
@@ -119,16 +141,17 @@ export function IconButton({
         <Icon className={borderless ? "w-4 h-4" : "w-5 h-5"} />
       </button>
 
-      {/* Dropdown Menu */}
-      {menuItems && menuItems.length > 0 && isMenuOpen && (
-        <div 
+      {/* Dropdown Menu — portal-rendered so it always sits on top, never clipped */}
+      {menuItems && menuItems.length > 0 && isMenuOpen && menuPos && createPortal(
+        <div
           ref={menuRef}
-          className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg z-50 py-1"
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg py-1"
+          style={{ top: menuPos.top, right: menuPos.right, width: MENU_WIDTH }}
         >
           {menuItems.map((item, index) => {
             if (item.divider) {
               return (
-                <div 
+                <div
                   key={`divider-${index}`}
                   className="border-t border-neutral-200 dark:border-neutral-800 my-1"
                 />
@@ -153,7 +176,8 @@ export function IconButton({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
