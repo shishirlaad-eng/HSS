@@ -249,6 +249,12 @@ export const getNavigationData = (
           onClick: () => onNavigate("report-karyakarta"),
           active: currentPage === "report-karyakarta",
         },
+        {
+          id: "report-ayu-shreni",
+          label: "Ayu Shreni Report",
+          onClick: () => onNavigate("report-ayu-shreni"),
+          active: currentPage === "report-ayu-shreni",
+        },
       ],
     },
 

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Karyakarta Report (members holding a Sangh Responsibility)
 // ─────────────────────────────────────────────────────────────
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -10,7 +10,7 @@ import {
   Award, Users, Briefcase,
   Download, SlidersHorizontal, X,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
+import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
 import {
   mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE,
   RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS,
@@ -130,9 +130,6 @@ export default function KaryakartaReport() {
   const [filterResponsibility, setFilterResponsibility] = useState('');
   const [filterRespType, setFilterRespType] = useState('');
 
-  // ── List pagination ──────────────────────────────────────────
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
@@ -162,16 +159,6 @@ export default function KaryakartaReport() {
       return true;
     });
   }, [karyakartas, filterRegion, filterTown, filterCentre, filterGender, filterAgeGroup, filterRespLevel, filterResponsibility, filterRespType]);
-
-  // Reset to page 1 whenever the filtered set changes
-  useEffect(() => { setCurrentPage(1); }, [filtered]);
-
-  const totalPages = itemsPerPage === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const paginated = useMemo(() => {
-    if (itemsPerPage === 0) return filtered;
-    const start = (currentPage - 1) * itemsPerPage;
-    return filtered.slice(start, start + itemsPerPage);
-  }, [filtered, currentPage, itemsPerPage]);
 
   // ── Aggregations ───────────────────────────────────────────
 
@@ -548,54 +535,6 @@ export default function KaryakartaReport() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* ── Row 4: Karyakarta List ────────────────────────── */}
-        <div className="mt-6">
-          <ChartCard title="Karyakarta List" subtitle="Members holding a Sangh Responsibility matching the current filters">
-            <div className="sticky-table-scroll slim-scroll">
-              <table className="w-full min-w-max text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">
-                    <th className="py-2 pr-4 font-medium">First Name</th>
-                    <th className="py-2 pr-4 font-medium">Last Name</th>
-                    <th className="py-2 pr-4 font-medium">Vibhag</th>
-                    <th className="py-2 pr-4 font-medium">Nagar</th>
-                    <th className="py-2 pr-4 font-medium">Shakha</th>
-                    <th className="py-2 pr-4 font-medium">Responsibility</th>
-                    <th className="py-2 pr-4 font-medium">Email</th>
-                    <th className="py-2 pr-4 font-medium">Contact Number</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {paginated.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-6 text-center text-neutral-400 text-sm">No karyakartas match the selected filters.</td>
-                    </tr>
-                  ) : paginated.map(m => (
-                    <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
-                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
-                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.region}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.town}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.activityCentre}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.jobTitle}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.email}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{m.phone ?? '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filtered.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
-            />
           </ChartCard>
         </div>
 

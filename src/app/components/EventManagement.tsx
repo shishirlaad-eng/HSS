@@ -36,6 +36,7 @@ import {
   ChevronDown,
   Search,
   Check,
+  Heart,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -61,7 +62,7 @@ import {
   ErrorText,
   RichTextEditor,
 } from './hb/common';
-import { mockEvents, mockParticipants, Event } from '../../mockAPI/eventsData';
+import { mockEvents, mockParticipants, Event, EventParticipant } from '../../mockAPI/eventsData';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import EventDetail from './EventDetail';
 import EventEdit from './EventEdit';
@@ -239,9 +240,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     const notRegisteredArr: Event[] = [];
     const registeredArr: Event[] = [];
     const attendedArr: Event[] = [];
+    const recordByEventId: Record<string, EventParticipant> = {};
     for (const ev of mockEvents) {
       const isFuture = new Date(ev.startDate) > now;
       const myRecord = (mockParticipants[ev.id] ?? []).find(p => p.memberId === memberId);
+      if (myRecord) recordByEventId[ev.id] = myRecord;
       if (isFuture && ev.status !== 'cancelled') {
         if (!myRecord) notRegisteredArr.push(ev);
         else if (myRecord.rsvp === 'going' || myRecord.rsvp === 'requested') registeredArr.push(ev);
@@ -257,6 +260,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       notRegistered: notRegisteredArr.slice(0, 3),
       registered:    registeredArr.slice(0, 3),
       attended:      attendedArr,
+      recordByEventId,
     };
   }, [isMemberRole, selectedRole]);
 
@@ -912,6 +916,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                     <p className="py-8 text-center text-sm text-neutral-400">You have not registered for any upcoming Karyakrams.</p>
                   ) : memberData.registered.map(ev => {
                     const { day, mon, year } = utcDMY(ev.startDate);
+                    const rec = memberData.recordByEventId[ev.id];
                     return (
                       <div key={ev.id} className="flex items-start gap-4 py-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 -mx-4 px-4 transition-colors" onClick={() => openDetail(ev)}>
                         <div className="flex-shrink-0 w-12 text-center pt-0.5">
@@ -930,6 +935,12 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span className="flex items-center gap-1"><Clock size={10} />{timeRangeLabel(ev)}</span>
                             <span className="flex items-center gap-1"><MapPin size={10} />{ev.locationType === 'online' ? 'Online' : ev.activityCentre}</span>
+                            {rec?.ticketTypeLabel && (
+                              <span className="flex items-center gap-1"><Ticket size={10} />{rec.ticketTypeLabel}</span>
+                            )}
+                            {!!rec?.donationAmount && (
+                              <span className="flex items-center gap-1"><Heart size={10} />£{rec.donationAmount} donated</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -962,6 +973,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Location</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Start Date/Time</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>End Date/Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Ticket / Donation</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Status</th>
                         </tr>
                       </thead>
@@ -977,9 +989,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                             .sort(([a], [b]) => Number(b) - Number(a))
                             .flatMap(([year, evs]) => [
                               <tr key={`yr-${year}`}>
-                                <td colSpan={6} className="px-4 py-2 text-xs font-bold text-white" style={{ backgroundColor: '#172E4D' }}>{year}</td>
+                                <td colSpan={7} className="px-4 py-2 text-xs font-bold text-white" style={{ backgroundColor: '#172E4D' }}>{year}</td>
                               </tr>,
-                              ...evs.map((ev, i) => (
+                              ...evs.map((ev, i) => {
+                                const rec = memberData.recordByEventId[ev.id];
+                                return (
                                 <tr
                                   key={ev.id}
                                   className={`border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer transition-colors ${i % 2 === 1 ? 'bg-neutral-50/60 dark:bg-neutral-900/30' : ''}`}
@@ -993,9 +1007,15 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                                   </td>
                                   <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{utcFull(ev.startDate)}</td>
                                   <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{utcFull(ev.endDate)}</td>
+                                  <td className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                                    {rec?.ticketTypeLabel && <div className="flex items-center gap-1"><Ticket size={10} />{rec.ticketTypeLabel}</div>}
+                                    {!!rec?.donationAmount && <div className="flex items-center gap-1"><Heart size={10} />£{rec.donationAmount} donated</div>}
+                                    {!rec?.ticketTypeLabel && !rec?.donationAmount && '—'}
+                                  </td>
                                   <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
                                 </tr>
-                              )),
+                                );
+                              }),
                             ]);
                         })()}
                       </tbody>

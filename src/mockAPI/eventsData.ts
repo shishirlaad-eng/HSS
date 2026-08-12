@@ -245,6 +245,9 @@ export interface EventAnnouncement {
   emailEnabled?: boolean;
   emailSchedule?: 'instant' | 'scheduled';
   emailScheduledAt?: string;
+  // Optional image/video attachment, same as the main Suchana module.
+  mediaUrl?: string;
+  contentType?: 'text' | 'image' | 'video';
 }
 
 export const mockEventAnnouncements: Record<string, EventAnnouncement[]> = {
@@ -533,6 +536,7 @@ export const mockEvents: Event[] = [
       { id: 'PC-1', label: 'Standard', price: 25 },
       { id: 'PC-2', label: 'Student', price: 15 },
     ],
+    couponCode: 'PRACHARAK2026',
     capacity: 50,
     waitlistEnabled: true,
     description: 'An intensive hands-on workshop series covering modern web development, AI tools, and digital skills for HSS members. Suitable for beginners and intermediate participants. Refreshments included.',

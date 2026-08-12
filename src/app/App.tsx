@@ -28,6 +28,7 @@ import DonationsPaymentsReport from "./components/DonationsPaymentsReport";
 import AttendanceReport from "./components/AttendanceReport";
 import RefundReport from "./components/RefundReport";
 import KaryakartaReport from "./components/KaryakartaReport";
+import AyuShreniReport from "./components/AyuShreniReport";
 import { SiteMap } from "./components/SiteMap";
 import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
@@ -48,6 +49,7 @@ const PAGE_LABELS: Record<string, string> = {
   "report-attendance":          "Sankhya Report",
   "report-refunds":             "Refund Report",
   "report-karyakarta":          "Karyakarta Report",
+  "report-ayu-shreni":          "Ayu Shreni Report",
   "role-types":                 "Responsibility",
 };
 
@@ -485,6 +487,8 @@ export default function App() {
           <RefundReport />
         ) : currentPage === "report-karyakarta" ? (
           <KaryakartaReport />
+        ) : currentPage === "report-ayu-shreni" ? (
+          <AyuShreniReport />
         ) : currentPage === "my-profile" ? (
           <MyProfile
             selectedRole={selectedRole}
