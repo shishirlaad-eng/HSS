@@ -65,7 +65,7 @@ export const mockAnnouncements: Announcement[] = [
   {
     id: 'ANN-001',
     title: 'National SSV 2026 — Registrations Now Open',
-    body: 'The annual Sangh Shiksha Varg 2026 is scheduled for August at a national venue. All shakha leaders and members are encouraged to register their participants before 15 July 2026. Registration can be completed through the membership portal under Events. Accommodation and transport guidance will be shared with registered participants by 1 July.',
+    body: 'The annual Sangh Shiksha Varg 2026 is scheduled for August at a national venue. All shakha leaders and members are encouraged to register their participants before 15 July 2026. Registration can be completed through the membership portal under Karyakrams. Accommodation and transport guidance will be shared with registered participants by 1 July.',
     contentType: 'image',
     mediaUrl: 'https://hssuk.org/wp-content/uploads/2025/09/Large-Banner-1-scaled.jpg',
     cooldownHours: 24,

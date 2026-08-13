@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<RefundStatus, string> = {
 };
 
 const REASON_LABELS: Record<RefundReason, string> = {
-  'event-cancelled': 'Event Cancelled',
+  'event-cancelled': 'Karyakram Cancelled',
   'duplicate-payment': 'Duplicate Payment',
   'unable-to-attend': 'Unable to Attend',
   'payment-error': 'Payment Error',
@@ -304,8 +304,8 @@ export default function RefundReport() {
       ['Status', 'Requests', 'Amount'],
       ...statusData.map(r => [r.name, String(r.count), money(r.amount)]),
       [],
-      ['REFUNDS BY EVENT'],
-      ['Event', 'Requests', 'Amount'],
+      ['REFUNDS BY KARYAKRAM'],
+      ['Karyakram', 'Requests', 'Amount'],
       ...byEvent.map(r => [r.fullEvent, String(r.requests), money(r.amount)]),
       [],
       ['TOP REFUND REQUESTERS'],
@@ -335,7 +335,7 @@ export default function RefundReport() {
       <div className="max-w-[100%] mx-auto">
         <PageHeader
           title="Refund Report"
-          subtitle="Aggregated refund statistics across statuses, reasons, paid events, regions and requester summaries"
+          subtitle="Aggregated refund statistics across statuses, reasons, paid Karyakrams, regions and requester summaries"
           breadcrumbs={[
             { label: 'Reports' },
             { label: 'Refund Report', current: true },
@@ -400,8 +400,8 @@ export default function RefundReport() {
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{topRequester ? `${topRequester.requester} (${fmt(topRequester.requests)} requests)` : 'No requests'}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Highest Refund Event</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{highestRefundEvent ? `${highestRefundEvent.fullEvent} (${money(highestRefundEvent.amount)})` : 'No event data'}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Highest Refund Karyakram</p>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{highestRefundEvent ? `${highestRefundEvent.fullEvent} (${money(highestRefundEvent.amount)})` : 'No Karyakram data'}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Approval / Processed Rate</p>
@@ -450,7 +450,7 @@ export default function RefundReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Refunds by Paid Event" subtitle="Refund request count and amount by event">
+          <ChartCard title="Refunds by Paid Karyakram" subtitle="Refund request count and amount by Karyakram">
             <ResponsiveContainer width="100%" height={Math.max(260, byEvent.length * 42 + 60)}>
               <BarChart data={byEvent} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />

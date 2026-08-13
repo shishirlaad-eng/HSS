@@ -122,12 +122,12 @@ const initialTemplates: EmailTemplateItem[] = [
   },
   {
     id: 'TPL-003',
-    name: 'Event Invitation Notification',
-    subject: 'You have been invited to an upcoming event!',
-    category: 'Events',
+    name: 'Karyakram Invitation Notification',
+    subject: 'You have been invited to an upcoming Karyakram!',
+    category: 'Karyakrams',
     status: 'active',
     lastUpdated: '2024-03-10',
-    content: '<h2>New Event Invitation</h2>\n<p>Hi {user_name},</p>\n<p>You have been formally invited to participate in an exciting upcoming session. Check out the dashboard to view the complete schedule, confirm your RSVP, and review session resources.</p>\n<p>We look forward to seeing you there!</p>'
+    content: '<h2>New Karyakram Invitation</h2>\n<p>Hi {user_name},</p>\n<p>You have been formally invited to participate in an exciting upcoming session. Check out the dashboard to view the complete schedule, confirm your RSVP, and review session resources.</p>\n<p>We look forward to seeing you there!</p>'
   },
   {
     id: 'TPL-004',

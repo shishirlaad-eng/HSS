@@ -155,12 +155,14 @@ export function Sidebar({
     // 6. Reports
     "reports-group":                  "Reports",
     "report-members":                 "Members Report",
-    "report-events":                  "Events Report",
+    "report-events":                  "Karyakram Report",
     "report-donations":               "Nidhi Report",
     "report-attendance":              "Attendance Report",
     "report-refunds":                 "Refund Report",
     "report-karyakarta":              "Karyakarta Report",
     "report-ayu-shreni":              "Ayu Shreni Report",
+    "report-myhss-role":              "MyHSS Role Report",
+    "report-shakha-directory":        "Shakha Directory",
 
     // 7. HSS (UK) Setup
     "masters-group":                  "HSS (UK) Setup",

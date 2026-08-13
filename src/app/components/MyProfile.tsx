@@ -552,7 +552,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
           <div className="p-3 bg-[#fff0f0] dark:bg-[#fff0f0]/5 border border-[#ffaaab] dark:border-[#ffaaab]/30 rounded-lg">
             <ul className="text-xs text-[#9a0c17] dark:text-[#f87171] space-y-1 list-disc list-inside">
               <li>Your membership record will be permanently removed</li>
-              <li>You will lose access to all HSS events and Shakhas</li>
+              <li>You will lose access to all HSS Karyakrams and Shakhas</li>
               <li>This cannot be recovered by you or an administrator</li>
             </ul>
           </div>

@@ -71,8 +71,8 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
     showTownFilter: false,    showCentreFilter: false,
   },
 
-  // Event Admin scoped to Wembley (London & South East)
-  'Event Admin': {
+  // Karyakram Admin scoped to Wembley (London & South East)
+  'Karyakram Admin': {
     level: 'centre', country: 'HSS UK', region: 'London & South East',
     town: 'Wembley', centre: 'Wembley Activity Centre',
     showCountryFilter: false, showRegionFilter: false,

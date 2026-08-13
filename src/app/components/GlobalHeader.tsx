@@ -141,7 +141,7 @@ export function GlobalHeader({
   const getNavLabel = (id: string, fallback: string) => {
     let label = navLabelMap[id] ?? fallback;
     if (menuOrientation === "horizontal") {
-      if (id === "event-management-group") label = "Event Mgmt";
+      if (id === "event-management-group") label = "Karyakram Mgmt";
       if (id === "organisational-master") label = "Master Mgmt";
     }
     if (id === "attendance-group" && isMemberRole) label = "My Attendance";

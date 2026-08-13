@@ -574,7 +574,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       ? sortedEvents.filter(ev => selectedIds.has(ev.id))
       : sortedEvents;
     if (!data.length) { toast.error('No data to export.'); return; }
-    toast.success(`Exporting ${data.length} events as ${format === 'excel' ? 'Excel' : 'PDF'}...`);
+    toast.success(`Exporting ${data.length} Karyakrams as ${format === 'excel' ? 'Excel' : 'PDF'}...`);
   };
 
   // ── Determine row actions ──────────────────────────────────────────────────
@@ -611,7 +611,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         <ConfirmModal
           isOpen={modal.type === 'status' && !!modal.event}
           title="Confirm Status Change"
-          message={`Are you sure you want to ${modal.event?.status === 'active' ? 'deactivate' : 'activate'} this event?`}
+          message={`Are you sure you want to ${modal.event?.status === 'active' ? 'deactivate' : 'activate'} this Karyakram?`}
           confirmLabel={modal.event?.status === 'active' ? 'Deactivate' : 'Activate'}
           confirmVariant="primary"
           isLoading={modal.isLoading}
@@ -1105,7 +1105,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           menuItems={[
                             { icon: Eye,        label: 'View Details',                     onClick: () => openDetail(event)                                                   },
                             { icon: Edit,       label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning(actions.modifyTip) },
-                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
+                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed Karyakram.') },
                             { icon: XCircle,    label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
                             { icon: ShieldAlert,label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
                             { icon: Trash2,     label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
@@ -1162,7 +1162,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           menuItems={[
                             { icon: Eye,         label: 'View Details',                     onClick: () => openDetail(event)                                                   },
                             { icon: Edit,        label: actions.canModify ? 'Modify' : 'Modify (Blocked)', onClick: actions.canModify ? () => openEdit(event) : () => toast.warning(actions.modifyTip) },
-                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed event.') },
+                            { icon: event.status === 'active' ? Ban : Play, label: event.status === 'active' ? 'Deactivate' : 'Activate', onClick: actions.canActivate ? () => openModal('status', event) : () => toast.warning('Cannot change status of a cancelled or completed Karyakram.') },
                             { icon: XCircle,     label: 'Cancel Karyakram',                     onClick: actions.canCancel ? () => openModal('cancel', event) : () => toast.warning('Karyakram is already cancelled or completed.')    },
                             { icon: ShieldAlert, label: 'Override Approval',                onClick: () => openModal('override', event)                                        },
                             { icon: Trash2,      label: actions.canDelete ? 'Delete' : 'Delete (Blocked)', onClick: actions.canDelete ? () => openModal('delete', event) : () => toast.error(actions.deleteTip) },
@@ -1385,7 +1385,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       <ConfirmModal
         isOpen={modal.type === 'status' && pageState === 'list' && !!modal.event}
         title="Confirm Status Change"
-        message={`Are you sure you want to ${modal.event?.status === 'active' ? 'deactivate' : 'activate'} this event?`}
+        message={`Are you sure you want to ${modal.event?.status === 'active' ? 'deactivate' : 'activate'} this Karyakram?`}
         confirmLabel={modal.event?.status === 'active' ? 'Deactivate' : 'Activate'}
         confirmVariant="primary"
         isLoading={modal.isLoading}
@@ -1395,7 +1395,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
       <ConfirmModal
         isOpen={modal.type === 'cancel' && pageState === 'list' && !!modal.event}
         title="Confirm Cancellation"
-        message="Are you sure you want to cancel this event? This action cannot be undone."
+        message="Are you sure you want to cancel this Karyakram? This action cannot be undone."
         confirmLabel="Confirm Cancellation"
         confirmVariant="warning"
         isLoading={modal.isLoading}

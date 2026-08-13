@@ -346,8 +346,8 @@ export default function EventDetail({
   };
 
   // ── Cancel an existing (approved or pending) registration ────────────────────
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const handleCancelRegistration = (memberId: string) => {
-    if (!confirm('Cancel this registration?')) return;
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'cancelled' } : p));
     toast.success('Registration cancelled.');
   };
@@ -938,7 +938,7 @@ export default function EventDetail({
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     // Members only see Media once the Karyakram has happened — nothing to post beforehand.
     ...((!isMember || past) ? [{ id: 'media' as Tab, label: `Media (${mediaPosts.length})` }] : []),
-    { id: 'announcements', label: `Event Announcements (${eventAnnouncements.length})` },
+    { id: 'announcements', label: `Karyakram Announcements (${eventAnnouncements.length})` },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -958,7 +958,7 @@ export default function EventDetail({
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                <span className="text-sm text-neutral-500 font-mono">Event Id: {event.id}</span>
+                <span className="text-sm text-neutral-500 font-mono">Karyakram Id: {event.id}</span>
                 {isMember && (
                   <>
                     <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
@@ -1006,7 +1006,7 @@ export default function EventDetail({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <SecondaryButton icon={ArrowLeft} onClick={onBack}>Back to Events</SecondaryButton>
+              <SecondaryButton icon={ArrowLeft} onClick={onBack}>Back to Karyakrams</SecondaryButton>
 
               {/* Member self-registration */}
               {isMember && !isCancelledOrCompleted && (
@@ -1063,7 +1063,7 @@ export default function EventDetail({
               )}
               {!isMember && onClone && (
                 <button className={btnGhost} onClick={onClone} title="Create a new Karyakram pre-filled with this one's details">
-                  <Copy className="w-3.5 h-3.5" /> Clone Event
+                  <Copy className="w-3.5 h-3.5" /> Clone Karyakram
                 </button>
               )}
               {!isMember && !isCancelledOrCompleted && (
@@ -1084,7 +1084,7 @@ export default function EventDetail({
           {!isMember && past && !isCancelledOrCompleted && (
             <div className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-lg text-sm text-amber-700 dark:text-amber-400">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span>This event has already started. Modify and Delete actions are locked.</span>
+              <span>This Karyakram has already started. Modify and Delete actions are locked.</span>
             </div>
           )}
         </div>
@@ -1226,10 +1226,66 @@ export default function EventDetail({
                   {!isMember && (
                     <>
                       {/* Target Audience — admin only */}
-                      {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length) ? (
+                      {(event.targetRegions?.length || event.targetTowns?.length || event.targetCentres?.length || event.targetMemberIds?.length) && (
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                           <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                            Target Audience
+                            Target Scope
+                          </h4>
+                          <div className="px-6 py-4 space-y-4">
+                            {event.targetMemberIds && event.targetMemberIds.length > 0 ? (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Invited Members Only</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.targetMemberIds.map(id => (
+                                    <span key={id} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                      {mockMembers.find(m => m.id === id)?.name ?? id}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {event.targetRegions && event.targetRegions.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Vibhag</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {event.targetRegions.map(r => (
+                                        <span key={r} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">{r}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {event.targetTowns && event.targetTowns.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Nagar</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {event.targetTowns.map(t => (
+                                        <span key={t} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">{t}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {event.targetCentres && event.targetCentres.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Shakha</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {event.targetCentres.map(c => (
+                                        <span key={c} className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/40 text-primary-700 dark:text-primary-300 text-xs font-medium">{c}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Demographic Filters — admin only */}
+                      {(event.filterAgeCategories?.length || event.filterGenders?.length || event.filterJobTitles?.length || event.filterResponsibilityLevels?.length || event.filterResponsibilityTypes?.length || event.filterSpecificAge) ? (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                            Demographic Filters
                           </h4>
                           <div className="px-6 py-4 space-y-4">
                             {event.filterAgeCategories && event.filterAgeCategories.length > 0 && (
@@ -1244,6 +1300,16 @@ export default function EventDetail({
                                 </div>
                               </div>
                             )}
+                            {event.filterSpecificAge && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Specific Age</p>
+                                <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                  {event.filterSpecificAge.operator === 'between'
+                                    ? `Between ${event.filterSpecificAge.from ?? '—'} and ${event.filterSpecificAge.to ?? '—'}`
+                                    : `${event.filterSpecificAge.operator === '=' ? 'Equals' : event.filterSpecificAge.operator === '>' ? 'At least' : 'At most'} ${event.filterSpecificAge.value ?? '—'} as at ${event.filterSpecificAge.asAtDate ?? '—'}`}
+                                </p>
+                              </div>
+                            )}
                             {event.filterGenders && event.filterGenders.length > 0 && (
                               <div>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Gender</p>
@@ -1256,11 +1322,35 @@ export default function EventDetail({
                                 </div>
                               </div>
                             )}
+                            {event.filterResponsibilityLevels && event.filterResponsibilityLevels.length > 0 && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Responsibility Level</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.filterResponsibilityLevels.map(r => (
+                                    <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                      {r}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             {event.filterJobTitles && event.filterJobTitles.length > 0 && (
                               <div>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Role Type / Job Title</p>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Sangh Responsibility</p>
                                 <div className="flex flex-wrap gap-1.5">
                                   {event.filterJobTitles.map(r => (
+                                    <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                      {r}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {event.filterResponsibilityTypes && event.filterResponsibilityTypes.length > 0 && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Responsibility Type</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {event.filterResponsibilityTypes.map(r => (
                                     <span key={r} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
                                       {r}
                                     </span>
@@ -1273,8 +1363,87 @@ export default function EventDetail({
                       ) : (
                         <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg px-6 py-4">
                           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            <span className="font-medium text-neutral-700 dark:text-neutral-300">Target Audience:</span> All members (no filters applied)
+                            <span className="font-medium text-neutral-700 dark:text-neutral-300">Demographic Filters:</span> All members (no filters applied)
                           </p>
+                        </div>
+                      )}
+
+                      {/* Admin Options summary — admin only */}
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          Admin Options
+                        </h4>
+                        <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Non-Member Registration</p>
+                            <p className="text-sm text-neutral-900 dark:text-white">{event.guestRegistrationEnabled ? 'Enabled' : 'Disabled'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Shakha Karyawaha Approval</p>
+                            <p className="text-sm text-neutral-900 dark:text-white">{event.shakhaKaryawahaApprovalRequired ? 'Required' : 'Not required'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Self Check-In</p>
+                            <p className="text-sm text-neutral-900 dark:text-white">{event.selfCheckInEnabled ? 'Enabled' : 'Disabled'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Waiting List</p>
+                            <p className="text-sm text-neutral-900 dark:text-white">{event.waitlistEnabled ? 'Enabled' : 'Disabled'}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Karyakram Admins</p>
+                            {event.eventAdminIds && event.eventAdminIds.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {event.eventAdminIds.map(id => (
+                                  <span key={id} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                                    {mockMembers.find(m => m.id === id)?.name ?? id}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-neutral-400">None assigned</p>
+                            )}
+                          </div>
+                          {event.paymentType === 'paid' && (
+                            <div>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Coupon Code</p>
+                              <p className="text-sm font-mono text-neutral-900 dark:text-white">{event.couponCode ?? 'None assigned'}</p>
+                            </div>
+                          )}
+                          {(event.registrationStartDate || event.registrationEndDate) && (
+                            <div>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Registration Window</p>
+                              <p className="text-sm text-neutral-900 dark:text-white">
+                                {event.registrationStartDate ? formatDate(event.registrationStartDate) : 'Open'} – {event.registrationEndDate ? formatDate(event.registrationEndDate) : 'Karyakram start'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Confirmation Email preview — admin only */}
+                      {(event.confirmationSubject || event.confirmationMessage) && (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-primary-600" /> Confirmation Email
+                          </h4>
+                          <div className="px-6 py-4 space-y-3">
+                            {event.confirmationSubject && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Subject</p>
+                                <p className="text-sm font-medium text-neutral-900 dark:text-white">{event.confirmationSubject}</p>
+                              </div>
+                            )}
+                            {event.confirmationMessage && (
+                              <div>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Message</p>
+                                <div
+                                  className="text-sm text-neutral-700 dark:text-neutral-300 prose dark:prose-invert prose-sm max-w-none max-h-40 overflow-y-auto slim-scroll"
+                                  dangerouslySetInnerHTML={{ __html: event.confirmationMessage }}
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -1309,7 +1478,7 @@ export default function EventDetail({
                         <Ticket className="w-4 h-4 text-primary-600" /> Non-Member Registration
                       </h4>
                       <div className="px-6 py-4">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this event.</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Share this link to allow non-members to register for this Karyakram.</p>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-neutral-600 dark:text-neutral-400 break-all">
                             {`https://hssuk.org/events/${event.id}/register`}
@@ -1343,7 +1512,7 @@ export default function EventDetail({
                           className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
                         />
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to an event coordinator at the venue to check in.'}
+                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to a Karyakram coordinator at the venue to check in.'}
                         </p>
                       </div>
                     </div>
@@ -1442,7 +1611,7 @@ export default function EventDetail({
                           )}
                           {vp.rsvp !== 'denied' && vp.rsvp !== 'cancelled' && (
                             <button
-                              onClick={() => handleCancelRegistration(vp.memberId)}
+                              onClick={() => setCancelTarget(vp.memberId)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
                             >
                               <Ban className="w-3.5 h-3.5" /> Cancel Registration
@@ -1548,54 +1717,6 @@ export default function EventDetail({
                       </div>
                     </div>
 
-                    {vMember && (
-                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                          Emergency Contact
-                        </h4>
-                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Name</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactName ?? '—'}</p>
-                          </div>
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Relationship</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactRelationship ?? '—'}</p>
-                          </div>
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactPhone ?? '—'}</p>
-                          </div>
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Email</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactEmail ?? '—'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {vMember && (
-                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                          Medical Details
-                        </h4>
-                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Medical Conditions</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.medicalInfoDeclared ? (vMember.medicalInfoDetails ?? 'Yes') : 'None declared'}</p>
-                          </div>
-                          <div>
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Allergies</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.allergiesDeclared ? (vMember.allergies ?? 'Yes') : 'None declared'}{vMember.allergiesDeclared && vMember.epiPen === 'Yes' ? ' · carries EpiPen' : ''}</p>
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Dietary Requirements</label>
-                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.dietaryRequirements && vMember.dietaryRequirements.length > 0 ? vMember.dietaryRequirements.join(', ') : 'None'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {mockEventGuestProfiles[vp.memberId] && (() => {
                       const gp = mockEventGuestProfiles[vp.memberId];
                       return (
@@ -1603,7 +1724,7 @@ export default function EventDetail({
                         <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                           Non-Member Registration Details
                         </h4>
-                        <p className="px-6 pt-3 text-xs text-neutral-400">Captured from the public Event Registration page — this participant has no MyHSS account.</p>
+                        <p className="px-6 pt-3 text-xs text-neutral-400">Captured from the public Karyakram Registration page — this participant has no MyHSS account.</p>
                         <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                           <div>
                             <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Date of Birth</label>
@@ -1804,6 +1925,54 @@ export default function EventDetail({
                         </div>
                       </div>
                     </div>
+
+                    {vMember && (
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          Emergency Contact
+                        </h4>
+                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Name</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactName ?? '—'}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Relationship</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactRelationship ?? '—'}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactPhone ?? '—'}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Email</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.emergencyContactEmail ?? '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {vMember && (
+                      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                          Medical Details
+                        </h4>
+                        <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Medical Conditions</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.medicalInfoDeclared ? (vMember.medicalInfoDetails ?? 'Yes') : 'None declared'}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Allergies</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.allergiesDeclared ? (vMember.allergies ?? 'Yes') : 'None declared'}{vMember.allergiesDeclared && vMember.epiPen === 'Yes' ? ' · carries EpiPen' : ''}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Dietary Requirements</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">{vMember.dietaryRequirements && vMember.dietaryRequirements.length > 0 ? vMember.dietaryRequirements.join(', ') : 'None'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     </div>
                   </div>
                 );
@@ -2227,7 +2396,7 @@ export default function EventDetail({
                       <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No media posts yet</p>
                       <p className="text-xs text-neutral-400 mt-1">
                         {mediaFilter !== 'all'
-                          ? `No ${mediaFilter}s have been posted for this event.`
+                          ? `No ${mediaFilter}s have been posted for this Karyakram.`
                           : 'Upload the first image or video using the button above.'}
                       </p>
                     </div>
@@ -2240,7 +2409,7 @@ export default function EventDetail({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Event Announcements</h3>
+                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Karyakram Announcements</h3>
                       <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         {eventAnnouncements.length} {eventAnnouncements.length === 1 ? 'item' : 'items'}
                       </span>
@@ -3260,6 +3429,40 @@ export default function EventDetail({
       </div>
       );
     })()}
+
+    {cancelTarget && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setCancelTarget(null)}
+      >
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center mb-3">
+              <Ban className="w-7 h-7 text-error-600 dark:text-error-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Cancel Registration</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Cancel this registration? This can be undone by re-registering.</p>
+          </div>
+          <div className="px-6 pt-6 pb-6 flex items-center justify-end gap-2">
+            <button
+              onClick={() => setCancelTarget(null)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              Keep Registration
+            </button>
+            <button
+              onClick={() => { handleCancelRegistration(cancelTarget); setCancelTarget(null); }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-error-600 hover:bg-error-700 text-white transition-colors"
+            >
+              <Ban className="w-3.5 h-3.5" /> Cancel Registration
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     </>
   );

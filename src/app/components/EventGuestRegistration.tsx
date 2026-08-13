@@ -344,7 +344,7 @@ export default function EventGuestRegistration({ onBack }: EventGuestRegistratio
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</h1>
               <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-              <span className="text-sm text-neutral-500 font-mono">Event Id: {event.id}</span>
+              <span className="text-sm text-neutral-500 font-mono">Karyakram Id: {event.id}</span>
             </div>
             <div className="flex flex-col gap-1 text-sm text-neutral-700 dark:text-neutral-300">
               <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 flex-shrink-0" /><span>{formatDate(event.startDate)} · {formatDateTime(event.startDate).split(' ')[1]} – {formatDateTime(event.endDate).split(' ')[1]}</span></div>
@@ -376,7 +376,7 @@ export default function EventGuestRegistration({ onBack }: EventGuestRegistratio
         <p className="text-sm text-neutral-500 dark:text-neutral-400">Registering for <strong className="text-neutral-900 dark:text-white">{event.name}</strong></p>
 
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-          You're registering as a non member — no MyHSS account is needed. Complete every section below and submit; the Event Admin will review your registration.
+          You're registering as a non member — no MyHSS account is needed. Complete every section below and submit; the Karyakram Admin will review your registration.
         </div>
 
         {/* Personal Details */}
@@ -592,7 +592,7 @@ export default function EventGuestRegistration({ onBack }: EventGuestRegistratio
         <p className="text-sm text-neutral-500 dark:text-neutral-400">Registering for <strong className="text-neutral-900 dark:text-white">{event.name}</strong></p>
 
         {/* Event Registration */}
-        <Card title="Event Registration" icon={ListChecks}>
+        <Card title="Karyakram Registration" icon={ListChecks}>
           <div className="space-y-5">
             {hasTicketTypes && (
               <div ref={el => { fieldRefs.current.ticketTypeId = el; }}>

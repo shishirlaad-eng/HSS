@@ -39,7 +39,7 @@ const TABS: { id: CreateTab; label: string }[] = [
   { id: 'payment',      label: 'Payment Type'         },
   { id: 'questions',    label: 'Additional Questions' },
   { id: 'terms',        label: 'Terms & Conditions'   },
-  { id: 'confirmation', label: 'Event Confirmation'   },
+  { id: 'confirmation', label: 'Karyakram Confirmation'   },
 ];
 
 const EMPTY_FORM = {
@@ -259,7 +259,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
     }
     if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
       const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
-      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
+      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Karyakrams > Coupons.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -493,7 +493,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     </div>
 
                     <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
-                      <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Event Admins</p>
+                      <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Karyakram Admins</p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
                         Assign members who can manage this Karyakram — approve registrations, check-in attendees, edit details. Not limited to your own Shakha.
                       </p>
@@ -867,7 +867,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                       />
                       <ErrorText>{touched && errors.couponCode}</ErrorText>
                       <p className="text-xs text-neutral-400 mt-1">
-                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
+                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Karyakrams {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
                       </p>
                     </FormField>
                   )}
@@ -981,7 +981,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
               </div>
 
               <div className="xl:col-span-1">
-                <Card title="Event Confirmation">
+                <Card title="Karyakram Confirmation">
                   <FormField>
                     <FormLabel>Description</FormLabel>
                     <RichTextEditor

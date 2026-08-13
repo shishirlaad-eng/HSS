@@ -517,10 +517,10 @@ export function EventImageField({
 
   return (
     <FormField className="md:col-span-2">
-      <FormLabel>Event Banner</FormLabel>
+      <FormLabel>Karyakram Banner</FormLabel>
       <div className="flex items-center gap-3">
         {value ? (
-          <img src={value} alt="Event" className="w-24 h-24 rounded-lg object-cover border border-neutral-200 dark:border-neutral-800" />
+          <img src={value} alt="Karyakram" className="w-24 h-24 rounded-lg object-cover border border-neutral-200 dark:border-neutral-800" />
         ) : (
           <div className="w-24 h-24 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 flex items-center justify-center text-neutral-400">
             <ImageIcon className="w-6 h-6" />

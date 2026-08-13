@@ -88,7 +88,7 @@ type PageState = 'list' | 'detail' | 'edit';
 // All admin roles with members listing access default to table view
 const TABLE_VIEW_DEFAULT_ROLES = [
   'Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin',
-  'Shakha Admin', 'Event Admin', 'Reporting User', 'Shakha Operations',
+  'Shakha Admin', 'Karyakram Admin', 'Reporting User', 'Shakha Operations',
 ];
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
 

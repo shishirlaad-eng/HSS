@@ -124,7 +124,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                       : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
-                  Events Participation
+                  Karyakram Participation
                 </button>
               </div>
             </div>
@@ -204,13 +204,13 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                   {/* Created Events Table */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                     <h4 style={{ fontSize: '14px', fontWeight: '500' }} className="text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      Created Events
+                      Created Karyakrams
                     </h4>
                     <div className="overflow-x-auto slim-scroll">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event Name</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram Name</th>
                             <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
                             <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Expiry Date</th>
                           </tr>
@@ -234,7 +234,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={3} className="px-6 py-10 text-center text-xs text-neutral-500">No events created</td>
+                              <td colSpan={3} className="px-6 py-10 text-center text-xs text-neutral-500">No Karyakrams created</td>
                             </tr>
                           )}
                         </tbody>
@@ -245,13 +245,13 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                   {/* Joined Events Table */}
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                     <h4 style={{ fontSize: '14px', fontWeight: '500' }} className="text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                      Joined Events
+                      Joined Karyakrams
                     </h4>
                     <div className="overflow-x-auto slim-scroll">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-neutral-50/50 dark:bg-neutral-900/50">
-                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Event Name</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Karyakram Name</th>
                             <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Host</th>
                             <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">RSVP</th>
                             <th className="px-6 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</th>
@@ -285,7 +285,7 @@ export default function UserDetail({ user, onBack, onEdit, onToggleStatus }: Use
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={4} className="px-6 py-10 text-center text-xs text-neutral-500">No events joined</td>
+                              <td colSpan={4} className="px-6 py-10 text-center text-xs text-neutral-500">No Karyakrams joined</td>
                             </tr>
                           )}
                         </tbody>

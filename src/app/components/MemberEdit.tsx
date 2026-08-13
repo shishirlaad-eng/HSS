@@ -591,7 +591,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       <div className="mb-5 flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
         <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed italic">
-          Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to events, Shakhas, and the member portal.
+          Updating a member's profile will sync changes across all HSS platforms. Changes to membership status take effect immediately and may affect access to Karyakrams, Shakhas, and the member portal.
         </p>
       </div>
 
@@ -943,7 +943,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <EditSection title="Activity">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Events Attended</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Karyakrams Attended</p>
                   <p className="text-2xl font-semibold text-neutral-900 dark:text-white mt-1">{member.eventsAttended}</p>
                 </div>
                 <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 p-4">
@@ -952,7 +952,7 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                 </div>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
-                Activity records are read-only and managed through the Events and Attendance modules.
+                Activity records are read-only and managed through the Karyakrams and Attendance modules.
               </p>
             </EditSection>
           )}

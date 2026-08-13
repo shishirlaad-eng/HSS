@@ -221,7 +221,7 @@ export const getNavigationData = (
         },
         {
           id: "report-events",
-          label: "Events Report",
+          label: "Karyakram Report",
           onClick: () => onNavigate("report-events"),
           active: currentPage === "report-events",
         },
@@ -254,6 +254,18 @@ export const getNavigationData = (
           label: "Ayu Shreni Report",
           onClick: () => onNavigate("report-ayu-shreni"),
           active: currentPage === "report-ayu-shreni",
+        },
+        {
+          id: "report-myhss-role",
+          label: "MyHSS Role Report",
+          onClick: () => onNavigate("report-myhss-role"),
+          active: currentPage === "report-myhss-role",
+        },
+        {
+          id: "report-shakha-directory",
+          label: "Shakha Directory",
+          onClick: () => onNavigate("report-shakha-directory"),
+          active: currentPage === "report-shakha-directory",
         },
       ],
     },

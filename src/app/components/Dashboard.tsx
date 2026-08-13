@@ -709,7 +709,7 @@ function MemberDashboard({
             </div>
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800 flex-1 overflow-y-auto">
               {upcomingEvents.length === 0 ? (
-                <div className="px-5 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">No upcoming events scheduled.</div>
+                <div className="px-5 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">No upcoming Karyakrams scheduled.</div>
               ) : upcomingEvents.slice(0, 3).map(event => {
                 const cfg = EVENT_STATUS_CFG[event.status] ?? EVENT_STATUS_CFG.draft;
                 return (

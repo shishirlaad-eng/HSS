@@ -132,15 +132,15 @@ export interface Event {
 }
 
 // ─── Standard Terms & Conditions shown on all events ─────────────────────────
-export const EVENT_TERMS_AND_CONDITIONS = `By registering for this event, you agree to the following terms:
+export const EVENT_TERMS_AND_CONDITIONS = `By registering for this Karyakram, you agree to the following terms:
 1. Registrations are confirmed on a first-come, first-served basis, subject to capacity.
-2. Cancellations must be made at least 48 hours before the event start time for any applicable refund.
-3. HSS (UK) reserves the right to amend, postpone, or cancel the event due to unforeseen circumstances.
+2. Cancellations must be made at least 48 hours before the Karyakram start time for any applicable refund.
+3. HSS (UK) reserves the right to amend, postpone, or cancel the Karyakram due to unforeseen circumstances.
 4. Participants are responsible for their own conduct and must follow all on-site safety instructions.
-5. Photographs and videos may be taken during the event for promotional purposes.
+5. Photographs and videos may be taken during the Karyakram for promotional purposes.
 6. Personal data submitted during registration will be handled in accordance with the HSS (UK) Privacy Policy.`;
 
-// ─── Variables available in the Event Confirmation email body ───────────────
+// ─── Variables available in the Karyakram Confirmation email body ───────────
 export const EVENT_CONFIRMATION_VARIABLES: { token: string; description: string }[] = [
   { token: '{{member_name}}',      description: 'Full name of the registering member' },
   { token: '{{event_name}}',       description: 'Karyakram title' },
@@ -199,7 +199,7 @@ export const mockMediaPosts: Record<string, EventMedia[]> = {
     { id: 'MED-024', memberId: 'MBR-005', memberName: 'Vikram Nair',    type: 'video', caption: 'Long jump competition',                     postedAt: '2026-03-01T12:15:00Z' },
     { id: 'MED-025', memberId: 'MBR-001', memberName: 'Arjun Sharma',   type: 'image', caption: 'Medal ceremony',                           postedAt: '2026-03-01T15:00:00Z', imageUrl: 'https://hssuk.org/wp-content/uploads/2025/10/khel-comp-6.png' },
     { id: 'MED-026', memberId: 'MBR-002', memberName: 'Priya Patel',    type: 'image', caption: 'Relay race action',                        postedAt: '2026-03-01T15:45:00Z', imageUrl: 'https://hssuk.org/wp-content/uploads/2020/08/widgets_gallery_1-500x500.jpg' },
-    { id: 'MED-027', memberId: 'MBR-003', memberName: 'Rahul Mehta',    type: 'video', caption: 'Event highlights reel',                    postedAt: '2026-03-01T16:30:00Z' },
+    { id: 'MED-027', memberId: 'MBR-003', memberName: 'Rahul Mehta',    type: 'video', caption: 'Karyakram highlights reel',                    postedAt: '2026-03-01T16:30:00Z' },
     { id: 'MED-028', memberId: 'MBR-007', memberName: 'Rohan Verma',    type: 'image', caption: 'Winners on the podium',                    postedAt: '2026-03-01T16:50:00Z', imageUrl: 'https://hssuk.org/wp-content/uploads/2020/08/widgets_gallery_2-500x500.jpg' },
     { id: 'MED-029', memberId: 'MBR-008', memberName: 'Kavita Nair',    type: 'image', caption: 'Group celebration',                        postedAt: '2026-03-01T17:00:00Z', imageUrl: 'https://hssuk.org/wp-content/uploads/2020/08/widgets_gallery_3-500x500.jpg' },
   ],
@@ -499,7 +499,7 @@ export const mockEvents: Event[] = [
     customQuestions: [
       { id: 'CQ-1', label: 'Dietary requirements', type: 'text', required: false },
       { id: 'CQ-2', label: 'T-shirt size', type: 'dropdown', options: ['S', 'M', 'L', 'XL'], required: true },
-      { id: 'CQ-3', label: 'I agree to be photographed during the event', type: 'checkbox', required: true },
+      { id: 'CQ-3', label: 'I agree to be photographed during the Karyakram', type: 'checkbox', required: true },
     ],
     metrics: {
       going: 156,
@@ -1049,7 +1049,7 @@ export const mockEvents: Event[] = [
       { id: 'CQ-118-1', label: 'Dietary requirements', type: 'dropdown', options: ['None', 'Vegetarian', 'Vegan', 'Halal only', 'Other'], required: true },
       { id: 'CQ-118-2', label: 'How many guests are you bringing?', type: 'dropdown', options: ['0', '1', '2', '3', '4+'], required: true },
       { id: 'CQ-118-3', label: 'Any allergies we should know about?', description: 'List any food allergies for you or your guests', type: 'text', required: false },
-      { id: 'CQ-118-4', label: 'Which team event would you prefer?', type: 'radio', options: ['Morning session (10:00 AM)', 'Afternoon session (1:00 PM)'], required: true },
+      { id: 'CQ-118-4', label: 'Which team Karyakram would you prefer?', type: 'radio', options: ['Morning session (10:00 AM)', 'Afternoon session (1:00 PM)'], required: true },
       { id: 'CQ-118-5', label: 'Which of the following apply to you?', type: 'checkbox', options: ['First-time attendee', 'Bringing children', 'Need wheelchair access', 'Interested in volunteering'], required: false },
       { id: 'CQ-118-6', label: 'Preferred arrival date to confirm attendance', type: 'date', required: false },
     ],

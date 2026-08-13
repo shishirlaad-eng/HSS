@@ -454,7 +454,7 @@ interface ChangeRow {
 interface ActivityRow {
   id: string;
   date: string;
-  type: 'Event' | 'Shakha Session';
+  type: 'Karyakram' | 'Shakha Session';
   name: string;
   centre: string;
 }
@@ -475,7 +475,7 @@ function buildMockActivity(member: { id: string; registrationDate: string; activ
     rows.push({
       id: `act-${member.id}-${i}`,
       date: d.toISOString(),
-      type: isEvent ? 'Event' : 'Shakha Session',
+      type: isEvent ? 'Karyakram' : 'Shakha Session',
       name: isEvent ? ACTIVITY_EVENT_NAMES[(seed + i) % ACTIVITY_EVENT_NAMES.length] : 'Weekly Shakha',
       centre: i % 4 === 0 ? ACTIVITY_CENTRES[(seed + i) % ACTIVITY_CENTRES.length] : member.activityCentre,
     });
@@ -1622,7 +1622,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {activeTab === 'activity' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <StatMini label="Events Attended"  value={member.eventsAttended}         icon={CalendarDays} />
+                  <StatMini label="Karyakrams Attended"  value={member.eventsAttended}         icon={CalendarDays} />
                   <StatMini label="Shakhas Attended" value={member.shakhaSessionsAttended} icon={UserCheck} />
                 </div>
 
@@ -1679,7 +1679,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         <tr className="border-b border-neutral-200 dark:border-neutral-800">
                           <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Date</th>
                           <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Type</th>
-                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Event / Shakha</th>
+                          <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Karyakram / Shakha</th>
                           <th className="px-4 py-2.5 text-left text-[14px] font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900">Centre</th>
                         </tr>
                       </thead>

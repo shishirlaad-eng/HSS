@@ -350,18 +350,18 @@ export default function EventsReport() {
       .filter(item => item.responses > 0 || item.media > 0);
   }, [filtered]);
 
-  const mostActiveRegion = regionActivityRanking[0]?.events ? regionActivityRanking[0].fullRegion : 'No event activity';
+  const mostActiveRegion = regionActivityRanking[0]?.events ? regionActivityRanking[0].fullRegion : 'No Karyakram activity';
   const strongestFillRegion = regionCapacityRanking[0]?.fullRegion ?? 'No capacity data';
   const averageResponses = totalEvents > 0 ? Math.round(totalResponses / totalEvents) : 0;
 
   const handleExport = () => {
     const rows: string[][] = [
-      ['Events Report - HSS'],
+      ['Karyakram Report - HSS'],
       [`Generated: ${formatDate(new Date())}`],
       [],
       ['SUMMARY KPIs'],
-      ['Total Events', String(totalEvents)],
-      ['Published / Active Events', String(activePipeline)],
+      ['Total Karyakrams', String(totalEvents)],
+      ['Published / Active Karyakrams', String(activePipeline)],
       ['Total Responses', String(totalResponses)],
       ['Going Responses', String(totalGoing)],
       ['Average Fill Rate', pct(fillRate)],
@@ -369,7 +369,7 @@ export default function EventsReport() {
       ['Potential Paid Revenue', String(totalRevenuePotential)],
       [],
       ['STATUS BREAKDOWN'],
-      ['Status', 'Events'],
+      ['Status', 'Karyakrams'],
       ...statusData.map(r => [r.name, String(r.value)]),
       [],
       ['RSVP MIX'],
@@ -377,15 +377,15 @@ export default function EventsReport() {
       ...rsvpData.map(r => [r.name, String(r.value)]),
       [],
       ['PAYMENT MIX'],
-      ['Payment Type', 'Events'],
+      ['Payment Type', 'Karyakrams'],
       ...paymentData.map(r => [r.name, String(r.value)]),
       [],
-      ['EVENTS BY VIBHAG'],
-      ['Vibhag', 'Events', 'Responses', 'Going', 'Capacity', 'Fill Rate', 'Media Posts'],
+      ['KARYAKRAMS BY VIBHAG'],
+      ['Vibhag', 'Karyakrams', 'Responses', 'Going', 'Capacity', 'Fill Rate', 'Media Posts'],
       ...byRegion.map(r => [r.fullRegion, String(r.events), String(r.responses), String(r.going), String(r.capacity), pct(r.fillRate), String(r.media)]),
       [],
       ['MONTHLY TREND'],
-      ['Month', 'Events', 'Responses'],
+      ['Month', 'Karyakrams', 'Responses'],
       ...monthlyTrend.map(r => [r.month, String(r.events), String(r.responses)]),
     ];
     const csv = rows.map(r => r.map(c => `"${c.replaceAll('"', '""')}"`).join(',')).join('\n');
@@ -393,7 +393,7 @@ export default function EventsReport() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `HSS_Events_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `HSS_Karyakram_Report_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -402,11 +402,11 @@ export default function EventsReport() {
     <div className="p-6 bg-transparent dark:bg-neutral-950 min-h-screen">
       <div className="max-w-[100%] mx-auto">
         <PageHeader
-          title="Events Report"
-          subtitle="Aggregated event performance across RSVP response, capacity, payment mix and regional engagement"
+          title="Karyakram Report"
+          subtitle="Aggregated Karyakram performance across RSVP response, capacity, payment mix and regional engagement"
           breadcrumbs={[
             { label: 'Reports' },
-            { label: 'Events Report', current: true },
+            { label: 'Karyakram Report', current: true },
           ]}
         >
           <PrimaryButton icon={Download} onClick={handleExport}>
@@ -507,12 +507,12 @@ export default function EventsReport() {
           )}
 
           <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
-            Showing <strong className="text-neutral-900 dark:text-white">{fmt(totalEvents)}</strong> event{totalEvents !== 1 ? 's' : ''}
+            Showing <strong className="text-neutral-900 dark:text-white">{fmt(totalEvents)}</strong> Karyakram{totalEvents !== 1 ? 's' : ''}
           </span>
         </div>
 
         <div className="mt-6 grid grid-cols-2 xl:grid-cols-5 gap-4">
-          <KpiCard label="Total Events" value={totalEvents} icon={CalendarCheck2} color="bg-primary-500" />
+          <KpiCard label="Total Karyakrams" value={totalEvents} icon={CalendarCheck2} color="bg-primary-500" />
           <KpiCard label="Published / Active" value={activePipeline} icon={Activity} color="bg-success-500" />
           <KpiCard label="Total Responses" value={totalResponses} icon={Users} color="bg-blue-500" sub={`${pct(responseRate)} confirmed going`} />
           <KpiCard label="Average Fill Rate" value={pct(fillRate)} icon={TrendingUp} color="bg-violet-500" sub={totalCapacity > 0 ? `${fmt(totalGoingWithCapacity)} of ${fmt(totalCapacity)} capacity` : 'Capacity not set'} />
@@ -529,7 +529,7 @@ export default function EventsReport() {
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{strongestFillRegion}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Avg Responses / Event</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Avg Responses / Karyakram</p>
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{fmt(averageResponses)}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
@@ -539,7 +539,7 @@ export default function EventsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ChartCard title="Event Status Breakdown" subtitle="Event lifecycle mix for the selected scope">
+          <ChartCard title="Karyakram Status Breakdown" subtitle="Karyakram lifecycle mix for the selected scope">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
@@ -563,7 +563,7 @@ export default function EventsReport() {
             </div>
           </ChartCard>
 
-          <ChartCard title="RSVP Response Mix" subtitle="Aggregate response intent across filtered events">
+          <ChartCard title="RSVP Response Mix" subtitle="Aggregate response intent across filtered Karyakrams">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
@@ -592,7 +592,7 @@ export default function EventsReport() {
             </div>
           </ChartCard>
 
-          <ChartCard title="Payment Mix" subtitle="Free and paid events by count">
+          <ChartCard title="Payment Mix" subtitle="Free and paid Karyakrams by count">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
@@ -627,7 +627,7 @@ export default function EventsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Events by Region" subtitle="All configured regions, including regions with no matching events">
+          <ChartCard title="Karyakrams by Region" subtitle="All configured regions, including regions with no matching Karyakrams">
             <ResponsiveContainer width="100%" height={Math.max(240, byRegion.length * 42 + 60)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
@@ -635,7 +635,7 @@ export default function EventsReport() {
                 <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="events" name="Events" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
+                <Bar dataKey="events" name="Karyakrams" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
                 <Bar dataKey="responses" name="Responses" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
             </ResponsiveContainer>
@@ -657,7 +657,7 @@ export default function EventsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Events Over Time" subtitle="Monthly event count and response volume">
+          <ChartCard title="Karyakrams Over Time" subtitle="Monthly Karyakram count and response volume">
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={monthlyTrend} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -666,13 +666,13 @@ export default function EventsReport() {
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line yAxisId="left" type="monotone" dataKey="events" name="Events" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
+                <Line yAxisId="left" type="monotone" dataKey="events" name="Karyakrams" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
                 <Line yAxisId="right" type="monotone" dataKey="responses" name="Responses" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Engagement by Event Status" subtitle="Responses and media posts grouped by lifecycle status">
+          <ChartCard title="Engagement by Karyakram Status" subtitle="Responses and media posts grouped by lifecycle status">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={engagementByStatus} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />

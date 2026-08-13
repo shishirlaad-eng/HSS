@@ -53,7 +53,7 @@ const TABS: { id: EditTab; label: string }[] = [
   { id: 'payment',      label: 'Payment Type'         },
   { id: 'questions',    label: 'Additional Questions' },
   { id: 'terms',        label: 'Terms & Conditions'   },
-  { id: 'confirmation', label: 'Event Confirmation'   },
+  { id: 'confirmation', label: 'Karyakram Confirmation'   },
 ];
 
 function findCountryForRegion(region: string): string {
@@ -214,7 +214,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     }
     if (formData.paymentType === 'paid' && formData.couponCode.trim()) {
       const valid = mockCoupons.some(c => c.name.toLowerCase() === formData.couponCode.trim().toLowerCase() && c.status === 'active');
-      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Events > Coupons.';
+      if (!valid) errs.couponCode = 'No active coupon with this code exists. Check HSS UK Setup > Lists and Options > Karyakrams > Coupons.';
     }
     if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
       const start = new Date(`${formData.startDate}T${formData.startTime}`);
@@ -228,7 +228,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const handleSave = async () => {
     setTouched(true);
     if (blocked) {
-      toast.error('This event can no longer be edited after it starts.');
+      toast.error('This Karyakram can no longer be edited after it starts.');
       return;
     }
     const errs = validate();
@@ -298,11 +298,11 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
       if (onSave) {
         onSave(updated);
       } else {
-        toast.success('Event updated successfully.');
+        toast.success('Karyakram updated successfully.');
         onBack();
       }
       if (newlyAssignedAdmins.length > 0) {
-        toast.success(`Notified ${newlyAssignedAdmins.length} new Event Admin${newlyAssignedAdmins.length !== 1 ? 's' : ''}: ${newlyAssignedAdmins.map(m => m.name).join(', ')}.`);
+        toast.success(`Notified ${newlyAssignedAdmins.length} new Karyakram Admin${newlyAssignedAdmins.length !== 1 ? 's' : ''}: ${newlyAssignedAdmins.map(m => m.name).join(', ')}.`);
       }
     } catch {
       toast.error('Unable to save. Please try again.');
@@ -338,7 +338,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
       </PageHeader>
 
       <p className="text-sm text-neutral-500 dark:text-neutral-400 font-mono mb-4">
-        Event Id: {event.id} · Status: <span className="capitalize">{event.status}</span> · Last updated: {formatDate(event.lastUpdated)}
+        Karyakram Id: {event.id} · Status: <span className="capitalize">{event.status}</span> · Last updated: {formatDate(event.lastUpdated)}
       </p>
 
       {/* Cutoff warning */}
@@ -506,7 +506,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                     </div>
 
                     <div className="pt-5 border-t border-neutral-100 dark:border-neutral-800">
-                      <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Event Admins</p>
+                      <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Karyakram Admins</p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
                         Assign members who can manage this Karyakram — approve registrations, check-in attendees, edit details. Not limited to your own Shakha.
                       </p>
@@ -927,7 +927,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       />
                       <ErrorText>{touched && errors.couponCode}</ErrorText>
                       <p className="text-xs text-neutral-400 mt-1">
-                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Events {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
+                        Optional. Must match an active code from HSS UK Setup {'>'} Lists and Options {'>'} Karyakrams {'>'} Coupons. Share it manually with whoever should register free — it overrides the price to £0 for them.
                       </p>
                     </FormField>
                   )}
@@ -1048,7 +1048,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
               </div>
 
               <div className="xl:col-span-1">
-                <Card title="Event Confirmation">
+                <Card title="Karyakram Confirmation">
                   <FormField>
                     <FormLabel>Description</FormLabel>
                     <RichTextEditor

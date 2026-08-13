@@ -410,7 +410,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Create',
     recordName: 'HSS Annual General Meeting 2026',
     recordId: 'EVT-006',
-    description: 'Created new event: HSS Annual General Meeting 2026 at Harrow Activity Centre on 24 May 2026.',
+    description: 'Created new Karyakram: HSS Annual General Meeting 2026 at Harrow Activity Centre on 24 May 2026.',
     timestamp: '2026-05-29T10:30:00Z',
     ipAddress: '81.107.44.78',
     details: {
@@ -517,7 +517,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Update',
     recordName: 'Youth Leadership Summit',
     recordId: 'EVT-001',
-    description: 'Event updated: Youth Leadership Summit — venue changed from Birmingham Central to Wembley Activity Centre.',
+    description: 'Karyakram updated: Youth Leadership Summit — venue changed from Birmingham Central to Wembley Activity Centre.',
     timestamp: '2026-05-27T09:05:00Z',
     ipAddress: '86.156.78.90',
     details: {
@@ -592,7 +592,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Delete',
     recordName: 'Birmingham Fundraiser — May 2026',
     recordId: 'EVT-004',
-    description: 'Event deleted: Birmingham Fundraiser — May 2026. Reason: Cancelled due to venue unavailability.',
+    description: 'Karyakram deleted: Birmingham Fundraiser — May 2026. Reason: Cancelled due to venue unavailability.',
     timestamp: '2026-05-26T13:35:00Z',
     ipAddress: '86.143.56.22',
     details: {
@@ -702,7 +702,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Status Change',
     recordName: 'Cultural Evening — Edinburgh',
     recordId: 'EVT-005',
-    description: 'Event status changed from Draft to Published for Cultural Evening — Edinburgh (11 Jun 2026).',
+    description: 'Karyakram status changed from Draft to Published for Cultural Evening — Edinburgh (11 Jun 2026).',
     timestamp: '2026-05-23T09:02:00Z',
     ipAddress: '86.143.56.22',
     details: {
@@ -779,7 +779,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Delete',
     recordName: 'Diwali Celebration 2024',
     recordId: 'ANN-003',
-    description: 'Outdated announcement removed: Diwali Celebration 2024 (posted Oct 2024, past event).',
+    description: 'Outdated announcement removed: Diwali Celebration 2024 (posted Oct 2024, past Karyakram).',
     timestamp: '2026-05-21T11:38:00Z',
     ipAddress: '81.109.23.55',
     details: {
@@ -810,7 +810,7 @@ export const mockAuditLogs: AuditLog[] = [
     actionType: 'Create',
     recordName: 'Fundraising Gala — Dublin',
     recordId: 'EVT-003',
-    description: 'Created new event: Fundraising Gala at Dublin Activity Centre, 23 May 2026. Ticket price set to £75.',
+    description: 'Created new Karyakram: Fundraising Gala at Dublin Activity Centre, 23 May 2026. Ticket price set to £75.',
     timestamp: '2026-05-19T09:35:00Z',
     ipAddress: '81.107.44.78',
     details: {
@@ -957,7 +957,7 @@ export const mockAPILogs: APILog[] = [
   },
   {
     id: 'API-004',
-    apiName: 'Get Upcoming Events',
+    apiName: 'Get Upcoming Karyakrams',
     endpoint: '/api/v1/events',
     method: 'GET',
     status: 200,
@@ -1061,7 +1061,7 @@ export const mockAPILogs: APILog[] = [
   },
   {
     id: 'API-012',
-    apiName: 'Get Event Detail',
+    apiName: 'Get Karyakram Detail',
     endpoint: '/api/v1/events/EVT-099',
     method: 'GET',
     status: 404,
@@ -1069,7 +1069,7 @@ export const mockAPILogs: APILog[] = [
     responseTime: '23',
     user: 'Deepak Sharma',
     requestPayload: '{}',
-    responsePayload: '{"error":"Not Found","message":"Event EVT-099 does not exist or has been removed.","code":"RESOURCE_NOT_FOUND"}',
+    responsePayload: '{"error":"Not Found","message":"Karyakram EVT-099 does not exist or has been removed.","code":"RESOURCE_NOT_FOUND"}',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGci...', 'X-App-Version': '2.4.1' },
   },
   {
@@ -1165,7 +1165,7 @@ export const mockAPILogs: APILog[] = [
   },
   {
     id: 'API-020',
-    apiName: 'Get Upcoming Events',
+    apiName: 'Get Upcoming Karyakrams',
     endpoint: '/api/v1/events',
     method: 'GET',
     status: 200,
@@ -1218,12 +1218,12 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-004',
     recipientName: 'Nisha Kapoor',
     recipientEmail: 'nisha.kapoor@gmail.com',
-    templateName: 'Event Invitation',
+    templateName: 'Karyakram Invitation',
     subject: 'You\'re invited — HSS Annual General Meeting 2026',
     sentAt: '2026-05-29T11:05:00Z',
     status: 'Delivered',
-    triggeredBy: 'System — Event Created (EVT-006)',
-    contentPreview: 'Dear Nisha, you are invited to attend the HSS Annual General Meeting 2026 at Harrow Activity Centre on 24 May 2026, 15:30–21:30. This is a free event. Please register your attendance...',
+    triggeredBy: 'System — Karyakram Created (EVT-006)',
+    contentPreview: 'Dear Nisha, you are invited to attend the HSS Annual General Meeting 2026 at Harrow Activity Centre on 24 May 2026, 15:30–21:30. This is a free Karyakram. Please register your attendance...',
   },
   {
     id: 'EML-005',
@@ -1308,11 +1308,11 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-012',
     recipientName: 'Suresh Pillai',
     recipientEmail: 'suresh.pillai@hotmail.com',
-    templateName: 'Event Invitation',
+    templateName: 'Karyakram Invitation',
     subject: 'You\'re invited — Cultural Evening, Edinburgh, 11 Jun 2026',
     sentAt: '2026-05-23T09:05:00Z',
     status: 'Delivered',
-    triggeredBy: 'System — Event Published (EVT-005)',
+    triggeredBy: 'System — Karyakram Published (EVT-005)',
     contentPreview: 'Dear Suresh, you are invited to the HSS Cultural Evening at Edinburgh Activity Centre on 11 June 2026, 18:00–21:00. Enjoy an evening of music, dance, and cultural performances. Admission is free...',
   },
   {

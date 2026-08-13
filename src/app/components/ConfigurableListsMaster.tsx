@@ -87,7 +87,7 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
     ],
   },
   {
-    label: 'Events',
+    label: 'Karyakrams',
     lists: [
       { key: 'coupons', label: 'Coupons', idPrefix: 'CPN' },
     ],

@@ -273,13 +273,13 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
                   <div
-                    className="inline-flex items-center justify-center rounded-xl px-5 py-3 mb-4"
+                    className="inline-flex items-center justify-center rounded-xl px-6 py-4 mb-4"
                     style={{ backgroundColor: "#172E4D" }}
                   >
                     <img
                       src={myHssLogo}
                       alt="My HSS"
-                      className="h-10 w-auto object-contain"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
                   <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Namaste</h1>
@@ -372,7 +372,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors disabled:opacity-50"
                   >
                     <CalendarCheck className="w-4 h-4" />
-                    Event Registration
+                    Karyakram Registration
                   </button>
                 </div>
               </form>
