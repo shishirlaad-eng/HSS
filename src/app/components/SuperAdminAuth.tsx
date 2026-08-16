@@ -272,10 +272,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
             {currentScreen === "login" && (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="text-center mb-8">
-                  <div
-                    className="inline-flex items-center justify-center rounded-xl px-6 py-4 mb-4"
-                    style={{ backgroundColor: "#172E4D" }}
-                  >
+                  <div className="inline-flex items-center justify-center mb-4">
                     <img
                       src={myHssLogo}
                       alt="My HSS"
