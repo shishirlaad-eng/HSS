@@ -230,6 +230,10 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const scopedFilterOptions = getScopedFilterOptions(scope);
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const isSuperAdmin = selectedRole === 'Super Admin';
+  // A Coordinator is assigned per-Karyakram (not a geographic scope) — they should
+  // only ever see the specific Karyakram(s) they've been marked coordinator on,
+  // never the full scope list every other admin role gets.
+  const isCoordinatorRole = selectedRole === 'Karyakram Coordinator';
 
   // Member data — counts + event arrays for panels and completed table
   const MEMBER_ID_BY_ROLE: Record<string, string> = { 'Adult Member': 'MBR-001', 'Teen Member': 'MBR-004' };
@@ -267,8 +271,10 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const scopedEvents = useMemo(
     () => isMemberRole
       ? mockEvents.filter(e => e.status === 'published' || e.status === 'active')
-      : filterByScope(mockEvents, scope),
-    [isMemberRole, scope],
+      : isCoordinatorRole
+        ? mockEvents.filter(e => (mockParticipants[e.id] ?? []).some(p => p.memberId === scope.selfMemberId && p.isCoordinator))
+        : filterByScope(mockEvents, scope),
+    [isMemberRole, isCoordinatorRole, scope],
   );
 
   const [viewMode, setViewMode]       = useState<ViewMode>(
@@ -604,7 +610,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           onModify={() => openEdit(live)}
           onCancel={() => openModal('cancel', live)}
           onDelete={() => openModal('delete', live)}
-          onClone={() => openClone(live)}
+          onClone={ep.canAdd ? () => openClone(live) : undefined}
           onViewMember={onNavigateToMember}
         />
         {/* Modals can still show above detail */}

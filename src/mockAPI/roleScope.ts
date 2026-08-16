@@ -79,6 +79,18 @@ export const ROLE_SCOPE_MAP: Record<string, RoleScope> = {
     showTownFilter: false,    showCentreFilter: false,
   },
 
+  // Karyakram Coordinator — sees only the Karyakram(s) where this mock member
+  // (Rahul Mehta) has been made coordinator, not a geographic scope. See
+  // EventManagement.tsx, which filters the list by isCoordinator rather than
+  // by this scope's region/town/centre.
+  'Karyakram Coordinator': {
+    level: 'centre', country: 'HSS UK', region: 'Midlands',
+    town: 'Birmingham', centre: 'Birmingham East Activity Centre',
+    showCountryFilter: false, showRegionFilter: false,
+    showTownFilter: false,    showCentreFilter: false,
+    selfOnly: true, selfMemberId: 'MBR-003',
+  },
+
   // Reporting User — national scope (sees all UK data)
   'Reporting User': {
     level: 'national', country: 'HSS UK',

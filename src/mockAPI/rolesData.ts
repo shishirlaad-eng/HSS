@@ -369,6 +369,26 @@ export const mockRoles: Role[] = [
       'my-donations':   ["view"],
     },
   },
+
+  // 11. Karyakram Coordinator ─ assigned per-event, cannot create Karyakrams
+  //    Can only view/edit the specific Karyakram(s) they've been made coordinator
+  //    on (see EventManagement.tsx's isCoordinator-based list filter). No Masters,
+  //    No Attendance, No Reports, No Settings, No RBAC.
+  {
+    id: "11",
+    name: "Karyakram Coordinator",
+    code: "event_coordinator",
+    description: "Assigned by a Karyakram Admin to help manage one or more specific Karyakrams. Cannot create new Karyakrams or manage unrelated ones.",
+    status: "active",
+    userCount: 0,
+    lastUpdated: "2026-08-14T10:00:00Z",
+    permissions: {
+      dashboard:     ["view"],
+      members:       ["view"],
+      events:        ["view", "edit"],
+      announcements: ["view"],
+    },
+  },
 ];
 
 // Flat list of role names for use in dropdowns

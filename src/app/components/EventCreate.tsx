@@ -16,6 +16,9 @@ import {
   MultiSelectField,
   MemberMultiSelect,
   isFullSelection,
+  isUnset,
+  isAllSelected,
+  ALL_SENTINEL,
   composeVenueAddress,
   mockAddressesForPostcode,
 } from './EventFormFields';
@@ -106,9 +109,12 @@ function findCountryForRegion(region: string): string {
 // directly, falling back to the creating admin's own scope when the target is
 // left as "All".
 function deriveOwnerScope(f: typeof EMPTY_FORM, creatorScope: { country?: string; region?: string; town?: string; centre?: string }) {
-  const region = f.targetRegions.length === 1 ? f.targetRegions[0] : (creatorScope.region ?? f.targetRegions[0] ?? '');
-  const town   = f.targetTowns.length === 1   ? f.targetTowns[0]   : (creatorScope.town   ?? f.targetTowns[0]   ?? '');
-  const centre = f.targetCentres.length === 1 ? f.targetCentres[0] : (creatorScope.centre ?? f.targetCentres[0] ?? '');
+  // A single, non-"All" value picked in a target multi-select IS the ownership scope;
+  // anything else (unset, "All", or multiple values) falls back to the creator's own scope.
+  const firstSpecific = (sel: string[]) => (sel.length > 0 && sel[0] !== ALL_SENTINEL ? sel[0] : '');
+  const region = (f.targetRegions.length === 1 && firstSpecific(f.targetRegions)) || creatorScope.region || firstSpecific(f.targetRegions) || '';
+  const town   = (f.targetTowns.length === 1   && firstSpecific(f.targetTowns))   || creatorScope.town   || firstSpecific(f.targetTowns)   || '';
+  const centre = (f.targetCentres.length === 1 && firstSpecific(f.targetCentres)) || creatorScope.centre || firstSpecific(f.targetCentres) || '';
   const country = creatorScope.country ?? (region ? findCountryForRegion(region) : MASTERS_CASCADE.countries[0]);
   return { country, region, town, activityCentre: centre };
 }
@@ -145,11 +151,14 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     shakhaKaryawahaApprovalRequired: event.shakhaKaryawahaApprovalRequired ?? false,
     selfCheckInEnabled: event.selfCheckInEnabled ?? false,
     customQuestions: event.customQuestions ?? [],
-    filterAgeCategories: event.filterAgeCategories ?? [],
-    filterGenders: event.filterGenders ?? [],
-    filterJobTitles: event.filterJobTitles ?? [],
-    filterResponsibilityLevels: event.filterResponsibilityLevels ?? [],
-    filterResponsibilityTypes: event.filterResponsibilityTypes ?? [],
+    // Undefined here always meant "All" (no filter) — reflect that as the explicit
+    // All-sentinel rather than the empty/unset array, so a cloned draft of an
+    // existing event never trips the new "must consciously choose" validation.
+    filterAgeCategories: event.filterAgeCategories ?? [ALL_SENTINEL as AgeGroup],
+    filterGenders: event.filterGenders ?? [ALL_SENTINEL as 'male' | 'female'],
+    filterJobTitles: event.filterJobTitles ?? [ALL_SENTINEL],
+    filterResponsibilityLevels: event.filterResponsibilityLevels ?? [ALL_SENTINEL],
+    filterResponsibilityTypes: event.filterResponsibilityTypes ?? [ALL_SENTINEL],
     specificAgeOperator: event.filterSpecificAge?.operator ?? '',
     specificAgeValue: event.filterSpecificAge?.value !== undefined ? String(event.filterSpecificAge.value) : '',
     specificAgeAsAtDate: event.filterSpecificAge?.asAtDate ?? '',
@@ -157,9 +166,9 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     specificAgeTo: event.filterSpecificAge?.to ?? '',
     targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
     targetMemberIds: event.targetMemberIds ?? [],
-    targetRegions: event.targetRegions ?? [],
-    targetTowns: event.targetTowns ?? [],
-    targetCentres: event.targetCentres ?? [],
+    targetRegions: event.targetRegions ?? [ALL_SENTINEL],
+    targetTowns: event.targetTowns ?? [ALL_SENTINEL],
+    targetCentres: event.targetCentres ?? [ALL_SENTINEL],
     eventAdminIds: event.eventAdminIds ?? [],
     termsSections: event.termsSections ?? (event.termsAndConditions
       ? [{ id: 'TS-1', title: 'Terms and Conditions', description: event.termsAndConditions }]
@@ -221,10 +230,18 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['name', 'startDate', 'startTime', 'endDate', 'endTime', 'targetMemberIds', 'paymentType', 'priceCategories', 'couponCode'];
+  const FIELD_ORDER = [
+    'name', 'startDate', 'startTime', 'endDate', 'endTime',
+    'targetRegions', 'targetTowns', 'targetCentres',
+    'filterAgeCategories', 'filterGenders', 'filterResponsibilityLevels', 'filterJobTitles', 'filterResponsibilityTypes',
+    'targetMemberIds',
+    'paymentType', 'priceCategories', 'couponCode',
+  ];
   const FIELD_TAB: Record<string, CreateTab> = {
     name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
-    targetMemberIds: 'audience',
+    targetMemberIds: 'audience', targetRegions: 'audience', targetTowns: 'audience', targetCentres: 'audience',
+    filterAgeCategories: 'audience', filterGenders: 'audience', filterResponsibilityLevels: 'audience',
+    filterJobTitles: 'audience', filterResponsibilityTypes: 'audience',
     paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment',
   };
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -249,6 +266,14 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
     if (formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
       errs.targetMemberIds = 'Please select at least one member.';
     }
+    if (isUnset(formData.targetRegions))             errs.targetRegions             = 'Please select "All" or specific Vibhags.';
+    if (isUnset(formData.targetTowns))                errs.targetTowns                = 'Please select "All" or specific Nagars.';
+    if (isUnset(formData.targetCentres))              errs.targetCentres              = 'Please select "All" or specific Shakhas.';
+    if (isUnset(formData.filterAgeCategories))        errs.filterAgeCategories        = 'Please select "All" or specific age categories.';
+    if (isUnset(formData.filterGenders))              errs.filterGenders              = 'Please select "All" or specific genders.';
+    if (isUnset(formData.filterResponsibilityLevels)) errs.filterResponsibilityLevels = 'Please select "All" or specific responsibility levels.';
+    if (isUnset(formData.filterJobTitles))            errs.filterJobTitles            = 'Please select "All" or specific Sangh responsibilities.';
+    if (isUnset(formData.filterResponsibilityTypes))  errs.filterResponsibilityTypes  = 'Please select "All" or specific responsibility types.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -302,11 +327,11 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       selfCheckInEnabled: formData.selfCheckInEnabled,
       guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
-      filterAgeCategories: formData.filterAgeCategories.length > 0 ? formData.filterAgeCategories : undefined,
-      filterGenders:       formData.filterGenders.length > 0       ? formData.filterGenders       : undefined,
-      filterJobTitles:     formData.filterJobTitles.length > 0     ? formData.filterJobTitles     : undefined,
-      filterResponsibilityLevels: formData.filterResponsibilityLevels.length > 0 ? formData.filterResponsibilityLevels : undefined,
-      filterResponsibilityTypes:  formData.filterResponsibilityTypes.length > 0  ? formData.filterResponsibilityTypes  : undefined,
+      filterAgeCategories: !isAllSelected(formData.filterAgeCategories) ? formData.filterAgeCategories : undefined,
+      filterGenders:       !isAllSelected(formData.filterGenders)       ? formData.filterGenders       : undefined,
+      filterJobTitles:     !isAllSelected(formData.filterJobTitles)     ? formData.filterJobTitles     : undefined,
+      filterResponsibilityLevels: !isAllSelected(formData.filterResponsibilityLevels) ? formData.filterResponsibilityLevels : undefined,
+      filterResponsibilityTypes:  !isAllSelected(formData.filterResponsibilityTypes)  ? formData.filterResponsibilityTypes  : undefined,
       filterSpecificAge: formData.specificAgeOperator ? (
         formData.specificAgeOperator === 'between'
           ? { operator: 'between' as const, from: formData.specificAgeFrom || undefined, to: formData.specificAgeTo || undefined }
@@ -671,73 +696,68 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
           {/* ── Target Audience (matches Suchana's Audience & Targeting screen) ── */}
           {activeTab === 'audience' && (
             <div className="space-y-5">
-              <Card title="Target Specific Members">
-                <div className="space-y-4">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                    <input
-                      type="checkbox"
-                      checked={formData.targetSpecificOnly}
-                      onChange={e => set('targetSpecificOnly', e.target.checked)}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
-                    />
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      Invite specific members only
-                    </span>
-                  </label>
-                  {formData.targetSpecificOnly && (
-                    <FormField>
-                      <FormLabel required>Select Members</FormLabel>
-                      <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
-                        <MemberMultiSelect
-                          selectedIds={formData.targetMemberIds}
-                          onChange={ids => set('targetMemberIds', ids)}
-                        />
-                      </div>
-                      <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
-                    </FormField>
-                  )}
-                </div>
-              </Card>
-
               <>
                   <Card title="Scope">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                      Required — consciously choose "All" or specific values for each. Nothing is targeted by default.
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <MultiSelectField
-                        label="Vibhag"
-                        options={regionOptions}
-                        selected={formData.targetRegions}
-                        disabled={!scope.showRegionFilter}
-                        onChange={v => { set('targetRegions', v); set('targetTowns', []); set('targetCentres', []); }}
-                      />
-                      <MultiSelectField
-                        label="Nagar"
-                        options={townOptions}
-                        selected={formData.targetTowns}
-                        disabled={!scope.showTownFilter}
-                        onChange={v => { set('targetTowns', v); set('targetCentres', []); }}
-                      />
-                      <MultiSelectField
-                        label="Shakha"
-                        options={centreOptions}
-                        selected={formData.targetCentres}
-                        disabled={!scope.showCentreFilter}
-                        onChange={v => set('targetCentres', v)}
-                      />
+                      <div ref={el => { fieldRefs.current.targetRegions = el; }}>
+                        <MultiSelectField
+                          label="Vibhag"
+                          options={regionOptions}
+                          selected={formData.targetRegions}
+                          disabled={!scope.showRegionFilter}
+                          required
+                          error={touched && !!errors.targetRegions}
+                          errorMessage={touched ? errors.targetRegions : undefined}
+                          onChange={v => { set('targetRegions', v); set('targetTowns', []); set('targetCentres', []); }}
+                        />
+                      </div>
+                      <div ref={el => { fieldRefs.current.targetTowns = el; }}>
+                        <MultiSelectField
+                          label="Nagar"
+                          options={townOptions}
+                          selected={formData.targetTowns}
+                          disabled={!scope.showTownFilter}
+                          required
+                          error={touched && !!errors.targetTowns}
+                          errorMessage={touched ? errors.targetTowns : undefined}
+                          onChange={v => { set('targetTowns', v); set('targetCentres', []); }}
+                        />
+                      </div>
+                      <div ref={el => { fieldRefs.current.targetCentres = el; }}>
+                        <MultiSelectField
+                          label="Shakha"
+                          options={centreOptions}
+                          selected={formData.targetCentres}
+                          disabled={!scope.showCentreFilter}
+                          required
+                          error={touched && !!errors.targetCentres}
+                          errorMessage={touched ? errors.targetCentres : undefined}
+                          onChange={v => set('targetCentres', v)}
+                        />
+                      </div>
                     </div>
                   </Card>
 
                   <Card title="Demographic Filters">
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                      Optional — leave as "All" to target everyone within scope.
+                      Required — consciously choose "All" (to target everyone within scope) or specific values for each.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <MultiSelectField
-                        label="Age Category"
-                        options={AGE_GROUP_OPTIONS.map(o => o.value)}
-                        getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
-                        selected={formData.filterAgeCategories}
-                        onChange={v => set('filterAgeCategories', v as AgeGroup[])}
-                      />
+                      <div ref={el => { fieldRefs.current.filterAgeCategories = el; }}>
+                        <MultiSelectField
+                          label="Age Category"
+                          options={AGE_GROUP_OPTIONS.map(o => o.value)}
+                          getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
+                          selected={formData.filterAgeCategories}
+                          required
+                          error={touched && !!errors.filterAgeCategories}
+                          errorMessage={touched ? errors.filterAgeCategories : undefined}
+                          onChange={v => set('filterAgeCategories', v as AgeGroup[])}
+                        />
+                      </div>
                       <FormField className="md:col-span-3">
                         <FormLabel>Specific Age</FormLabel>
                         <div className="flex flex-wrap items-center gap-3">
@@ -801,31 +821,79 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                           )}
                         </div>
                       </FormField>
-                      <MultiSelectField
-                        label="Gender"
-                        options={['male', 'female']}
-                        getLabel={v => v === 'male' ? 'Male' : 'Female'}
-                        selected={formData.filterGenders}
-                        onChange={v => set('filterGenders', v as ('male' | 'female')[])}
-                      />
-                      <MultiSelectField
-                        label="Responsibility Level"
-                        options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
-                        selected={formData.filterResponsibilityLevels}
-                        onChange={v => set('filterResponsibilityLevels', v)}
-                      />
-                      <MultiSelectField
-                        label="Sangh Responsibility"
-                        options={ROLE_TYPE_OPTIONS}
-                        selected={formData.filterJobTitles}
-                        onChange={v => set('filterJobTitles', v)}
-                      />
-                      <MultiSelectField
-                        label="Responsibility Type"
-                        options={[...RESPONSIBILITY_TYPE_OPTIONS]}
-                        selected={formData.filterResponsibilityTypes}
-                        onChange={v => set('filterResponsibilityTypes', v)}
-                      />
+                      <div ref={el => { fieldRefs.current.filterGenders = el; }}>
+                        <MultiSelectField
+                          label="Gender"
+                          options={['male', 'female']}
+                          getLabel={v => v === 'male' ? 'Male' : 'Female'}
+                          selected={formData.filterGenders}
+                          required
+                          error={touched && !!errors.filterGenders}
+                          errorMessage={touched ? errors.filterGenders : undefined}
+                          onChange={v => set('filterGenders', v as ('male' | 'female')[])}
+                        />
+                      </div>
+                      <div ref={el => { fieldRefs.current.filterResponsibilityLevels = el; }}>
+                        <MultiSelectField
+                          label="Responsibility Level"
+                          options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                          selected={formData.filterResponsibilityLevels}
+                          required
+                          error={touched && !!errors.filterResponsibilityLevels}
+                          errorMessage={touched ? errors.filterResponsibilityLevels : undefined}
+                          onChange={v => set('filterResponsibilityLevels', v)}
+                        />
+                      </div>
+                      <div ref={el => { fieldRefs.current.filterJobTitles = el; }}>
+                        <MultiSelectField
+                          label="Sangh Responsibility"
+                          options={ROLE_TYPE_OPTIONS}
+                          selected={formData.filterJobTitles}
+                          required
+                          error={touched && !!errors.filterJobTitles}
+                          errorMessage={touched ? errors.filterJobTitles : undefined}
+                          onChange={v => set('filterJobTitles', v)}
+                        />
+                      </div>
+                      <div ref={el => { fieldRefs.current.filterResponsibilityTypes = el; }}>
+                        <MultiSelectField
+                          label="Responsibility Type"
+                          options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                          selected={formData.filterResponsibilityTypes}
+                          required
+                          error={touched && !!errors.filterResponsibilityTypes}
+                          errorMessage={touched ? errors.filterResponsibilityTypes : undefined}
+                          onChange={v => set('filterResponsibilityTypes', v)}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card title="Target Specific Members">
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                        <input
+                          type="checkbox"
+                          checked={formData.targetSpecificOnly}
+                          onChange={e => set('targetSpecificOnly', e.target.checked)}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                        />
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                          Invite specific members only
+                        </span>
+                      </label>
+                      {formData.targetSpecificOnly && (
+                        <FormField>
+                          <FormLabel required>Select Members</FormLabel>
+                          <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
+                            <MemberMultiSelect
+                              selectedIds={formData.targetMemberIds}
+                              onChange={ids => set('targetMemberIds', ids)}
+                            />
+                          </div>
+                          <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
+                        </FormField>
+                      )}
                     </div>
                   </Card>
               </>

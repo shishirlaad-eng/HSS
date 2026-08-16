@@ -44,6 +44,9 @@ import {
   QrCode,
   MoreVertical,
   Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { SecondaryButton, IconButton, Pagination, SearchBar, AdvancedSearchPanel } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
@@ -242,6 +245,26 @@ export default function EventDetail({
     mockMembers.find(m => m.id === p.memberId)?.activityCentre ?? mockEventGuestProfiles[p.memberId]?.affiliatedCentre;
   const postCodeFor = (p: EventParticipant) =>
     mockMembers.find(m => m.id === p.memberId)?.postCode ?? mockEventGuestProfiles[p.memberId]?.postCode;
+  // Mirrors ParticipantStatusBadge's label priority, for sorting the Status column.
+  const statusLabelFor = (p: EventParticipant) =>
+    p.rsvp === 'denied' ? 'Rejected'
+    : p.rsvp === 'cancelled' ? 'Cancelled'
+    : p.checkedIn ? 'Checked In'
+    : p.rsvp === 'requested' && p.waitlisted ? 'Waiting List'
+    : p.rsvp === 'requested' ? 'Waiting for Approval'
+    : 'Approved';
+  const [participantSortField, setParticipantSortField] = useState<'status' | 'ticketType' | 'shakha' | null>(null);
+  const [participantSortDirection, setParticipantSortDirection] = useState<'asc' | 'desc'>('asc');
+  const handleParticipantSort = (field: 'status' | 'ticketType' | 'shakha') => {
+    if (participantSortField === field) setParticipantSortDirection(p => p === 'asc' ? 'desc' : 'asc');
+    else { setParticipantSortField(field); setParticipantSortDirection('asc'); }
+  };
+  const renderParticipantSortArrow = (field: 'status' | 'ticketType' | 'shakha') => {
+    if (participantSortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40" />;
+    return participantSortDirection === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />;
+  };
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
   const [editingRegistration, setEditingRegistration] = useState(false);
   const [editAnswers, setEditAnswers] = useState<Record<string, string | boolean | string[]>>({});
@@ -288,14 +311,23 @@ export default function EventDetail({
       )
     : advancedFilteredParticipants;
 
+  const sortedParticipants = participantSortField ? [...filteredParticipants].sort((a, b) => {
+    const val = (p: EventParticipant) =>
+      participantSortField === 'status'     ? statusLabelFor(p)
+      : participantSortField === 'ticketType' ? (p.ticketTypeLabel ?? '')
+      : (shakhaFor(p) ?? '');
+    const cmp = val(a).localeCompare(val(b));
+    return participantSortDirection === 'asc' ? cmp : -cmp;
+  }) : filteredParticipants;
+
   const [participantsPage, setParticipantsPage] = useState(1);
   const [participantsPerPage, setParticipantsPerPage] = useState(10);
-  const participantsTotalPages = Math.max(1, Math.ceil(filteredParticipants.length / participantsPerPage));
-  const paginatedParticipants = filteredParticipants.slice(
+  const participantsTotalPages = Math.max(1, Math.ceil(sortedParticipants.length / participantsPerPage));
+  const paginatedParticipants = sortedParticipants.slice(
     (participantsPage - 1) * participantsPerPage,
     participantsPage * participantsPerPage
   );
-  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantFilters, participantSearch]);
+  useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantFilters, participantSearch, participantSortField, participantSortDirection]);
 
   // ── Approve / Deny a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
@@ -695,6 +727,16 @@ export default function EventDetail({
     const escape = (v: string | undefined | null) =>
       `"${(v ?? '').toString().replace(/"/g, '""')}"`;
 
+    headers.push(...(event.customQuestions ?? []).map(q => escape(q.label)));
+
+    const answerFor = (p: EventParticipant, questionId: string) => {
+      const ans = p.customAnswers?.[questionId];
+      if (ans === undefined || ans === '') return '';
+      if (Array.isArray(ans)) return ans.join('; ');
+      if (typeof ans === 'boolean') return ans ? 'Yes' : 'No';
+      return String(ans);
+    };
+
     const rows = filteredParticipants.map(p => {
       const m = mockMembers.find(mem => mem.id === p.memberId);
       return [
@@ -740,6 +782,7 @@ export default function EventDetail({
         amountPaidFor(p).toFixed(2),
         (p.refundedAmount ?? 0).toFixed(2),
         escape(p.lastRefundReference ?? ''),
+        ...(event.customQuestions ?? []).map(q => escape(answerFor(p, q.id))),
       ].join(',');
     });
 
@@ -1197,6 +1240,43 @@ export default function EventDetail({
                     );
                   })()}
 
+                  {/* Member's own check-in QR — grouped with Purchased Tickets right
+                      above; self check-in itself is mobile-app only, this web page
+                      only displays the code for a coordinator to scan. */}
+                  {isMember && myParticipation?.rsvp === 'going' && !myParticipation.waitlisted && event.selfCheckInEnabled && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <QrCode className="w-4 h-4 text-primary-600" /> Your Check-In QR Code
+                      </h4>
+                      <div className="px-6 py-4 flex items-center gap-4">
+                        <img
+                          src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 140)}
+                          alt="Your check-in QR code"
+                          className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
+                        />
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to a Karyakram coordinator at the venue to check in.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Donation — member view, shown separately but near the ticket/QR group */}
+                  {isMember && myParticipation?.rsvp === 'going' && !!myParticipation.donationAmount && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
+                        <Heart className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                        <h4 className="text-[15px] font-bold text-neutral-900 dark:text-white">Donation</h4>
+                      </div>
+                      <div className="px-5 py-3 flex items-center flex-wrap gap-x-4 gap-y-1">
+                        <p className="text-[13px] text-neutral-900 dark:text-white">£{myParticipation.donationAmount.toFixed(2)} donated</p>
+                        {myParticipation.giftAidClaimed && (
+                          <p className="text-[12px] text-neutral-500 dark:text-neutral-400">Gift Aid claimed</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Your Responses — member view, only once registered */}
                   {isMember && myParticipation && event.customQuestions && event.customQuestions.length > 0 && (
                     <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
@@ -1458,7 +1538,7 @@ export default function EventDetail({
                               <div key={q.id} className="flex items-start justify-between gap-3 text-sm">
                                 <span className="text-neutral-700 dark:text-neutral-300">{q.label}</span>
                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className="text-xs text-neutral-400 capitalize">{q.type}</span>
+                                  <span className="text-xs text-neutral-400 capitalize">{q.type === 'checkbox' ? 'Multi-Select' : q.type}</span>
                                   {q.required && (
                                     <span className="px-1.5 py-0.5 rounded bg-error-50 dark:bg-error-950/20 text-error-600 dark:text-error-400 text-[10px] font-medium">Required</span>
                                   )}
@@ -1493,27 +1573,6 @@ export default function EventDetail({
                             <Copy className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Member's own check-in QR — persistent reference on the event
-                      detail page; self check-in itself is mobile-app only, this
-                      web page only displays the code for a coordinator to scan. */}
-                  {isMember && myParticipation?.rsvp === 'going' && !myParticipation.waitlisted && event.selfCheckInEnabled && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <QrCode className="w-4 h-4 text-primary-600" /> Your Check-In QR Code
-                      </h4>
-                      <div className="px-6 py-4 flex items-center gap-4">
-                        <img
-                          src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 140)}
-                          alt="Your check-in QR code"
-                          className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
-                        />
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to a Karyakram coordinator at the venue to check in.'}
-                        </p>
                       </div>
                     </div>
                   )}
@@ -2041,9 +2100,30 @@ export default function EventDetail({
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                            {['#','First Name','Last Name','Member ID','Phone','Shakha','Status','Ticket Type', ...(isMember ? [] : ['Action'])].map(h => (
-                              <th key={h} className={`px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 ${h === 'Action' ? 'text-right' : ''}`}>{h}</th>
+                            {['#','First Name','Last Name','Member ID','Phone'].map(h => (
+                              <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{h}</th>
                             ))}
+                            <th
+                              onClick={() => handleParticipantSort('shakha')}
+                              className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 cursor-pointer select-none whitespace-nowrap"
+                            >
+                              Shakha{renderParticipantSortArrow('shakha')}
+                            </th>
+                            <th
+                              onClick={() => handleParticipantSort('status')}
+                              className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 cursor-pointer select-none whitespace-nowrap"
+                            >
+                              Status{renderParticipantSortArrow('status')}
+                            </th>
+                            <th
+                              onClick={() => handleParticipantSort('ticketType')}
+                              className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 cursor-pointer select-none whitespace-nowrap"
+                            >
+                              Ticket Type{renderParticipantSortArrow('ticketType')}
+                            </th>
+                            {!isMember && (
+                              <th className="px-4 py-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 text-right">Action</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -2149,7 +2229,7 @@ export default function EventDetail({
                         currentPage={participantsPage}
                         totalPages={participantsTotalPages}
                         onPageChange={setParticipantsPage}
-                        totalItems={filteredParticipants.length}
+                        totalItems={sortedParticipants.length}
                         itemsPerPage={participantsPerPage}
                         onItemsPerPageChange={(n) => { setParticipantsPerPage(n); setParticipantsPage(1); }}
                       />

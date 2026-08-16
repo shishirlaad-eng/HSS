@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, X, CheckCircle2, ChevronDown, Search } from 'lucide-react';
-import { FormField, FormLabel, FormInput, FormSelect, RichTextEditor } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, RichTextEditor, ErrorText } from './hb/common';
 import type { EventPriceCategory, EventCustomQuestion, EventTermsSection } from '../../mockAPI/eventsData';
 import { mockMembers, type AgeGroup } from '../../mockAPI/membersData';
 
@@ -64,8 +64,17 @@ export function toggleArr<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
 }
 
-// Cascade options — empty selection OR every option selected both mean "All" and widen to the full available set
-export const isFullSelection = (sel: string[], opts: string[]) => sel.length === 0 || sel.length >= opts.length;
+// Target Audience multi-selects must never silently default to "All" — an untouched
+// field is genuinely unset and blocks Save/Publish until the user consciously picks
+// either "All" (this sentinel) or a specific set of values.
+export const ALL_SENTINEL = '__ALL__';
+export const isAllSelected = (sel: string[]) => sel.length === 1 && sel[0] === ALL_SENTINEL;
+export const isUnset = (sel: string[]) => sel.length === 0;
+
+// Cascade options — an explicit "All" selection widens to the full available set;
+// an unset field also widens (nothing chosen yet to narrow by) but remains invalid
+// until the user picks something.
+export const isFullSelection = (sel: string[], opts: string[]) => isUnset(sel) || isAllSelected(sel) || sel.length >= opts.length;
 
 // ── Multi-select dropdown (matches the Suchana Audience & Targeting pattern) ──
 // Shared by EventCreate and EventEdit's Target Audience tabs.
@@ -78,6 +87,8 @@ export function MultiSelectField({
   disabled,
   allLabel = 'All',
   getLabel,
+  error,
+  errorMessage,
 }: {
   label: string;
   options: string[];
@@ -87,6 +98,8 @@ export function MultiSelectField({
   disabled?: boolean;
   allLabel?: string;
   getLabel?: (v: string) => string;
+  error?: boolean;
+  errorMessage?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -100,8 +113,21 @@ export function MultiSelectField({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const isAll = selected.length === 0 || (options.length > 0 && selected.length === options.length);
-  const displayLabel = isAll ? allLabel : selected.length === 1 ? fmt(selected[0]) : `${selected.length} selected`;
+  const isAll = isAllSelected(selected);
+  const unset = isUnset(selected);
+  const displayLabel = unset ? 'Select' : isAll ? allLabel : selected.length === 1 ? fmt(selected[0]) : `${selected.length} selected`;
+  const isOptChecked = (opt: string) => isAll || selected.includes(opt);
+
+  const toggleOption = (opt: string) => {
+    if (isAll) {
+      // Deselecting one item out of "All" expands to every other option explicitly.
+      onChange(options.filter(o => o !== opt));
+      return;
+    }
+    const next = selected.includes(opt) ? selected.filter(v => v !== opt) : [...selected, opt];
+    // Manually checking every option collapses back to the canonical "All" sentinel.
+    onChange(next.length >= options.length && options.length > 0 ? [ALL_SENTINEL] : next);
+  };
 
   return (
     <FormField>
@@ -111,23 +137,25 @@ export function MultiSelectField({
           type="button"
           disabled={disabled}
           onClick={() => setOpen(o => !o)}
-          className="w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`w-full h-10 px-3 flex items-center justify-between bg-white dark:bg-neutral-900 border rounded-lg text-sm text-neutral-900 dark:text-white hover:border-primary-300 dark:hover:border-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            error ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : 'border-neutral-200 dark:border-neutral-700'
+          }`}
         >
-          <span className={isAll ? 'text-neutral-500 dark:text-neutral-400' : ''}>{displayLabel}</span>
+          <span className={unset ? 'text-neutral-400 dark:text-neutral-500' : ''}>{displayLabel}</span>
           <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         </button>
         {open && !disabled && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-56 overflow-y-auto slim-scroll">
             <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer border-b border-neutral-100 dark:border-neutral-800">
-              <input type="checkbox" checked={isAll} onChange={() => onChange(options)} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
+              <input type="checkbox" checked={isAll} onChange={() => onChange([ALL_SENTINEL])} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
               {allLabel}
             </label>
             {options.map(opt => (
               <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={selected.includes(opt)}
-                  onChange={() => onChange(selected.includes(opt) ? selected.filter(v => v !== opt) : [...selected, opt])}
+                  checked={isOptChecked(opt)}
+                  onChange={() => toggleOption(opt)}
                   className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
                 />
                 {fmt(opt)}
@@ -136,6 +164,7 @@ export function MultiSelectField({
           </div>
         )}
       </div>
+      {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
     </FormField>
   );
 }
@@ -427,7 +456,7 @@ export function CustomQuestionsEditor({
             >
               <option value="text">Single-line text</option>
               <option value="dropdown">Dropdown</option>
-              <option value="checkbox">Checkbox</option>
+              <option value="checkbox">Multi-Select</option>
               <option value="radio">Radio Button</option>
               <option value="date">Date Input</option>
             </FormSelect>
