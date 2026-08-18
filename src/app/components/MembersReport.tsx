@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import {
-  Users, TrendingUp, CheckCircle2, AlertCircle,
+  Users, TrendingUp, AlertCircle,
   Download, SlidersHorizontal, X,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
@@ -26,17 +26,6 @@ const COLORS = {
   rejected:                '#ef4444',
   male:                    '#3b82f6',
   female:                  '#ec4899',
-  completed:               '#22c55e',
-  pendingComp:             '#f59e0b',
-};
-
-const AGE_COLORS: Record<AgeGroup, string> = {
-  bal:     '#fde68a',
-  shishu:  '#fbbf24',
-  kishor:  '#f59e0b',
-  tarun:   '#d97706',
-  yuva:    '#b45309',
-  jyestha: '#92400e',
 };
 
 const CHART_PALETTE = [
@@ -157,7 +146,6 @@ export default function MembersReport() {
   const totalMembers  = filtered.length;
   const activeCount   = filtered.filter(m => m.status === 'active').length;
   const pendingCount  = filtered.filter(m => m.status === 'pending' || m.status === 'pending-parental-consent').length;
-  const compIssueCount = filtered.filter(m => m.compliance.dbs === 'Pending' || m.compliance.firstAid === 'Expired').length;
 
   // Status donut
   const statusData = useMemo(() => {
@@ -182,12 +170,27 @@ export default function MembersReport() {
       .slice(0, 12);
   }, [filtered]);
 
-  // Age group distribution
+  // Age group distribution, split by gender
   const byAgeGroup = useMemo(() => {
-    const map: Record<AgeGroup, number> = { bal: 0, shishu: 0, kishor: 0, tarun: 0, yuva: 0, jyestha: 0 };
-    filtered.forEach(m => { map[getAgeGroup(m.dateOfBirth)]++; });
-    return (Object.entries(map) as [AgeGroup, number][])
-      .map(([key, count]) => ({ group: AGE_GROUP_LABELS[key], key, count }));
+    const map: Record<AgeGroup, { male: number; female: number }> = {
+      bal: { male: 0, female: 0 }, shishu: { male: 0, female: 0 }, kishor: { male: 0, female: 0 },
+      tarun: { male: 0, female: 0 }, yuva: { male: 0, female: 0 }, jyestha: { male: 0, female: 0 },
+    };
+    filtered.forEach(m => { map[getAgeGroup(m.dateOfBirth)][m.gender]++; });
+    return (Object.entries(map) as [AgeGroup, { male: number; female: number }][])
+      .map(([key, v]) => ({ group: AGE_GROUP_LABELS[key], key, ...v, count: v.male + v.female }));
+  }, [filtered]);
+
+  // Members by Vibhag (region), split by gender
+  const byRegion = useMemo(() => {
+    const map: Record<string, { male: number; female: number }> = {};
+    filtered.forEach(m => {
+      if (!map[m.region]) map[m.region] = { male: 0, female: 0 };
+      map[m.region][m.gender]++;
+    });
+    return Object.entries(map)
+      .map(([region, v]) => ({ region, ...v, total: v.male + v.female }))
+      .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
   // Gender breakdown
@@ -197,36 +200,6 @@ export default function MembersReport() {
     return [
       { name: 'Male',   value: male,   key: 'male' },
       { name: 'Female', value: female, key: 'female' },
-    ];
-  }, [filtered]);
-
-  // Top role types
-  const byRoleType = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(m => { if (m.jobTitle) map[m.jobTitle] = (map[m.jobTitle] ?? 0) + 1; });
-    return Object.entries(map)
-      .map(([role, count]) => ({ role, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-  }, [filtered]);
-
-  // DBS compliance
-  const dbsData = useMemo(() => {
-    const completed = filtered.filter(m => m.compliance.dbs === 'Approved').length;
-    const pending   = filtered.length - completed;
-    return [
-      { name: 'Completed', value: completed },
-      { name: 'Pending',   value: pending   },
-    ];
-  }, [filtered]);
-
-  // First Aid compliance
-  const firstAidData = useMemo(() => {
-    const completed = filtered.filter(m => m.compliance.firstAid === 'Certified').length;
-    const pending   = filtered.length - completed;
-    return [
-      { name: 'Completed', value: completed },
-      { name: 'Pending',   value: pending   },
     ];
   }, [filtered]);
 
@@ -276,31 +249,22 @@ export default function MembersReport() {
       ['Total Members',     String(totalMembers)],
       ['Active',            String(activeCount)],
       ['Pending',           String(pendingCount)],
-      ['Compliance Issues', String(compIssueCount)],
       [],
       ['STATUS BREAKDOWN'],
       ['Status', 'Count'],
       ...statusData.map(r => [r.name, String(r.value)]),
       [],
-      ['AGE GROUP DISTRIBUTION'],
-      ['Age Group', 'Count'],
-      ...byAgeGroup.map(r => [r.group, String(r.count)]),
+      ['AGE GROUP DISTRIBUTION (MALE / FEMALE)'],
+      ['Age Group', 'Male', 'Female', 'Total'],
+      ...byAgeGroup.map(r => [r.group, String(r.male), String(r.female), String(r.count)]),
       [],
       ['GENDER BREAKDOWN'],
       ['Gender', 'Count'],
       ...genderData.map(r => [r.name, String(r.value)]),
       [],
-      ['TOP ROLE TYPES'],
-      ['Role', 'Count'],
-      ...byRoleType.map(r => [r.role, String(r.count)]),
-      [],
-      ['DBS COMPLIANCE'],
-      ['Status', 'Count'],
-      ...dbsData.map(r => [r.name, String(r.value)]),
-      [],
-      ['FIRST AID COMPLIANCE'],
-      ['Status', 'Count'],
-      ...firstAidData.map(r => [r.name, String(r.value)]),
+      ['MEMBERS BY VIBHAG (MALE / FEMALE)'],
+      ['Vibhag', 'Male', 'Female', 'Total'],
+      ...byRegion.map(r => [r.region, String(r.male), String(r.female), String(r.total)]),
       ...(filterRegion ? [
         [],
         [`MEMBERS BY SHAKHA (${filterRegion})`],
@@ -429,11 +393,10 @@ export default function MembersReport() {
         </div>
 
         {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <KpiCard label="Total Members"       value={totalMembers}   icon={Users}         color="bg-primary-500" />
           <KpiCard label="Active Members"      value={activeCount}    icon={TrendingUp}    color="bg-success-500" sub={totalMembers > 0 ? `${Math.round(activeCount/totalMembers*100)}% of total` : undefined} />
           <KpiCard label="Pending Approval"    value={pendingCount}   icon={AlertCircle}   color="bg-warning-500" />
-          <KpiCard label="Compliance Issues"   value={compIssueCount} icon={CheckCircle2}  color="bg-error-500"   sub="DBS or First Aid pending" />
         </div>
 
         {/* â”€â”€ Row 1: Status + Gender â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
@@ -506,26 +469,41 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* â”€â”€ Row 2: Age Groups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â”€â”€ Row 2: Age Groups (split by gender) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">
-          <ChartCard title="Age Group Distribution" subtitle="Members across HSS age groups">
+          <ChartCard title="Age Group Distribution" subtitle="Members across HSS age groups, split by gender">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={byAgeGroup} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                 <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
-                  {byAgeGroup.map((entry, i) => (
-                    <Cell key={i} fill={AGE_COLORS[entry.key as AgeGroup]} />
-                  ))}
-                </Bar>
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                <Bar dataKey="male"   name="Male"   fill={COLORS.male}   radius={[4, 4, 0, 0]} />
+                <Bar dataKey="female" name="Female" fill={COLORS.female} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         </div>
 
-        {/* â”€â”€ Row 3: By Activity Centre (only when a region is selected) â”€â”€ */}
+        {/* â”€â”€ Row 3: By Vibhag (male/female split) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="mt-6">
+          <ChartCard title="Members by Vibhag" subtitle="Total members per Vibhag, split by gender">
+            <ResponsiveContainer width="100%" height={Math.max(220, byRegion.length * 40 + 60)}>
+              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={140} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                <Bar dataKey="male"   name="Male"   stackId="a" fill={COLORS.male}   radius={[0, 0, 0, 0]} barSize={22} />
+                <Bar dataKey="female" name="Female" stackId="a" fill={COLORS.female} radius={[0, 4, 4, 0]} barSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        {/* â”€â”€ Row 3b: By Activity Centre (only when a region is selected) â”€â”€ */}
         {filterRegion && (
           <div className="mt-6">
             <ChartCard
@@ -546,89 +524,6 @@ export default function MembersReport() {
             </ChartCard>
           </div>
         )}
-
-        {/* â”€â”€ Row 4: Role Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className="mt-6">
-          <ChartCard title="Top 10 Role Types" subtitle="Most common HSS roles across filtered members">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={byRoleType} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="role" tick={{ fontSize: 9, fill: '#6b7280' }} width={150} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Members" radius={[0, 4, 4, 0]}>
-                  {byRoleType.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* â”€â”€ Row 5: Compliance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* DBS */}
-          <ChartCard title="DBS Compliance" subtitle="DBS check status across members">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={dbsData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    <Cell fill={COLORS.completed} />
-                    <Cell fill={COLORS.pendingComp} />
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-3">
-                {dbsData.map((d, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: i === 0 ? COLORS.completed : COLORS.pendingComp }} />
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400">{d.name}</span>
-                      </div>
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: totalMembers > 0 ? `${Math.round(d.value/totalMembers*100)}%` : '0%', backgroundColor: i === 0 ? COLORS.completed : COLORS.pendingComp }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ChartCard>
-
-          {/* First Aid */}
-          <ChartCard title="First Aid Compliance" subtitle="First Aid certification status across members">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={firstAidData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    <Cell fill={COLORS.completed} />
-                    <Cell fill={COLORS.pendingComp} />
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-3">
-                {firstAidData.map((d, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: i === 0 ? COLORS.completed : COLORS.pendingComp }} />
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400">{d.name}</span>
-                      </div>
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: totalMembers > 0 ? `${Math.round(d.value/totalMembers*100)}%` : '0%', backgroundColor: i === 0 ? COLORS.completed : COLORS.pendingComp }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ChartCard>
-        </div>
 
         {/* â”€â”€ Row 6: Registrations Over Time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">

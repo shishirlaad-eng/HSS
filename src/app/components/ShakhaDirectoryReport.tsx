@@ -1,8 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Shakha Directory Report
 // Shakha list sourced from Masters (HSS UK Setup — MASTERS_CASCADE, the same
-// centre names used across Members/Events/Sessions). Operating hours are
-// derived from Attendance > Sessions (mockSessions) by matching Shakha name.
+// centre names used across Members/Events/Sessions).
 //
 // NOTE: the separate Masters CRUD screen (SuperAdminMasters.tsx) keeps its
 // own fictional centre-name list with contact details that doesn't match
@@ -10,22 +9,11 @@
 // Contact Name/Number show "—" until that's reconciled.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-} from 'recharts';
-import { Building2, Clock, Download, SlidersHorizontal, X } from 'lucide-react';
-import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
+import { Building2, Download, SlidersHorizontal, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
-import { mockSessions } from '../../mockAPI/attendanceData';
 import { toast } from 'sonner';
 import { formatDate } from '../../utils/formatDate';
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-const CHART_PALETTE = [
-  '#f59e0b', '#3b82f6', '#22c55e', '#ec4899', '#8b5cf6',
-  '#06b6d4', '#ef4444', '#84cc16', '#f97316', '#6366f1',
-];
 
 function fmt(n: number) { return n.toLocaleString(); }
 
@@ -34,9 +22,9 @@ interface DirectoryRow {
   town: string;
   region: string;
   country: string;
-  meetingDay?: string;
-  meetingTime?: string;
 }
+
+type SortField = 'centre' | 'town' | 'region';
 
 // Flatten the full Country → Vibhag → Nagar → Shakha hierarchy from Masters.
 function buildDirectory(): DirectoryRow[] {
@@ -48,12 +36,7 @@ function buildDirectory(): DirectoryRow[] {
       for (const town of towns) {
         const centres = MASTERS_CASCADE.centres[town] ?? [];
         for (const centre of centres) {
-          const session = mockSessions.find(s => s.activityCentre === centre);
-          rows.push({
-            centre, town, region, country,
-            meetingDay: session ? DAY_NAMES[session.dayOfWeek] : undefined,
-            meetingTime: session ? `${session.startTime} – ${session.endTime}` : undefined,
-          });
+          rows.push({ centre, town, region, country });
         }
       }
     }
@@ -61,34 +44,8 @@ function buildDirectory(): DirectoryRow[] {
   return rows;
 }
 
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 shadow-lg text-xs">
-      {label && <p className="font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{label}</p>}
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color ?? p.fill }} className="font-medium">
-          {p.name}: {fmt(p.value)}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
-        {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function KpiCard({ label, value, sub, icon: Icon, color }: {
-  label: string; value: string | number; sub?: string;
+function KpiCard({ label, value, icon: Icon, color }: {
+  label: string; value: string | number;
   icon: React.ElementType; color: string;
 }) {
   return (
@@ -99,7 +56,6 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
       <div>
         <p className="text-2xl font-bold text-neutral-900 dark:text-white leading-none">{fmt(Number(value))}</p>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{label}</p>
-        {sub && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -114,6 +70,19 @@ export default function ShakhaDirectoryReport() {
   const [filterCountry, setFilterCountry] = useState('');
   const [filterRegion,  setFilterRegion]  = useState('');
   const [filterTown,    setFilterTown]    = useState('');
+
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const handleSort = (field: SortField) => {
+    if (sortField === field) setSortDirection(p => p === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+  const renderSortArrow = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40" />;
+    return sortDirection === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />;
+  };
 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
@@ -131,14 +100,20 @@ export default function ShakhaDirectoryReport() {
     return true;
   }), [allRows, filterCountry, filterRegion, filterTown]);
 
-  const total = filtered.length;
-  const withHours = filtered.filter(r => r.meetingDay).length;
+  const sorted = useMemo(() => {
+    if (!sortField) return filtered;
+    const cmp = (a: DirectoryRow, b: DirectoryRow) => a[sortField].localeCompare(b[sortField]);
+    return [...filtered].sort((a, b) => sortDirection === 'asc' ? cmp(a, b) : cmp(b, a));
+  }, [filtered, sortField, sortDirection]);
 
-  const byRegion = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(r => { map[r.region] = (map[r.region] ?? 0) + 1; });
-    return Object.entries(map).map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count);
-  }, [filtered]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.max(1, Math.ceil(sorted.length / itemsPerPage));
+  const paginated = itemsPerPage === 0 ? sorted : sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const total = filtered.length;
+  const totalVibhags = useMemo(() => new Set(filtered.map(r => r.region)).size, [filtered]);
+  const totalNagars   = useMemo(() => new Set(filtered.map(r => r.town)).size, [filtered]);
 
   const handleExport = () => {
     if (total === 0) {
@@ -156,12 +131,13 @@ export default function ShakhaDirectoryReport() {
       filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All Shakhas)'],
       [],
       ['SUMMARY'],
+      ['Total Vibhags', String(totalVibhags)],
+      ['Total Nagars',  String(totalNagars)],
       ['Total Shakhas', String(total)],
-      ['With Known Operating Hours', String(withHours)],
       [],
       ['SHAKHAS'],
-      ['Shakha Name', 'Nagar', 'Vibhag', 'Contact Name', 'Contact Number', 'Meeting Day', 'Meeting Time'],
-      ...filtered.map(r => [r.centre, r.town, r.region, '—', '—', r.meetingDay ?? '—', r.meetingTime ?? '—']),
+      ['Shakha Name', 'Nagar', 'Vibhag', 'Contact Name', 'Contact Number'],
+      ...sorted.map(r => [r.centre, r.town, r.region, '—', '—']),
     ];
 
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -184,7 +160,7 @@ export default function ShakhaDirectoryReport() {
         <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
           <PageHeader
             title="Shakha Directory"
-            subtitle="All Shakhas across HSS — contact details and operating hours"
+            subtitle="All Shakhas across HSS — filterable, sortable directory"
             breadcrumbs={[
               { label: 'Reports' },
               { label: 'Shakha Directory', current: true },
@@ -242,65 +218,50 @@ export default function ShakhaDirectoryReport() {
         </div>
 
         {/* ── KPI Cards ────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <KpiCard label="Total Shakhas"              value={total}     icon={Building2} color="bg-primary-500" />
-          <KpiCard label="With Known Operating Hours" value={withHours} icon={Clock}     color="bg-info-500" sub={total > 0 ? `${Math.round(withHours/total*100)}% of total` : undefined} />
-          <KpiCard label="Vibhags Covered"            value={byRegion.length} icon={Building2} color="bg-success-500" />
-        </div>
-
-        {/* ── Chart ────────────────────────────────────────── */}
-        <div className="mt-6">
-          <ChartCard title="Shakhas by Vibhag" subtitle="Distribution across regions">
-            <ResponsiveContainer width="100%" height={Math.max(180, byRegion.length * 36 + 40)}>
-              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={140} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Shakhas" radius={[0, 4, 4, 0]}>
-                  {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard label="Total Vibhags" value={totalVibhags} icon={Building2} color="bg-primary-500" />
+          <KpiCard label="Total Nagars"  value={totalNagars}  icon={Building2} color="bg-info-500" />
+          <KpiCard label="Total Shakhas" value={total}        icon={Building2} color="bg-success-500" />
         </div>
 
         {/* ── Directory Table ─────────────────────────────── */}
-        <div className="mt-6">
-          <ChartCard title="Shakha Directory" subtitle="Full list matching the current filters">
-            <div className="sticky-table-scroll slim-scroll">
-              <table className="w-full min-w-max text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-500 dark:text-neutral-400">
-                    <th className="py-2 pr-4 font-medium">Shakha Name</th>
-                    <th className="py-2 pr-4 font-medium">Nagar</th>
-                    <th className="py-2 pr-4 font-medium">Vibhag</th>
-                    <th className="py-2 pr-4 font-medium">Contact Name</th>
-                    <th className="py-2 pr-4 font-medium">Contact Number</th>
-                    <th className="py-2 pr-4 font-medium">Meeting Day</th>
-                    <th className="py-2 pr-4 font-medium">Meeting Time</th>
+        <div className="mt-6 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+          <div className="sticky-table-scroll slim-scroll">
+            <table className="w-full min-w-max text-sm">
+              <thead>
+                <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-600 dark:text-neutral-400">
+                  <th onClick={() => handleSort('centre')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Shakha Name{renderSortArrow('centre')}</th>
+                  <th onClick={() => handleSort('town')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Nagar{renderSortArrow('town')}</th>
+                  <th onClick={() => handleSort('region')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Vibhag{renderSortArrow('region')}</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Contact Name</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Contact Number</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {paginated.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-neutral-400 text-sm">No Shakhas match the selected filters.</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-6 text-center text-neutral-400 text-sm">No Shakhas match the selected filters.</td>
-                    </tr>
-                  ) : filtered.map(r => (
-                    <tr key={r.centre} className="text-neutral-700 dark:text-neutral-300">
-                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{r.centre}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{r.town}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{r.region}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap text-neutral-400">—</td>
-                      <td className="py-2 pr-4 whitespace-nowrap text-neutral-400">—</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{r.meetingDay ?? <span className="text-neutral-400">—</span>}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{r.meetingTime ?? <span className="text-neutral-400">—</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </ChartCard>
+                ) : paginated.map(r => (
+                  <tr key={r.centre} className="text-neutral-700 dark:text-neutral-300">
+                    <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{r.centre}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{r.town}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{r.region}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-neutral-400">—</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-neutral-400">—</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sorted.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={n => { setItemsPerPage(n); setCurrentPage(1); }}
+          />
         </div>
 
       </div>

@@ -44,6 +44,12 @@ export interface MasterItem {
   addressLine2?: string;
   city?: string;
   postCode?: string;
+  // Optional second physical location — some Shakhas meet at two different
+  // venues across the week. The primary address above is mandatory; this is not.
+  address2Line1?: string;
+  address2Line2?: string;
+  address2City?: string;
+  address2PostCode?: string;
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -449,6 +455,10 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       addressLine2: masterType === 'centre' ? '' : undefined,
       city:         masterType === 'centre' ? '' : undefined,
       postCode:     masterType === 'centre' ? '' : undefined,
+      address2Line1:   masterType === 'centre' ? '' : undefined,
+      address2Line2:   masterType === 'centre' ? '' : undefined,
+      address2City:    masterType === 'centre' ? '' : undefined,
+      address2PostCode: masterType === 'centre' ? '' : undefined,
       status: 'active',
       lastUpdated: new Date().toISOString().split('T')[0],
     });
@@ -460,6 +470,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
   const regionRef  = useRef<HTMLSelectElement>(null);
   const townRef    = useRef<HTMLSelectElement>(null);
   const nameRef    = useRef<HTMLInputElement>(null);
+  const addressLine1Ref = useRef<HTMLInputElement>(null);
 
   const focusField = (ref: React.RefObject<HTMLElement>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -489,6 +500,12 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       setFieldErrors({ name: true });
       toast.error(`${config.nameLabel} is required.`);
       focusField(nameRef);
+      return;
+    }
+    if (masterType === 'centre' && !activeItem?.addressLine1?.trim()) {
+      setFieldErrors({ addressLine1: true });
+      toast.error('Address Line 1 is required.');
+      focusField(addressLine1Ref);
       return;
     }
     setFieldErrors({});
@@ -1229,13 +1246,16 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
               {masterType === 'centre' && (
                 <FormSection title="Address Details">
                   <FormField>
-                    <FormLabel>Address Line 1</FormLabel>
+                    <FormLabel required={modalMode !== 'view'}>Address Line 1</FormLabel>
                     <FormInput
+                      ref={addressLine1Ref}
                       value={activeItem.addressLine1 ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, addressLine1: e.target.value })}
+                      onChange={e => { setActiveItem({ ...activeItem, addressLine1: e.target.value }); setFieldErrors(prev => ({ ...prev, addressLine1: false })); }}
                       readOnly={modalMode === 'view'}
                       placeholder="Street address"
+                      className={fieldErrors.addressLine1 ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                     />
+                    <ErrorText>{fieldErrors.addressLine1 && 'Address Line 1 is required.'}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel>Address Line 2</FormLabel>
@@ -1261,6 +1281,54 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput
                         value={activeItem.postCode ?? ''}
                         onChange={e => setActiveItem({ ...activeItem, postCode: e.target.value })}
+                        readOnly={modalMode === 'view'}
+                        placeholder="e.g. BS1 4ST"
+                      />
+                    </FormField>
+                  </div>
+                </FormSection>
+              )}
+
+              {/* Additional Location (Activity Centre only) — for Shakhas that meet
+                  at two different physical locations across the week; optional. */}
+              {masterType === 'centre' && (
+                <FormSection title="Additional Location (optional)">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 -mt-2 mb-1">
+                    Only needed if this Shakha meets at a second physical location on a different day.
+                  </p>
+                  <FormField>
+                    <FormLabel>Address Line 1</FormLabel>
+                    <FormInput
+                      value={activeItem.address2Line1 ?? ''}
+                      onChange={e => setActiveItem({ ...activeItem, address2Line1: e.target.value })}
+                      readOnly={modalMode === 'view'}
+                      placeholder="Street address (optional)"
+                    />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Address Line 2</FormLabel>
+                    <FormInput
+                      value={activeItem.address2Line2 ?? ''}
+                      onChange={e => setActiveItem({ ...activeItem, address2Line2: e.target.value })}
+                      readOnly={modalMode === 'view'}
+                      placeholder="Area / district (optional)"
+                    />
+                  </FormField>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField>
+                      <FormLabel>City</FormLabel>
+                      <FormInput
+                        value={activeItem.address2City ?? ''}
+                        onChange={e => setActiveItem({ ...activeItem, address2City: e.target.value })}
+                        readOnly={modalMode === 'view'}
+                        placeholder="City"
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Post Code</FormLabel>
+                      <FormInput
+                        value={activeItem.address2PostCode ?? ''}
+                        onChange={e => setActiveItem({ ...activeItem, address2PostCode: e.target.value })}
                         readOnly={modalMode === 'view'}
                         placeholder="e.g. BS1 4ST"
                       />

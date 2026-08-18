@@ -160,9 +160,10 @@ export function Sidebar({
     "report-attendance":              "Attendance Report",
     "report-refunds":                 "Refund Report",
     "report-karyakarta":              "Karyakarta Report",
-    "report-ayu-shreni":              "Ayu Shreni Report",
+    "report-ayu-shreni":              "Ayu Shreni Directory",
     "report-myhss-role":              "MyHSS Role Report",
     "report-shakha-directory":        "Shakha Directory",
+    "report-karyakarta-directory":    "Karyakarta Directory",
 
     // 7. HSS (UK) Setup
     "masters-group":                  "HSS (UK) Setup",

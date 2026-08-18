@@ -251,7 +251,7 @@ export const getNavigationData = (
         },
         {
           id: "report-ayu-shreni",
-          label: "Ayu Shreni Report",
+          label: "Ayu Shreni Directory",
           onClick: () => onNavigate("report-ayu-shreni"),
           active: currentPage === "report-ayu-shreni",
         },
@@ -266,6 +266,12 @@ export const getNavigationData = (
           label: "Shakha Directory",
           onClick: () => onNavigate("report-shakha-directory"),
           active: currentPage === "report-shakha-directory",
+        },
+        {
+          id: "report-karyakarta-directory",
+          label: "Karyakarta Directory",
+          onClick: () => onNavigate("report-karyakarta-directory"),
+          active: currentPage === "report-karyakarta-directory",
         },
       ],
     },

@@ -1,18 +1,17 @@
 // ─────────────────────────────────────────────────────────────
-// HSS UK — Ayu Shreni Report (all members by Age Group)
+// HSS UK — Ayu Shreni Directory (all members by Age Group)
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
   Users, UserCheck,
-  Download, SlidersHorizontal, X,
+  Download, SlidersHorizontal, X, ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
+import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
 import {
-  mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE,
+  mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE, type Member,
 } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope } from '../../mockAPI/roleScope';
@@ -20,11 +19,6 @@ import { toast } from 'sonner';
 import { formatDate } from '../../utils/formatDate';
 
 // ── Colour palette ────────────────────────────────────────────
-
-const COLORS = {
-  male:   '#3b82f6',
-  female: '#ec4899',
-};
 
 const AGE_COLORS: Record<AgeGroup, string> = {
   bal:     '#fde68a',
@@ -60,14 +54,13 @@ function ChartTooltip({ active, payload, label }: any) {
 
 // ── Chart card wrapper ─────────────────────────────────────────
 
-function ChartCard({ title, subtitle, children, className = '' }: {
+function ChartCard({ title, subtitle, children }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  className?: string;
 }) {
   return (
-    <div className={`bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm ${className}`}>
+    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
         {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
@@ -97,6 +90,8 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
   );
 }
 
+type SortField = 'firstName' | 'surname' | 'ageGroup' | 'town' | 'region';
+
 // ── Main Component ────────────────────────────────────────────
 
 export default function AyuShreniReport() {
@@ -118,7 +113,6 @@ export default function AyuShreniReport() {
   const [filterCentre, setFilterCentre] = useState('');
   const [filterGender, setFilterGender] = useState('');
 
-  // ── List pagination ──────────────────────────────────────────
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
   const regionOptions = scope.showRegionFilter ? (MASTERS_CASCADE.regions['HSS UK'] ?? []) : (scope.region ? [scope.region] : []);
@@ -149,17 +143,44 @@ export default function AyuShreniReport() {
     });
   }, [scopedMembers, filterAgeGroup, filterRegion, filterTown, filterCentre, filterGender]);
 
+  // ── Sorting + pagination for the member table ─────────────────
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const handleSort = (field: SortField) => {
+    if (sortField === field) setSortDirection(p => p === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+  const renderSortArrow = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40" />;
+    return sortDirection === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />;
+  };
+  const sortValue = (m: Member, field: SortField) =>
+    field === 'firstName' ? (m.firstName ?? m.name.split(' ')[0])
+    : field === 'surname'   ? (m.surname ?? m.name.split(' ').slice(1).join(' '))
+    : field === 'ageGroup'  ? AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]
+    : field === 'town'      ? m.town
+    : m.region;
+
+  const sorted = useMemo(() => {
+    if (!sortField) return filtered;
+    return [...filtered].sort((a, b) => {
+      const cmp = sortValue(a, sortField).localeCompare(sortValue(b, sortField));
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [filtered, sortField, sortDirection]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const totalPages = itemsPerPage === 0 ? 1 : Math.max(1, Math.ceil(sorted.length / itemsPerPage));
+  const paginated = itemsPerPage === 0 ? sorted : sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   // ── Aggregations ───────────────────────────────────────────
 
   const total = filtered.length;
   const maleCount   = filtered.filter(m => m.gender === 'male').length;
   const femaleCount = filtered.filter(m => m.gender === 'female').length;
-
-  // Gender donut
-  const genderData = useMemo(() => ([
-    { name: 'Male',   value: maleCount,   key: 'male' },
-    { name: 'Female', value: femaleCount, key: 'female' },
-  ]), [maleCount, femaleCount]);
 
   // Age group distribution
   const byAgeGroup = useMemo(() => {
@@ -193,7 +214,7 @@ export default function AyuShreniReport() {
     if (filterGender) filters.push(`Gender: ${filterGender}`);
 
     const rows: string[][] = [
-      ['Ayu Shreni Report — HSS UK'],
+      ['Ayu Shreni Directory — HSS UK'],
       [`Generated: ${formatDate(new Date())}`],
       filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All members in scope)'],
       [],
@@ -203,8 +224,13 @@ export default function AyuShreniReport() {
       ['Female',        String(femaleCount)],
       [],
       ['MEMBERS'],
-      ['Name', 'Vibhag', 'Nagar', 'Shakha', 'Email', 'Contact Number'],
-      ...filtered.map(m => [m.name, m.region, m.town, m.activityCentre, m.email, m.phone ?? '']),
+      ['First Name', 'Last Name', 'Age Group', 'Nagar', 'Vibhag', 'Email', 'Contact Number'],
+      ...sorted.map(m => [
+        m.firstName ?? m.name.split(' ')[0],
+        m.surname ?? m.name.split(' ').slice(1).join(' '),
+        AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)],
+        m.town, m.region, m.email, m.phone ?? '',
+      ]),
     ];
 
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -212,12 +238,12 @@ export default function AyuShreniReport() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `HSS_Ayu_Shreni_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `HSS_Ayu_Shreni_Directory_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported Ayu Shreni Report — ${total} members`);
+    toast.success(`Exported Ayu Shreni Directory — ${total} members`);
   };
 
   // ── Render ─────────────────────────────────────────────────
@@ -228,11 +254,11 @@ export default function AyuShreniReport() {
         {/* Page Header */}
         <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
-          title="Ayu Shreni Report"
+          title="Ayu Shreni Directory"
           subtitle="All members by Age Group across Vibhags, Nagars and Shakhas"
           breadcrumbs={[
             { label: 'Reports' },
-            { label: 'Ayu Shreni Report', current: true },
+            { label: 'Ayu Shreni Directory', current: true },
           ]}
         >
           <PrimaryButton icon={Download} onClick={handleExport}>
@@ -322,7 +348,7 @@ export default function AyuShreniReport() {
           <KpiCard label="Female"        value={femaleCount} icon={UserCheck} color="bg-pink-500"  sub={total > 0 ? `${Math.round(femaleCount/total*100)}% of total` : undefined} />
         </div>
 
-        {/* ── Row 1: Age Group + Vibhag ────────────────────── */}
+        {/* ── Row: Age Group + Vibhag ────────────────────── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <ChartCard title="Age Group Distribution" subtitle="Members across HSS Ayu Shreni (age groups)">
@@ -356,42 +382,48 @@ export default function AyuShreniReport() {
           </ChartCard>
         </div>
 
-        {/* ── Row 2: Gender ─────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Gender Distribution" subtitle="Male vs Female members">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={200} height={200}>
-                <PieChart>
-                  <Pie data={genderData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {genderData.map((entry, i) => (
-                      <Cell key={i} fill={COLORS[entry.key as keyof typeof COLORS]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-4">
-                {genderData.map((d, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[d.key as keyof typeof COLORS] }} />
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400">{d.name}</span>
-                      </div>
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: total > 0 ? `${Math.round(d.value/total*100)}%` : '0%', backgroundColor: COLORS[d.key as keyof typeof COLORS] }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-neutral-400 mt-0.5 text-right">{total > 0 ? `${Math.round(d.value/total*100)}%` : '0%'}</p>
-                  </div>
+        {/* ── Member Table ──────────────────────────────────── */}
+        <div className="mt-6 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+          <div className="sticky-table-scroll slim-scroll">
+            <table className="w-full min-w-max text-sm">
+              <thead>
+                <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 text-left text-xs text-neutral-600 dark:text-neutral-400">
+                  <th onClick={() => handleSort('firstName')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">First Name{renderSortArrow('firstName')}</th>
+                  <th onClick={() => handleSort('surname')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Last Name{renderSortArrow('surname')}</th>
+                  <th onClick={() => handleSort('ageGroup')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Age Group{renderSortArrow('ageGroup')}</th>
+                  <th onClick={() => handleSort('town')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Nagar{renderSortArrow('town')}</th>
+                  <th onClick={() => handleSort('region')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Vibhag{renderSortArrow('region')}</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Contact Number</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {paginated.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 text-sm">No members match the selected filters.</td>
+                  </tr>
+                ) : paginated.map(m => (
+                  <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
+                    <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
+                    <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{m.town}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{m.region}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{m.email}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{m.phone ?? '—'}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          </ChartCard>
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sorted.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={n => { setItemsPerPage(n); setCurrentPage(1); }}
+          />
         </div>
 
       </div>

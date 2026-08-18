@@ -31,6 +31,7 @@ import KaryakartaReport from "./components/KaryakartaReport";
 import AyuShreniReport from "./components/AyuShreniReport";
 import MyHssRoleReport from "./components/MyHssRoleReport";
 import ShakhaDirectoryReport from "./components/ShakhaDirectoryReport";
+import KaryakartaDirectoryReport from "./components/KaryakartaDirectoryReport";
 import { SiteMap } from "./components/SiteMap";
 import { GlobalFooter } from "./components/GlobalFooter";
 import { LanguageProvider } from "../i18n/LanguageContext";
@@ -51,9 +52,10 @@ const PAGE_LABELS: Record<string, string> = {
   "report-attendance":          "Sankhya Report",
   "report-refunds":             "Refund Report",
   "report-karyakarta":          "Karyakarta Report",
-  "report-ayu-shreni":          "Ayu Shreni Report",
+  "report-ayu-shreni":          "Ayu Shreni Directory",
   "report-myhss-role":          "MyHSS Role Report",
   "report-shakha-directory":    "Shakha Directory",
+  "report-karyakarta-directory": "Karyakarta Directory",
   "role-types":                 "Responsibility",
 };
 
@@ -497,6 +499,8 @@ export default function App() {
           <MyHssRoleReport />
         ) : currentPage === "report-shakha-directory" ? (
           <ShakhaDirectoryReport />
+        ) : currentPage === "report-karyakarta-directory" ? (
+          <KaryakartaDirectoryReport />
         ) : currentPage === "my-profile" ? (
           <MyProfile
             selectedRole={selectedRole}
