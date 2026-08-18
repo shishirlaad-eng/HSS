@@ -73,6 +73,7 @@ export default function SystemSettings() {
     maxLoginAttempts: 5,
     sessionTimeout: 60,
     blockDuration: 30,
+    otpResendLimit: 3,
     
     // Mobile
     androidVersion: '1.2.4',
@@ -88,11 +89,11 @@ export default function SystemSettings() {
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
-  const FIELD_ORDER = ['companyName', 'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword', 'senderName', 'senderEmail', 'address', 'adminEmail', 'maxLoginAttempts', 'sessionTimeout', 'blockDuration', 'androidVersion', 'iosVersion'];
+  const FIELD_ORDER = ['companyName', 'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword', 'senderName', 'senderEmail', 'address', 'adminEmail', 'maxLoginAttempts', 'sessionTimeout', 'blockDuration', 'otpResendLimit', 'androidVersion', 'iosVersion'];
   const FIELD_TAB: Record<string, 'general' | 'mobile'> = {
     companyName: 'general', smtpHost: 'general', smtpPort: 'general', smtpUsername: 'general', smtpPassword: 'general',
     senderName: 'general', senderEmail: 'general', address: 'general', adminEmail: 'general',
-    maxLoginAttempts: 'general', sessionTimeout: 'general', blockDuration: 'general',
+    maxLoginAttempts: 'general', sessionTimeout: 'general', blockDuration: 'general', otpResendLimit: 'general',
     androidVersion: 'mobile', iosVersion: 'mobile',
   };
 
@@ -110,6 +111,7 @@ export default function SystemSettings() {
     if (!settings.maxLoginAttempts || settings.maxLoginAttempts < 1) errs.maxLoginAttempts = true;
     if (!settings.sessionTimeout || settings.sessionTimeout < 1)     errs.sessionTimeout = true;
     if (!settings.blockDuration || settings.blockDuration < 1)       errs.blockDuration = true;
+    if (!settings.otpResendLimit || settings.otpResendLimit < 1)     errs.otpResendLimit = true;
     if (!settings.androidVersion.trim()) errs.androidVersion = true;
     if (!settings.iosVersion.trim())     errs.iosVersion = true;
     return errs;
@@ -512,6 +514,17 @@ export default function SystemSettings() {
                         className={errCls('blockDuration')}
                       />
                       <ErrorText>{errors.blockDuration && 'Enter a valid number.'}</ErrorText>
+                    </FormField>
+                    <FormField>
+                      <FormLabel required>Maximum OTP Resend Limit</FormLabel>
+                      <FormInput
+                        ref={el => { fieldRefs.current.otpResendLimit = el; }}
+                        type="number"
+                        value={settings.otpResendLimit}
+                        onChange={(e) => { setSettings({...settings, otpResendLimit: parseInt(e.target.value)}); setErrors(prev => ({ ...prev, otpResendLimit: false })); }}
+                        className={errCls('otpResendLimit')}
+                      />
+                      <ErrorText>{errors.otpResendLimit && 'Enter a valid number.'}</ErrorText>
                     </FormField>
                   </FormGrid>
                 </FormSection>

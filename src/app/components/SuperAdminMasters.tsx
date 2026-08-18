@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, forwardRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Eye, Edit, Trash2, Plus, RefreshCw, MoreVertical,
   Globe, MapPin, Map, Building2, Tags, AlertTriangle,
@@ -15,10 +16,10 @@ import {
 } from './hb/listing';
 import {
   FormModal, FormSection, FormField, FormLabel,
-  FormInput, FormSelect, StatusSlider, PhoneInput, ErrorText,
+  FormInput, FormSelect, StatusSlider, ErrorText,
 } from './hb/common';
 import { toast } from 'sonner';
-import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE, mockMembers } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
 import { getRoleScope } from '../../mockAPI/roleScope';
 import { formatDate as sharedFormatDate } from '../../utils/formatDate';
@@ -37,6 +38,9 @@ export interface MasterItem {
   lastUpdated: string;
   childCount?: number;
   // Activity Centre extras
+  // Selected member (holding Shakha Karyawaha Pramukh) whose name/phone are
+  // shown as this centre's contact — chosen via autocomplete, not typed in.
+  karyawahaPramukhId?: string;
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
@@ -51,6 +55,134 @@ export interface MasterItem {
   address2City?: string;
   address2PostCode?: string;
 }
+
+// A Shakha's contact name/phone are never typed in directly — the admin picks
+// the member from an autocomplete restricted to those holding the "Shakha
+// Karyawaha Pramukh" Sangh Responsibility (Level: Shakha / Activity center,
+// Responsibility: Karyawaha, Type: Pramukh); the pick is stored as
+// karyawahaPramukhId and the member's current name/phone are shown from it.
+// Matches against both a member's primary responsibility and any
+// currently-held entry in their responsibilities[] history (no endDate).
+function isShakhaKaryawahaPramukh(m: typeof mockMembers[number]): boolean {
+  const check = (level?: string, resp?: string, type?: string) =>
+    level === 'Shakha / Activity center' && resp === 'Karyawaha' && type === 'Pramukh';
+  if (check(m.responsibilityLevel, m.jobTitle, m.responsibilityType)) return true;
+  return (m.responsibilities ?? []).some(r =>
+    !r.endDate && check(r.responsibilityLevel, r.sanghResponsibility, r.responsibilityType)
+  );
+}
+
+const eligibleKaryawahaPramukhs = mockMembers.filter(m => m.status === 'active' && isShakhaKaryawahaPramukh(m));
+
+function getShakhaKaryawahaPramukh(memberId?: string): { name: string; phone?: string } | null {
+  if (!memberId) return null;
+  const match = eligibleKaryawahaPramukhs.find(m => m.id === memberId);
+  return match ? { name: match.name, phone: match.phone } : null;
+}
+
+// ── Contact Name autocomplete — restricted to eligible Karyawaha Pramukhs ──
+
+type PramukhCandidate = typeof mockMembers[number];
+
+const PramukhAutocomplete = forwardRef<HTMLInputElement, {
+  value: string;
+  candidates: PramukhCandidate[];
+  error?: boolean;
+  onChange: (name: string, member: PramukhCandidate | null) => void;
+}>(function PramukhAutocomplete({ value, candidates, error, onChange }, forwardedRef) {
+  const [query, setQuery]     = useState(value);
+  const [focused, setFocused] = useState(false);
+  const ref      = useRef<HTMLDivElement>(null);
+  const menuRef  = useRef<HTMLDivElement>(null);
+  const selfTyping = useRef(false);
+
+  useEffect(() => { if (!selfTyping.current) setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setFocused(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const suggestions = useMemo(() =>
+    candidates.filter(m => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8),
+    [query, candidates],
+  );
+
+  const open = focused && suggestions.length > 0;
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const update = () => {
+      const r = ref.current?.getBoundingClientRect();
+      if (!r) return;
+      setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  const handleType = (text: string) => {
+    selfTyping.current = true;
+    setQuery(text);
+    onChange(text, null);
+    requestAnimationFrame(() => { selfTyping.current = false; });
+  };
+
+  const handleSelect = (m: PramukhCandidate) => {
+    selfTyping.current = true;
+    setQuery(m.name);
+    setFocused(false);
+    onChange(m.name, m);
+    requestAnimationFrame(() => { selfTyping.current = false; });
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <FormInput
+        ref={forwardedRef}
+        value={query}
+        onChange={e => handleType(e.target.value)}
+        onFocus={() => setFocused(true)}
+        placeholder="Type to search Shakha Karyawaha Pramukhs…"
+        className={error ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
+      />
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          {suggestions.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => handleSelect(m)}
+              className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{m.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.activityCentre}</p>
+              </div>
+              <span className="text-xs font-mono text-neutral-400 ml-3 flex-shrink-0">{m.id}</span>
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+});
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -93,23 +225,29 @@ const initialTowns: MasterItem[] = [
   { id: 'TWN-013', name: 'Dublin',       regionName: 'Ireland South', countryName: 'HSS Ireland', status: 'active', lastUpdated: '2024-02-10', childCount: 1 },
 ];
 
+// Names below are real MASTERS_CASCADE activity centre names (previously this
+// list used fictional names with zero overlap against MASTERS_CASCADE / member
+// activityCentre values, which silently broke any join against member data —
+// e.g. the Karyawaha Pramukh contact lookup below). contactName/contactPhone
+// are no longer read for centre type; they're derived live via
+// getShakhaKaryawahaPramukh(name) instead.
 const initialCentres: MasterItem[] = [
-  { id: 'CTR-001', name: 'Bristol Central Shakha',      townName: 'Bristol',     regionName: 'South West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-15', contactName: 'Ramesh Patel',    contactPhone: '07700 900111', contactEmail: 'bristol.central@hss.org.uk',  addressLine1: '14 Colston Avenue',   addressLine2: '',              city: 'Bristol',      postCode: 'BS1 4ST' },
-  { id: 'CTR-002', name: 'Filton Gat',                  townName: 'Bristol',     regionName: 'South West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-16', contactName: 'Suresh Mehta',    contactPhone: '07700 900222', contactEmail: 'filton@hss.org.uk',            addressLine1: '3 Station Road',       addressLine2: 'Filton',        city: 'Bristol',      postCode: 'BS34 7JH' },
-  { id: 'CTR-003', name: 'Bath Shakha',                 townName: 'Bath',        regionName: 'South West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-17', contactName: 'Priya Sharma',    contactPhone: '07700 900333', contactEmail: 'bath@hss.org.uk',              addressLine1: '22 Milsom Street',     addressLine2: '',              city: 'Bath',         postCode: 'BA1 1DL' },
-  { id: 'CTR-004', name: 'Birmingham Aston Shakha',     townName: 'Birmingham',  regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-18', contactName: 'Vijay Nair',      contactPhone: '07700 900444', contactEmail: 'bham.aston@hss.org.uk',        addressLine1: '88 Witton Road',       addressLine2: 'Aston',         city: 'Birmingham',   postCode: 'B6 6QW' },
-  { id: 'CTR-005', name: 'Birmingham Selly Oak Shakha', townName: 'Birmingham',  regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-19', contactName: 'Anita Joshi',     contactPhone: '07700 900555', contactEmail: 'bham.sellyoak@hss.org.uk',     addressLine1: '45 Oak Tree Lane',     addressLine2: 'Selly Oak',     city: 'Birmingham',   postCode: 'B29 6JE' },
-  { id: 'CTR-006', name: 'Coventry Shakha',             townName: 'Coventry',    regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-20', contactName: 'Deepak Verma',    contactPhone: '07700 900666', contactEmail: 'coventry@hss.org.uk',          addressLine1: '7 Corporation Street', addressLine2: '',              city: 'Coventry',     postCode: 'CV1 1GF' },
-  { id: 'CTR-007', name: 'Leicester Shakha',            townName: 'Leicester',   regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-21', contactName: 'Meena Rao',       contactPhone: '07700 900777', contactEmail: 'leicester@hss.org.uk',         addressLine1: '19 Belgrave Road',     addressLine2: '',              city: 'Leicester',    postCode: 'LE4 6AR' },
-  { id: 'CTR-008', name: 'Manchester Shakha',           townName: 'Manchester',  regionName: 'North West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-22', contactName: 'Rajan Iyer',      contactPhone: '07700 900888', contactEmail: 'manchester@hss.org.uk',        addressLine1: '52 Deansgate',         addressLine2: '',              city: 'Manchester',   postCode: 'M3 2EN' },
-  { id: 'CTR-009', name: 'Wythenshawe Gat',             townName: 'Manchester',  regionName: 'North West', countryName: 'HSS UK',      status: 'inactive', lastUpdated: '2024-01-24', contactName: 'Sanjay Pillai',   contactPhone: '07700 900999', contactEmail: 'wythenshawe@hss.org.uk',       addressLine1: '6 Simonsway',          addressLine2: 'Wythenshawe',   city: 'Manchester',   postCode: 'M22 9NR' },
-  { id: 'CTR-010', name: 'Leeds Shakha',                townName: 'Leeds',       regionName: 'Yorkshire',  countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-01', contactName: 'Kavita Singh',    contactPhone: '07700 901010', contactEmail: 'leeds@hss.org.uk',             addressLine1: '30 Briggate',          addressLine2: '',              city: 'Leeds',        postCode: 'LS1 6HR' },
-  { id: 'CTR-011', name: 'Sheffield Shakha',            townName: 'Sheffield',   regionName: 'Yorkshire',  countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-02', contactName: 'Ashok Kumar',     contactPhone: '07700 901011', contactEmail: 'sheffield@hss.org.uk',         addressLine1: '11 Fargate',           addressLine2: '',              city: 'Sheffield',    postCode: 'S1 2HH' },
-  { id: 'CTR-012', name: 'Ealing Shakha',               townName: 'London',      regionName: 'South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-05', contactName: 'Sunita Gupta',    contactPhone: '07700 901012', contactEmail: 'ealing@hss.org.uk',            addressLine1: '74 The Broadway',      addressLine2: 'Ealing',        city: 'London',       postCode: 'W5 5JY' },
-  { id: 'CTR-013', name: 'Harrow Shakha',               townName: 'London',      regionName: 'South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-06', contactName: 'Prakash Desai',   contactPhone: '07700 901013', contactEmail: 'harrow@hss.org.uk',            addressLine1: '28 Station Road',      addressLine2: 'Harrow',        city: 'London',       postCode: 'HA1 2SQ' },
-  { id: 'CTR-014', name: 'Southampton Shakha',          townName: 'Southampton', regionName: 'South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-07', contactName: 'Leela Krishnan',  contactPhone: '07700 901014', contactEmail: 'southampton@hss.org.uk',       addressLine1: '5 Above Bar Street',   addressLine2: '',              city: 'Southampton',  postCode: 'SO14 7DU' },
-  { id: 'CTR-015', name: 'Glasgow Shakha',              townName: 'Glasgow',     regionName: 'Scotland',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-08', contactName: 'Mohan Reddy',     contactPhone: '07700 901015', contactEmail: 'glasgow@hss.org.uk',           addressLine1: '100 Sauchiehall St',   addressLine2: '',              city: 'Glasgow',      postCode: 'G2 3DE' },
-  { id: 'CTR-016', name: 'Dublin Shakha',               townName: 'Dublin',      regionName: 'Ireland South', countryName: 'HSS Ireland', status: 'active', lastUpdated: '2024-02-10', contactName: 'Arun Nambiar',    contactPhone: '+353 87 900 1016', contactEmail: 'dublin@hss.ie',            addressLine1: '12 O\'Connell Street', addressLine2: '',              city: 'Dublin',       postCode: 'D01 T6V4' },
+  { id: 'CTR-001', name: 'Wembley Activity Centre',           townName: 'Wembley',     regionName: 'London & South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-15', contactEmail: 'wembley@hss.org.uk',           addressLine1: '14 Colston Avenue',   addressLine2: '',              city: 'Wembley',      postCode: 'BS1 4ST' },
+  { id: 'CTR-002', name: 'Southall Activity Centre',          townName: 'Southall',    regionName: 'London & South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-16', contactEmail: 'southall@hss.org.uk',          addressLine1: '3 Station Road',       addressLine2: '',              city: 'Southall',     postCode: 'BS34 7JH' },
+  { id: 'CTR-003', name: 'Ilford Activity Centre',            townName: 'Ilford',      regionName: 'London & South East', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-17', contactEmail: 'ilford@hss.org.uk',            addressLine1: '22 Milsom Street',     addressLine2: '',              city: 'Ilford',       postCode: 'BA1 1DL' },
+  { id: 'CTR-004', name: 'Birmingham East Activity Centre',   townName: 'Birmingham',  regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-18', contactEmail: 'bham.east@hss.org.uk',         addressLine1: '88 Witton Road',       addressLine2: 'Aston',         city: 'Birmingham',   postCode: 'B6 6QW' },
+  { id: 'CTR-005', name: 'Birmingham West Activity Centre',   townName: 'Birmingham',  regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-19', contactEmail: 'bham.west@hss.org.uk',         addressLine1: '45 Oak Tree Lane',     addressLine2: 'Selly Oak',     city: 'Birmingham',   postCode: 'B29 6JE' },
+  { id: 'CTR-006', name: 'Coventry Activity Centre',          townName: 'Coventry',    regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-20', contactEmail: 'coventry@hss.org.uk',          addressLine1: '7 Corporation Street', addressLine2: '',              city: 'Coventry',     postCode: 'CV1 1GF' },
+  { id: 'CTR-007', name: 'Leicester Activity Centre',         townName: 'Leicester',   regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-21', contactEmail: 'leicester@hss.org.uk',         addressLine1: '19 Belgrave Road',     addressLine2: '',              city: 'Leicester',    postCode: 'LE4 6AR' },
+  { id: 'CTR-008', name: 'Derby Activity Centre',             townName: 'Derby',       regionName: 'Midlands',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-22', contactEmail: 'derby@hss.org.uk',             addressLine1: '52 Deansgate',         addressLine2: '',              city: 'Derby',        postCode: 'M3 2EN' },
+  { id: 'CTR-009', name: 'Manchester Central Activity Centre', townName: 'Manchester', regionName: 'North West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-01-24', contactEmail: 'manchester.central@hss.org.uk', addressLine1: '6 Simonsway',          addressLine2: '',              city: 'Manchester',   postCode: 'M22 9NR' },
+  { id: 'CTR-010', name: 'Liverpool Activity Centre',         townName: 'Liverpool',   regionName: 'North West', countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-01', contactEmail: 'liverpool@hss.org.uk',         addressLine1: '30 Briggate',          addressLine2: '',              city: 'Liverpool',    postCode: 'LS1 6HR' },
+  { id: 'CTR-011', name: 'Leeds North Activity Centre',       townName: 'Leeds',       regionName: 'Yorkshire & Humber', countryName: 'HSS UK', status: 'active',   lastUpdated: '2024-02-02', contactEmail: 'leeds.north@hss.org.uk',       addressLine1: '11 Fargate',           addressLine2: '',              city: 'Leeds',        postCode: 'S1 2HH' },
+  { id: 'CTR-012', name: 'Sheffield Activity Centre',         townName: 'Sheffield',   regionName: 'Yorkshire & Humber', countryName: 'HSS UK', status: 'active',   lastUpdated: '2024-02-05', contactEmail: 'sheffield@hss.org.uk',         addressLine1: '74 The Broadway',      addressLine2: '',              city: 'Sheffield',    postCode: 'W5 5JY' },
+  { id: 'CTR-013', name: 'Harrow Activity Centre',            townName: 'Harrow',      regionName: 'London & South East', countryName: 'HSS UK', status: 'active',   lastUpdated: '2024-02-06', contactEmail: 'harrow@hss.org.uk',            addressLine1: '28 Station Road',      addressLine2: 'Harrow',        city: 'Harrow',       postCode: 'HA1 2SQ' },
+  { id: 'CTR-014', name: 'Edinburgh Activity Centre',         townName: 'Edinburgh',   regionName: 'Scotland',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-07', contactEmail: 'edinburgh@hss.org.uk',         addressLine1: '5 Above Bar Street',   addressLine2: '',              city: 'Edinburgh',    postCode: 'SO14 7DU' },
+  { id: 'CTR-015', name: 'Glasgow Activity Centre',           townName: 'Glasgow',     regionName: 'Scotland',   countryName: 'HSS UK',      status: 'active',   lastUpdated: '2024-02-08', contactEmail: 'glasgow@hss.org.uk',           addressLine1: '100 Sauchiehall St',   addressLine2: '',              city: 'Glasgow',      postCode: 'G2 3DE' },
+  { id: 'CTR-016', name: 'Dublin Activity Centre',            townName: 'Dublin City', regionName: 'Dublin',     countryName: 'HSS Ireland', status: 'active', lastUpdated: '2024-02-10', contactEmail: 'dublin@hss.ie',                addressLine1: '12 O\'Connell Street', addressLine2: '',              city: 'Dublin',       postCode: 'D01 T6V4' },
 ];
 
 const initialRoleTypes: MasterItem[] = ROLE_TYPE_OPTIONS.map((name, index) => ({
@@ -372,7 +510,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         (item.countryName  && item.countryName.toLowerCase().includes(q)) ||
         (item.regionName   && item.regionName.toLowerCase().includes(q)) ||
         (item.townName     && item.townName.toLowerCase().includes(q)) ||
-        (item.contactName  && item.contactName.toLowerCase().includes(q)) ||
+        (masterType === 'centre' && getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.name.toLowerCase().includes(q)) ||
         (item.contactEmail && item.contactEmail.toLowerCase().includes(q)) ||
         (item.city         && item.city.toLowerCase().includes(q)) ||
         (item.postCode     && item.postCode.toLowerCase().includes(q));
@@ -448,8 +586,6 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       regionName:  (masterType === 'town' || masterType === 'centre') ? '' : undefined,
       townName:    masterType === 'centre' ? '' : undefined,
       // Activity Centre extras
-      contactName:  masterType === 'centre' ? '' : undefined,
-      contactPhone: masterType === 'centre' ? '' : undefined,
       contactEmail: masterType === 'centre' ? '' : undefined,
       addressLine1: masterType === 'centre' ? '' : undefined,
       addressLine2: masterType === 'centre' ? '' : undefined,
@@ -836,17 +972,17 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.townName}</span>
                       </div>
                     )}
-                    {/* Activity Centre extras */}
-                    {masterType === 'centre' && item.contactName && (
+                    {/* Activity Centre extras — Karyawaha Pramukh contact, pulled live */}
+                    {masterType === 'centre' && getShakhaKaryawahaPramukh(item.karyawahaPramukhId) && (
                       <div className="flex justify-between">
                         <span className="text-neutral-400">Contact:</span>
-                        <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{item.contactName}</span>
+                        <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">{getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.name}</span>
                       </div>
                     )}
-                    {masterType === 'centre' && item.contactPhone && (
+                    {masterType === 'centre' && getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.phone && (
                       <div className="flex justify-between">
                         <span className="text-neutral-400">Phone:</span>
-                        <span className="font-medium text-neutral-800 dark:text-neutral-200">{item.contactPhone}</span>
+                        <span className="font-medium text-neutral-800 dark:text-neutral-200">{getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.phone}</span>
                       </div>
                     )}
                     {masterType === 'centre' && (item.city || item.postCode) && (
@@ -920,8 +1056,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     {item.countryName && <span className="text-xs text-neutral-500 truncate">Country: {item.countryName}</span>}
                     {item.regionName  && <span className="text-xs text-neutral-500 truncate">Vibhag: {item.regionName}</span>}
                     {item.townName    && <span className="text-xs text-neutral-500 truncate">Nagar: {item.townName}</span>}
-                    {masterType === 'centre' && item.contactName  && <span className="text-xs text-neutral-500 truncate">Contact: {item.contactName}</span>}
-                    {masterType === 'centre' && item.contactPhone && <span className="text-xs text-neutral-500">{item.contactPhone}</span>}
+                    {masterType === 'centre' && getShakhaKaryawahaPramukh(item.karyawahaPramukhId) && <span className="text-xs text-neutral-500 truncate">Contact: {getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.name}</span>}
+                    {masterType === 'centre' && getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.phone && <span className="text-xs text-neutral-500">{getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.phone}</span>}
                     {masterType === 'centre' && (item.city || item.postCode) && (
                       <span className="text-xs text-neutral-500">{[item.city, item.postCode].filter(Boolean).join(', ')}</span>
                     )}
@@ -1038,10 +1174,10 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.townName}</td>
                       )}
                       {masterType === 'centre' && visibleColumns.contactName && (
-                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.contactName}</td>
+                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.name ?? '—'}</td>
                       )}
                       {masterType === 'centre' && visibleColumns.contactPhone && (
-                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{item.contactPhone}</td>
+                        <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{getShakhaKaryawahaPramukh(item.karyawahaPramukhId)?.phone ?? '—'}</td>
                       )}
                       {masterType === 'centre' && visibleColumns.contactEmail && (
                         <td className="px-6 py-3.5 text-sm text-neutral-600 dark:text-neutral-400">{item.contactEmail}</td>
@@ -1209,25 +1345,30 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 </FormField>
               </FormSection>
 
-              {/* Contact Details (Activity Centre only) */}
-              {masterType === 'centre' && (
+              {/* Contact Details (Activity Centre only) — Contact Name is picked from
+                  an autocomplete of members holding Shakha Karyawaha Pramukh; phone
+                  is shown from that selection and is never typed in directly. */}
+              {masterType === 'centre' && (() => {
+                const pramukh = getShakhaKaryawahaPramukh(activeItem.karyawahaPramukhId);
+                return (
                 <FormSection title="Contact Details">
                   <FormField>
                     <FormLabel>Contact Name</FormLabel>
-                    <FormInput
-                      value={activeItem.contactName ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, contactName: e.target.value })}
-                      readOnly={modalMode === 'view'}
-                      placeholder="e.g. Ramesh Patel"
-                    />
+                    {modalMode === 'view' ? (
+                      <FormInput value={pramukh?.name ?? 'No Shakha Karyawaha Pramukh assigned'} readOnly />
+                    ) : (
+                      <PramukhAutocomplete
+                        value={pramukh?.name ?? ''}
+                        candidates={eligibleKaryawahaPramukhs}
+                        onChange={(_, member) => setActiveItem({ ...activeItem, karyawahaPramukhId: member?.id })}
+                      />
+                    )}
                   </FormField>
                   <FormField>
                     <FormLabel>Phone</FormLabel>
-                    <PhoneInput
-                      value={activeItem.contactPhone ?? ''}
-                      onChange={v => setActiveItem({ ...activeItem, contactPhone: v })}
-                      readOnly={modalMode === 'view'}
-                      placeholder="7700 900111"
+                    <FormInput
+                      value={pramukh?.phone ?? '—'}
+                      readOnly
                     />
                   </FormField>
                   <FormField>
@@ -1240,7 +1381,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     />
                   </FormField>
                 </FormSection>
-              )}
+                );
+              })()}
 
               {/* Address Details (Activity Centre only) */}
               {masterType === 'centre' && (

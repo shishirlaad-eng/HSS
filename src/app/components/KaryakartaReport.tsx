@@ -8,15 +8,13 @@ import {
 } from 'recharts';
 import {
   Award, Users, Briefcase,
-  Download, SlidersHorizontal, X,
+  SlidersHorizontal, X,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
+import { PageHeader, useStickyListingHeader } from './hb/listing';
 import {
   mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE,
   RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS,
 } from '../../mockAPI/membersData';
-import { toast } from 'sonner';
-import { formatDate } from '../../utils/formatDate';
 
 // Age-group membership labels are NOT sangh responsibilities — same exclusion
 // list used by Dashboard's "Shakha Karyakartas" KPI.
@@ -45,8 +43,6 @@ const CHART_PALETTE = [
   '#f59e0b', '#3b82f6', '#22c55e', '#ec4899', '#8b5cf6',
   '#06b6d4', '#ef4444', '#84cc16', '#f97316', '#6366f1',
 ];
-
-const NOT_SET = 'Not Set';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -110,8 +106,13 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 export default function KaryakartaReport() {
 
   // ── Base dataset: members holding a Sangh Responsibility ────
+  // Excludes anyone with no Sangh Responsibility assigned — responsibilityLevel
+  // and responsibilityType must both be set, not "Not Set".
   const karyakartas = useMemo(
-    () => mockMembers.filter(m => m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle)),
+    () => mockMembers.filter(m =>
+      m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle)
+      && !!m.responsibilityLevel && !!m.responsibilityType
+    ),
     [],
   );
 
@@ -153,9 +154,9 @@ export default function KaryakartaReport() {
       if (filterCentre && m.activityCentre !== filterCentre) return false;
       if (filterGender && m.gender !== filterGender) return false;
       if (filterAgeGroup && getAgeGroup(m.dateOfBirth) !== filterAgeGroup) return false;
-      if (filterRespLevel && (m.responsibilityLevel ?? NOT_SET) !== filterRespLevel) return false;
+      if (filterRespLevel && m.responsibilityLevel !== filterRespLevel) return false;
       if (filterResponsibility && m.jobTitle !== filterResponsibility) return false;
-      if (filterRespType && (m.responsibilityType ?? NOT_SET) !== filterRespType) return false;
+      if (filterRespType && m.responsibilityType !== filterRespType) return false;
       return true;
     });
   }, [karyakartas, filterRegion, filterTown, filterCentre, filterGender, filterAgeGroup, filterRespLevel, filterResponsibility, filterRespType]);
@@ -194,7 +195,7 @@ export default function KaryakartaReport() {
   const byRespType = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach(m => {
-      const key = m.responsibilityType ?? NOT_SET;
+      const key = m.responsibilityType!;
       map[key] = (map[key] ?? 0) + 1;
     });
     return Object.entries(map)
@@ -206,7 +207,7 @@ export default function KaryakartaReport() {
   const byRespLevel = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach(m => {
-      const key = m.responsibilityLevel ?? NOT_SET;
+      const key = m.responsibilityLevel!;
       map[key] = (map[key] ?? 0) + 1;
     });
     return Object.entries(map)
@@ -224,52 +225,6 @@ export default function KaryakartaReport() {
       .slice(0, 10);
   }, [filtered]);
 
-  // ── Export CSV ─────────────────────────────────────────────
-  const handleExport = () => {
-    if (total === 0) {
-      toast.error('No data to export — adjust your filters and try again.');
-      return;
-    }
-
-    const filters: string[] = [];
-    if (filterRegion) filters.push(`Vibhag: ${filterRegion}`);
-    if (filterTown)   filters.push(`Nagar: ${filterTown}`);
-    if (filterCentre) filters.push(`Shakha: ${filterCentre}`);
-    if (filterGender) filters.push(`Gender: ${filterGender}`);
-    if (filterAgeGroup) filters.push(`Age Group: ${AGE_GROUP_LABELS[filterAgeGroup as AgeGroup]}`);
-    if (filterRespLevel) filters.push(`Responsibility Level: ${filterRespLevel}`);
-    if (filterResponsibility) filters.push(`Responsibility: ${filterResponsibility}`);
-    if (filterRespType) filters.push(`Responsibility Type: ${filterRespType}`);
-
-    const rows: string[][] = [
-      ['Karyakarta Report — HSS UK'],
-      [`Generated: ${formatDate(new Date())}`],
-      filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All karyakartas)'],
-      [],
-      ['SUMMARY KPIs'],
-      ['Total Karyakartas',          String(total)],
-      ['Male',                       String(maleCount)],
-      ['Female',                     String(femaleCount)],
-      ['With Formal Responsibility', String(withFormalResponsibility)],
-      [],
-      ['KARYAKARTAS'],
-      ['First Name', 'Last Name', 'Vibhag', 'Nagar', 'Shakha', 'Responsibility', 'Email', 'Contact Number'],
-      ...filtered.map(m => [m.firstName ?? m.name.split(' ')[0], m.surname ?? m.name.split(' ').slice(1).join(' '), m.region, m.town, m.activityCentre, m.jobTitle, m.email, m.phone ?? '']),
-    ];
-
-    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `HSS_Karyakarta_Report_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success(`Exported Karyakarta Report — ${total} karyakartas`);
-  };
-
   // ── Render ─────────────────────────────────────────────────
   return (
     <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
@@ -284,11 +239,7 @@ export default function KaryakartaReport() {
             { label: 'Reports' },
             { label: 'Karyakarta Report', current: true },
           ]}
-        >
-          <PrimaryButton icon={Download} onClick={handleExport}>
-            Export CSV
-          </PrimaryButton>
-        </PageHeader>
+        />
         </div>
 
         {/* ── Filter Bar ──────────────────────────────────── */}
@@ -358,7 +309,6 @@ export default function KaryakartaReport() {
           >
             <option value="">All Responsibility Levels</option>
             {RESPONSIBILITY_LEVEL_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
-            <option value={NOT_SET}>{NOT_SET}</option>
           </select>
 
           {/* Responsibility */}
@@ -379,7 +329,6 @@ export default function KaryakartaReport() {
           >
             <option value="">All Responsibility Types</option>
             {RESPONSIBILITY_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-            <option value={NOT_SET}>{NOT_SET}</option>
           </select>
 
           {hasFilter && (

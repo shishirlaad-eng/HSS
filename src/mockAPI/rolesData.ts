@@ -116,7 +116,6 @@ export const availableModules: ModulePermission[] = [
       { id: "refunds_view",      name: "View Refunds Report",                code: "reports_refunds_view" },
       { id: "refunds_export",    name: "Export Refunds Report",              code: "reports_refunds_export" },
       { id: "karyakarta_view",   name: "View Karyakarta Report",             code: "reports_karyakarta_view" },
-      { id: "karyakarta_export", name: "Export Karyakarta Report",           code: "reports_karyakarta_export" },
       { id: "ayu_shreni_view",   name: "View Ayu Shreni Directory",          code: "reports_ayu_shreni_view" },
       { id: "ayu_shreni_export", name: "Export Ayu Shreni Directory",        code: "reports_ayu_shreni_export" },
       { id: "myhss_role_view",   name: "View MyHSS Role Report",             code: "reports_myhss_role_view" },
@@ -186,7 +185,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
       rbac:          ["view", "edit", "add", "delete"],
       settings:      ["view", "edit"],
       "audit-logs":  ["view"],
@@ -211,7 +210,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
 
@@ -233,7 +232,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
 
@@ -255,7 +254,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
 
@@ -276,7 +275,7 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
 
@@ -313,7 +312,7 @@ export const mockRoles: Role[] = [
       members:       ["view", "export"],
       events:        ["view", "export"],
       announcements: ["view"],
-      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "karyakarta_export", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
+      reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
 
