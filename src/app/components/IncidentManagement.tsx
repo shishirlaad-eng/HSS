@@ -254,7 +254,7 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
 
   const suggestions = useMemo(() =>
     query.trim().length >= 1
-      ? members.filter(m => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      ? members.filter(m => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
       : [],
     [query, members],
   );
@@ -263,12 +263,25 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
 
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  // Closes as soon as focus genuinely moves to a different element — fields in
+  // this form are stacked closely, so a lingering dropdown from the previous
+  // field can otherwise overlap the next one and swallow the first click on it.
+  useEffect(() => {
+    if (!focused) return;
+    const handler = (e: FocusEvent) => {
+      const target = e.target as Node;
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setFocused(false);
+    };
+    document.addEventListener('focusin', handler);
+    return () => document.removeEventListener('focusin', handler);
+  }, [focused]);
+
   useEffect(() => {
     if (!open) { setRect(null); return; }
     const update = () => {
       const r = ref.current?.getBoundingClientRect();
       if (!r) return;
-      const dropdownHeight = 240;
+      const dropdownHeight = 160;
       const spaceBelow = window.innerHeight - r.bottom;
       const openUp = spaceBelow < dropdownHeight && r.top > spaceBelow;
       setRect({
@@ -333,7 +346,7 @@ const MemberAutocomplete = forwardRef<HTMLInputElement, {
       {open && rect && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          className="fixed z-[999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-40 overflow-y-auto"
           style={{ top: rect.top, left: rect.left, width: rect.width }}
         >
           {suggestions.map(m => (

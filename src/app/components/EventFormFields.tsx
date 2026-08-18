@@ -476,7 +476,7 @@ export function CustomQuestionsEditor({
             className="text-xs"
           />
 
-          {(q.type === 'dropdown' || q.type === 'radio') && (
+          {(q.type === 'dropdown' || q.type === 'radio' || q.type === 'checkbox') && (
             <div className="space-y-1.5 pl-2">
               {(q.options ?? []).map((opt, idx) => (
                 <div key={idx} className="flex items-center gap-2">

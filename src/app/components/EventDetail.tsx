@@ -1199,7 +1199,7 @@ export default function EventDetail({
 
                   {/* Description */}
                   {event.description && (
-                    <div className={`bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden ${!isMember ? 'md:col-span-2' : ''}`} style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden md:col-span-2" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
                       {isMember ? (
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                           <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Karyakram Description</h4>
@@ -1214,52 +1214,58 @@ export default function EventDetail({
                     </div>
                   )}
 
-                  {/* Purchased Tickets — member view, only the ticket(s) they actually bought */}
-                  {isMember && myParticipation && event.paymentType === 'paid' && myParticipation.ticketTypeLabel && (() => {
+                  {/* Purchased Tickets + Check-In QR — merged into one box, member view */}
+                  {isMember && myParticipation && (() => {
+                    const showTicket = event.paymentType === 'paid' && !!myParticipation.ticketTypeLabel;
+                    const showQr = myParticipation.rsvp === 'going' && !myParticipation.waitlisted && !!event.selfCheckInEnabled;
+                    if (!showTicket && !showQr) return null;
                     const cat = event.priceCategories?.find(c => c.id === myParticipation.ticketTypeId);
                     const perTicketPrice = !myParticipation.discountCodeUsed && myParticipation.ticketTypeId
                       ? (cat?.price ?? 0)
                       : 0;
+                    const both = showTicket && showQr;
                     return (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                      <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
-                        <CreditCard className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                        <h4 className="text-[15px] font-bold text-neutral-900 dark:text-white">Purchased Tickets</h4>
-                      </div>
-                      <div className="px-5 py-2.5 flex items-center flex-wrap gap-x-2 gap-y-0.5">
-                        <p className="text-[13px] font-semibold text-neutral-900 dark:text-white">{myParticipation.ticketTypeLabel}</p>
-                        <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
-                          — Quantity: 1 · £{perTicketPrice.toFixed(2)} per ticket
-                          {myParticipation.discountCodeUsed && ' · Free (code applied)'}
-                        </p>
-                      </div>
-                      {cat?.description && (
-                        <p className="px-5 pb-2.5 text-[12px] text-neutral-500 dark:text-neutral-400">{cat.description}</p>
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden md:col-span-2" style={{ borderTop: '3px solid #172E4D' }}>
+                      <div className={`grid grid-cols-1 divide-y divide-neutral-100 dark:divide-neutral-800 ${both ? 'md:grid-cols-2 md:divide-y-0 md:divide-x' : ''}`}>
+                      {showTicket && (
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                            <CreditCard className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                            <h4 className="text-[15px] font-bold text-neutral-900 dark:text-white">Purchased Tickets</h4>
+                          </div>
+                          <div className="px-6 py-4 flex-1">
+                            <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">{myParticipation.ticketTypeLabel}</p>
+                            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-1">
+                              Quantity: 1 · £{perTicketPrice.toFixed(2)} per ticket
+                              {myParticipation.discountCodeUsed && ' · Free (code applied)'}
+                            </p>
+                            {cat?.description && (
+                              <p className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-2">{cat.description}</p>
+                            )}
+                          </div>
+                        </div>
                       )}
+                      {showQr && (
+                        <div className="flex flex-col">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center gap-2">
+                            <QrCode className="w-4 h-4 text-primary-600" /> Your Check-In QR Code
+                          </h4>
+                          <div className="px-6 py-4 flex-1 flex items-center gap-5">
+                            <img
+                              src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 140)}
+                              alt="Your check-in QR code"
+                              className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
+                            />
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                              {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to a Karyakram coordinator at the venue to check in.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      </div>
                     </div>
                     );
                   })()}
-
-                  {/* Member's own check-in QR — grouped with Purchased Tickets right
-                      above; self check-in itself is mobile-app only, this web page
-                      only displays the code for a coordinator to scan. */}
-                  {isMember && myParticipation?.rsvp === 'going' && !myParticipation.waitlisted && event.selfCheckInEnabled && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                        <QrCode className="w-4 h-4 text-primary-600" /> Your Check-In QR Code
-                      </h4>
-                      <div className="px-6 py-4 flex items-center gap-4">
-                        <img
-                          src={qrCodeUrl(`https://hssuk.org/events/${event.id}/checkin?member=${myMemberId ?? ''}`, 140)}
-                          alt="Your check-in QR code"
-                          className="w-[140px] h-[140px] rounded-lg border border-neutral-200 dark:border-neutral-800 flex-shrink-0"
-                        />
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {myParticipation.checkedIn ? 'You are checked in for this Karyakram.' : 'Show this to a Karyakram coordinator at the venue to check in.'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Donation — member view, shown separately but near the ticket/QR group */}
                   {isMember && myParticipation?.rsvp === 'going' && !!myParticipation.donationAmount && (
@@ -1273,32 +1279,6 @@ export default function EventDetail({
                         {myParticipation.giftAidClaimed && (
                           <p className="text-[12px] text-neutral-500 dark:text-neutral-400">Gift Aid claimed</p>
                         )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Your Responses — member view, only once registered */}
-                  {isMember && myParticipation && event.customQuestions && event.customQuestions.length > 0 && (
-                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
-                      <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <ListChecks className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                        <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Your Responses</h4>
-                      </div>
-                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {event.customQuestions.map(q => {
-                          const ans = myParticipation.customAnswers?.[q.id];
-                          const display =
-                            ans === undefined || ans === '' ? '—' :
-                            Array.isArray(ans) ? (ans.length > 0 ? ans.join(', ') : '—') :
-                            typeof ans === 'boolean' ? (ans ? 'Yes' : 'No') :
-                            String(ans);
-                          return (
-                            <div key={q.id} className="px-5 py-3.5">
-                              <p className="text-[13px] text-neutral-500 dark:text-neutral-400">{q.label}</p>
-                              <p className="text-[15px] font-medium text-neutral-900 dark:text-white mt-0.5">{display}</p>
-                            </div>
-                          );
-                        })}
                       </div>
                     </div>
                   )}
@@ -1577,29 +1557,56 @@ export default function EventDetail({
                     </div>
                   )}
 
-                  {/* Terms & Conditions — admin always; members once registered for an upcoming Karyakram */}
-                  {(!isMember || (myParticipation && !past)) && (
-                  <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
-                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                      <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
-                    </h4>
-                    {event.termsSections && event.termsSections.length > 0 ? (
-                      event.termsSections.map(section => (
-                        <div key={section.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
-                          <h5 className="px-5 pt-4 text-sm font-semibold text-neutral-900 dark:text-white">{section.title}</h5>
-                          <div
-                            className="px-5 py-3 text-[13px] text-neutral-600 dark:text-neutral-400 prose dark:prose-invert prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: section.description }}
-                          />
+                  {/* Your Responses + Terms & Conditions — forced parallel row at the bottom */}
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {isMember && myParticipation && event.customQuestions && event.customQuestions.length > 0 && (
+                      <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                          <ListChecks className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                          <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white">Your Responses</h4>
                         </div>
-                      ))
-                    ) : (
-                      <p className="px-5 py-4 text-[13px] text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
-                        {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
-                      </p>
+                        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {event.customQuestions.map(q => {
+                            const ans = myParticipation.customAnswers?.[q.id];
+                            const display =
+                              ans === undefined || ans === '' ? '—' :
+                              Array.isArray(ans) ? (ans.length > 0 ? ans.join(', ') : '—') :
+                              typeof ans === 'boolean' ? (ans ? 'Yes' : 'No') :
+                              String(ans);
+                            return (
+                              <div key={q.id} className="px-5 py-3.5">
+                                <p className="text-[13px] text-neutral-500 dark:text-neutral-400">{q.label}</p>
+                                <p className="text-[15px] font-medium text-neutral-900 dark:text-white mt-0.5">{display}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {(!isMember || (myParticipation && !past)) && (
+                    <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <ScrollText className="w-4 h-4 text-primary-600" /> Terms &amp; Conditions
+                      </h4>
+                      {event.termsSections && event.termsSections.length > 0 ? (
+                        event.termsSections.map(section => (
+                          <div key={section.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
+                            <h5 className="px-5 pt-4 text-sm font-semibold text-neutral-900 dark:text-white">{section.title}</h5>
+                            <div
+                              className="px-5 py-3 text-[13px] text-neutral-600 dark:text-neutral-400 prose dark:prose-invert prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: section.description }}
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <p className="px-5 py-4 text-[13px] text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                          {event.termsAndConditions ?? EVENT_TERMS_AND_CONDITIONS}
+                        </p>
+                      )}
+                    </div>
                     )}
                   </div>
-                  )}
                 </div>
               )}
 
