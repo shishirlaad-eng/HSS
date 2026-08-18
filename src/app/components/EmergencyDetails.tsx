@@ -8,7 +8,7 @@ import { formatDate } from '../../utils/formatDate';
 import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 
-type SortCol = 'id' | 'firstName' | 'lastName' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
+type SortCol = 'id' | 'firstName' | 'lastName' | 'shakha' | 'dateOfBirth' | 'contactName' | 'contactPhone' | 'contactEmail' | 'contactRelationship';
 
 const TH_BASE = 'sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap bg-neutral-50 dark:bg-neutral-900';
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
@@ -95,6 +95,7 @@ export default function EmergencyDetails({
           case 'id':                  return m.id;
           case 'firstName':           return m.firstName ?? m.name.split(' ')[0];
           case 'lastName':            return m.surname ?? m.name.split(' ').slice(1).join(' ');
+          case 'shakha':              return m.activityCentre;
           case 'dateOfBirth':         return m.dateOfBirth;
           case 'contactName':         return m.emergencyContactName ?? '';
           case 'contactPhone':        return m.emergencyContactPhone ?? '';
@@ -116,8 +117,8 @@ export default function EmergencyDetails({
   const handleExportCsv = () => {
     if (!filtered.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Member ID,First Name,Last Name,Contact Name,Contact Phone,Contact Email,Relationship,Medical Details,EpiPen,Allergies',
-      ...filtered.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.emergencyContactName ?? ''}","${m.emergencyContactPhone ?? ''}","${m.emergencyContactEmail ?? ''}","${m.emergencyContactRelationship ?? ''}","${m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : ''}","${m.epiPen ?? ''}","${m.allergies ?? ''}"`),
+      'Member ID,First Name,Last Name,Shakha,Contact Name,Contact Phone,Contact Email,Relationship,Medical Details,EpiPen,Allergies',
+      ...filtered.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.activityCentre}","${m.emergencyContactName ?? ''}","${m.emergencyContactPhone ?? ''}","${m.emergencyContactEmail ?? ''}","${m.emergencyContactRelationship ?? ''}","${m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : ''}","${m.epiPen ?? ''}","${m.allergies ?? ''}"`),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -270,6 +271,7 @@ export default function EmergencyDetails({
                   <SortableTH col="id"                  label="Member ID"           sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstName"           label="First Name"          sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="lastName"            label="Last Name"           sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="shakha"              label="Shakha"              sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="dateOfBirth"         label="Date of Birth"       sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <th className={TH_BASE}>Contact Name <RequiredBadge /></th>
                   <th className={TH_BASE}>Contact Phone <RequiredBadge /></th>
@@ -283,7 +285,7 @@ export default function EmergencyDetails({
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-6 py-16 text-center text-sm text-neutral-400">No members found.</td>
+                    <td colSpan={12} className="px-6 py-16 text-center text-sm text-neutral-400">No members found.</td>
                   </tr>
                 ) : paged.map(m => (
                   <tr
@@ -294,6 +296,7 @@ export default function EmergencyDetails({
                     <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">{m.id}</td>
                     <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
                     <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
+                    <td className={TD}>{m.activityCentre}</td>
                     <td className={TD}>
                       {formatDate(m.dateOfBirth)}
                     </td>

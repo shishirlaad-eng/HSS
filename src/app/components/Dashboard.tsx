@@ -39,7 +39,7 @@ import {
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
 import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS, RESPONSIBILITY_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
-import { mockEvents, type Event as HSSSEvent } from '../../mockAPI/eventsData';
+import { mockEvents, mockParticipants, type Event as HSSSEvent } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations, type IncomeStream } from '../../mockAPI/donationsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -1354,6 +1354,192 @@ function HierarchyKpiSection({
   );
 }
 
+// â”€â”€ Shakha Admin Dashboard â”€â”€ Sankhya trend, Sankhya by Ayu Shreni, and
+// clickable approval/compliance info boxes. Replaces HierarchyKpiSection's
+// generic panels for the Shakha Admin role only.
+
+function ShakhaAdminDashboard({
+  scope,
+  onNavigate,
+}: {
+  scope: RoleScope;
+  onNavigate?: (page: string) => void;
+}) {
+  const kpis = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+
+    const scopedMembers = filterByScope(mockMembers, scope);
+    const scopedMemberIds = new Set(scopedMembers.map(m => m.id));
+
+    const rollingSessions = filterByScope(mockSessions, scope)
+      .filter(s => s.status === 'completed' && new Date(s.date) >= cutoff)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // â”€â”€ Panel 1: Sankhya - Rolling 3 months (total / average / male / female) â”€â”€
+    const sankhyaRaw = rollingSessions.map(s => {
+      const present = s.attendanceRecords.filter(r => r.status === 'present');
+      return {
+        date: sharedFormatDate(s.date),
+        total: present.length,
+        male: present.filter(r => r.gender === 'male').length,
+        female: present.filter(r => r.gender === 'female').length,
+      };
+    });
+    const avgTotal = sankhyaRaw.length
+      ? Math.round(sankhyaRaw.reduce((sum, d) => sum + d.total, 0) / sankhyaRaw.length) : 0;
+    const sankhyaTrendData = sankhyaRaw.map(d => ({ ...d, average: avgTotal }));
+
+    // â”€â”€ Panel 2: Sankhya by Ayu Shreni - Rolling 3 months (average male/female) â”€â”€
+    const ageOrder: AgeGroup[] = ['bal', 'shishu', 'kishor', 'tarun', 'yuva', 'jyestha'];
+    const sessionCount = rollingSessions.length || 1;
+    const ageGroupAvgData = ageOrder.map(g => {
+      const maleTotal = rollingSessions.reduce((sum, s) =>
+        sum + s.attendanceRecords.filter(r => r.status === 'present' && r.ageCategory === g && r.gender === 'male').length, 0);
+      const femaleTotal = rollingSessions.reduce((sum, s) =>
+        sum + s.attendanceRecords.filter(r => r.status === 'present' && r.ageCategory === g && r.gender === 'female').length, 0);
+      return {
+        key: g,
+        group: AGE_GROUP_LABELS[g].split(' ')[0],
+        male: Math.round((maleTotal / sessionCount) * 10) / 10,
+        female: Math.round((femaleTotal / sessionCount) * 10) / 10,
+      };
+    });
+
+    // â”€â”€ Panel 3: member registrations pending Karyawaha approval â”€â”€
+    const pendingMemberApprovals = scopedMembers.filter(m => m.status === 'pending').length;
+
+    // â”€â”€ Panel 4: karyakram registrations pending Karyawaha approval â”€â”€
+    let pendingEventApprovals = 0;
+    mockEvents.forEach(e => {
+      (mockParticipants[e.id] ?? []).forEach(p => {
+        if (p.rsvp === 'requested' && scopedMemberIds.has(p.memberId)) pendingEventApprovals++;
+      });
+    });
+
+    // â”€â”€ Panel 5: Compliance â€” DBS / First Aid â”€â”€
+    const dbsApproved    = scopedMembers.filter(m => m.compliance.dbs === 'Approved').length;
+    const dbsPending     = scopedMembers.filter(m => m.compliance.dbs === 'Pending').length;
+    const faCertified    = scopedMembers.filter(m => m.compliance.firstAid === 'Certified').length;
+    const faExpired      = scopedMembers.filter(m => m.compliance.firstAid === 'Expired').length;
+
+    return {
+      sankhyaTrendData, ageGroupAvgData,
+      pendingMemberApprovals, pendingEventApprovals,
+      dbsApproved, dbsPending, faCertified, faExpired,
+    };
+  }, [scope]);
+
+  return (
+    <div className="mb-8">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Panel 1: Sankhya - Rolling 3 months (top left) */}
+        <ChartCard
+          title="Sankhya - Rolling 3 months"
+          subtitle="Shakhas held in the last 3 months - total, average, male and female Sankhya"
+        >
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={kpis.sankhyaTrendData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="total"   name="Sankhya" stroke="#172E4D" strokeWidth={2.5} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="average" name="Average" stroke="#f59e0b" strokeWidth={2}   strokeDasharray="4 4" dot={false} />
+              <Line type="monotone" dataKey="male"    name="Male"    stroke="#3b82f6" strokeWidth={2}   dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="female"  name="Female"  stroke="#ec4899" strokeWidth={2}   dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Panel 2: Sankhya by Ayu Shreni - Rolling 3 months (top right) */}
+        <ChartCard
+          title="Sankhya by Ayu Shreni - Rolling 3 months"
+          subtitle="Average Sankhya per age group over the last 3 months, split by gender"
+        >
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={kpis.ageGroupAvgData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+              <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals />
+              <Tooltip content={<ChartTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="male"   name="Male"   fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="female" name="Female" fill="#ec4899" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+      </div>
+
+      {/* Row 2: clickable info boxes */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {/* Panel 3: pending member registrations */}
+        <KpiCard
+          title="Pending Karyawaha Approvals"
+          value={kpis.pendingMemberApprovals}
+          icon={UserPlus}
+          subMetrics={[{ label: 'Member registrations awaiting approval', value: kpis.pendingMemberApprovals }]}
+          onClick={() => onNavigate?.('pending-approvals')}
+        />
+
+        {/* Panel 4: pending karyakram registrations */}
+        <KpiCard
+          title="Karyakram Registrations Pending Approval"
+          value={kpis.pendingEventApprovals}
+          icon={CalendarDays}
+          subMetrics={[{ label: 'Registrations awaiting approval', value: kpis.pendingEventApprovals }]}
+          onClick={() => onNavigate?.('event-management')}
+        />
+
+        {/* Panel 5: Compliance - DBS / First Aid */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigate?.('compliance')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate?.('compliance')}
+          className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[14px] font-bold text-neutral-600 dark:text-neutral-400">Compliance</p>
+            <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5">DBS</p>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{kpis.dbsApproved}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Approved</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <span className="font-bold text-amber-600 dark:text-amber-400">{kpis.dbsPending}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Pending</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5">First Aid</p>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{kpis.faCertified}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Certified</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <span className="font-bold text-red-600 dark:text-red-400">{kpis.faExpired}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Expired</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // â”€â”€ Dashboard Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DashboardProps {
@@ -1422,10 +1608,14 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       >
       </PageHeader>
 
-      {/* Same analytics dashboard for every admin role — HierarchyKpiSection's
-          queries are scoped via filterByScope(scope), so a national-level admin
-          sees org-wide data while a Shakha Admin sees just their own centre. */}
-      <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
+      {/* Shakha Admin gets its own Sankhya-focused dashboard; every other admin
+          role keeps the generic HierarchyKpiSection panels. Both are scoped via
+          filterByScope(scope). */}
+      {selectedRole === 'Shakha Admin' ? (
+        <ShakhaAdminDashboard scope={scope} onNavigate={onNavigate} />
+      ) : (
+        <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
+      )}
 
     </div>
   );

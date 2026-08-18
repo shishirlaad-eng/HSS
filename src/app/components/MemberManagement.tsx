@@ -1201,6 +1201,7 @@ export default function MemberManagement({
     { key: 'id',                  label: 'Member ID'           },
     { key: 'firstName',           label: 'First Name'          },
     { key: 'lastName',            label: 'Last Name'           },
+    { key: 'shakha',              label: 'Shakha (Branch)'     },
     { key: 'memberType',          label: 'Age Category'        },
     { key: 'sanghResponsibility', label: 'Sangh Responsibility'},
     { key: 'registrationDate',    label: 'Since'               },
@@ -1210,6 +1211,7 @@ export default function MemberManagement({
     { key: 'id',         label: 'Member ID'      },
     { key: 'firstName',  label: 'First Name'     },
     { key: 'lastName',   label: 'Last Name'      },
+    { key: 'shakha',     label: 'Shakha (Branch)' },
     { key: 'memberType', label: 'Age Category'   },
     { key: 'email',      label: 'Email Address'  },
     { key: 'phone',      label: 'Contact Number' },
@@ -1226,7 +1228,6 @@ export default function MemberManagement({
     { key: 'allergies',                      label: 'Any Allergies'                      },
     { key: 'vibhag',                         label: 'Vibhag (Region)'                    },
     { key: 'nagar',                          label: 'Nagar (Town)'                       },
-    { key: 'shakha',                         label: 'Shakha (Branch)'                    },
     { key: 'responsibilityLevel',            label: 'Responsibility Level'               },
     { key: 'responsibility',                 label: 'Responsibility'                     },
     { key: 'responsibilityType',             label: 'Responsibility Type'                },
@@ -1237,14 +1238,14 @@ export default function MemberManagement({
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
-      ? { id: true, firstName: true, lastName: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
+      ? { id: true, firstName: true, lastName: true, shakha: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
       : {
-          id: true, firstName: true, lastName: true, memberType: true, email: true, phone: true, status: true,
+          id: true, firstName: true, lastName: true, shakha: true, memberType: true, email: true, phone: true, status: true,
           regDate: true,
           townCity: false,
           emergencyContactName: false, emergencyContactPhone: false, emergencyContactEmail: false, emergencyContactRelationship: false,
           medicalDetails: false, dietaryRequirements: false, epiPen: false, allergies: false,
-          vibhag: false, nagar: false, shakha: false,
+          vibhag: false, nagar: false,
           responsibilityLevel: false, responsibility: false, responsibilityType: false,
           firstAidStatus: false, safeguardingStatus: false, dbsStatus: false,
         }
@@ -1871,6 +1872,9 @@ export default function MemberManagement({
                           {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                         </td>
                       )}
+                      {visibleColumns.shakha && (
+                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.activityCentre || <span className="text-neutral-400">-</span>}</td>
+                      )}
                       {visibleColumns.memberType && (
                         <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       )}
@@ -1993,9 +1997,6 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.nagar && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.town || <span className="text-neutral-400">-</span>}</td>
-                      )}
-                      {visibleColumns.shakha && (
-                        <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.activityCentre || <span className="text-neutral-400">-</span>}</td>
                       )}
                       {visibleColumns.responsibilityLevel && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{m.responsibilityLevel || <span className="text-neutral-400">-</span>}</td>

@@ -59,7 +59,7 @@ const TH = 'sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold text-neu
 const TD = 'px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap';
 
 type SortCol =
-  | 'id' | 'firstName' | 'lastName' | 'ageCategory'
+  | 'id' | 'firstName' | 'lastName' | 'shakha' | 'ageCategory'
   | 'dbsStatus' | 'dbsCertDate' | 'dbsUpdateService'
   | 'firstAidStatus' | 'firstAidExpiry'
   | 'safeguardingStatus' | 'safeguardingLevel' | 'safeguardingDate';
@@ -136,6 +136,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
         case 'id':                  return a.id.localeCompare(b.id) * dir;
         case 'firstName':           return (a.firstName ?? a.name.split(' ')[0]).localeCompare(b.firstName ?? b.name.split(' ')[0]) * dir;
         case 'lastName':            return (a.surname ?? a.name.split(' ').slice(1).join(' ')).localeCompare(b.surname ?? b.name.split(' ').slice(1).join(' ')) * dir;
+        case 'shakha':              return a.activityCentre.localeCompare(b.activityCentre) * dir;
         case 'ageCategory':         return AGE_GROUP_LABELS[getAgeGroup(a.dateOfBirth)].localeCompare(AGE_GROUP_LABELS[getAgeGroup(b.dateOfBirth)]) * dir;
         case 'dbsStatus':           return a.compliance.dbs.localeCompare(b.compliance.dbs) * dir;
         case 'dbsCertDate':         return (a.dbsCertificateDate ?? '').localeCompare(b.dbsCertificateDate ?? '') * dir;
@@ -154,8 +155,8 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   const handleExportCsv = () => {
     if (!filteredMembers.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Member ID,First Name,Last Name,Age Category,DBS Status,First Aid Status,Safeguarding Status',
-      ...filteredMembers.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]}","${m.compliance.dbs}","${m.compliance.firstAid}","${m.compliance.safeguardingTraining ?? 'N/A'}"`),
+      'Member ID,First Name,Last Name,Shakha,Age Category,DBS Status,First Aid Status,Safeguarding Status',
+      ...filteredMembers.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.activityCentre}","${AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]}","${m.compliance.dbs}","${m.compliance.firstAid}","${m.compliance.safeguardingTraining ?? 'N/A'}"`),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -350,6 +351,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstName" label="First Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="lastName" label="Last Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="shakha" label="Shakha" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="dbsStatus" label="DBS Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="dbsCertDate" label="DBS Cert Date" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -361,6 +363,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstName" label="First Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="lastName" label="Last Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="shakha" label="Shakha" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstAidStatus" label="First Aid Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstAidExpiry" label="Expiry Date" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -371,6 +374,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                   <SortableTH col="id" label="Member ID" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="firstName" label="First Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="lastName" label="Last Name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortableTH col="shakha" label="Shakha" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="ageCategory" label="Age Category" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="safeguardingStatus" label="Safeguarding Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <SortableTH col="safeguardingLevel" label="Level of Training" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -396,6 +400,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                       </td>
+                      <td className={TD}>{m.activityCentre}</td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><DBSBadge status={m.compliance.dbs} /></td>
                       <td className={TD}>
@@ -421,6 +426,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                       </td>
+                      <td className={TD}>{m.activityCentre}</td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><CertBadge status={m.compliance.firstAid} /></td>
                       <td className={TD}>{fmtDate(m.firstAidQualificationExpiryDate)}</td>
@@ -437,6 +443,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                         {m.surname ?? m.name.split(' ').slice(1).join(' ')}
                       </td>
+                      <td className={TD}>{m.activityCentre}</td>
                       <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
                       <td className="px-4 py-3.5"><CertBadge status={m.compliance.safeguardingTraining} /></td>
                       <td className={TD}>{m.safeguardingTrainingLevel ?? '—'}</td>
@@ -447,7 +454,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               ))}
               {pagedMembers.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-sm text-neutral-400">
+                  <td colSpan={9} className="px-6 py-16 text-center text-sm text-neutral-400">
                     No members found.
                   </td>
                 </tr>
