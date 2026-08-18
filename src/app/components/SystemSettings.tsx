@@ -483,7 +483,7 @@ export default function SystemSettings() {
                 <FormSection title="Access Control">
                   <FormGrid cols={2}>
                     <FormField>
-                      <FormLabel required>Maximum Login Attempts</FormLabel>
+                      <FormLabel required>Login / OTP Maximum Failure Attempts</FormLabel>
                       <FormInput
                         ref={el => { fieldRefs.current.maxLoginAttempts = el; }}
                         type="number"

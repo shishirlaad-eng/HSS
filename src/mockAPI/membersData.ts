@@ -548,6 +548,7 @@ const rawMockMembers: Member[] = [
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Ghatnayak', responsibilityType: 'Pramukh', startDate: '2023-04-01' },
       { responsibilityLevel: 'Vibhag / Region', sanghResponsibility: 'Karyawaha', responsibilityType: 'Toli', startDate: '2024-10-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-01-01' },
     ],
   },
   {
@@ -577,6 +578,7 @@ const rawMockMembers: Member[] = [
     responsibilities: [
       { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Sankhya', responsibilityType: 'Pramukh (Saha)', startDate: '2023-09-01' },
       { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Shikshak', responsibilityType: 'Toli', startDate: '2024-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-01-01' },
     ],
   },
   {
@@ -607,6 +609,7 @@ const rawMockMembers: Member[] = [
     adminRoles: ['Shakha Admin', 'Reporting User', 'Shakha Operations'],
     responsibilities: [
       { responsibilityLevel: 'Vibhag / Region', sanghResponsibility: 'Shikshak', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-01-01' },
     ],
   },
   {
@@ -661,7 +664,7 @@ const rawMockMembers: Member[] = [
     emergencyContactRelationship: 'Spouse',
     adminRoles: ['Shakha Admin', 'Activity Centre Admin'],
     responsibilities: [
-      { responsibilityLevel: 'Nagar / Town', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
+      { responsibilityLevel: 'Shakha / Activity center', sanghResponsibility: 'Karyawaha', responsibilityType: 'Pramukh', startDate: '2024-04-01' },
     ],
   },
   {
