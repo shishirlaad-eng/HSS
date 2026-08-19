@@ -1017,8 +1017,7 @@ export default function IncidentManagement() {
         inc.incidentType.toLowerCase().includes(q) ||
         inc.activityCentre.toLowerCase().includes(q);
 
-      const matchFilters = filters.every(f => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Incident Type': return f.values.includes(inc.incidentType);
           case 'Outcome':       return f.values.includes(inc.outcome);
@@ -1028,7 +1027,14 @@ export default function IncidentManagement() {
           case 'Shakha':        return f.values.includes(inc.activityCentre);
           default:              return true;
         }
-      });
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
       return matchSearch && matchFilters;
     });
   }, [scopedIncidents, searchQuery, filters]);
@@ -1276,6 +1282,7 @@ export default function IncidentManagement() {
               onClose={() => setShowAdvanced(false)}
               filters={filters}
               onFiltersChange={setFilters}
+              showMatchModeToggle
               filterOptions={filterOptions}
               title="Filter Incidents"
             />

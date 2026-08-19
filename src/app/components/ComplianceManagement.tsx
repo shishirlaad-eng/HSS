@@ -115,21 +115,29 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
       m.id.toLowerCase().includes(q) ||
       m.name.toLowerCase().includes(q)
     );
-    rows = rows.filter(m => filters.every(f => {
-      if (!f.values.length) return true;
-      switch (f.field) {
-        case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
-        case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
-        case 'Country':                return f.values.includes(m.country);
-        case 'Vibhag':                return f.values.includes(m.region);
-        case 'Nagar':                  return f.values.includes(m.town);
-        case 'Shakha':                 return f.values.includes(m.activityCentre);
-        case 'DBS Status':             return f.values.some(v => v.toLowerCase() === m.compliance.dbs.toLowerCase());
-        case 'First Aid Status':       return f.values.some(v => v.toLowerCase() === m.compliance.firstAid.toLowerCase());
-        case 'Safeguarding Status':    return f.values.some(v => v.toLowerCase() === (m.compliance.safeguardingTraining ?? 'N/A').toLowerCase());
-        default:                       return true;
-      }
-    }));
+    rows = rows.filter(m => {
+      const evalFilter = (f: FilterCondition): boolean => {
+        switch (f.field) {
+          case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
+          case 'Gender':                 return f.values.some(v => v.toLowerCase() === m.gender);
+          case 'Country':                return f.values.includes(m.country);
+          case 'Vibhag':                return f.values.includes(m.region);
+          case 'Nagar':                  return f.values.includes(m.town);
+          case 'Shakha':                 return f.values.includes(m.activityCentre);
+          case 'DBS Status':             return f.values.some(v => v.toLowerCase() === m.compliance.dbs.toLowerCase());
+          case 'First Aid Status':       return f.values.some(v => v.toLowerCase() === m.compliance.firstAid.toLowerCase());
+          case 'Safeguarding Status':    return f.values.some(v => v.toLowerCase() === (m.compliance.safeguardingTraining ?? 'N/A').toLowerCase());
+          default:                       return true;
+        }
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      return activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
+    });
     rows = [...rows].sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       switch (sortCol) {
@@ -196,6 +204,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={v => { setFilters(v); setCurrentPage(1); }}
+              showMatchModeToggle
               filterOptions={{
                 'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
                 'Gender':                 ['Male', 'Female'],

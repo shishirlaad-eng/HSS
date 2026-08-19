@@ -387,8 +387,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
         event.region.toLowerCase().includes(q) ||
         event.country.toLowerCase().includes(q);
 
-      const matchesFilters = filters.every(f => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Status':
             return f.values.some(v => v.toLowerCase() === event.status);
@@ -405,7 +404,14 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           default:
             return true;
         }
-      });
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
 
       const eventDate = event.startDate.split('T')[0];
       const matchesEventDates =
@@ -717,6 +723,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 onClose={() => setShowAdvancedSearch(false)}
                 filters={filters}
                 onFiltersChange={setFilters}
+                showMatchModeToggle
                 filterOptions={{
                   ...EVENT_FILTER_BASE,
                   ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries } : {}),

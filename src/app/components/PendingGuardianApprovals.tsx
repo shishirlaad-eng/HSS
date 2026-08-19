@@ -324,8 +324,7 @@ export default function PendingGuardianApprovals() {
         (m.guardianName?.toLowerCase().includes(q) ?? false) ||
         (m.guardianEmail?.toLowerCase().includes(q) ?? false);
 
-      const matchesFilters = filters.every(f => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Gender':           return f.values.some(v => v.toLowerCase() === m.gender);
           case 'Country':          return f.values.includes(m.country);
@@ -336,7 +335,14 @@ export default function PendingGuardianApprovals() {
           case 'First Aid Status': return f.values.some(v => v.toLowerCase() === m.compliance.firstAid);
           default:                 return true;
         }
-      });
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
 
       return matchesSearch && matchesFilters;
     });
@@ -550,6 +556,7 @@ export default function PendingGuardianApprovals() {
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
+              showMatchModeToggle
               filterOptions={{
                 'Gender':           ['Male', 'Female'],
                 ...(scope.showCountryFilter  ? { 'Country':         MASTERS_CASCADE.countries }              : {}),

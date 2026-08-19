@@ -514,8 +514,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
         (item.contactEmail && item.contactEmail.toLowerCase().includes(q)) ||
         (item.city         && item.city.toLowerCase().includes(q)) ||
         (item.postCode     && item.postCode.toLowerCase().includes(q));
-      const matchesFilters = filters.every(f => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Status':  return f.values.some(v => v.toLowerCase() === item.status);
           case 'Country': return f.values.includes(item.countryName ?? '');
@@ -523,7 +522,14 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
           case 'Nagar':   return f.values.includes(item.townName    ?? '');
           default: return true;
         }
-      });
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
       return matchesSearch && matchesFilters;
     });
 
@@ -820,6 +826,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 onClose={() => setShowAdvancedSearch(false)}
                 filters={filters}
                 onFiltersChange={setFilters}
+                showMatchModeToggle
                 filterOptions={filterOptions}
                 title={`Filter ${config.title}`}
               />

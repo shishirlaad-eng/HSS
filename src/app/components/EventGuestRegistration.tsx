@@ -14,7 +14,7 @@ import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { DietaryMultiSelect } from './MyProfile';
 import { formatDate, formatDateTime } from '../../utils/formatDate';
 import { toast } from 'sonner';
-import myHssLogo from '../../assets/brand/hss/logos/my-hss-logo.png';
+import myHssLogo from '../../assets/brand/hss/logos/myhss-logo-04-1.png';
 
 // Fixed to one demo event — this prototype has no URL routing to pass an
 // event id from a real shareable link, see the "Non-Member Registration" link

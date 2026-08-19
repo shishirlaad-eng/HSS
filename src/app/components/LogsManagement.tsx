@@ -298,15 +298,13 @@ export default function LogsManagement({ type }: LogsManagementProps) {
       if (!matchesSearch) return false;
 
       // 2. Advanced Filters
-      for (const filter of filters) {
-        if (!filter.values || filter.values.length === 0) continue;
-        
+      const evalFilter = (filter: FilterCondition): boolean => {
         if (filter.field === 'Date Range') {
           const itemTime = new Date(getTimestampField(item, type)).getTime();
           const now = new Date();
           now.setHours(0, 0, 0, 0); // Start of today
-          
-          const matchDateRange = filter.values.some(range => {
+
+          return filter.values.some(range => {
             if (range === 'Today') {
               return itemTime >= now.getTime();
             } else if (range === 'Yesterday') {
@@ -327,9 +325,6 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             }
             return false;
           });
-          
-          if (!matchDateRange) return false;
-          continue;
         }
 
         let fieldValue = '';
@@ -345,13 +340,17 @@ export default function LogsManagement({ type }: LogsManagementProps) {
         } else if (type === 'email') {
           if (filter.field === 'Status') fieldValue = item.status;
         }
-        
-        if (fieldValue && !filter.values.includes(fieldValue)) {
-          return false;
-        }
-      }
 
-      return true;
+        return !fieldValue || filter.values.includes(fieldValue);
+      };
+
+      const activeFilters = filters.filter(f => f.values && f.values.length > 0);
+      return activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
     });
   }, [config.data, searchQuery, filters, type]);
 
@@ -580,6 +579,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
+              showMatchModeToggle
               filterOptions={config.filterOptions}
             />
           </div>

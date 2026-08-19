@@ -283,20 +283,27 @@ export default function AttendanceLog() {
       if (dateTo   && r.date > dateTo)   return false;
 
       // Advanced filters
-      for (const f of filters) {
-        if (!f.values.length) continue;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
-          case 'Vibhag':         if (!f.values.includes(r.region))                          return false; break;
-          case 'Nagar':           if (!f.values.includes(r.town))                             return false; break;
-          case 'Shakha':          if (!f.values.includes(r.activityCentre))                  return false; break;
-          case 'Shakha Type':     if (!f.values.includes(r.shakhaType))                       return false; break;
-          case 'Gender':          if (!f.values.map(v=>v.toLowerCase()).includes(r.gender))          return false; break;
-          case 'Age Category':    if (!f.values.map(v=>v.toLowerCase()).includes(r.ageCategory)) return false; break;
-          case 'Role Type':       if (!f.values.includes(r.jobTitle))                             return false; break;
-          case 'Status':          if (!f.values.map(v=>v.toLowerCase()).includes(r.attendanceStatus)) return false; break;
+          case 'Vibhag':         return f.values.includes(r.region);
+          case 'Nagar':           return f.values.includes(r.town);
+          case 'Shakha':          return f.values.includes(r.activityCentre);
+          case 'Shakha Type':     return f.values.includes(r.shakhaType);
+          case 'Gender':          return f.values.map(v=>v.toLowerCase()).includes(r.gender);
+          case 'Age Category':    return f.values.map(v=>v.toLowerCase()).includes(r.ageCategory);
+          case 'Role Type':       return f.values.includes(r.jobTitle);
+          case 'Status':          return f.values.map(v=>v.toLowerCase()).includes(r.attendanceStatus);
+          default:                return true;
         }
-      }
-      return true;
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
+      return matchesFilters;
     });
 
     // Sort
@@ -418,6 +425,7 @@ export default function AttendanceLog() {
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={f => { setFilters(f); setPage(1); }}
+              showMatchModeToggle
               filterOptions={{
                 ...(scope.showRegionFilter  ? { 'Vibhag':         scopedFilterOptions.regionOptions } : {}),
                 ...(scope.showTownFilter    ? { 'Nagar':           scopedFilterOptions.townOptions }   : {}),

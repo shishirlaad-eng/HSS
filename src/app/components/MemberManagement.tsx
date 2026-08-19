@@ -49,32 +49,23 @@ import {
   FormLabel,
   FormInput,
   FormSelect,
-  FormTextarea,
-  PhoneInput,
 } from './hb/common';
 import {
   mockMembers,
   Member,
   MemberStatus,
   MemberType,
-  ROLE_TYPE_OPTIONS,
-  FIRST_AID_QUALIFICATION_OPTIONS,
-  FirstAidQualification,
-  DietaryRequirement,
-  DIETARY_REQUIREMENTS,
-  getAge,
-  getAgeCategory,
   AgeGroup,
   AGE_GROUP_LABELS,
   getAgeGroup,
   getAgeGroupLabel,
-  getMemberTypeFromAge,
   hasResponsibility,
   MEMBER_FILTER_OPTIONS,
   MASTERS_CASCADE,
 } from '../../mockAPI/membersData';
 import MemberDetail from './MemberDetail';
 import MemberEdit from './MemberEdit';
+import MemberAddPage from './MemberAddPage';
 import AssignResponsibilityModal from './AssignResponsibilityModal';
 import { toast } from 'sonner';
 import { useRoleScope, useModulePermissions } from '../contexts/RoleScopeContext';
@@ -83,7 +74,7 @@ import { TRANSFER_CHANGE_EVENT } from '../../mockAPI/shakhaTransferData';
 import { formatDate, formatDateRange } from '../../utils/formatDate';
 
 type ViewMode = 'grid' | 'list' | 'table';
-type PageState = 'list' | 'detail' | 'edit';
+type PageState = 'list' | 'detail' | 'edit' | 'add';
 
 // All admin roles with members listing access default to table view
 const TABLE_VIEW_DEFAULT_ROLES = [
@@ -120,22 +111,6 @@ const ORG_ROLE_TO_HSS_ROLE: Record<string, string> = {
   'Child Member':   'Adult Member',
   'Senior Member':  'Adult Member',
 };
-
-const QUALIFIED_FIRST_AIDER_ROLES = new Set([
-  'Super Admin',
-  'Member',
-  'Adult Member',
-  'Teen',
-  'Teen Member',
-  'Shakha Admin',
-  'Nagar Admin',
-  'Vibhag Admin',
-  'Kendriya Admin',
-]);
-
-function canAccessQualifiedFirstAider(selectedRole: string) {
-  return QUALIFIED_FIRST_AIDER_ROLES.has(selectedRole);
-}
 
 function StatusBadge({ status }: { status: MemberStatus }) {
   const cfg = STATUS_CONFIG[status];
@@ -278,643 +253,6 @@ function DeleteConfirmModal({
         </div>
       </div>
     </div>
-  );
-}
-
-// â"€â"€ Add Member Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-
-interface AddMemberForm {
-  memberType: MemberType | '';
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | '';
-  email: string;
-  secondaryEmail: string;
-  phone: string;
-  secondaryPhone: string;
-  buildingName: string;
-  addressLine1: string;
-  addressLine2: string;
-  contactTownCity: string;
-  postCode: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactEmail: string;
-  emergencyContactRelationship: string;
-  country: string;
-  region: string;
-  town: string;
-  activityCentre: string;
-  guardianName: string;
-  guardianPhone: string;
-  guardianEmail: string;
-  guardianRelationship: string;
-  medicalInfoDeclared: boolean;
-  medicalInfoDetails: string;
-  isFirstAider: boolean;
-  firstAidQualificationLevel: '' | FirstAidQualification;
-  firstAidQualificationExpiryDate: string;
-  dietaryRequirements: DietaryRequirement[];
-  occupation: string;
-  originatingStateIndia: string;
-  dbsStatus: string;
-  dbsRef: string;
-  dbsCertificateNumber: string;
-  dbsCertificateDate: string;
-  dbsCertificateReceivedFrom: string;
-  dbsCertificateReceivedFromOther: string;
-  dbsUpdateService: 'yes' | 'no';
-  dbsUpdateServiceNumber: string;
-  dbsUpdateServiceCheckDate: string;
-  dbsAppUnderProcess: 'yes' | 'no';
-  dbsCheckedBy: string;
-  firstAidStatus: string;
-  firstAidRef: string;
-  safeguardingStatus: string;
-  safeguardingRef: string;
-  safeguardingExpiry: string;
-}
-
-const EMPTY_FORM: AddMemberForm = {
-  memberType: '',
-  firstName: '', middleName: '', lastName: '',
-  dateOfBirth: '',
-  gender: '',
-  email: '', secondaryEmail: '', phone: '', secondaryPhone: '',
-  buildingName: '', addressLine1: '', addressLine2: '', contactTownCity: '', postCode: '',
-  emergencyContactName: '', emergencyContactPhone: '', emergencyContactEmail: '', emergencyContactRelationship: '',
-  country: '', region: '', town: '', activityCentre: '',
-  guardianName: '', guardianPhone: '', guardianEmail: '', guardianRelationship: '',
-  medicalInfoDeclared: false, medicalInfoDetails: '', isFirstAider: false,
-  firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '',
-  dietaryRequirements: [], occupation: '', originatingStateIndia: '',
-  dbsStatus: 'Pending',
-  dbsRef: '', dbsCertificateNumber: '', dbsCertificateDate: '',
-  dbsCertificateReceivedFrom: '', dbsCertificateReceivedFromOther: '',
-  dbsUpdateService: 'no', dbsUpdateServiceNumber: '', dbsUpdateServiceCheckDate: '',
-  dbsAppUnderProcess: 'no', dbsCheckedBy: '',
-  firstAidStatus: 'Expired', firstAidRef: '',
-  safeguardingStatus: 'Expired', safeguardingRef: '', safeguardingExpiry: '',
-};
-
-function AddMemberModal({
-  isOpen,
-  onClose,
-  onSave,
-  existingMembers,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (member: Member) => void;
-  existingMembers: Member[];
-}) {
-  const { selectedRole } = useRoleScope();
-  const canEditQualifiedFirstAider = canAccessQualifiedFirstAider(selectedRole);
-  const [form, setForm] = useState<AddMemberForm>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof AddMemberForm, string>>>({});
-  const [isSaving, setIsSaving] = useState(false);
-
-  const calcAge = form.dateOfBirth ? getAge(form.dateOfBirth) : null;
-
-  const regionOptions = form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : [];
-  const townOptions   = form.region  ? (MASTERS_CASCADE.towns[form.region]     ?? []) : [];
-  const centreOptions = form.town    ? (MASTERS_CASCADE.centres[form.town]      ?? []) : [];
-
-  const errCls = (has?: string) => has ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
-
-  const set = (key: keyof AddMemberForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-      const val = e.target.value;
-      setForm(prev => {
-        const next = { ...prev, [key]: val };
-        if (key === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-        if (key === 'region')  { next.town = ''; next.activityCentre = ''; }
-        if (key === 'town')    { next.activityCentre = ''; }
-        return next;
-      });
-      setErrors(prev => ({ ...prev, [key]: undefined }));
-    };
-
-  const setBoolean = (key: 'medicalInfoDeclared' | 'isFirstAider') =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm(prev => ({
-        ...prev,
-        [key]: e.target.checked,
-        ...(key === 'isFirstAider' && !e.target.checked
-          ? { firstAidQualificationLevel: '', firstAidQualificationExpiryDate: '' }
-          : {}),
-      }));
-    };
-
-  const toggleDietaryRequirement = (value: DietaryRequirement) => {
-    setForm(prev => ({
-      ...prev,
-      dietaryRequirements: prev.dietaryRequirements.includes(value)
-        ? prev.dietaryRequirements.filter(item => item !== value)
-        : [...prev.dietaryRequirements, value],
-    }));
-  };
-
-  const validate = (): boolean => {
-    const e: Partial<Record<keyof AddMemberForm, string>> = {};
-    if (!form.firstName.trim()) e.firstName = 'This field is required.';
-    if (!form.lastName.trim())  e.lastName  = 'This field is required.';
-    if (!form.dateOfBirth)    e.dateOfBirth = 'This field is required.';
-    if (!form.gender)         e.gender = 'This field is required.';
-    if (!form.email.trim())   e.email = 'This field is required.';
-    else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Enter a valid email address.';
-    if (form.secondaryEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.secondaryEmail)) e.secondaryEmail = 'Enter a valid email address.';
-    if (!form.phone.trim())   e.phone = 'This field is required.';
-    if (!form.addressLine1.trim()) e.addressLine1 = 'This field is required.';
-    if (!form.contactTownCity.trim()) e.contactTownCity = 'This field is required.';
-    if (!form.postCode.trim()) e.postCode = 'This field is required.';
-    if (!form.emergencyContactName.trim()) e.emergencyContactName = 'This field is required.';
-    if (!form.emergencyContactPhone.trim()) e.emergencyContactPhone = 'This field is required.';
-    if (!form.emergencyContactEmail.trim()) e.emergencyContactEmail = 'This field is required.';
-    else if (!/^\S+@\S+\.\S+$/.test(form.emergencyContactEmail)) e.emergencyContactEmail = 'Enter a valid email address.';
-    if (!form.emergencyContactRelationship.trim()) e.emergencyContactRelationship = 'This field is required.';
-    if (!form.country)        e.country = 'This field is required.';
-    if (!form.region)         e.region  = 'This field is required.';
-    if (!form.town)           e.town    = 'This field is required.';
-    if (!form.activityCentre) e.activityCentre = 'This field is required.';
-    const derivedMemberType = form.dateOfBirth ? getMemberTypeFromAge(form.dateOfBirth) : '';
-    if (derivedMemberType === 'teen' && !form.guardianName.trim())
-      e.guardianName = 'Parent / guardian name is required.';
-    if (derivedMemberType === 'teen' && !form.guardianPhone.trim())
-      e.guardianPhone = 'Parent / guardian phone is required.';
-    if (derivedMemberType === 'teen' && !form.guardianEmail.trim())
-      e.guardianEmail = 'Parent / guardian email is required.';
-    else if (form.guardianEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.guardianEmail))
-      e.guardianEmail = 'Enter a valid email address.';
-    if (derivedMemberType === 'teen' && !form.guardianRelationship.trim())
-      e.guardianRelationship = 'Parent / guardian relationship is required.';
-    if (existingMembers.some(m => m.email.toLowerCase() === form.email.toLowerCase()))
-      e.email = 'A member with this email already exists.';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-    setIsSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    const nextId = `MBR-${String(existingMembers.length + 1).padStart(3, '0')}`;
-    const derivedMemberType = getMemberTypeFromAge(form.dateOfBirth);
-    const newMember: Member = {
-      id: nextId,
-      memberType: derivedMemberType,
-      firstName: form.firstName.trim(),
-      middleName: form.middleName.trim() || undefined,
-      surname: form.lastName.trim(),
-      name: [form.firstName, form.middleName, form.lastName].map(p => p.trim()).filter(Boolean).join(' '),
-      email: form.email.trim(),
-      secondaryEmail: form.secondaryEmail.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      secondaryPhone: form.secondaryPhone.trim() || undefined,
-      guardianEmail: form.guardianEmail.trim() || undefined,
-      guardianName: form.guardianName.trim() || undefined,
-      guardianPhone: form.guardianPhone.trim() || undefined,
-      guardianRelationship: form.guardianRelationship.trim() || undefined,
-      buildingName: form.buildingName.trim() || undefined,
-      addressLine1: form.addressLine1.trim(),
-      addressLine2: form.addressLine2.trim() || undefined,
-      contactTownCity: form.contactTownCity.trim(),
-      postCode: form.postCode.trim(),
-      emergencyContactName: form.emergencyContactName.trim(),
-      emergencyContactPhone: form.emergencyContactPhone.trim(),
-      emergencyContactEmail: form.emergencyContactEmail.trim(),
-      emergencyContactRelationship: form.emergencyContactRelationship.trim(),
-      dateOfBirth: form.dateOfBirth,
-      gender: form.gender as 'male' | 'female',
-      jobTitle: ROLE_TYPE_OPTIONS[0],
-      orgRole: derivedMemberType === 'adult' ? 'Member' : derivedMemberType === 'teen' ? 'Teen Member' : 'Child Member',
-      country: form.country,
-      region: form.region,
-      town: form.town,
-      activityCentre: form.activityCentre,
-      status: derivedMemberType === 'teen' || derivedMemberType === 'child' ? 'pending-parental-consent' : 'pending',
-      registrationDate: new Date().toISOString(),
-      compliance: {
-        dbs: form.dbsStatus,
-        firstAid: form.firstAidStatus,
-        safeguardingTraining: form.safeguardingStatus,
-        parentalConsent: derivedMemberType === 'teen' || derivedMemberType === 'child' ? 'pending' : 'n/a',
-      },
-      dbsRef: form.dbsRef.trim() || undefined,
-      dbsCertificateNumber: form.dbsCertificateNumber.trim() || undefined,
-      dbsCertificateDate: form.dbsCertificateDate || undefined,
-      dbsCertificateReceivedFrom: form.dbsCertificateReceivedFrom.trim() || undefined,
-      dbsCertificateReceivedFromOther: form.dbsCertificateReceivedFromOther.trim() || undefined,
-      dbsUpdateService: form.dbsUpdateService === 'yes',
-      dbsUpdateServiceNumber: form.dbsUpdateServiceNumber.trim() || undefined,
-      dbsUpdateServiceCheckDate: form.dbsUpdateServiceCheckDate || undefined,
-      dbsAppUnderProcess: form.dbsAppUnderProcess === 'yes',
-      dbsCheckedBy: form.dbsCheckedBy.trim() || undefined,
-      firstAidRef: form.firstAidRef.trim() || undefined,
-      safeguardingRef: form.safeguardingRef.trim() || undefined,
-      safeguardingExpiry: form.safeguardingExpiry || undefined,
-      medicalInfoDeclared: form.medicalInfoDeclared,
-      medicalInfoDetails: form.medicalInfoDetails.trim() || undefined,
-      isFirstAider: canEditQualifiedFirstAider ? form.isFirstAider : false,
-      firstAidQualificationLevel: canEditQualifiedFirstAider && form.isFirstAider
-        ? form.firstAidQualificationLevel || undefined
-        : undefined,
-      firstAidQualificationExpiryDate: canEditQualifiedFirstAider && form.isFirstAider
-        ? form.firstAidQualificationExpiryDate || undefined
-        : undefined,
-      dietaryRequirements: form.dietaryRequirements,
-      occupation: form.occupation.trim() || undefined,
-      originatingStateIndia: form.originatingStateIndia.trim() || undefined,
-      eventsAttended: 0,
-      shakhaSessionsAttended: 0,
-    };
-    setIsSaving(false);
-    onSave(newMember);
-    setForm(EMPTY_FORM);
-    setErrors({});
-    toast.success('Member created successfully.');
-  };
-
-  const handleClose = () => {
-    if (!isSaving) { setForm(EMPTY_FORM); setErrors({}); onClose(); }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <FormModal isOpen={isOpen} onClose={handleClose} title="Add Member" maxWidth="max-w-2xl">
-      <div className="space-y-6 p-6 max-h-[72vh] overflow-y-auto slim-scroll">
-
-        {/* Age Group */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField className="md:col-span-2">
-            <FormLabel>Age Groups (years old)</FormLabel>
-            <FormInput value={form.dateOfBirth ? getAgeGroupLabel(form.dateOfBirth) : 'Select date of birth first'} readOnly />
-          </FormField>
-        </div>
-
-        {/* Personal Details */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Personal Details</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel required>First Name</FormLabel>
-              <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" className={errCls(errors.firstName)} />
-              {errors.firstName && <p className="text-xs text-error-600 mt-1">{errors.firstName}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel>Middle Name</FormLabel>
-              <FormInput value={form.middleName} onChange={set('middleName')} placeholder="Middle name" />
-            </FormField>
-            <FormField>
-              <FormLabel required>Last Name</FormLabel>
-              <FormInput value={form.lastName} onChange={set('lastName')} placeholder="Last name" className={errCls(errors.lastName)} />
-              {errors.lastName && <p className="text-xs text-error-600 mt-1">{errors.lastName}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Date of Birth</FormLabel>
-              <FormInput type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} className={errCls(errors.dateOfBirth)} />
-              {errors.dateOfBirth && <p className="text-xs text-error-600 mt-1">{errors.dateOfBirth}</p>}
-              {calcAge !== null && (
-                <p className="text-xs text-neutral-500 mt-1">Age: <span className="font-medium text-neutral-700 dark:text-neutral-300">{calcAge} years</span></p>
-              )}
-            </FormField>
-            <FormField>
-              <FormLabel required>Gender</FormLabel>
-              <FormSelect value={form.gender} onChange={set('gender')} className={errCls(errors.gender)}>
-                <option value="">Select gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </FormSelect>
-              {errors.gender && <p className="text-xs text-error-600 mt-1">{errors.gender}</p>}
-            </FormField>
-          </div>
-        </div>
-
-        {/* Contact Details */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Contact Details</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel required>Primary Email Address</FormLabel>
-              <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" className={errCls(errors.email)} />
-              {errors.email && <p className="text-xs text-error-600 mt-1">{errors.email}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel>Secondary Email Address</FormLabel>
-              <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" className={errCls(errors.secondaryEmail)} />
-              {errors.secondaryEmail && <p className="text-xs text-error-600 mt-1">{errors.secondaryEmail}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Primary Contact Number</FormLabel>
-              <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} placeholder="7700 000000" error={!!errors.phone} />
-              {errors.phone && <p className="text-xs text-error-600 mt-1">{errors.phone}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel>Secondary Contact Number</FormLabel>
-              <PhoneInput value={form.secondaryPhone} onChange={v => setForm(prev => ({ ...prev, secondaryPhone: v }))} placeholder="7700 000001" />
-            </FormField>
-            <FormField>
-              <FormLabel>Building Name</FormLabel>
-              <FormInput value={form.buildingName} onChange={set('buildingName')} placeholder="Building name" />
-            </FormField>
-            <FormField>
-              <FormLabel required>Address Line</FormLabel>
-              <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line" className={errCls(errors.addressLine1)} />
-              {errors.addressLine1 && <p className="text-xs text-error-600 mt-1">{errors.addressLine1}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel>Address Line 2</FormLabel>
-              <FormInput value={form.addressLine2} onChange={set('addressLine2')} placeholder="Address line 2" />
-            </FormField>
-            <FormField>
-              <FormLabel required>Town / City</FormLabel>
-              <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" className={errCls(errors.contactTownCity)} />
-              {errors.contactTownCity && <p className="text-xs text-error-600 mt-1">{errors.contactTownCity}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Post Code</FormLabel>
-              <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" className={errCls(errors.postCode)} />
-              {errors.postCode && <p className="text-xs text-error-600 mt-1">{errors.postCode}</p>}
-            </FormField>
-          </div>
-        </div>
-
-        {/* Emergency Contact */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Emergency Contact</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel required>Contact Name</FormLabel>
-              <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" className={errCls(errors.emergencyContactName)} />
-              {errors.emergencyContactName && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactName}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Contact Phone Number</FormLabel>
-              <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} placeholder="7700 000000" error={!!errors.emergencyContactPhone} />
-              {errors.emergencyContactPhone && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactPhone}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Contact Email</FormLabel>
-              <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" className={errCls(errors.emergencyContactEmail)} />
-              {errors.emergencyContactEmail && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactEmail}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Contact Relationship</FormLabel>
-              <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="Relationship" className={errCls(errors.emergencyContactRelationship)} />
-              {errors.emergencyContactRelationship && <p className="text-xs text-error-600 mt-1">{errors.emergencyContactRelationship}</p>}
-            </FormField>
-          </div>
-        </div>
-
-        {/* Guardian Information (Teen only - Child exempt per B3) */}
-        {form.dateOfBirth && getMemberTypeFromAge(form.dateOfBirth) === 'teen' && (
-          <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Parent / Guardian Approval Information</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField>
-                <FormLabel required>Parent / Guardian Name</FormLabel>
-                <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" className={errCls(errors.guardianName)} />
-                {errors.guardianName && <p className="text-xs text-error-600 mt-1">{errors.guardianName}</p>}
-              </FormField>
-              <FormField>
-                <FormLabel required>Parent / Guardian Phone Number</FormLabel>
-                <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} placeholder="7700 000000" error={!!errors.guardianPhone} />
-                {errors.guardianPhone && <p className="text-xs text-error-600 mt-1">{errors.guardianPhone}</p>}
-              </FormField>
-              <FormField>
-                <FormLabel required>Parent / Guardian Email</FormLabel>
-                <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" className={errCls(errors.guardianEmail)} />
-                {errors.guardianEmail && <p className="text-xs text-error-600 mt-1">{errors.guardianEmail}</p>}
-              </FormField>
-              <FormField>
-                <FormLabel required>Parent / Guardian Relationship</FormLabel>
-                <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" className={errCls(errors.guardianRelationship)} />
-                {errors.guardianRelationship && <p className="text-xs text-error-600 mt-1">{errors.guardianRelationship}</p>}
-              </FormField>
-            </div>
-          </div>
-        )}
-
-        {/* Other Information */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Other Information</p>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                <input type="checkbox" checked={form.medicalInfoDeclared} onChange={setBoolean('medicalInfoDeclared')} className="w-4 h-4 accent-primary-600" />
-                Medical information declared
-              </label>
-              <FormField className="md:col-span-2">
-                <FormLabel>Medical Information Details</FormLabel>
-                <FormTextarea rows={3} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} placeholder="Allergies or medical details" />
-              </FormField>
-              {canEditQualifiedFirstAider && (
-                <>
-                  <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                    <input type="checkbox" checked={form.isFirstAider} onChange={setBoolean('isFirstAider')} className="w-4 h-4 accent-primary-600" />
-                    Are you a qualified First Aider
-                  </label>
-                  {form.isFirstAider && (
-                    <>
-                      <FormField>
-                        <FormLabel>Level of qualification</FormLabel>
-                        <FormSelect value={form.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
-                          <option value="">Select qualification</option>
-                          {FIRST_AID_QUALIFICATION_OPTIONS.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </FormSelect>
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Qualification expiry date</FormLabel>
-                        <FormInput type="date" value={form.firstAidQualificationExpiryDate} onChange={set('firstAidQualificationExpiryDate')} />
-                      </FormField>
-                    </>
-                  )}
-                </>
-              )}
-              <FormField>
-                <FormLabel>Occupation</FormLabel>
-                <FormInput value={form.occupation} onChange={set('occupation')} placeholder="Occupation" />
-              </FormField>
-              <FormField>
-                <FormLabel>Originating State in India</FormLabel>
-                <FormInput value={form.originatingStateIndia} onChange={set('originatingStateIndia')} placeholder="State" />
-              </FormField>
-            </div>
-            <div>
-              <FormLabel>Special Dietary Requirements</FormLabel>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {DIETARY_REQUIREMENTS.map(item => (
-                  <label key={item} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                    <input type="checkbox" checked={form.dietaryRequirements.includes(item)} onChange={() => toggleDietaryRequirement(item)} className="w-4 h-4 accent-primary-600" />
-                    {item}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Masters Mapping */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Masters Mapping</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel required>Country / Organisation</FormLabel>
-              <FormSelect value={form.country} onChange={set('country')} className={errCls(errors.country)}>
-                <option value="">Select country</option>
-                {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
-              </FormSelect>
-              {errors.country && <p className="text-xs text-error-600 mt-1">{errors.country}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Vibhag (Region)</FormLabel>
-              <FormSelect value={form.region} onChange={set('region')} disabled={!form.country} className={errCls(errors.region)}>
-                <option value="">{form.country ? 'Select region' : 'Select country first'}</option>
-                {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-              </FormSelect>
-              {errors.region && <p className="text-xs text-error-600 mt-1">{errors.region}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Nagar (Town)</FormLabel>
-              <FormSelect value={form.town} onChange={set('town')} disabled={!form.region} className={errCls(errors.town)}>
-                <option value="">{form.region ? 'Select town' : 'Select region first'}</option>
-                {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-              </FormSelect>
-              {errors.town && <p className="text-xs text-error-600 mt-1">{errors.town}</p>}
-            </FormField>
-            <FormField>
-              <FormLabel required>Shakha (Branch)</FormLabel>
-              <FormSelect value={form.activityCentre} onChange={set('activityCentre')} disabled={!form.town} className={errCls(errors.activityCentre)}>
-                <option value="">{form.town ? 'Select shakha' : 'Select town first'}</option>
-                {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </FormSelect>
-              {errors.activityCentre && <p className="text-xs text-error-600 mt-1">{errors.activityCentre}</p>}
-            </FormField>
-          </div>
-        </div>
-
-        {/* Compliance */}
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance - DBS</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel>DBS Status</FormLabel>
-              <FormSelect value={form.dbsStatus} onChange={set('dbsStatus')}>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </FormSelect>
-            </FormField>
-            <FormField>
-              <FormLabel>DBS Reference Number</FormLabel>
-              <FormInput value={form.dbsRef} onChange={set('dbsRef')} placeholder="e.g. DBS-2024-001" />
-            </FormField>
-            <FormField>
-              <FormLabel>DBS Certificate Number</FormLabel>
-              <FormInput value={form.dbsCertificateNumber} onChange={set('dbsCertificateNumber')} placeholder="e.g. 001234567890" />
-            </FormField>
-            <FormField>
-              <FormLabel>DBS Certificate Date</FormLabel>
-              <FormInput type="date" value={form.dbsCertificateDate} onChange={set('dbsCertificateDate')} />
-            </FormField>
-            <FormField>
-              <FormLabel>Certificate Received From</FormLabel>
-              <FormInput value={form.dbsCertificateReceivedFrom} onChange={set('dbsCertificateReceivedFrom')} placeholder="e.g. Disclosure Scotland" />
-            </FormField>
-            <FormField>
-              <FormLabel>Other Source</FormLabel>
-              <FormInput value={form.dbsCertificateReceivedFromOther} onChange={set('dbsCertificateReceivedFromOther')} placeholder="If received from other source" />
-            </FormField>
-            <FormField>
-              <FormLabel>Enrolled in DBS Update Service</FormLabel>
-              <FormSelect value={form.dbsUpdateService} onChange={set('dbsUpdateService')}>
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-              </FormSelect>
-            </FormField>
-            {form.dbsUpdateService === 'yes' && (
-              <>
-                <FormField>
-                  <FormLabel>DBS Update Service Number</FormLabel>
-                  <FormInput value={form.dbsUpdateServiceNumber} onChange={set('dbsUpdateServiceNumber')} placeholder="e.g. US-2024-00456" />
-                </FormField>
-                <FormField>
-                  <FormLabel>Last Update Service Check Date</FormLabel>
-                  <FormInput type="date" value={form.dbsUpdateServiceCheckDate} onChange={set('dbsUpdateServiceCheckDate')} />
-                </FormField>
-              </>
-            )}
-            <FormField>
-              <FormLabel>DBS Application Under Process</FormLabel>
-              <FormSelect value={form.dbsAppUnderProcess} onChange={set('dbsAppUnderProcess')}>
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-              </FormSelect>
-            </FormField>
-            <FormField>
-              <FormLabel>Verified By</FormLabel>
-              <FormInput value={form.dbsCheckedBy} onChange={set('dbsCheckedBy')} placeholder="e.g. Ramesh Patel (Karyawaha)" />
-            </FormField>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance - First Aid</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel>First Aid Status</FormLabel>
-              <FormSelect value={form.firstAidStatus} onChange={set('firstAidStatus')}>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </FormSelect>
-            </FormField>
-            <FormField>
-              <FormLabel>First Aid Reference Number</FormLabel>
-              <FormInput value={form.firstAidRef} onChange={set('firstAidRef')} placeholder="e.g. FA-2024-001" />
-            </FormField>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Compliance - Safeguarding</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField>
-              <FormLabel>Safeguarding Status</FormLabel>
-              <FormSelect value={form.safeguardingStatus} onChange={set('safeguardingStatus')}>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </FormSelect>
-            </FormField>
-            <FormField>
-              <FormLabel>Safeguarding Reference Number</FormLabel>
-              <FormInput value={form.safeguardingRef} onChange={set('safeguardingRef')} placeholder="e.g. SG-2024-042" />
-            </FormField>
-            <FormField>
-              <FormLabel>Safeguarding Expiry Date</FormLabel>
-              <FormInput type="date" value={form.safeguardingExpiry} onChange={set('safeguardingExpiry')} />
-            </FormField>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30">
-        <button
-          onClick={handleClose}
-          disabled={isSaving}
-          className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <PrimaryButton onClick={handleSave} disabled={isSaving} isLoading={isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
-        </PrimaryButton>
-      </div>
-    </FormModal>
   );
 }
 
@@ -1192,7 +530,6 @@ export default function MemberManagement({
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; member: Member | null; isLoading: boolean }>({
     isOpen: false, member: null, isLoading: false,
   });
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignMemberId, setAssignMemberId] = useState<string | null>(null);
@@ -1531,6 +868,19 @@ export default function MemberManagement({
     );
   }
 
+  if (pageState === 'add') {
+    return (
+      <MemberAddPage
+        existingMembers={members}
+        onBack={() => setPageState('list')}
+        onSave={(newMember) => {
+          setMembers(prev => [...prev, newMember]);
+          setPageState('list');
+        }}
+      />
+    );
+  }
+
   // â"€â"€ Empty state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const EmptyState = () => (
@@ -1643,7 +993,7 @@ export default function MemberManagement({
           )}
 
           {mp.canAdd && !karyakartasOnly && (
-            <PrimaryButton icon={Plus} onClick={() => setShowAddModal(true)}>
+            <PrimaryButton icon={Plus} onClick={() => setPageState('add')}>
               Add Member
             </PrimaryButton>
           )}
@@ -2085,15 +1435,6 @@ export default function MemberManagement({
         isLoading={deleteModal.isLoading}
         onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
         onConfirm={confirmDelete}
-      />
-      <AddMemberModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={(newMember) => {
-          setMembers(prev => [newMember, ...prev]);
-          setShowAddModal(false);
-        }}
-        existingMembers={members}
       />
       <BulkUploadModal
         isOpen={showBulkModal}

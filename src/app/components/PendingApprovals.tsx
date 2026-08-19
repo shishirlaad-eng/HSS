@@ -348,8 +348,7 @@ export default function PendingApprovals() {
         m.email.toLowerCase().includes(q) ||
         m.id.toLowerCase().includes(q);
 
-      const matchesFilters = filters.every(f => {
-        if (!f.values.length) return true;
+      const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Age Groups (years old)': return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
           case 'Gender':           return f.values.some(v => v.toLowerCase() === m.gender);
@@ -361,7 +360,14 @@ export default function PendingApprovals() {
           case 'First Aid Status': return f.values.some(v => v.toLowerCase() === m.compliance.firstAid);
           default:                 return true;
         }
-      });
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
 
       return matchesSearch && matchesFilters;
     });
@@ -564,6 +570,7 @@ export default function PendingApprovals() {
               onClose={() => setShowAdvancedSearch(false)}
               filters={filters}
               onFiltersChange={setFilters}
+              showMatchModeToggle
               filterOptions={{
                 'Age Groups (years old)': Object.values(AGE_GROUP_LABELS),
                 'Gender':           ['Male', 'Female'],

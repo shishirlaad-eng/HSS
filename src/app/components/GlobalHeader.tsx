@@ -42,7 +42,7 @@ import {
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { ADMIN_ROLE_OPTIONS, ROLE_DISPLAY_LABELS, getPermittedNavIds } from "../../mockAPI/rolesData";
-import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo.png";
+import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-04-1.png";
 import {
   FormModal,
   FormLabel,
