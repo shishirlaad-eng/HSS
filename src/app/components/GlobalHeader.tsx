@@ -833,7 +833,7 @@ export function GlobalHeader({
               <img
                 src={myHssLogo}
                 alt="My HSS"
-                className="h-9 w-auto object-contain flex-shrink-0"
+                className="h-[74px] w-auto object-contain flex-shrink-0"
               />
             </div>
             {/* Nav items — pinned to bottom */}

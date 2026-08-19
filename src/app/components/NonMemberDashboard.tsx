@@ -66,7 +66,7 @@ function NonMemberHeader({
       <div className="flex items-center gap-2.5 min-w-0">
         <img src={hssLogoOrange} alt="HSS UK Logo" className="h-[74px] w-auto object-contain flex-shrink-0" />
         <div className="w-px h-10 bg-white/40 flex-shrink-0" />
-        <img src={myHssLogo} alt="My HSS" className="h-9 w-auto object-contain flex-shrink-0" />
+        <img src={myHssLogo} alt="My HSS" className="h-[74px] w-auto object-contain flex-shrink-0" />
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">

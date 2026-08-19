@@ -276,7 +276,7 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                     <img
                       src={myHssLogo}
                       alt="My HSS"
-                      className="h-16 w-auto object-contain"
+                      className="h-[70.4px] w-auto object-contain"
                     />
                   </div>
                   <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Namaste</h1>
