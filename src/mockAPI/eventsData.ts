@@ -431,7 +431,7 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
   ],
   'EVT-108': [
     { memberId: 'WBL-001', name: 'Vikram Singh',    email: 'vikram.singh@hssuk.org',    phone: '+44 7700 100001', memberType: 'adult', rsvp: 'going',
-      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult',
+      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult', donationAmount: 20,
       customAnswers: { 'CQ-108-1': '2', 'CQ-108-2': 'Vegetarian', 'CQ-108-3': true } },
     { memberId: 'WBL-004', name: 'Kavya Reddy',     email: 'kavya.reddy@hssuk.org',      phone: '+44 7700 100004', memberType: 'teen',  rsvp: 'going',
       ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
@@ -440,9 +440,9 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
       ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult', donationAmount: 10,
       customAnswers: { 'CQ-108-1': '1', 'CQ-108-2': 'None', 'CQ-108-3': true } },
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going',
-      ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
+      ticketTypeId: 'PC-2', ticketTypeLabel: 'Child', donationAmount: 5,
       customAnswers: { 'CQ-108-1': '0', 'CQ-108-2': 'Vegan', 'CQ-108-3': false } },
-    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult'    },
+    { memberId: 'MBR-002', name: 'Priya Patel',     email: 'priya.patel@example.com',   phone: '+44 7722 345678', memberType: 'adult', rsvp: 'going', ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult', donationAmount: 20    },
     { memberId: 'MBR-005', name: 'Vikram Nair',     email: 'vikram.nair@example.com',   phone: '+44 7755 678901', memberType: 'adult', rsvp: 'requested'    },
   ],
   'EVT-109': [
