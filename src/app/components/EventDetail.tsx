@@ -1234,13 +1234,23 @@ export default function EventDetail({
                             <h4 className="text-[15px] font-bold text-neutral-900 dark:text-white">Purchased Tickets</h4>
                           </div>
                           <div className="px-6 py-4 flex-1">
-                            <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">{myParticipation.ticketTypeLabel}</p>
-                            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-1">
-                              Quantity: 1 · £{perTicketPrice.toFixed(2)} per ticket
-                              {myParticipation.discountCodeUsed && ' · Free (code applied)'}
+                            <p className="text-[15px] font-semibold text-neutral-900 dark:text-white">
+                              {myParticipation.ticketTypeLabel} · £{perTicketPrice.toFixed(2)}
+                              {myParticipation.discountCodeUsed && ' (Free — code applied)'}
                             </p>
                             {cat?.description && (
                               <p className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-2">{cat.description}</p>
+                            )}
+                            {!!myParticipation.donationAmount && (
+                              <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                                <p className="text-[15px] font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                  <Heart className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" /> Donation
+                                </p>
+                                <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-1">
+                                  £{myParticipation.donationAmount.toFixed(2)} donated
+                                  {myParticipation.giftAidClaimed && ' · Gift Aid claimed'}
+                                </p>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1267,8 +1277,10 @@ export default function EventDetail({
                     );
                   })()}
 
-                  {/* Donation — member view, shown separately but near the ticket/QR group */}
-                  {isMember && myParticipation?.rsvp === 'going' && !!myParticipation.donationAmount && (
+                  {/* Donation — member view. Shown inside the Purchased Tickets box when there's a
+                      paid ticket; only rendered as its own card here for free events (no ticket box). */}
+                  {isMember && myParticipation?.rsvp === 'going' && !!myParticipation.donationAmount
+                    && !(event.paymentType === 'paid' && !!myParticipation.ticketTypeLabel) && (
                     <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                       <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
                         <Heart className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />

@@ -437,7 +437,7 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
       ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
       customAnswers: { 'CQ-108-1': '0', 'CQ-108-2': 'None', 'CQ-108-3': false } },
     { memberId: 'MBR-001', name: 'Arjun Sharma',    email: 'arjun.sharma@example.com',  phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going',
-      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult',
+      ticketTypeId: 'PC-1', ticketTypeLabel: 'Adult', donationAmount: 10,
       customAnswers: { 'CQ-108-1': '1', 'CQ-108-2': 'None', 'CQ-108-3': true } },
     { memberId: 'MBR-004', name: 'Sneha Gupta',     email: 'sneha.gupta@example.com',   phone: '+44 7744 567890', memberType: 'teen',  rsvp: 'going',
       ticketTypeId: 'PC-2', ticketTypeLabel: 'Child',
