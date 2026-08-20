@@ -28,6 +28,7 @@ import {
   getAgeGroup,
 } from '../../mockAPI/membersData';
 import { applyMemberCentreOverrides } from '../../mockAPI/shakhaTransferData';
+import { initialCentres } from './SuperAdminMasters';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 
 // ── Constants ─────────────────────────────────────────────────
@@ -63,6 +64,10 @@ interface CreateForm {
   utsav: string;
   recurDays: number[];
   repeatUntil: string;
+  locationAddressLine1: string;
+  locationAddressLine2: string;
+  locationCity: string;
+  locationPostCode: string;
 }
 
 const EMPTY_FORM = (date: string): CreateForm => ({
@@ -76,9 +81,35 @@ const EMPTY_FORM = (date: string): CreateForm => ({
   utsav: 'None',
   recurDays: [],
   repeatUntil: '',
+  locationAddressLine1: '',
+  locationAddressLine2: '',
+  locationCity: '',
+  locationPostCode: '',
 });
 
 // ── Helpers ───────────────────────────────────────────────────
+
+interface CentreLocationOption {
+  line1: string;
+  line2: string;
+  city: string;
+  postCode: string;
+}
+
+// Pulls the Shakha's address(es) from HSS UK Setup (Masters). A Shakha meeting
+// at two different venues across the week has both a primary and an
+// additional location — this session-level location is editable so a
+// specific occurrence can use either (or a manual override).
+function getCentreLocationOptions(centreName: string): { primary: CentreLocationOption | null; additional: CentreLocationOption | null } {
+  const centre = initialCentres.find(c => c.name === centreName);
+  const primary: CentreLocationOption | null = centre?.addressLine1
+    ? { line1: centre.addressLine1, line2: centre.addressLine2 ?? '', city: centre.city ?? '', postCode: centre.postCode ?? '' }
+    : null;
+  const additional: CentreLocationOption | null = centre?.address2Line1
+    ? { line1: centre.address2Line1, line2: centre.address2Line2 ?? '', city: centre.address2City ?? '', postCode: centre.address2PostCode ?? '' }
+    : null;
+  return { primary, additional };
+}
 
 function buildAttendanceRecordsForCentre(activityCentre: string): AttendanceRecord[] {
   return applyMemberCentreOverrides(mockMembers)
@@ -132,26 +163,44 @@ export default function CreateSession({
 
   const [form, setForm]     = useState<CreateForm>(
     sessionToEdit
-      ? {
-          date:           sessionToEdit.date,
-          startTime:      sessionToEdit.startTime,
-          endTime:        sessionToEdit.endTime,
-          region:         sessionToEdit.region,
-          town:           sessionToEdit.town,
-          activityCentre: sessionToEdit.activityCentre,
-          shakhaType:     sessionToEdit.shakhaType ?? '',
-          utsav:          sessionToEdit.utsav ?? 'None',
-          recurDays:      [],
-          repeatUntil:    '',
-        }
-      : {
-          ...EMPTY_FORM(initialDate),
-          region:         showRegionSelect ? '' : (scope.region ?? ''),
-          town:           showTownSelect   ? '' : (scope.town ?? ''),
-          activityCentre: scope.showCentreFilter ? '' : (scope.centre ?? ''),
-          shakhaType:     scope.showCentreFilter ? '' : getShakhaTypeForCentre(scope.centre ?? ''),
-        }
+      ? (() => {
+          const opts = getCentreLocationOptions(sessionToEdit.activityCentre);
+          return {
+            date:           sessionToEdit.date,
+            startTime:      sessionToEdit.startTime,
+            endTime:        sessionToEdit.endTime,
+            region:         sessionToEdit.region,
+            town:           sessionToEdit.town,
+            activityCentre: sessionToEdit.activityCentre,
+            shakhaType:     sessionToEdit.shakhaType ?? '',
+            utsav:          sessionToEdit.utsav ?? 'None',
+            recurDays:      [],
+            repeatUntil:    '',
+            // Legacy Shakhas created before this feature have no stored
+            // location — fall back to the Shakha's primary address.
+            locationAddressLine1: sessionToEdit.locationAddressLine1 ?? opts.primary?.line1 ?? '',
+            locationAddressLine2: sessionToEdit.locationAddressLine2 ?? opts.primary?.line2 ?? '',
+            locationCity:         sessionToEdit.locationCity         ?? opts.primary?.city  ?? '',
+            locationPostCode:     sessionToEdit.locationPostCode     ?? opts.primary?.postCode ?? '',
+          };
+        })()
+      : (() => {
+          const initialCentre = scope.showCentreFilter ? '' : (scope.centre ?? '');
+          const opts = getCentreLocationOptions(initialCentre);
+          return {
+            ...EMPTY_FORM(initialDate),
+            region:         showRegionSelect ? '' : (scope.region ?? ''),
+            town:           showTownSelect   ? '' : (scope.town ?? ''),
+            activityCentre: initialCentre,
+            shakhaType:     scope.showCentreFilter ? '' : getShakhaTypeForCentre(initialCentre),
+            locationAddressLine1: opts.primary?.line1 ?? '',
+            locationAddressLine2: opts.primary?.line2 ?? '',
+            locationCity:         opts.primary?.city  ?? '',
+            locationPostCode:     opts.primary?.postCode ?? '',
+          };
+        })()
   );
+  const [locationSource, setLocationSource] = useState<'primary' | 'additional'>('primary');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
@@ -182,7 +231,31 @@ export default function CreateSession({
     setForm(f => ({ ...f, town: v, activityCentre: '', shakhaType: '' }));
   };
   const handleCentreChange = (v: string) => {
-    setForm(f => ({ ...f, activityCentre: v, shakhaType: getShakhaTypeForCentre(v) }));
+    const opts = getCentreLocationOptions(v);
+    setForm(f => ({
+      ...f, activityCentre: v, shakhaType: getShakhaTypeForCentre(v),
+      locationAddressLine1: opts.primary?.line1 ?? '',
+      locationAddressLine2: opts.primary?.line2 ?? '',
+      locationCity:         opts.primary?.city  ?? '',
+      locationPostCode:     opts.primary?.postCode ?? '',
+    }));
+    setLocationSource('primary');
+  };
+
+  const centreLocationOptions = getCentreLocationOptions(form.activityCentre);
+  const hasAdditionalLocation = !!centreLocationOptions.additional;
+
+  const applyLocationPreset = (source: 'primary' | 'additional') => {
+    const picked = source === 'primary' ? centreLocationOptions.primary : centreLocationOptions.additional;
+    if (!picked) return;
+    setForm(f => ({
+      ...f,
+      locationAddressLine1: picked.line1,
+      locationAddressLine2: picked.line2,
+      locationCity: picked.city,
+      locationPostCode: picked.postCode,
+    }));
+    setLocationSource(source);
   };
 
   // ── Validation ─────────────────────────────────────────────
@@ -234,6 +307,10 @@ export default function CreateSession({
       endTime:        form.endTime,
       status:         'scheduled' as const,
       totalExpected:  centreRecords.length,
+      locationAddressLine1: form.locationAddressLine1 || undefined,
+      locationAddressLine2: form.locationAddressLine2 || undefined,
+      locationCity:         form.locationCity || undefined,
+      locationPostCode:     form.locationPostCode || undefined,
     };
 
     if (!isRecurring) {
@@ -309,6 +386,10 @@ export default function CreateSession({
           dayOfWeek:      new Date(form.date + 'T12:00:00').getDay(),
           attendanceRecords: buildAttendanceRecordsForCentre(form.activityCentre).map(r => ({ ...r })),
           totalExpected:  buildAttendanceRecordsForCentre(form.activityCentre).length,
+          locationAddressLine1: form.locationAddressLine1 || undefined,
+          locationAddressLine2: form.locationAddressLine2 || undefined,
+          locationCity:         form.locationCity || undefined,
+          locationPostCode:     form.locationPostCode || undefined,
         });
         toast.success('Shakha updated successfully');
       } else {
@@ -499,6 +580,79 @@ export default function CreateSession({
               </div>
             </div>
 
+            {/* ── Card: Location ────────────────────────────── */}
+            {form.activityCentre && (
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+                <SectionHeader
+                  icon={MapPin}
+                  title="Location"
+                  right={hasAdditionalLocation ? (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => applyLocationPreset('primary')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          locationSource === 'primary'
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                      >
+                        Primary Address
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyLocationPreset('additional')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          locationSource === 'additional'
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                      >
+                        Additional Location
+                      </button>
+                    </div>
+                  ) : undefined}
+                />
+
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                  Pulled through from the Shakha's address in HSS UK Setup — editable for this Shakha only. Drives geolocation for App check-in.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField className="md:col-span-2">
+                    <FormLabel>Address Line 1</FormLabel>
+                    <FormInput
+                      value={form.locationAddressLine1}
+                      onChange={e => setField('locationAddressLine1', e.target.value)}
+                      placeholder="Street address"
+                    />
+                  </FormField>
+                  <FormField className="md:col-span-2">
+                    <FormLabel>Address Line 2</FormLabel>
+                    <FormInput
+                      value={form.locationAddressLine2}
+                      onChange={e => setField('locationAddressLine2', e.target.value)}
+                      placeholder="Area / district (optional)"
+                    />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>City</FormLabel>
+                    <FormInput
+                      value={form.locationCity}
+                      onChange={e => setField('locationCity', e.target.value)}
+                    />
+                  </FormField>
+                  <FormField>
+                    <FormLabel>Post Code</FormLabel>
+                    <FormInput
+                      value={form.locationPostCode}
+                      onChange={e => setField('locationPostCode', e.target.value)}
+                    />
+                  </FormField>
+                </div>
+              </div>
+            )}
+
             {/* ── Card: Recurrence ─────────────────────────── */}
             {!isEditMode && <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
               <SectionHeader
@@ -615,6 +769,15 @@ export default function CreateSession({
                   </dt>
                   <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
                     {form.utsav || 'None'}
+                  </dd>
+                </div>
+
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 flex-shrink-0">
+                    <MapPin className="w-3.5 h-3.5" /> Location
+                  </dt>
+                  <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
+                    {[form.locationAddressLine1, form.locationCity, form.locationPostCode].filter(Boolean).join(', ') || '—'}
                   </dd>
                 </div>
 

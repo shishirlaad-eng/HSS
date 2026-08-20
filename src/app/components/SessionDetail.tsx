@@ -666,6 +666,11 @@ export default function SessionDetail({
                   <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
                     {session.activityCentre}
                     <span className="block text-neutral-400 dark:text-neutral-500">{session.town}, {session.region}</span>
+                    {session.locationAddressLine1 && (
+                      <span className="block text-neutral-400 dark:text-neutral-500">
+                        {[session.locationAddressLine1, session.locationAddressLine2, session.locationCity, session.locationPostCode].filter(Boolean).join(', ')}
+                      </span>
+                    )}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">

@@ -43,6 +43,14 @@ export interface ShakhaSession {
   status: SessionStatus;
   attendanceRecords: AttendanceRecord[];
   totalExpected: number;
+  // Physical location for this specific occurrence — pulled through from the
+  // Shakha's address(es) set up in HSS UK Setup, but editable per session so a
+  // Shakha that meets at two different venues across the week can pick which
+  // one (or override it entirely). Drives geolocation for App check-in.
+  locationAddressLine1?: string;
+  locationAddressLine2?: string;
+  locationCity?: string;
+  locationPostCode?: string;
 }
 
 export interface AttendanceRecord {

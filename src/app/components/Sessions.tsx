@@ -523,6 +523,11 @@ export default function Sessions() {
                   </td>
                   <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">
                     {s.activityCentre.replace(' Activity Centre', '')}
+                    {s.locationAddressLine1 && (
+                      <span className="block text-xs font-normal text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
+                        {[s.locationAddressLine1, s.locationPostCode].filter(Boolean).join(', ')}
+                      </span>
+                    )}
                   </td>
                   {(scope.showRegionFilter || scope.showTownFilter) && (
                     <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
