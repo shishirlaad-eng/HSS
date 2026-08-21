@@ -1372,14 +1372,20 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                         onChange={(_, member) => setActiveItem({ ...activeItem, karyawahaPramukhId: member?.id })}
                       />
                     ) : (
-                      <FormInput value={modalMode === 'view' ? (pramukh?.name ?? 'No Shakha Karyawaha Pramukh assigned') : ''} readOnly />
+                      <FormInput
+                        value={modalMode === 'view' ? (pramukh?.name ?? 'No Shakha Karyawaha Pramukh assigned') : ''}
+                        readOnly={modalMode === 'view'}
+                        disabled={modalMode === 'create'}
+                        placeholder={modalMode === 'create' ? 'Set once the Shakha is created' : undefined}
+                      />
                     )}
                   </FormField>
                   <FormField>
                     <FormLabel>Phone</FormLabel>
                     <FormInput
                       value={modalMode === 'create' ? '' : (pramukh?.phone ?? '—')}
-                      readOnly
+                      readOnly={modalMode !== 'create'}
+                      disabled={modalMode === 'create'}
                     />
                   </FormField>
                   <FormField>
@@ -1387,7 +1393,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     <FormInput
                       value={activeItem.contactEmail ?? ''}
                       onChange={e => setActiveItem({ ...activeItem, contactEmail: e.target.value })}
-                      readOnly={modalMode !== 'edit'}
+                      readOnly={modalMode === 'view'}
+                      disabled={modalMode === 'create'}
                       placeholder="e.g. centre@hss.org.uk"
                     />
                   </FormField>
@@ -1395,8 +1402,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 );
               })()}
 
-              {/* Address Details (Activity Centre only) — locked and blank while
-                  creating; fill these in when you edit the Shakha afterwards. */}
+              {/* Address Details (Activity Centre only) — locked, blank and greyed
+                  out while creating; fill these in when you edit the Shakha afterwards. */}
               {masterType === 'centre' && (
                 <FormSection title="Address Details">
                   <FormField>
@@ -1405,7 +1412,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       ref={addressLine1Ref}
                       value={activeItem.addressLine1 ?? ''}
                       onChange={e => { setActiveItem({ ...activeItem, addressLine1: e.target.value }); setFieldErrors(prev => ({ ...prev, addressLine1: false })); }}
-                      readOnly={modalMode !== 'edit'}
+                      readOnly={modalMode === 'view'}
+                      disabled={modalMode === 'create'}
                       placeholder="Street address"
                       className={fieldErrors.addressLine1 ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                     />
@@ -1416,7 +1424,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     <FormInput
                       value={activeItem.addressLine2 ?? ''}
                       onChange={e => setActiveItem({ ...activeItem, addressLine2: e.target.value })}
-                      readOnly={modalMode !== 'edit'}
+                      readOnly={modalMode === 'view'}
+                      disabled={modalMode === 'create'}
                       placeholder="Area / district (optional)"
                     />
                   </FormField>
@@ -1426,7 +1435,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput
                         value={activeItem.city ?? ''}
                         onChange={e => setActiveItem({ ...activeItem, city: e.target.value })}
-                        readOnly={modalMode !== 'edit'}
+                        readOnly={modalMode === 'view'}
+                        disabled={modalMode === 'create'}
                         placeholder="City"
                       />
                     </FormField>
@@ -1435,7 +1445,8 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput
                         value={activeItem.postCode ?? ''}
                         onChange={e => setActiveItem({ ...activeItem, postCode: e.target.value })}
-                        readOnly={modalMode !== 'edit'}
+                        readOnly={modalMode === 'view'}
+                        disabled={modalMode === 'create'}
                         placeholder="e.g. BS1 4ST"
                       />
                     </FormField>

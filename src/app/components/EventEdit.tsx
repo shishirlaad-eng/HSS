@@ -10,11 +10,12 @@ import {
 } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge, getAgeGroup } from '../../mockAPI/membersData';
 import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
+import { getScopedFilterOptions, filterByScope } from '../../mockAPI/roleScope';
 import {
   PriceCategoriesEditor,
   CustomQuestionsEditor,
@@ -58,6 +59,57 @@ const TABS: { id: EditTab; label: string }[] = [
   { id: 'terms',        label: 'Terms & Conditions'   },
   { id: 'confirmation', label: 'Karyakram Confirmation'   },
 ];
+
+function ageAsOf(dateOfBirth: string, asOfDateStr: string): number {
+  const asOf = new Date(asOfDateStr);
+  const dob = new Date(dateOfBirth);
+  let age = asOf.getFullYear() - dob.getFullYear();
+  const m = asOf.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && asOf.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+// How many members in scope currently match the Target Audience + Demographic
+// Filters selections — shown as a live count at the bottom of the Audience tab.
+// Matches the same logic used in EventCreate.tsx.
+function countMatchingMembers(
+  f: {
+    targetSpecificOnly: boolean; targetMemberIds: string[];
+    targetRegions: string[]; targetTowns: string[]; targetCentres: string[];
+    filterAgeCategories: AgeGroup[]; filterGenders: ('male' | 'female')[];
+    filterJobTitles: string[]; filterResponsibilityLevels: string[]; filterResponsibilityTypes: string[];
+    specificAgeOperator: '' | '=' | '>' | '<' | 'between';
+    specificAgeValue: string; specificAgeAsAtDate: string; specificAgeFrom: string; specificAgeTo: string;
+  },
+  members: typeof mockMembers,
+  regionOptions: string[], townOptions: string[], centreOptions: string[],
+): number {
+  if (f.targetSpecificOnly) return f.targetMemberIds.length;
+
+  return members.filter(m => {
+    if (!isFullSelection(f.targetRegions, regionOptions) && !f.targetRegions.includes(m.region)) return false;
+    if (!isFullSelection(f.targetTowns, townOptions) && !f.targetTowns.includes(m.town)) return false;
+    if (!isFullSelection(f.targetCentres, centreOptions) && !f.targetCentres.includes(m.activityCentre)) return false;
+
+    if (!isFullSelection(f.filterAgeCategories, AGE_GROUP_OPTIONS.map(o => o.value)) && !f.filterAgeCategories.includes(getAgeGroup(m.dateOfBirth))) return false;
+    if (!isFullSelection(f.filterGenders, ['male', 'female']) && !f.filterGenders.includes(m.gender)) return false;
+    if (!isFullSelection(f.filterJobTitles, ROLE_TYPE_OPTIONS) && !f.filterJobTitles.includes(m.jobTitle)) return false;
+    if (!isFullSelection(f.filterResponsibilityLevels, [...RESPONSIBILITY_LEVEL_OPTIONS]) && !(m.responsibilityLevel && f.filterResponsibilityLevels.includes(m.responsibilityLevel))) return false;
+    if (!isFullSelection(f.filterResponsibilityTypes, [...RESPONSIBILITY_TYPE_OPTIONS]) && !(m.responsibilityType && f.filterResponsibilityTypes.includes(m.responsibilityType))) return false;
+
+    if (f.specificAgeOperator === '=' && f.specificAgeValue && f.specificAgeAsAtDate) {
+      if (ageAsOf(m.dateOfBirth, f.specificAgeAsAtDate) !== Number(f.specificAgeValue)) return false;
+    } else if (f.specificAgeOperator === '>' && f.specificAgeValue && f.specificAgeAsAtDate) {
+      if (ageAsOf(m.dateOfBirth, f.specificAgeAsAtDate) < Number(f.specificAgeValue)) return false;
+    } else if (f.specificAgeOperator === '<' && f.specificAgeValue && f.specificAgeAsAtDate) {
+      if (ageAsOf(m.dateOfBirth, f.specificAgeAsAtDate) > Number(f.specificAgeValue)) return false;
+    } else if (f.specificAgeOperator === 'between' && f.specificAgeFrom && f.specificAgeTo) {
+      if (m.dateOfBirth < f.specificAgeFrom || m.dateOfBirth > f.specificAgeTo) return false;
+    }
+
+    return true;
+  }).length;
+}
 
 function findCountryForRegion(region: string): string {
   const entry = Object.entries(MASTERS_CASCADE.regions).find(([, regions]) => (regions as string[]).includes(region));
@@ -167,13 +219,21 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
   const [touched, setTouched]   = useState(false);
 
   // Org-wide targeting options — same cascade as EventCreate's Scope card.
-  const regionOptions = Object.values(MASTERS_CASCADE.regions).flat();
+  // Target Audience option lists are capped to what this admin's own level can
+  // reach — matches EventCreate.tsx.
+  const scopedOptions = getScopedFilterOptions(scope);
+  const regionOptions = scopedOptions.regionOptions;
   const townOptions    = !isFullSelection(formData.targetRegions, regionOptions)
-    ? formData.targetRegions.flatMap(r => MASTERS_CASCADE.towns[r] ?? [])
-    : Object.values(MASTERS_CASCADE.towns).flat();
+    ? formData.targetRegions.flatMap(r => MASTERS_CASCADE.towns[r] ?? []).filter(t => scopedOptions.townOptions.includes(t))
+    : scopedOptions.townOptions;
   const centreOptions  = !isFullSelection(formData.targetTowns, townOptions)
-    ? formData.targetTowns.flatMap(t => MASTERS_CASCADE.centres[t] ?? [])
-    : Object.values(MASTERS_CASCADE.centres).flat();
+    ? formData.targetTowns.flatMap(t => MASTERS_CASCADE.centres[t] ?? []).filter(c => scopedOptions.centreOptions.includes(c))
+    : scopedOptions.centreOptions;
+
+  // "Invite specific members only" is likewise capped to members within this admin's scope.
+  const scopedMembers = filterByScope(mockMembers, scope);
+
+  const matchingMemberCount = countMatchingMembers(formData, scopedMembers, regionOptions, townOptions, centreOptions);
 
   const set = (field: string, value: any) => {
     setFormData(prev => {
@@ -753,7 +813,11 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       required
                       error={touched && !!errors.targetRegions}
                       errorMessage={touched ? errors.targetRegions : undefined}
-                      onChange={v => { set('targetRegions', v); set('targetTowns', []); set('targetCentres', []); }}
+                      onChange={v => {
+                        set('targetRegions', v);
+                        if (isAllSelected(v)) { set('targetTowns', [ALL_SENTINEL]); set('targetCentres', [ALL_SENTINEL]); }
+                        else { set('targetTowns', []); set('targetCentres', []); }
+                      }}
                     />
                   </div>
                   <div ref={el => { fieldRefs.current.targetTowns = el; }}>
@@ -765,7 +829,10 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       required
                       error={touched && !!errors.targetTowns}
                       errorMessage={touched ? errors.targetTowns : undefined}
-                      onChange={v => { set('targetTowns', v); set('targetCentres', []); }}
+                      onChange={v => {
+                        set('targetTowns', v);
+                        set('targetCentres', isAllSelected(v) ? [ALL_SENTINEL] : []);
+                      }}
                     />
                   </div>
                   <div ref={el => { fieldRefs.current.targetCentres = el; }}>
@@ -943,6 +1010,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                           selectedIds={formData.targetMemberIds}
                           onChange={ids => set('targetMemberIds', ids)}
                           disabled={blocked}
+                          members={scopedMembers}
                         />
                       </div>
                       <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
@@ -950,6 +1018,10 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                   )}
                 </div>
               </Card>
+
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 px-1">
+                This Karyakram will be available to <strong className="text-neutral-900 dark:text-white">{matchingMemberCount.toLocaleString()}</strong> member{matchingMemberCount !== 1 ? 's' : ''} based on the audience and targeting filters above.
+              </p>
             </div>
           )}
 

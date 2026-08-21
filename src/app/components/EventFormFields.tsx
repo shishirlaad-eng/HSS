@@ -147,7 +147,7 @@ export function MultiSelectField({
         {open && !disabled && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-56 overflow-y-auto slim-scroll">
             <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer border-b border-neutral-100 dark:border-neutral-800">
-              <input type="checkbox" checked={isAll} onChange={() => onChange([ALL_SENTINEL])} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
+              <input type="checkbox" checked={isAll} onChange={() => onChange(isAll ? [] : [ALL_SENTINEL])} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
               {allLabel}
             </label>
             {options.map(opt => (
@@ -171,7 +171,7 @@ export function MultiSelectField({
 
 // ── Searchable multi-select for targeting specific members ────────────────────
 // Shared by EventCreate and EventEdit's Target Audience tabs.
-export function MemberMultiSelect({ selectedIds, onChange, disabled }: { selectedIds: string[]; onChange: (ids: string[]) => void; disabled?: boolean }) {
+export function MemberMultiSelect({ selectedIds, onChange, disabled, members = mockMembers }: { selectedIds: string[]; onChange: (ids: string[]) => void; disabled?: boolean; members?: typeof mockMembers }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -186,11 +186,11 @@ export function MemberMultiSelect({ selectedIds, onChange, disabled }: { selecte
 
   const q = query.toLowerCase().trim();
   const matches = (q
-    ? mockMembers.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.activityCentre.toLowerCase().includes(q))
-    : mockMembers
+    ? members.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.activityCentre.toLowerCase().includes(q))
+    : members
   ).slice(0, 30);
 
-  const selectedMembers = mockMembers.filter(m => selectedIds.includes(m.id));
+  const selectedMembers = members.filter(m => selectedIds.includes(m.id));
 
   return (
     <div>

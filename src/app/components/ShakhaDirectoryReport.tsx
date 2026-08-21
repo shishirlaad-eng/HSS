@@ -9,8 +9,8 @@
 // Contact Name/Number show "—" until that's reconciled.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
-import { Building2, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination, SearchBar, AdvancedSearchPanel, useStickyListingHeader } from './hb/listing';
+import { Building2, BarChart3, MoreVertical, FileSpreadsheet, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { PageHeader, IconButton, Pagination, SearchBar, AdvancedSearchPanel, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
@@ -69,6 +69,7 @@ export default function ShakhaDirectoryReport() {
   const allRows = useMemo(buildDirectory, []);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
@@ -203,9 +204,14 @@ export default function ShakhaDirectoryReport() {
                 title="Filter Shakhas"
               />
             </div>
-            <PrimaryButton icon={Download} onClick={handleExport}>
-              Export CSV
-            </PrimaryButton>
+            <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExport },
+              ]}
+            />
           </PageHeader>
         </div>
 
@@ -216,11 +222,13 @@ export default function ShakhaDirectoryReport() {
         </div>
 
         {/* ── KPI Cards ────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <KpiCard label="Total Vibhags" value={totalVibhags} icon={Building2} color="bg-primary-500" />
-          <KpiCard label="Total Nagars"  value={totalNagars}  icon={Building2} color="bg-info-500" />
-          <KpiCard label="Total Shakhas" value={total}        icon={Building2} color="bg-success-500" />
-        </div>
+        {showSummary && (
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <KpiCard label="Total Vibhags" value={totalVibhags} icon={Building2} color="bg-primary-500" />
+            <KpiCard label="Total Nagars"  value={totalNagars}  icon={Building2} color="bg-info-500" />
+            <KpiCard label="Total Shakhas" value={total}        icon={Building2} color="bg-success-500" />
+          </div>
+        )}
 
         {/* ── Directory Table ─────────────────────────────── */}
         <div className="mt-6 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">

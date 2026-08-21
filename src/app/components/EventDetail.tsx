@@ -1002,14 +1002,6 @@ export default function EventDetail({
                 <h1 className="text-xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{event.name}</h1>
                 <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
                 <span className="text-sm text-neutral-500 font-mono">Karyakram Id: {event.id}</span>
-                {isMember && (
-                  <>
-                    <div className="w-px h-5 bg-neutral-300 dark:bg-neutral-700" />
-                    <span className="text-sm text-neutral-500">
-                      {event.paymentType === 'paid' ? `Paid${formatPriceRange(event) ? ` · ${formatPriceRange(event)}` : ''}` : 'Free'}
-                    </span>
-                  </>
-                )}
               </div>
               {isMember ? (
                 <div className="flex flex-col gap-1 text-base text-neutral-700 dark:text-neutral-300 mb-3">
@@ -1297,6 +1289,26 @@ export default function EventDetail({
 
                   {!isMember && (
                     <>
+                      {/* Ticket Types — admin only */}
+                      {hasTicketTypes && (
+                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                            <Ticket className="w-4 h-4 text-neutral-500 dark:text-neutral-400" /> Ticket Types
+                          </h4>
+                          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                            {event.priceCategories!.map(cat => (
+                              <div key={cat.id} className="px-6 py-3 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{cat.label}</p>
+                                  {cat.description && <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{cat.description}</p>}
+                                </div>
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Target Audience — admin only */}
                       {(event.targetRegions?.length || event.targetTowns?.length || event.targetCentres?.length || event.targetMemberIds?.length) && (
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -1744,9 +1756,28 @@ export default function EventDetail({
                             )}
                           </div>
                         </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Email</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.email}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.phone || '—'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Type</label>
+                          <p className="text-sm text-neutral-900 dark:text-white capitalize">{vp.memberType}</p>
+                        </div>
+                        {vp.isCoordinator && (
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Coordinator</label>
+                            <p className="text-sm text-neutral-900 dark:text-white">Yes</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    {hasTicketTypes && (
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                         Payment Information
@@ -1776,9 +1807,17 @@ export default function EventDetail({
                             <p className="text-sm font-mono text-neutral-900 dark:text-white">{vp.lastRefundReference}</p>
                           </div>
                         )}
+                        {vp.refundRequested && (
+                          <div>
+                            <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Requested</label>
+                            <p className="text-sm text-amber-700 dark:text-amber-400">Yes</p>
+                          </div>
+                        )}
                       </div>
                     </div>
+                    )}
 
+                    {(event.donationEnabled || !!vp.donationAmount) && (
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                         Donation Information
@@ -1794,6 +1833,7 @@ export default function EventDetail({
                         </div>
                       </div>
                     </div>
+                    )}
 
                     {mockEventGuestProfiles[vp.memberId] && (() => {
                       const gp = mockEventGuestProfiles[vp.memberId];
@@ -1953,34 +1993,6 @@ export default function EventDetail({
                         <p className="text-sm text-neutral-900 dark:text-white">
                           {vp.termsAccepted ? 'Accepted at the time of registration.' : 'Not recorded.'}
                         </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                        Other Registration Data
-                      </h4>
-                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Email</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.email}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.phone || '—'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Type</label>
-                          <p className="text-sm text-neutral-900 dark:text-white capitalize">{vp.memberType}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Coordinator</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.isCoordinator ? 'Yes' : 'No'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Refund Requested</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.refundRequested ? 'Yes' : 'No'}</p>
-                        </div>
                       </div>
                     </div>
 

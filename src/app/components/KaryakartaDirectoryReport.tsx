@@ -88,6 +88,41 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
   );
 }
 
+function BreakdownKpiCard({ title, icon: Icon, color, items }: {
+  title: string; icon: React.ElementType; color: string;
+  items: { label: string; value: number }[];
+}) {
+  return (
+    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
+      </div>
+      <div className="space-y-2">
+        {items.map(item => (
+          <div key={item.label} className="flex items-center justify-between">
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.label}</span>
+            <span className="text-lg font-bold text-neutral-900 dark:text-white">{fmt(item.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Short form of a responsibility level e.g. "Kendriya / National" → "Kendriya".
+function shortLevel(level?: string) {
+  return level ? level.split('/')[0].trim() : '';
+}
+
+// All three parts of the Sangh Responsibility — Level, Responsibility, Type —
+// e.g. "Kendriya Shareerik Pramukh".
+function fullResponsibility(m: Member) {
+  return [shortLevel(m.responsibilityLevel), m.jobTitle, m.responsibilityType].filter(Boolean).join(' ');
+}
+
 // ── Main Component ────────────────────────────────────────────
 
 export default function KaryakartaDirectoryReport() {
@@ -204,7 +239,7 @@ export default function KaryakartaDirectoryReport() {
       rows.push([g.level.toUpperCase()]);
       rows.push(['Sangh Responsibility', 'First Name', 'Last Name', 'Shakha', 'Email', 'Contact Number']);
       g.members.forEach(m => rows.push([
-        m.jobTitle,
+        fullResponsibility(m),
         m.firstName ?? m.name.split(' ')[0],
         m.surname ?? m.name.split(' ').slice(1).join(' '),
         m.activityCentre, m.email, m.phone ?? '',
@@ -321,13 +356,27 @@ export default function KaryakartaDirectoryReport() {
         </div>
 
         {/* ── KPI Cards ────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <KpiCard label="Total Karyakartas" value={total}         icon={Users}     color="bg-primary-500" />
-          <KpiCard label="Kendriya Level"    value={kendriyaCount} icon={Building2} color="bg-violet-500" />
-          <KpiCard label="Nagar Level"       value={nagarCount}    icon={Building2} color="bg-info-500" />
-          <KpiCard label="Shakha Level"      value={shakhaCount}   icon={Building2} color="bg-success-500" />
-          <KpiCard label="Male"              value={maleCount}     icon={UserCheck} color="bg-blue-500" sub={total > 0 ? `${Math.round(maleCount/total*100)}% of total` : undefined} />
-          <KpiCard label="Female"            value={femaleCount}   icon={UserCheck} color="bg-pink-500" sub={total > 0 ? `${Math.round(femaleCount/total*100)}% of total` : undefined} />
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard label="Total Karyakartas" value={total} icon={Users} color="bg-primary-500" />
+          <BreakdownKpiCard
+            title="By Responsibility Level"
+            icon={Building2}
+            color="bg-violet-500"
+            items={[
+              { label: 'Kendriya', value: kendriyaCount },
+              { label: 'Nagar',    value: nagarCount },
+              { label: 'Shakha',   value: shakhaCount },
+            ]}
+          />
+          <BreakdownKpiCard
+            title="Gender Split"
+            icon={UserCheck}
+            color="bg-blue-500"
+            items={[
+              { label: 'Male',   value: maleCount },
+              { label: 'Female', value: femaleCount },
+            ]}
+          />
         </div>
 
         {/* ── Grouped Directory Table ─────────────────────── */}
@@ -358,7 +407,7 @@ export default function KaryakartaDirectoryReport() {
                     </tr>
                     {g.members.map(m => (
                       <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
-                        <td className="px-4 py-3 whitespace-nowrap">{m.jobTitle}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{fullResponsibility(m)}</td>
                         <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
                         <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{m.activityCentre}</td>

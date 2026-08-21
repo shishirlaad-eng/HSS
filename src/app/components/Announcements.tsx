@@ -364,7 +364,7 @@ function MultiSelectField({
         {open && !disabled && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-56 overflow-y-auto slim-scroll">
             <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer border-b border-neutral-100 dark:border-neutral-800">
-              <input type="checkbox" checked={isAll} onChange={() => onChange(options)} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
+              <input type="checkbox" checked={isAll} onChange={() => onChange(isAll ? [] : options)} className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600" />
               {allLabel}
             </label>
             {options.map(opt => (
