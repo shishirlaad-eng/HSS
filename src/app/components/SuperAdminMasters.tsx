@@ -644,7 +644,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       focusField(nameRef);
       return;
     }
-    if (masterType === 'centre' && !activeItem?.addressLine1?.trim()) {
+    if (masterType === 'centre' && modalMode === 'edit' && !activeItem?.addressLine1?.trim()) {
       setFieldErrors({ addressLine1: true });
       toast.error('Address Line 1 is required.');
       focusField(addressLine1Ref);
@@ -1352,29 +1352,33 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 </FormField>
               </FormSection>
 
-              {/* Contact Details (Activity Centre only) — Contact Name is picked from
-                  an autocomplete of members holding Shakha Karyawaha Pramukh; phone
-                  is shown from that selection and is never typed in directly. */}
+              {/* Contact Details (Activity Centre only) — locked and blank while
+                  creating a new Shakha; a Karyawaha Pramukh can't be assigned (and
+                  no contact details make sense) until the Shakha exists. Only
+                  editable once you come back and edit the Shakha afterwards.
+                  Contact Name is picked from an autocomplete of members holding
+                  Shakha Karyawaha Pramukh; phone is shown from that selection and
+                  is never typed in directly. */}
               {masterType === 'centre' && (() => {
                 const pramukh = getShakhaKaryawahaPramukh(activeItem.karyawahaPramukhId);
                 return (
                 <FormSection title="Contact Details">
                   <FormField>
                     <FormLabel>Contact Name</FormLabel>
-                    {modalMode === 'view' ? (
-                      <FormInput value={pramukh?.name ?? 'No Shakha Karyawaha Pramukh assigned'} readOnly />
-                    ) : (
+                    {modalMode === 'edit' ? (
                       <PramukhAutocomplete
                         value={pramukh?.name ?? ''}
                         candidates={eligibleKaryawahaPramukhs}
                         onChange={(_, member) => setActiveItem({ ...activeItem, karyawahaPramukhId: member?.id })}
                       />
+                    ) : (
+                      <FormInput value={modalMode === 'view' ? (pramukh?.name ?? 'No Shakha Karyawaha Pramukh assigned') : ''} readOnly />
                     )}
                   </FormField>
                   <FormField>
                     <FormLabel>Phone</FormLabel>
                     <FormInput
-                      value={pramukh?.phone ?? '—'}
+                      value={modalMode === 'create' ? '' : (pramukh?.phone ?? '—')}
                       readOnly
                     />
                   </FormField>
@@ -1383,7 +1387,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     <FormInput
                       value={activeItem.contactEmail ?? ''}
                       onChange={e => setActiveItem({ ...activeItem, contactEmail: e.target.value })}
-                      readOnly={modalMode === 'view'}
+                      readOnly={modalMode !== 'edit'}
                       placeholder="e.g. centre@hss.org.uk"
                     />
                   </FormField>
@@ -1391,16 +1395,17 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                 );
               })()}
 
-              {/* Address Details (Activity Centre only) */}
+              {/* Address Details (Activity Centre only) — locked and blank while
+                  creating; fill these in when you edit the Shakha afterwards. */}
               {masterType === 'centre' && (
                 <FormSection title="Address Details">
                   <FormField>
-                    <FormLabel required={modalMode !== 'view'}>Address Line 1</FormLabel>
+                    <FormLabel required={modalMode === 'edit'}>Address Line 1</FormLabel>
                     <FormInput
                       ref={addressLine1Ref}
                       value={activeItem.addressLine1 ?? ''}
                       onChange={e => { setActiveItem({ ...activeItem, addressLine1: e.target.value }); setFieldErrors(prev => ({ ...prev, addressLine1: false })); }}
-                      readOnly={modalMode === 'view'}
+                      readOnly={modalMode !== 'edit'}
                       placeholder="Street address"
                       className={fieldErrors.addressLine1 ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                     />
@@ -1411,7 +1416,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                     <FormInput
                       value={activeItem.addressLine2 ?? ''}
                       onChange={e => setActiveItem({ ...activeItem, addressLine2: e.target.value })}
-                      readOnly={modalMode === 'view'}
+                      readOnly={modalMode !== 'edit'}
                       placeholder="Area / district (optional)"
                     />
                   </FormField>
@@ -1421,7 +1426,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput
                         value={activeItem.city ?? ''}
                         onChange={e => setActiveItem({ ...activeItem, city: e.target.value })}
-                        readOnly={modalMode === 'view'}
+                        readOnly={modalMode !== 'edit'}
                         placeholder="City"
                       />
                     </FormField>
@@ -1430,7 +1435,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                       <FormInput
                         value={activeItem.postCode ?? ''}
                         onChange={e => setActiveItem({ ...activeItem, postCode: e.target.value })}
-                        readOnly={modalMode === 'view'}
+                        readOnly={modalMode !== 'edit'}
                         placeholder="e.g. BS1 4ST"
                       />
                     </FormField>
