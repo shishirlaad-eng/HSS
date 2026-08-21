@@ -1,3 +1,5 @@
+import { AgeGroup } from './membersData';
+
 export type DonationStatus = 'received' | 'pledged' | 'failed' | 'refunded';
 export type DonationChannel = 'online' | 'bank-transfer' | 'cash' | 'cheque';
 export type IncomeStream = 'online-donation' | 'cash-income' | 'standing-order';
@@ -16,6 +18,133 @@ export interface DonationRecord {
   giftAid: boolean;   // UK taxpayer Gift Aid declaration — adds 25% claimable on top
   incomeStream: IncomeStream;
 }
+
+// Cash collected during a Guru Purnima utsav Shakha, broken down by age
+// category — a distinct record type from DonationRecord (that has a single
+// flat amount and no session/age-category breakdown). Linked back to the
+// ShakhaSession the money was collected at, one entry per session.
+export interface UtsavCashIncomeEntry {
+  id: string;
+  sessionId: string;
+  utsav: 'Guru Purnima';
+  date: string;               // copied from the session's date
+  country: string;
+  region: string;
+  town: string;
+  activityCentre: string;
+  amounts: Record<AgeGroup, number>; // to 2dp, one per age category
+  total: number;               // sum of amounts, computed at save time
+  recordedAt: string;          // ISO datetime
+}
+
+export const mockUtsavCashIncome: UtsavCashIncomeEntry[] = [
+  {
+    id: 'UCI-001',
+    sessionId: 'SES-053',
+    utsav: 'Guru Purnima',
+    date: '2026-07-19',
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Wembley',
+    activityCentre: 'Wembley Activity Centre',
+    amounts: { bal: 12.50, shishu: 18.00, kishor: 22.50, tarun: 45.00, yuva: 38.75, jyestha: 15.25 },
+    total: 152.00,
+    recordedAt: '2026-07-19T14:00:00Z',
+  },
+  {
+    id: 'UCI-002',
+    sessionId: 'SES-054',
+    utsav: 'Guru Purnima',
+    date: '2026-07-19',
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Harrow',
+    activityCentre: 'Harrow Activity Centre',
+    amounts: { bal: 8.00, shishu: 10.50, kishor: 14.00, tarun: 26.50, yuva: 20.00, jyestha: 9.00 },
+    total: 88.00,
+    recordedAt: '2026-07-19T14:15:00Z',
+  },
+  {
+    id: 'UCI-003',
+    sessionId: 'SES-055',
+    utsav: 'Guru Purnima',
+    date: '2026-07-12',
+    country: 'HSS UK',
+    region: 'North West',
+    town: 'Manchester',
+    activityCentre: 'Manchester Central Activity Centre',
+    amounts: { bal: 5.00, shishu: 7.50, kishor: 9.00, tarun: 18.00, yuva: 12.50, jyestha: 6.00 },
+    total: 58.00,
+    recordedAt: '2026-07-12T13:45:00Z',
+  },
+];
+
+// Cash/on-the-spot donation collected from an individual attendee (member or
+// guest) of a specific paid Karyakram — a distinct record type from both
+// DonationRecord (org-level, no event/member link) and UtsavCashIncomeEntry
+// (Shakha-session + age-category, not event/member). One entry per collection.
+export interface KaryakramDonationRecord {
+  id: string;
+  eventId: string;             // links to Event.id
+  memberId?: string;           // set when NOT a guest — links to EventParticipant/Member
+  guestName?: string;          // set when the Guest checkbox was used instead
+  guestEmail?: string;         // guest-entered contact details — members already have these on their Member record
+  guestPhone?: string;
+  guestActivityCentre?: string; // guest's own Shakha, if they gave one (free text — not one of ours)
+  amount: number;               // to 2dp
+  country: string;
+  region: string;
+  town: string;
+  activityCentre: string;      // copied from the event
+  recordedAt: string;           // ISO datetime
+}
+
+export const mockKaryakramDonations: KaryakramDonationRecord[] = [
+  {
+    id: 'KDN-001',
+    eventId: 'EVT-118',
+    memberId: 'MBR-001',
+    amount: 20.00,
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Wembley',
+    activityCentre: 'Wembley Activity Centre',
+    recordedAt: '2026-09-10T11:15:00Z',
+  },
+  {
+    id: 'KDN-002',
+    eventId: 'EVT-118',
+    memberId: 'MBR-002',
+    amount: 15.50,
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Wembley',
+    activityCentre: 'Wembley Activity Centre',
+    recordedAt: '2026-09-10T11:20:00Z',
+  },
+  {
+    id: 'KDN-003',
+    eventId: 'EVT-118',
+    guestName: 'Ramesh Kumar',
+    amount: 10.00,
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Wembley',
+    activityCentre: 'Wembley Activity Centre',
+    recordedAt: '2026-09-10T11:30:00Z',
+  },
+  {
+    id: 'KDN-004',
+    eventId: 'EVT-102',
+    memberId: 'MBR-005',
+    amount: 25.00,
+    country: 'HSS UK',
+    region: 'Midlands',
+    town: 'Birmingham',
+    activityCentre: 'Birmingham East Activity Centre',
+    recordedAt: '2026-07-15T09:20:00Z',
+  },
+];
 
 export interface MemberDonationRecord {
   id: string;

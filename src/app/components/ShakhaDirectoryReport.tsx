@@ -9,7 +9,7 @@
 // Contact Name/Number show "—" until that's reconciled.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
-import { Building2, BarChart3, MoreVertical, FileSpreadsheet, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Building2, BarChart3, MoreVertical, FileSpreadsheet, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X } from 'lucide-react';
 import { PageHeader, IconButton, Pagination, SearchBar, AdvancedSearchPanel, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
@@ -90,6 +90,28 @@ export default function ShakhaDirectoryReport() {
 
   const regionOptions = useMemo(() => Array.from(new Set(Object.values(MASTERS_CASCADE.regions).flat())).sort(), []);
   const townOptions   = useMemo(() => Array.from(new Set(Object.values(MASTERS_CASCADE.towns).flat())).sort(), []);
+
+  // Quick filters (Vibhag/Nagar) — write straight into the same `filters`
+  // array the Advanced Search panel uses, so both stay in sync and the
+  // existing filter-evaluation logic below needs no duplication.
+  const quickRegion = filters.find(f => f.field === 'Vibhag')?.values[0] ?? '';
+  const quickTown    = filters.find(f => f.field === 'Nagar')?.values[0] ?? '';
+  const quickTownOptions = quickRegion ? (MASTERS_CASCADE.towns[quickRegion] ?? []) : townOptions;
+
+  const setQuickFilter = (field: 'Vibhag' | 'Nagar', value: string) => {
+    setFilters(prev => {
+      const withoutField = prev.filter(f => f.field !== field);
+      if (!value) return withoutField;
+      return [...withoutField, { id: `quick-${field}`, field, values: [value] }];
+    });
+  };
+
+  const handleQuickRegion = (value: string) => {
+    setFilters(prev => {
+      const withoutRegionOrTown = prev.filter(f => f.field !== 'Vibhag' && f.field !== 'Nagar');
+      return value ? [...withoutRegionOrTown, { id: 'quick-Vibhag', field: 'Vibhag', values: [value] }] : withoutRegionOrTown;
+    });
+  };
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -215,8 +237,37 @@ export default function ShakhaDirectoryReport() {
           </PageHeader>
         </div>
 
-        <div className="mt-6 flex items-center justify-end">
-          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+
+          <select
+            value={quickRegion}
+            onChange={e => handleQuickRegion(e.target.value)}
+            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+          >
+            <option value="">All Vibhags</option>
+            {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          <select
+            value={quickTown}
+            onChange={e => setQuickFilter('Nagar', e.target.value)}
+            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]"
+          >
+            <option value="">All Nagars</option>
+            {quickTownOptions.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+
+          {(quickRegion || quickTown) && (
+            <button
+              onClick={() => setFilters(prev => prev.filter(f => f.field !== 'Vibhag' && f.field !== 'Nagar'))}
+              className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
+
+          <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
             Showing <strong className="text-neutral-900 dark:text-white">{fmt(total)}</strong> Shakha{total !== 1 ? 's' : ''}
           </span>
         </div>

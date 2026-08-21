@@ -42,6 +42,8 @@ import MyDonations from "./components/MyDonations";
 import ComplianceManagement from "./components/ComplianceManagement";
 import EmergencyDetails from "./components/EmergencyDetails";
 import IncidentManagement from "./components/IncidentManagement";
+import UtsavCashIncome from "./components/UtsavCashIncome";
+import DonationCollection from "./components/DonationCollection";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
 // ─── Placeholder shown for modules not yet built ──────────────────────────────
@@ -477,6 +479,10 @@ export default function App() {
           />
         ) : currentPage === "first-aid-incidents" ? (
           <IncidentManagement />
+        ) : currentPage === "utsav-income" ? (
+          <UtsavCashIncome />
+        ) : currentPage === "karyakram-donations" ? (
+          <DonationCollection />
         ) : currentPage === "sessions" ? (
           <Sessions />
         ) : currentPage === "attendance-log" ? (

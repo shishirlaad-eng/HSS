@@ -153,13 +153,34 @@ export const getNavigationData = (
     },
 
     // ── 4. Karyakrams ────────────────────────────────────────────
-    {
+    // Only Karyakram Admin/Coordinator get the Donation Collection sub-item —
+    // every other role keeps the plain, single-click "Karyakrams" leaf.
+    ...(['Karyakram Admin', 'Karyakram Coordinator'].includes(selectedRole) ? [{
+      id: "event-management",
+      label: "Karyakrams",
+      icon: Calendar,
+      active: ['event-management', 'karyakram-donations'].includes(currentPage),
+      subItems: [
+        {
+          id: "event-management",
+          label: "Karyakrams",
+          onClick: () => onNavigate("event-management"),
+          active: currentPage === "event-management",
+        },
+        {
+          id: "karyakram-donations",
+          label: "Donation Collection",
+          onClick: () => onNavigate("karyakram-donations"),
+          active: currentPage === "karyakram-donations",
+        },
+      ],
+    }] : [{
       id: "event-management",
       label: "Karyakrams",
       icon: Calendar,
       onClick: () => onNavigate("event-management"),
       active: currentPage === "event-management",
-    },
+    }]),
 
     // ── 5. Suchana (Announcements) ───────────────────────────────
     {
@@ -198,13 +219,26 @@ export const getNavigationData = (
       ],
     }]),
 
-    // ── 6b. My Donations (member-facing) ─────────────────────────
+    // ── 6b. Dakshina (My Donations + Guru Purnima Cash Income) ────
     {
       id: "my-donations",
       label: "Dakshina",
       icon: ReceiptText,
-      onClick: () => onNavigate("my-donations"),
-      active: currentPage === "my-donations",
+      active: ['my-donations', 'utsav-income'].includes(currentPage),
+      subItems: [
+        {
+          id: "my-donations",
+          label: "My Dakshina",
+          onClick: () => onNavigate("my-donations"),
+          active: currentPage === "my-donations",
+        },
+        ...(['Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin', 'Reporting User'].includes(selectedRole) ? [{
+          id: "utsav-income",
+          label: "Guru Purnima Cash Income",
+          onClick: () => onNavigate("utsav-income"),
+          active: currentPage === "utsav-income",
+        }] : []),
+      ],
     },
 
     // ── 7. Reports ───────────────────────────────────────────────

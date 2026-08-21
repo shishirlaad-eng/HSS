@@ -151,6 +151,12 @@ export function Sidebar({
     // 5. Attendance
     "attendance-group":               isMemberRole ? "My Attendance" : "Attendance",
     "sessions":                       "Shakha",
+    "first-aid-incidents":            "First Aid Incidents",
+
+    // 5b. Dakshina
+    "my-donations":                   "Dakshina",
+    "utsav-income":                   "Guru Purnima Cash Income",
+    "karyakram-donations":            "Donation Collection",
 
     // 6. Reports
     "reports-group":                  "Reports",

@@ -9,11 +9,8 @@
 // existing mock data still sorts into the right position.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo, Fragment } from 'react';
-import {
-  Users, UserCheck, Building2,
-  Download, SlidersHorizontal, X,
-} from 'lucide-react';
-import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
+import { Download, SlidersHorizontal, X } from 'lucide-react';
+import { PageHeader, PrimaryButton, SearchBar, useStickyListingHeader } from './hb/listing';
 import {
   mockMembers, MASTERS_CASCADE, RESPONSIBILITY_LEVEL_OPTIONS,
   type ResponsibilityLevel, type Member,
@@ -70,48 +67,6 @@ const responsibilityRank = (r: string) => {
 
 function fmt(n: number) { return n.toLocaleString(); }
 
-function KpiCard({ label, value, sub, icon: Icon, color }: {
-  label: string; value: string | number; sub?: string;
-  icon: React.ElementType; color: string;
-}) {
-  return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm flex items-start gap-4">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>
-        <Icon className="w-5 h-5 text-white" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-neutral-900 dark:text-white leading-none">{fmt(Number(value))}</p>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{label}</p>
-        {sub && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-function BreakdownKpiCard({ title, icon: Icon, color, items }: {
-  title: string; icon: React.ElementType; color: string;
-  items: { label: string; value: number }[];
-}) {
-  return (
-    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        <p className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
-      </div>
-      <div className="space-y-2">
-        {items.map(item => (
-          <div key={item.label} className="flex items-center justify-between">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">{item.label}</span>
-            <span className="text-lg font-bold text-neutral-900 dark:text-white">{fmt(item.value)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // Short form of a responsibility level e.g. "Kendriya / National" → "Kendriya".
 function shortLevel(level?: string) {
   return level ? level.split('/')[0].trim() : '';
@@ -134,7 +89,8 @@ export default function KaryakartaDirectoryReport() {
     [scope],
   );
 
-  // ── Filters ────────────────────────────────────────────────
+  // ── Search + Filters ─────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterRegion, setFilterRegion] = useState('');
   const [filterTown,   setFilterTown]   = useState('');
   const [filterCentre, setFilterCentre] = useState('');
@@ -166,7 +122,19 @@ export default function KaryakartaDirectoryReport() {
 
   // ── Filtered karyakartas ─────────────────────────────────────
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return karyakartas.filter(m => {
+      if (q) {
+        const matchesSearch =
+          m.name.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q) ||
+          (m.phone ?? '').toLowerCase().includes(q) ||
+          m.jobTitle.toLowerCase().includes(q) ||
+          m.activityCentre.toLowerCase().includes(q) ||
+          m.town.toLowerCase().includes(q) ||
+          m.region.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
       if (filterRegion && m.region !== filterRegion) return false;
       if (filterTown   && m.town !== filterTown) return false;
       if (filterCentre && m.activityCentre !== filterCentre) return false;
@@ -175,7 +143,7 @@ export default function KaryakartaDirectoryReport() {
       if (filterResponsibility && m.jobTitle !== filterResponsibility) return false;
       return true;
     });
-  }, [karyakartas, filterRegion, filterTown, filterCentre, filterGender, filterRespLevel, filterResponsibility]);
+  }, [karyakartas, searchQuery, filterRegion, filterTown, filterCentre, filterGender, filterRespLevel, filterResponsibility]);
 
   // ── Aggregations ───────────────────────────────────────────
 
@@ -213,6 +181,7 @@ export default function KaryakartaDirectoryReport() {
     }
 
     const filters: string[] = [];
+    if (searchQuery) filters.push(`Search: ${searchQuery}`);
     if (filterRegion) filters.push(`Vibhag: ${filterRegion}`);
     if (filterTown)   filters.push(`Nagar: ${filterTown}`);
     if (filterCentre) filters.push(`Shakha: ${filterCentre}`);
@@ -273,6 +242,11 @@ export default function KaryakartaDirectoryReport() {
               { label: 'Karyakarta Directory', current: true },
             ]}
           >
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by name, email, phone, Shakha…"
+            />
             <PrimaryButton icon={Download} onClick={handleExport}>
               Export CSV
             </PrimaryButton>
@@ -353,30 +327,6 @@ export default function KaryakartaDirectoryReport() {
           <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
             Showing <strong className="text-neutral-900 dark:text-white">{fmt(total)}</strong> Karyakarta{total !== 1 ? 's' : ''}
           </span>
-        </div>
-
-        {/* ── KPI Cards ────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <KpiCard label="Total Karyakartas" value={total} icon={Users} color="bg-primary-500" />
-          <BreakdownKpiCard
-            title="By Responsibility Level"
-            icon={Building2}
-            color="bg-violet-500"
-            items={[
-              { label: 'Kendriya', value: kendriyaCount },
-              { label: 'Nagar',    value: nagarCount },
-              { label: 'Shakha',   value: shakhaCount },
-            ]}
-          />
-          <BreakdownKpiCard
-            title="Gender Split"
-            icon={UserCheck}
-            color="bg-blue-500"
-            items={[
-              { label: 'Male',   value: maleCount },
-              { label: 'Female', value: femaleCount },
-            ]}
-          />
         </div>
 
         {/* ── Grouped Directory Table ─────────────────────── */}

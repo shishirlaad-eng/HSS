@@ -1592,7 +1592,7 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
         }
         subtitle={
           scope.centre
-            ? `Nagar: ${scope.town}`
+            ? `Nagar: ${scope.town} · Vibhag: ${scope.region}`
             : scope.town && !scope.centre
               ? `Vibhag: ${scope.region}`
               : scope.region && !scope.town
