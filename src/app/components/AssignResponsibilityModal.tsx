@@ -352,7 +352,7 @@ export default function AssignResponsibilityModal({
                       <th className={th}>Responsibility Level</th>
                       <th className={th}>Responsibility</th>
                       <th className={th}>Responsibility Type</th>
-                      <th className={th}>From – To</th>
+                      <th className={th}>From</th>
                       <th className={`${th} w-36`}>Status</th>
                     </tr></thead>
                   </table>
@@ -460,7 +460,7 @@ export default function AssignResponsibilityModal({
                     </colgroup>
                     <thead><tr>
                       <th className={th}>MyHSS Role</th>
-                      <th className={th}>From – To</th>
+                      <th className={th}>From</th>
                       <th className={`${th} w-36`}>Status</th>
                     </tr></thead>
                   </table>

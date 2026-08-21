@@ -1186,6 +1186,7 @@ export default function Announcements({
               <SecondaryButton icon={ArrowLeft} onClick={goBack}>Back to Suchanas</SecondaryButton>
             ) : (
               <>
+                <SecondaryButton icon={ArrowLeft} onClick={goBack}>Back to Suchanas</SecondaryButton>
                 {ap.canEdit && canEditAnnouncement(selected) && (
                   <button className={btnGhost} onClick={() => openEdit(selected)}>
                     <Pencil className="w-4 h-4" /> Edit

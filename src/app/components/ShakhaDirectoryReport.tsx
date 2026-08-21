@@ -9,8 +9,9 @@
 // Contact Name/Number show "—" until that's reconciled.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
-import { Building2, Download, SlidersHorizontal, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
+import { Building2, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { PageHeader, PrimaryButton, Pagination, SearchBar, AdvancedSearchPanel, useStickyListingHeader } from './hb/listing';
+import type { FilterCondition } from './hb/listing';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 import { formatDate } from '../../utils/formatDate';
@@ -67,9 +68,9 @@ function KpiCard({ label, value, icon: Icon, color }: {
 export default function ShakhaDirectoryReport() {
   const allRows = useMemo(buildDirectory, []);
 
-  const [filterCountry, setFilterCountry] = useState('');
-  const [filterRegion,  setFilterRegion]  = useState('');
-  const [filterTown,    setFilterTown]    = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -86,19 +87,35 @@ export default function ShakhaDirectoryReport() {
 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
-  const countryOptions = MASTERS_CASCADE.countries;
-  const regionOptions   = filterCountry ? (MASTERS_CASCADE.regions[filterCountry] ?? []) : Object.values(MASTERS_CASCADE.regions).flat();
-  const townOptions     = filterRegion   ? (MASTERS_CASCADE.towns[filterRegion] ?? [])   : Object.values(MASTERS_CASCADE.towns).flat();
+  const regionOptions = useMemo(() => Array.from(new Set(Object.values(MASTERS_CASCADE.regions).flat())).sort(), []);
+  const townOptions   = useMemo(() => Array.from(new Set(Object.values(MASTERS_CASCADE.towns).flat())).sort(), []);
 
-  const hasFilter = !!(filterCountry || filterRegion || filterTown);
-  const clearFilters = () => { setFilterCountry(''); setFilterRegion(''); setFilterTown(''); };
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return allRows.filter(r => {
+      const matchesSearch = !q
+        || r.centre.toLowerCase().includes(q)
+        || r.town.toLowerCase().includes(q)
+        || r.region.toLowerCase().includes(q);
 
-  const filtered = useMemo(() => allRows.filter(r => {
-    if (filterCountry && r.country !== filterCountry) return false;
-    if (filterRegion   && r.region !== filterRegion)   return false;
-    if (filterTown      && r.town !== filterTown)        return false;
-    return true;
-  }), [allRows, filterCountry, filterRegion, filterTown]);
+      const evalFilter = (f: FilterCondition): boolean => {
+        switch (f.field) {
+          case 'Vibhag': return f.values.includes(r.region);
+          case 'Nagar':   return f.values.includes(r.town);
+          default:        return true;
+        }
+      };
+      const activeFilters = filters.filter(f => f.values.length > 0);
+      const matchesFilters = activeFilters.length === 0
+        ? true
+        : activeFilters.reduce<boolean>((acc, f, i) => {
+            if (i === 0) return evalFilter(f);
+            return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
+          }, true);
+
+      return matchesSearch && matchesFilters;
+    });
+  }, [allRows, searchQuery, filters]);
 
   const sorted = useMemo(() => {
     if (!sortField) return filtered;
@@ -120,15 +137,14 @@ export default function ShakhaDirectoryReport() {
       toast.error('No data to export — adjust your filters and try again.');
       return;
     }
-    const filters: string[] = [];
-    if (filterCountry) filters.push(`Country: ${filterCountry}`);
-    if (filterRegion)  filters.push(`Vibhag: ${filterRegion}`);
-    if (filterTown)     filters.push(`Nagar: ${filterTown}`);
+    const filterSummary: string[] = [];
+    if (searchQuery) filterSummary.push(`Search: ${searchQuery}`);
+    filters.filter(f => f.values.length > 0).forEach(f => filterSummary.push(`${f.field}: ${f.values.join(', ')}`));
 
     const rows: string[][] = [
       ['Shakha Directory — HSS UK'],
       [`Generated: ${formatDate(new Date())}`],
-      filters.length ? [`Filters applied: ${filters.join(' | ')}`] : ['Filters applied: None (All Shakhas)'],
+      filterSummary.length ? [`Filters applied: ${filterSummary.join(' | ')}`] : ['Filters applied: None (All Shakhas)'],
       [],
       ['SUMMARY'],
       ['Total Vibhags', String(totalVibhags)],
@@ -166,53 +182,35 @@ export default function ShakhaDirectoryReport() {
               { label: 'Shakha Directory', current: true },
             ]}
           >
+            <div className="relative">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onAdvancedSearch={() => setShowAdvancedSearch(true)}
+                activeFilterCount={filters.filter(f => f.values.length > 0).length}
+                placeholder="Search by Shakha, Nagar or Vibhag..."
+              />
+              <AdvancedSearchPanel
+                isOpen={showAdvancedSearch}
+                onClose={() => setShowAdvancedSearch(false)}
+                filters={filters}
+                onFiltersChange={setFilters}
+                showMatchModeToggle
+                filterOptions={{
+                  'Vibhag': regionOptions,
+                  'Nagar':  townOptions,
+                }}
+                title="Filter Shakhas"
+              />
+            </div>
             <PrimaryButton icon={Download} onClick={handleExport}>
               Export CSV
             </PrimaryButton>
           </PageHeader>
         </div>
 
-        {/* ── Filter Bar ──────────────────────────────────── */}
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-
-          <select
-            value={filterCountry}
-            onChange={e => { setFilterCountry(e.target.value); setFilterRegion(''); setFilterTown(''); }}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
-          >
-            <option value="">All Countries</option>
-            {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          <select
-            value={filterRegion}
-            onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); }}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
-          >
-            <option value="">All Vibhags</option>
-            {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-
-          <select
-            value={filterTown}
-            onChange={e => setFilterTown(e.target.value)}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]"
-          >
-            <option value="">All Nagars</option>
-            {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-
-          {hasFilter && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" /> Clear
-            </button>
-          )}
-
-          <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="mt-6 flex items-center justify-end">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
             Showing <strong className="text-neutral-900 dark:text-white">{fmt(total)}</strong> Shakha{total !== 1 ? 's' : ''}
           </span>
         </div>
