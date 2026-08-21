@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from 'recharts';
 import {
   Users, UserCheck,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, PrimaryButton, Pagination, useStickyListingHeader } from './hb/listing';
 import {
-  mockMembers, getAgeGroup, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE, type Member,
+  mockMembers, getAgeGroup, getAge, AGE_GROUP_LABELS, AgeGroup, MASTERS_CASCADE, type Member,
 } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope } from '../../mockAPI/roleScope';
@@ -29,10 +29,10 @@ const AGE_COLORS: Record<AgeGroup, string> = {
   jyestha: '#92400e',
 };
 
-const CHART_PALETTE = [
-  '#f59e0b', '#3b82f6', '#22c55e', '#ec4899', '#8b5cf6',
-  '#06b6d4', '#ef4444', '#84cc16', '#f97316', '#6366f1',
-];
+const COLORS = {
+  male:   '#3b82f6',
+  female: '#ec4899',
+};
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -190,13 +190,16 @@ export default function AyuShreniReport() {
       .map(([key, count]) => ({ group: AGE_GROUP_LABELS[key], key, count }));
   }, [filtered]);
 
-  // By Vibhag (region)
+  // By Vibhag (region), split by gender
   const byRegion = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(m => { map[m.region] = (map[m.region] ?? 0) + 1; });
+    const map: Record<string, { male: number; female: number }> = {};
+    filtered.forEach(m => {
+      if (!map[m.region]) map[m.region] = { male: 0, female: 0 };
+      map[m.region][m.gender]++;
+    });
     return Object.entries(map)
-      .map(([region, count]) => ({ region, count }))
-      .sort((a, b) => b.count - a.count);
+      .map(([region, v]) => ({ region, ...v, total: v.male + v.female }))
+      .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
   // ── Export CSV ─────────────────────────────────────────────
@@ -224,11 +227,12 @@ export default function AyuShreniReport() {
       ['Female',        String(femaleCount)],
       [],
       ['MEMBERS'],
-      ['First Name', 'Last Name', 'Age Group', 'Nagar', 'Vibhag', 'Email', 'Contact Number'],
+      ['First Name', 'Last Name', 'Age Group', 'Age', 'Nagar', 'Vibhag', 'Email', 'Contact Number'],
       ...sorted.map(m => [
         m.firstName ?? m.name.split(' ')[0],
         m.surname ?? m.name.split(' ').slice(1).join(' '),
         AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)],
+        String(getAge(m.dateOfBirth)),
         m.town, m.region, m.email, m.phone ?? '',
       ]),
     ];
@@ -367,16 +371,16 @@ export default function AyuShreniReport() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Members by Vibhag" subtitle="Distribution across regions">
+          <ChartCard title="Members by Vibhag" subtitle="Distribution across regions, split by gender">
             <ResponsiveContainer width="100%" height={Math.max(180, byRegion.length * 36 + 40)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={120} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Members" radius={[0, 4, 4, 0]}>
-                  {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="male"   name="Male"   stackId="a" fill={COLORS.male}   radius={[0, 0, 0, 0]} />
+                <Bar dataKey="female" name="Female" stackId="a" fill={COLORS.female} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -391,6 +395,7 @@ export default function AyuShreniReport() {
                   <th onClick={() => handleSort('firstName')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">First Name{renderSortArrow('firstName')}</th>
                   <th onClick={() => handleSort('surname')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Last Name{renderSortArrow('surname')}</th>
                   <th onClick={() => handleSort('ageGroup')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Age Group{renderSortArrow('ageGroup')}</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Age</th>
                   <th onClick={() => handleSort('town')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Nagar{renderSortArrow('town')}</th>
                   <th onClick={() => handleSort('region')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Vibhag{renderSortArrow('region')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
@@ -400,13 +405,14 @@ export default function AyuShreniReport() {
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-neutral-400 text-sm">No members match the selected filters.</td>
+                    <td colSpan={8} className="py-6 text-center text-neutral-400 text-sm">No members match the selected filters.</td>
                   </tr>
                 ) : paginated.map(m => (
                   <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
                     <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.firstName ?? m.name.split(' ')[0]}</td>
                     <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white whitespace-nowrap">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)]}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{getAge(m.dateOfBirth)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{m.town}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{m.region}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{m.email}</td>

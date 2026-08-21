@@ -1391,7 +1391,7 @@ function ShakhaAdminDashboard({
     const sankhyaTrendData = sankhyaRaw.map(d => ({ ...d, average: avgTotal }));
 
     // â”€â”€ Panel 2: Sankhya by Ayu Shreni - Rolling 3 months (average male/female) â”€â”€
-    const ageOrder: AgeGroup[] = ['bal', 'shishu', 'kishor', 'tarun', 'yuva', 'jyestha'];
+    const ageOrder: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
     const sessionCount = rollingSessions.length || 1;
     const ageGroupAvgData = ageOrder.map(g => {
       const maleTotal = rollingSessions.reduce((sum, s) =>
@@ -1401,8 +1401,8 @@ function ShakhaAdminDashboard({
       return {
         key: g,
         group: AGE_GROUP_LABELS[g].split(' ')[0],
-        male: Math.round((maleTotal / sessionCount) * 10) / 10,
-        female: Math.round((femaleTotal / sessionCount) * 10) / 10,
+        male: Math.round(maleTotal / sessionCount),
+        female: Math.round(femaleTotal / sessionCount),
       };
     });
 
@@ -1463,7 +1463,7 @@ function ShakhaAdminDashboard({
             <BarChart data={kpis.ageGroupAvgData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
               <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
-              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="male"   name="Male"   fill="#3b82f6" radius={[4, 4, 0, 0]} />
