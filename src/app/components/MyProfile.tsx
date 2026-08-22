@@ -1181,7 +1181,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-success-50 border-success-200 dark:bg-success-950/20 dark:border-success-800">
-                      <span className="text-success-700 dark:text-success-400">Active &amp; Approved</span>
+                      <span className="text-success-700 dark:text-success-400">Active</span>
                     </span>
                   )}
                 </>

@@ -266,24 +266,24 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
         </div>
 
         {/* Right panel — 60% — form */}
-        <div className="w-full lg:w-3/5 flex items-center justify-center p-8 bg-white dark:bg-neutral-950">
+        <div className="w-full lg:w-3/5 flex items-center justify-center p-6 bg-white dark:bg-neutral-950">
           <div className="w-full max-w-md">
-          <FormCard className="shadow-lg !p-8">
+          <FormCard className="shadow-lg !p-6">
             {currentScreen === "login" && (
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center mb-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="text-center mb-5">
+                  <div className="inline-flex items-center justify-center mb-3">
                     <img
                       src={myHssLogo}
                       alt="My HSS"
-                      className="w-3/5 max-w-xs object-contain"
+                      className="w-[42%] max-w-[14rem] object-contain"
                     />
                   </div>
-                  <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Namaste</h1>
+                  <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">Namaste</h1>
                   <p className="text-neutral-500 dark:text-neutral-400 text-sm">Welcome to the MyHSS member portal. Please sign in with your email and password below.</p>
                 </div>
 
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <FormField>
                     <FormLabel htmlFor="email" required>Email</FormLabel>
                     <div className="relative">

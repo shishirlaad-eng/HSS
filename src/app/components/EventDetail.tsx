@@ -165,21 +165,8 @@ function ParticipantStatusBadge({ p }: { p: EventParticipant }) {
   );
 }
 
-const COMPLIANCE_BADGE: Record<string, { text: string; dot: string; textCls: string }> = {
-  Approved:  { text: 'Approved',  dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
-  Certified: { text: 'Certified', dot: 'bg-success-500', textCls: 'text-success-700 dark:text-success-400' },
-  Pending:   { text: 'Pending',   dot: 'bg-amber-500',   textCls: 'text-amber-700 dark:text-amber-400'     },
-  Expired:   { text: 'Expired',   dot: 'bg-error-500',   textCls: 'text-error-700 dark:text-error-400'     },
-  'N/A':     { text: 'N/A',       dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' },
-};
 function ComplianceBadge({ status }: { status?: string }) {
-  const cfg = COMPLIANCE_BADGE[status ?? ''] ?? { text: status || 'N/A', dot: 'bg-neutral-400', textCls: 'text-neutral-500 dark:text-neutral-400' };
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      <span className={`text-sm font-medium ${cfg.textCls}`}>{cfg.text}</span>
-    </span>
-  );
+  return <p className="text-sm text-neutral-900 dark:text-white">{status || 'N/A'}</p>;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
