@@ -10,7 +10,7 @@ import {
   HelpCircle,
   User,
 } from "lucide-react";
-import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-04-1.png";
+import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-transparent.png";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getPermittedNavIds } from "../../mockAPI/rolesData";

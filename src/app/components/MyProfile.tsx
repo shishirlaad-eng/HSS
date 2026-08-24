@@ -401,7 +401,8 @@ function EditableInfoItem({
   disabled?: boolean;
 }) {
   if (!isEditing) {
-    return <InfoItem label={label} required={required}>{valueOrDash(value)}</InfoItem>;
+    const displayValue = type === "date" && value ? sharedFormatDate(value) : value;
+    return <InfoItem label={label} required={required}>{valueOrDash(displayValue)}</InfoItem>;
   }
   const errCls = error ? "border-error-400 dark:border-error-600 focus:ring-error-400/30" : "";
   return (

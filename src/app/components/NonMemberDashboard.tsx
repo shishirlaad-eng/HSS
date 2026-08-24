@@ -9,7 +9,7 @@ import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
 import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime } from "../../utils/formatDate";
 import MyProfile, { MEMBER_PROFILE_STORAGE_KEY, getChildProfileSummary } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
-import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-04-1.png";
+import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-transparent.png";
 
 const HSS_BLUE = "#172E4D";
 

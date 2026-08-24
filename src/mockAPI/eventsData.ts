@@ -255,6 +255,13 @@ export const mockEventAnnouncements: Record<string, EventAnnouncement[]> = {
     { id: 'ANN-101-1', title: 'Parking update', body: 'Overflow parking is now available at the Wembley Activity Centre rear lot — follow the signage from the main entrance.', postedAt: '2026-05-18T09:00:00Z', postedBy: 'Sarah Johnson' },
     { id: 'ANN-101-2', title: 'Dress code reminder', body: 'Please wear your Shakha uniform for the group photograph at 10:00 AM sharp.', postedAt: '2026-05-19T14:30:00Z', postedBy: 'Sarah Johnson' },
   ],
+  'EVT-102': [
+    { id: 'ANN-102-1', title: 'Welcome video from the instructor', body: 'Take a look at this short welcome message ahead of Saturday\'s session — it covers what to bring and what we\'ll be covering on the day.', postedAt: '2026-07-10T10:00:00Z', postedBy: 'Sarah Johnson', mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', contentType: 'video' },
+  ],
+  'EVT-118': [
+    { id: 'ANN-118-1', title: 'Venue setup photo', body: 'Here\'s a look at the Wembley Activity Centre grounds all set up and ready for Community Sports Day — see you all there!', postedAt: '2026-09-08T16:00:00Z', postedBy: 'Michael Chen', mediaUrl: 'https://hssuk.org/wp-content/uploads/2020/08/widgets_gallery_1-500x500.jpg', contentType: 'image' },
+    { id: 'ANN-118-2', title: 'Kit reminder', body: 'Please bring your own water bottle and wear suitable footwear for outdoor sports.', postedAt: '2026-09-09T12:00:00Z', postedBy: 'Michael Chen' },
+  ],
 };
 
 // ─── Participant data ────────────────────────────────────────────────────────

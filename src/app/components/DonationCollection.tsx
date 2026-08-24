@@ -179,7 +179,7 @@ function ParticipantAutocomplete({
       <input
         type="text"
         value={query}
-        placeholder="Type to search event participants…"
+        placeholder="Type to search Karyakram participants…"
         onChange={e => { setQuery(e.target.value); onChange(e.target.value, null); }}
         onFocus={() => setFocused(true)}
         className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${

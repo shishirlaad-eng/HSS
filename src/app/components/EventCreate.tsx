@@ -601,7 +601,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                           onChange={e => set('selfCheckInEnabled', e.target.checked)}
                           className="rounded border-neutral-300 dark:border-neutral-700"
                         />
-                        Enable self check-in — members can check themselves in via QR at the venue
+                        Enabled self check - in, members can check in themselves at event venue by mobile app when they are at venue location
                       </label>
                     </div>
                   </div>

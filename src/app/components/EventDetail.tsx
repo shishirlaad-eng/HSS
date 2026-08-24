@@ -47,6 +47,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Maximize2,
 } from 'lucide-react';
 import { SecondaryButton, IconButton, Pagination, SearchBar, AdvancedSearchPanel } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
@@ -786,6 +787,8 @@ export default function EventDetail({
 
   // ── Event Announcements (local, starts from mock) ──────────────────────────
   const [eventAnnouncements, setEventAnnouncements] = useState<EventAnnouncement[]>(mockEventAnnouncements[event.id] ?? []);
+  const [viewingAnnouncementId, setViewingAnnouncementId] = useState<string | null>(null);
+  const [showAnnouncementMediaLightbox, setShowAnnouncementMediaLightbox] = useState(false);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [announcementTitle, setAnnouncementTitle]   = useState('');
   const [announcementBody, setAnnouncementBody]     = useState('');
@@ -861,6 +864,7 @@ export default function EventDetail({
   const handleDeleteAnnouncement = (id: string) => {
     if (!confirm('Delete this announcement?')) return;
     setEventAnnouncements(prev => prev.filter(a => a.id !== id));
+    setViewingAnnouncementId(prev => prev === id ? null : prev);
     toast.success('Announcement deleted.');
   };
 
@@ -962,6 +966,8 @@ export default function EventDetail({
   const btnDanger   = `${btnBase} border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20`;
   const btnWarn     = `${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-white dark:bg-neutral-900 hover:bg-amber-50 dark:hover:bg-amber-950/20`;
   const btnDisabled = `${btnBase} border border-neutral-200 dark:border-neutral-800 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`;
+
+  const viewingAnnouncement = viewingAnnouncementId ? eventAnnouncements.find(a => a.id === viewingAnnouncementId) ?? null : null;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview',     label: 'Karyakram Overview'                       },
@@ -1274,28 +1280,49 @@ export default function EventDetail({
                     </div>
                   )}
 
+                  {/* Ticket Types — shown to admins always, and to members only before
+                      they've registered (once registered, their own Purchased Tickets
+                      card above already covers this). */}
+                  {hasTicketTypes && !myParticipation && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <Ticket className="w-4 h-4 text-neutral-500 dark:text-neutral-400" /> Ticket Types
+                      </h4>
+                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {event.priceCategories!.map(cat => (
+                          <div key={cat.id} className="px-6 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{cat.label}</p>
+                              {cat.description && <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{cat.description}</p>}
+                            </div>
+                            <span className="text-sm font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Location / Venue — hidden from a Member until they've registered */}
+                  {isMember && myParticipation && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-neutral-500 dark:text-neutral-400" /> Location
+                      </h4>
+                      <div className="px-6 py-4 space-y-1">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {event.locationType === 'online' ? 'Online Karyakram' : event.activityCentre}
+                        </p>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                          {event.locationType === 'online'
+                            ? (event.onlineUrl ?? 'Joining link will be shared closer to the date.')
+                            : (event.venueAddress || `${event.activityCentre}, ${event.town}, ${event.region}, ${event.country}`)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {!isMember && (
                     <>
-                      {/* Ticket Types — admin only */}
-                      {hasTicketTypes && (
-                        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                            <Ticket className="w-4 h-4 text-neutral-500 dark:text-neutral-400" /> Ticket Types
-                          </h4>
-                          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {event.priceCategories!.map(cat => (
-                              <div key={cat.id} className="px-6 py-3 flex items-center justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{cat.label}</p>
-                                  {cat.description && <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{cat.description}</p>}
-                                </div>
-                                <span className="text-sm font-semibold text-neutral-900 dark:text-white flex-shrink-0">£{cat.price.toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Target Audience — admin only */}
                       {(event.targetRegions?.length || event.targetTowns?.length || event.targetCentres?.length || event.targetMemberIds?.length) && (
                         <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
@@ -1772,7 +1799,7 @@ export default function EventDetail({
                       <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Price</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vTicket ? `£${vTicket.price}` : 'Free event'}</p>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vTicket ? `£${vTicket.price}` : 'Free Karyakram'}</p>
                         </div>
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Discount Code Applied</label>
@@ -2503,7 +2530,84 @@ export default function EventDetail({
               )}
 
               {/* ── EVENT ANNOUNCEMENTS ── */}
-              {activeTab === 'announcements' && (
+              {activeTab === 'announcements' && (viewingAnnouncement ? (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => { setViewingAnnouncementId(null); setShowAnnouncementMediaLightbox(false); }}
+                    className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Back to Announcements
+                  </button>
+                  <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center text-primary-600 dark:text-primary-400 flex-shrink-0">
+                          <Megaphone className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{viewingAnnouncement.title}</h3>
+                          <p className="text-xs text-neutral-400 mt-0.5">{viewingAnnouncement.postedBy} · {formatDateTime(viewingAnnouncement.postedAt)}</p>
+                        </div>
+                      </div>
+                      {!isMember && (
+                        <button
+                          onClick={() => handleDeleteAnnouncement(viewingAnnouncement.id)}
+                          title="Delete announcement"
+                          aria-label="Delete announcement"
+                          className="p-1.5 rounded-lg text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-sm text-neutral-700 dark:text-neutral-300 mt-4 leading-relaxed prose dark:prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: viewingAnnouncement.body }} />
+                    {viewingAnnouncement.mediaUrl && viewingAnnouncement.contentType === 'image' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAnnouncementMediaLightbox(true)}
+                        className="mt-4 block w-full group relative"
+                      >
+                        <img src={viewingAnnouncement.mediaUrl} alt="Announcement attachment" className="w-full max-h-[480px] rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain cursor-pointer transition-opacity group-hover:opacity-90" />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg">
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                            <Maximize2 className="w-3.5 h-3.5" /> Click to expand
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                    {viewingAnnouncement.mediaUrl && viewingAnnouncement.contentType === 'video' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAnnouncementMediaLightbox(true)}
+                        className="mt-4 block w-full relative rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 group"
+                      >
+                        <video src={viewingAnnouncement.mediaUrl} className="w-full max-h-[480px] bg-black" />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                          <span className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center">
+                            <Play className="w-6 h-6 text-neutral-900 fill-neutral-900 ml-0.5" />
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                    {!isMember && (
+                      <div className="flex items-center gap-1.5 flex-wrap mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                        <span className="text-xs text-neutral-400">Sent to:</span>
+                        {viewingAnnouncement.targetStatuses && viewingAnnouncement.targetStatuses.length > 0 ? (
+                          viewingAnnouncement.targetStatuses.map(s => (
+                            <span key={s} className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                              {s === 'going' ? 'Approved' : s === 'waitlisted' ? 'Waiting List' : 'Requested'}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                            All Participants
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
@@ -2780,20 +2884,42 @@ export default function EventDetail({
                   {eventAnnouncements.length > 0 ? (
                     <div className="space-y-3">
                       {eventAnnouncements.map(a => (
-                        <div key={a.id} className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
+                        <div
+                          key={a.id}
+                          onClick={() => setViewingAnnouncementId(a.id)}
+                          className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 cursor-pointer hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-sm transition-all"
+                        >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 min-w-0">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
                               <div className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center text-primary-600 dark:text-primary-400 flex-shrink-0">
                                 <Megaphone className="w-4 h-4" />
                               </div>
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{a.title}</h4>
                                 <p className="text-xs text-neutral-400 mt-0.5">{a.postedBy} · {formatDateTime(a.postedAt)}</p>
+                                <div
+                                  className="text-sm text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed line-clamp-2 overflow-hidden prose dark:prose-invert prose-sm max-w-none"
+                                  dangerouslySetInnerHTML={{ __html: a.body }}
+                                />
                               </div>
+                              {a.mediaUrl && (
+                                <div className="w-16 h-16 rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden flex-shrink-0 bg-neutral-100 dark:bg-neutral-900 relative">
+                                  {a.contentType === 'video' ? (
+                                    <>
+                                      <video src={a.mediaUrl} className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                        <Play className="w-5 h-5 text-white fill-white" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <img src={a.mediaUrl} alt="" className="w-full h-full object-cover" />
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {!isMember && (
                               <button
-                                onClick={() => handleDeleteAnnouncement(a.id)}
+                                onClick={e => { e.stopPropagation(); handleDeleteAnnouncement(a.id); }}
                                 title="Delete announcement"
                                 aria-label="Delete announcement"
                                 className="p-1.5 rounded-lg text-neutral-400 hover:text-error-600 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors flex-shrink-0"
@@ -2802,29 +2928,6 @@ export default function EventDetail({
                               </button>
                             )}
                           </div>
-                          <div className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 leading-relaxed prose dark:prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: a.body }} />
-                          {a.mediaUrl && a.contentType === 'image' && (
-                            <img src={a.mediaUrl} alt="Announcement attachment" className="mt-3 max-h-56 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
-                          )}
-                          {a.mediaUrl && a.contentType === 'video' && (
-                            <video src={a.mediaUrl} controls className="mt-3 max-h-56 rounded-lg border border-neutral-200 dark:border-neutral-700" />
-                          )}
-                          {!isMember && (
-                            <div className="flex items-center gap-1.5 flex-wrap mt-3">
-                              <span className="text-xs text-neutral-400">Sent to:</span>
-                              {a.targetStatuses && a.targetStatuses.length > 0 ? (
-                                a.targetStatuses.map(s => (
-                                  <span key={s} className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                                    {s === 'going' ? 'Approved' : s === 'waitlisted' ? 'Waiting List' : 'Requested'}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                                  All Participants
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -2836,7 +2939,7 @@ export default function EventDetail({
                     </div>
                   )}
                 </div>
-              )}
+              ))}
 
             </div>
           </div>
@@ -2844,6 +2947,40 @@ export default function EventDetail({
         </div>
       </div>
     </div>
+
+    {/* ── ANNOUNCEMENT MEDIA POPUP ───────────────────────────────────────────── */}
+    {showAnnouncementMediaLightbox && viewingAnnouncement?.mediaUrl && (
+      <div
+        className="fixed inset-0 z-50 bg-black/88 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setShowAnnouncementMediaLightbox(false)}
+      >
+        <div
+          className="relative w-full max-w-4xl max-h-[90vh] flex items-center justify-center"
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setShowAnnouncementMediaLightbox(false)}
+            className="absolute -top-12 right-0 w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          {viewingAnnouncement.contentType === 'image' ? (
+            <img
+              src={viewingAnnouncement.mediaUrl}
+              alt="Announcement attachment"
+              className="max-h-[85vh] max-w-full object-contain rounded-lg"
+            />
+          ) : (
+            <video
+              src={viewingAnnouncement.mediaUrl}
+              controls
+              autoPlay
+              className="max-h-[85vh] max-w-full rounded-lg"
+            />
+          )}
+        </div>
+      </div>
+    )}
 
     {/* ── LIGHTBOX ─────────────────────────────────────────────────────────── */}
     {lightbox && currentMedia && (

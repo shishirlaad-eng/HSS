@@ -3,6 +3,21 @@
 Project memory and routing rules for keeping the FRD (`frd/*.md`) in sync with the
 frontend prototype, and publishing to the Google Doc on explicit instruction.
 
+## Hard rule — never remove without double-asking (applies to ALL work in this repo)
+Never remove, delete, or unregister anything that already exists and already works —
+code, UI sections/fields, mock/seed data (including existing member registrations,
+participants, records), config, or content — as a side effect of doing something else
+(e.g. testing a different flow, fixing an unrelated bug). This applies everywhere in this
+project, not just the FRD-sync workflow below.
+- If removing something seems like the right fix, STOP and ask the user first — and ask
+  again to confirm before actually doing it (double-ask, not a single confirmation).
+- Prefer additive/non-destructive alternatives: add new seed data instead of altering
+  existing seed data, add a new test event/record instead of repurposing one already in use,
+  comment out only with explicit sign-off, etc.
+- This rule exists because existing mock data (e.g. a member's event registration) was once
+  deleted to test an unrelated flow, breaking a working page the user relied on, without
+  asking first.
+
 ## Before any frontend implementation
 Read `guidelines/Guidelines.md` first — UI consistency rules and standing context to
 remember. Update it when new consistency rules or context emerge.

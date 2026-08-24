@@ -421,6 +421,7 @@ function IncidentForm({
   );
   const [touched, setTouched] = useState(false);
   const [reportedByGuest, setReportedByGuest] = useState(false);
+  const [casualtyGuest, setCasualtyGuest] = useState(false);
 
   const set = (k: keyof IncidentForm, v: any) => setForm(p => ({ ...p, [k]: v }));
 
@@ -592,26 +593,65 @@ function IncidentForm({
       <Card title="Casualty">
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <MemberAutocomplete
-              ref={el => { fieldRefs.current.casualtyName = el; }}
-              label="Casualty Name"
-              value={form.casualtyName}
-              members={activeMembers}
-              required
-              error={touched && errors.casualtyName}
-              placeholder="Type name or search members…"
-              onChange={(name, member) => {
-                set('casualtyName', name);
-                if (member) {
-                  set('memberId', member.id);
-                  set('isShakhaMember', true);
-                  const addr = memberAddress(member);
-                  if (addr) set('casualtyAddress', addr);
-                } else {
-                  set('memberId', '');
+            {casualtyGuest ? (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Casualty Name<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={casualtyGuest}
+                      onChange={e => { setCasualtyGuest(e.target.checked); set('casualtyName', ''); set('memberId', ''); set('isShakhaMember', false); }}
+                      className="rounded border-neutral-300 dark:border-neutral-600"
+                    />
+                    Guest User
+                  </label>
+                </div>
+                <input
+                  ref={el => { fieldRefs.current.casualtyName = el; }}
+                  type="text"
+                  value={form.casualtyName}
+                  onChange={e => set('casualtyName', e.target.value)}
+                  placeholder="Enter guest name…"
+                  className={fieldCls(touched && errors.casualtyName)}
+                />
+                <ErrorText>{touched && errors.casualtyName && 'Casualty name is required.'}</ErrorText>
+              </div>
+            ) : (
+              <MemberAutocomplete
+                ref={el => { fieldRefs.current.casualtyName = el; }}
+                label="Casualty Name"
+                value={form.casualtyName}
+                members={activeMembers}
+                required
+                error={touched && errors.casualtyName}
+                placeholder="Type name or search members…"
+                onChange={(name, member) => {
+                  set('casualtyName', name);
+                  if (member) {
+                    set('memberId', member.id);
+                    set('isShakhaMember', true);
+                    const addr = memberAddress(member);
+                    if (addr) set('casualtyAddress', addr);
+                  } else {
+                    set('memberId', '');
+                  }
+                }}
+                labelExtra={
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={casualtyGuest}
+                      onChange={e => { setCasualtyGuest(e.target.checked); set('casualtyName', ''); set('memberId', ''); }}
+                      className="rounded border-neutral-300 dark:border-neutral-600"
+                    />
+                    Guest User
+                  </label>
                 }
-              }}
-            />
+              />
+            )}
           </div>
 
           <div>
@@ -950,10 +990,9 @@ function IncidentDetail({
           <div className="px-5 py-5 flex-1 space-y-4">
             <DetailRow label="Reported By">{incident.reportedBy}</DetailRow>
             {incident.witnesses && <DetailRow label="Witnesses">{incident.witnesses}</DetailRow>}
-            <DetailRow label="Follow-up Required">{incident.followUpRequired ? 'Yes' : 'No'}</DetailRow>
-            {incident.followUpRequired && incident.followUpNotes && (
+            {incident.followUpRequired && (
               <DetailRow label="Follow-up Notes">
-                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.followUpNotes}</p>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-normal leading-relaxed whitespace-pre-wrap">{incident.followUpNotes || 'No notes added.'}</p>
               </DetailRow>
             )}
           </div>
