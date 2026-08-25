@@ -1280,11 +1280,9 @@ export default function EventDetail({
                     </div>
                   )}
 
-                  {/* Ticket Types — shown to admins always, and to members only before
-                      they've registered (once registered, their own Purchased Tickets
-                      card above already covers this). */}
-                  {hasTicketTypes && !myParticipation && (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden" style={isMember ? { borderTop: '3px solid #172E4D' } : undefined}>
+                  {/* Ticket Types — admin only */}
+                  {!isMember && hasTicketTypes && (
+                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-sm font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                         <Ticket className="w-4 h-4 text-neutral-500 dark:text-neutral-400" /> Ticket Types
                       </h4>

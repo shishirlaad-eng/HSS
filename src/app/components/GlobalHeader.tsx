@@ -42,7 +42,7 @@ import {
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { ADMIN_ROLE_OPTIONS, ROLE_DISPLAY_LABELS, getPermittedNavIds } from "../../mockAPI/rolesData";
-import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-transparent.png";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo1.png";
 import {
   FormModal,
   FormLabel,
@@ -833,7 +833,7 @@ export function GlobalHeader({
               <img
                 src={myHssLogo}
                 alt="My HSS"
-                className="h-[74px] w-auto object-contain flex-shrink-0"
+                className="h-[86px] w-auto object-contain flex-shrink-0"
               />
             </div>
             {/* Nav items — pinned to bottom */}

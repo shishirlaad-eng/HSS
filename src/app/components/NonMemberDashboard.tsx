@@ -9,7 +9,7 @@ import { getAgeGroupLabel, generateMemberId } from "../../mockAPI/membersData";
 import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime } from "../../utils/formatDate";
 import MyProfile, { MEMBER_PROFILE_STORAGE_KEY, getChildProfileSummary } from "./MyProfile";
 import hssLogoOrange from "../../assets/brand/hss/logos/hss-logo-orange.png";
-import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-transparent.png";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo1.png";
 
 const HSS_BLUE = "#172E4D";
 
@@ -66,7 +66,7 @@ function NonMemberHeader({
       <div className="flex items-center gap-2.5 min-w-0">
         <img src={hssLogoOrange} alt="HSS UK Logo" className="h-[74px] w-auto object-contain flex-shrink-0" />
         <div className="w-px h-10 bg-white/40 flex-shrink-0" />
-        <img src={myHssLogo} alt="My HSS" className="h-[74px] w-auto object-contain flex-shrink-0" />
+        <img src={myHssLogo} alt="My HSS" className="h-[86px] w-auto object-contain flex-shrink-0" />
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">

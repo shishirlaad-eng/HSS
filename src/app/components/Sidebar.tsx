@@ -10,7 +10,7 @@ import {
   HelpCircle,
   User,
 } from "lucide-react";
-import myHssLogo from "../../assets/brand/hss/logos/myhss-logo-transparent.png";
+import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo1.png";
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getPermittedNavIds } from "../../mockAPI/rolesData";
@@ -218,7 +218,7 @@ export function Sidebar({
             <img
               src={myHssLogo}
               alt="My HSS"
-              className="h-9 w-auto object-contain flex-shrink-0"
+              className="h-11 w-auto object-contain flex-shrink-0"
             />
           </div>
         )}

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ShieldCheck, UserPlus } from 'lucide-react';
 import myHssLogo from '../../assets/brand/hss/logos/my-hss-logo.png';
 import { toast } from 'sonner';
@@ -35,7 +35,25 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const [submitted, setSubmitted] = useState(false);
   const [isLegalAdult, setIsLegalAdult] = useState(false);
   const [legalAdultError, setLegalAdultError] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResendVerification = () => {
+    if (resendCooldown > 0) return;
+    setIsResending(true);
+    setTimeout(() => {
+      setIsResending(false);
+      setResendCooldown(60);
+      toast.success('Verification email resent.');
+    }, 800);
+  };
 
   const set = (key: keyof RegistrationForm) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,6 +118,21 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
             We have sent a verification email to {form.email}. Please verify your email address to continue setting up your Member account.
           </p>
+          <div className="text-center mb-4">
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={isResending || resendCooldown > 0}
+              className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isResending ? 'Resending…' : 'Resend Verification Email'}
+            </button>
+            {resendCooldown > 0 && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Please wait {resendCooldown} seconds before requesting another email.
+              </p>
+            )}
+          </div>
           {onRegistrationComplete && (
             <PrimaryButton
               type="button"
@@ -125,8 +158,8 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           Back to Login
         </button>
         <div className="flex flex-col items-center mb-6">
-          <div className="inline-flex items-center justify-center rounded-xl px-5 py-3 mb-4" style={{ backgroundColor: '#172E4D' }}>
-            <img src={myHssLogo} alt="My HSS" className="h-10 w-auto object-contain" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src={myHssLogo} alt="My HSS" className="w-[42%] max-w-[14rem] object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{onAccountCreated ? 'Create Non-Member Account' : 'Create Member Account'}</h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 text-center">
