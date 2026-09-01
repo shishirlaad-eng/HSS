@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays, ChevronDown, Check, UserPlus, ArrowLeft, Building2 } from "lucide-react";
+import { Edit, Save, X, Trash2, AlertTriangle, Paperclip, Upload, History, ClipboardList, UserCog, UserCircle2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, CalendarDays, ChevronDown, Check, UserPlus, ArrowLeft, Building2, ArrowUpCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter, PageHeader } from "./hb/listing";
 import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText, FormField, FormLabel } from "./hb/common/Form";
@@ -320,6 +320,99 @@ function getLocationForCentre(activityCentre: string) {
 
 function valueOrDash(value?: string) {
   return value && value.trim() ? value : "—";
+}
+
+// ── Shakha search — Registration's "Shakha Details" step now picks the
+// Shakha first (searchable, same UX as IncidentManagement.tsx's Member
+// Autocomplete), then Nagar/Vibhag are derived read-only via
+// getLocationForCentre() rather than being independently editable dropdowns.
+const ALL_SHAKHA_NAMES = Object.values(MASTERS_CASCADE.centres).flat();
+
+function ShakhaAutocomplete({ value, onChange, error }: {
+  value: string;
+  onChange: (centre: string) => void;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        inputRef.current && !inputRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const updateRect = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open]);
+
+  const suggestions = useMemo(() =>
+    query.trim().length >= 1
+      ? ALL_SHAKHA_NAMES.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : ALL_SHAKHA_NAMES.slice(0, 8),
+    [query],
+  );
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        placeholder="Type to search Shakhas…"
+        onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
+        onFocus={() => setOpen(true)}
+        className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+          error
+            ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+            : 'border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+        }`}
+      />
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          {suggestions.length > 0 ? suggestions.map(centre => (
+            <button
+              key={centre}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setQuery(centre); setOpen(false); onChange(centre); }}
+              className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            >
+              {centre}
+            </button>
+          )) : (
+            <div className="px-3 py-2 text-sm text-neutral-400 dark:text-neutral-500">No Shakhas found.</div>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
 }
 
 // ── Mock postcode-to-address lookup ────────────────────────────
@@ -848,6 +941,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [transferHistory, setTransferHistory] = useState<ShakhaTransferRequest[]>(
     () => getTransferRequests().filter(request => request.memberId === memberId),
   );
+  const [ageUpgradeRequested, setAgeUpgradeRequested] = useState(false);
 
   useEffect(() => {
     const override = getMemberCentreOverrides()[memberId];
@@ -858,7 +952,13 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     setPostRegEditing(isPostRegistration);
     setPendingTransfer(getPendingTransferForMember(memberId));
     setTransferHistory(getTransferRequests().filter(request => request.memberId === memberId));
+    setAgeUpgradeRequested(false);
   }, [selectedRole, memberId, activeChildId, carriedOverDetails?.firstName, carriedOverDetails?.lastName, carriedOverDetails?.email, carriedOverDetails?.phone]);
+
+  const handleUpgradeToAdult = () => {
+    setAgeUpgradeRequested(true);
+    toast.success('Upgrade to Adult request submitted.');
+  };
 
   useEffect(() => {
     const refreshTransferState = () => {
@@ -1231,6 +1331,15 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                   }));
                   onChildAdded?.({ id, firstName: 'John', surname: 'Doe' });
                 }}>Add Child</SecondaryButton>
+              )}
+              {!activeChildId && isTeenRole && (
+                <SecondaryButton
+                  icon={ageUpgradeRequested ? Clock : ArrowUpCircle}
+                  disabled={ageUpgradeRequested}
+                  onClick={ageUpgradeRequested ? undefined : handleUpgradeToAdult}
+                >
+                  {ageUpgradeRequested ? 'Requested upgrade' : 'Upgrade to Adult'}
+                </SecondaryButton>
               )}
               <PrimaryButton icon={Edit} onClick={() => setIsEditing(true)}>Edit Profile</PrimaryButton>
             </>
@@ -1630,39 +1739,46 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             <>
               {/* Organisation Details */}
               <InfoSection title="Shakha Details" cols={4}>
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
+                    Shakha<span className="text-error-500 ml-0.5">*</span>
+                  </label>
+                  {effectiveEditing ? (
+                    <>
+                      <ShakhaAutocomplete
+                        value={profile.activityCentre}
+                        error={fieldErrors.activityCentre}
+                        onChange={centre => {
+                          setOrganisationField('activityCentre', centre);
+                          const loc = getLocationForCentre(centre);
+                          setOrganisationField('town', loc?.town ?? '');
+                          setOrganisationField('region', loc?.region ?? '');
+                        }}
+                      />
+                      <ErrorText>{fieldErrors.activityCentre && 'Shakha is required.'}</ErrorText>
+                    </>
+                  ) : (
+                    <p className="text-sm text-neutral-900 dark:text-white">{valueOrDash(profile.activityCentre)}</p>
+                  )}
+                </div>
+                <EditableInfoItem
+                  label="Nagar"
+                  value={profile.town}
+                  isEditing={false}
+                  onChange={() => {}}
+                />
+                <EditableInfoItem
+                  label="Vibhag"
+                  value={profile.region}
+                  isEditing={false}
+                  onChange={() => {}}
+                />
                 <EditableInfoItem
                   label="Country"
                   value={profile.country}
                   isEditing={effectiveEditing}
                   onChange={value => setOrganisationField('country', value)}
                   options={MASTERS_CASCADE.countries}
-                />
-                <EditableInfoItem
-                  label="Vibhag" required
-                  value={profile.region}
-                  isEditing={effectiveEditing}
-                  onChange={value => setOrganisationField('region', value)}
-                  options={profile.country ? (MASTERS_CASCADE.regions[profile.country] ?? []) : []}
-                  error={fieldErrors.region}
-                  errorMessage="Vibhag is required."
-                />
-                <EditableInfoItem
-                  label="Nagar" required
-                  value={profile.town}
-                  isEditing={effectiveEditing}
-                  onChange={value => setOrganisationField('town', value)}
-                  options={profile.region ? (MASTERS_CASCADE.towns[profile.region] ?? []) : []}
-                  error={fieldErrors.town}
-                  errorMessage="Nagar is required."
-                />
-                <EditableInfoItem
-                  label="Shakha" required
-                  value={profile.activityCentre}
-                  isEditing={effectiveEditing}
-                  onChange={value => setOrganisationField('activityCentre', value)}
-                  options={profile.town ? (MASTERS_CASCADE.centres[profile.town] ?? []) : []}
-                  error={fieldErrors.activityCentre}
-                  errorMessage="Shakha is required."
                 />
                 {!isPostRegistration && <InfoItem label="Age Category">{profile.dateOfBirth ? getAgeGroupLabel(profile.dateOfBirth) : '—'}</InfoItem>}
               </InfoSection>

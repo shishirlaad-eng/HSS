@@ -18,6 +18,17 @@ import { filterByScope } from '../../mockAPI/roleScope';
 import { toast } from 'sonner';
 import { formatDate } from '../../utils/formatDate';
 
+// Short form of a responsibility level e.g. "Kendriya / National" → "Kendriya".
+function shortLevel(level?: string) {
+  return level ? level.split('/')[0].trim() : '';
+}
+
+// All three parts of the Sangh Responsibility — Level, Responsibility, Type —
+// e.g. "Kendriya Shareerik Pramukh".
+function fullResponsibility(m: Member) {
+  return [shortLevel(m.responsibilityLevel), m.jobTitle, m.responsibilityType].filter(Boolean).join(' ');
+}
+
 // ── Colour palette ────────────────────────────────────────────
 
 const AGE_COLORS: Record<AgeGroup, string> = {
@@ -227,13 +238,14 @@ export default function AyuShreniReport() {
       ['Female',        String(femaleCount)],
       [],
       ['MEMBERS'],
-      ['First Name', 'Last Name', 'Age Group', 'Age', 'Nagar', 'Vibhag', 'Email', 'Contact Number'],
+      ['First Name', 'Last Name', 'Age Group', 'Age', 'Nagar', 'Vibhag', 'Email', 'Contact Number', 'Sangh Responsibility'],
       ...sorted.map(m => [
         m.firstName ?? m.name.split(' ')[0],
         m.surname ?? m.name.split(' ').slice(1).join(' '),
         AGE_GROUP_LABELS[getAgeGroup(m.dateOfBirth)],
         String(getAge(m.dateOfBirth)),
         m.town, m.region, m.email, m.phone ?? '',
+        fullResponsibility(m),
       ]),
     ];
 
@@ -400,12 +412,13 @@ export default function AyuShreniReport() {
                   <th onClick={() => handleSort('region')} className="px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap">Vibhag{renderSortArrow('region')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Contact Number</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Sangh Responsibility</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-6 text-center text-neutral-400 text-sm">No members match the selected filters.</td>
+                    <td colSpan={9} className="py-6 text-center text-neutral-400 text-sm">No members match the selected filters.</td>
                   </tr>
                 ) : paginated.map(m => (
                   <tr key={m.id} className="text-neutral-700 dark:text-neutral-300">
@@ -417,6 +430,7 @@ export default function AyuShreniReport() {
                     <td className="px-4 py-3 whitespace-nowrap">{m.region}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{m.email}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{m.phone ?? '—'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{fullResponsibility(m) || '—'}</td>
                   </tr>
                 ))}
               </tbody>

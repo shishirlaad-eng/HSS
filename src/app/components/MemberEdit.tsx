@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   ArrowLeft,
@@ -93,6 +94,107 @@ const SAFEGUARDING_EDIT_ROLES = new Set(['Shakha Admin', 'Nagar Admin', 'Vibhag 
 
 function canEditSafeguarding(selectedRole: string) {
   return SAFEGUARDING_EDIT_ROLES.has(selectedRole);
+}
+
+// ── Shakha search — picks the Shakha first (searchable), then derives
+// Nagar/Vibhag read-only, mirroring MyProfile.tsx's Registration flow. ──
+const ALL_SHAKHA_NAMES = Object.values(MASTERS_CASCADE.centres).flat();
+
+function getLocationForCentre(activityCentre: string): { country: string; region: string; town: string; activityCentre: string } | null {
+  for (const [town, centres] of Object.entries(MASTERS_CASCADE.centres)) {
+    if (centres.includes(activityCentre)) {
+      const region = Object.entries(MASTERS_CASCADE.towns).find(([, towns]) => towns.includes(town))?.[0] ?? '';
+      return { country: 'HSS UK', region, town, activityCentre };
+    }
+  }
+  return null;
+}
+
+function ShakhaAutocomplete({ value, onChange, error }: {
+  value: string;
+  onChange: (centre: string) => void;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        inputRef.current && !inputRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const updateRect = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open]);
+
+  const suggestions = useMemo(() =>
+    query.trim().length >= 1
+      ? ALL_SHAKHA_NAMES.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : ALL_SHAKHA_NAMES.slice(0, 8),
+    [query],
+  );
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        placeholder="Type to search Shakhas…"
+        onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
+        onFocus={() => setOpen(true)}
+        className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+          error
+            ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+            : 'border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+        }`}
+      />
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          {suggestions.length > 0 ? suggestions.map(centre => (
+            <button
+              key={centre}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setQuery(centre); setOpen(false); onChange(centre); }}
+              className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            >
+              {centre}
+            </button>
+          )) : (
+            <div className="px-3 py-2 text-sm text-neutral-400 dark:text-neutral-500">No Shakhas found.</div>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
 }
 
 interface MemberEditProps {
@@ -278,9 +380,6 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
   const calcAge = formData.dateOfBirth ? getAge(formData.dateOfBirth) : getAge(member.dateOfBirth);
   const isMinor = calcAge < 18;
 
-  const regionOptions = formData.country ? (MASTERS_CASCADE.regions[formData.country] ?? []) : [];
-  const townOptions = formData.region ? (MASTERS_CASCADE.towns[formData.region] ?? []) : [];
-  const centreOptions = formData.town ? (MASTERS_CASCADE.centres[formData.town] ?? []) : [];
 
   const tabs: { id: EditTab; label: string }[] = [
     { id: 'personal',      label: 'Personal Info'          },
@@ -302,8 +401,6 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
       setFormData(prev => {
         const next = { ...prev, [key]: value };
         if (key === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-        if (key === 'region') { next.town = ''; next.activityCentre = ''; }
-        if (key === 'town') { next.activityCentre = ''; }
         return next;
       });
       if (errors[key]) setErrors(prev => ({ ...prev, [key]: false }));
@@ -724,10 +821,21 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
             <>
               <EditSection title="Shakha Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField>
+                    <FormLabel required>Shakha</FormLabel>
+                    <ShakhaAutocomplete
+                      value={formData.activityCentre}
+                      error={errors.activityCentre}
+                      onChange={centre => {
+                        const loc = getLocationForCentre(centre);
+                        setFormData(prev => ({ ...prev, activityCentre: centre, town: loc?.town ?? '', region: loc?.region ?? '' }));
+                        if (errors.activityCentre) setErrors(prev => ({ ...prev, activityCentre: false }));
+                      }}
+                    />
+                  </FormField>
+                  <FormField><FormLabel>Nagar</FormLabel><FormInput value={formData.town} readOnly disabled placeholder="Derived from Shakha" /></FormField>
+                  <FormField><FormLabel>Vibhag</FormLabel><FormInput value={formData.region} readOnly disabled placeholder="Derived from Shakha" /></FormField>
                   <FormField><FormLabel required>Country / Organisation</FormLabel><FormSelect value={formData.country} onChange={set('country')} className={errCls('country')}><option value="">Select country</option>{MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Vibhag</FormLabel><FormSelect value={formData.region} onChange={set('region')} disabled={!formData.country} className={errCls('region')}><option value="">{formData.country ? 'Select region' : 'Select country first'}</option>{regionOptions.map(r => <option key={r} value={r}>{r}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Nagar</FormLabel><FormSelect value={formData.town} onChange={set('town')} disabled={!formData.region} className={errCls('town')}><option value="">{formData.region ? 'Select town' : 'Select region first'}</option>{townOptions.map(t => <option key={t} value={t}>{t}</option>)}</FormSelect></FormField>
-                  <FormField><FormLabel required>Shakha</FormLabel><FormSelect value={formData.activityCentre} onChange={set('activityCentre')} disabled={!formData.town} className={errCls('activityCentre')}><option value="">{formData.town ? 'Select shakha' : 'Select town first'}</option>{centreOptions.map(c => <option key={c} value={c}>{c}</option>)}</FormSelect></FormField>
                   <FormField><FormLabel required>Organisational Role</FormLabel><FormInput value={formData.orgRole} onChange={set('orgRole')} className={errCls('orgRole')} /></FormField>
                   <FormField>
                     <FormLabel>Member Status</FormLabel>

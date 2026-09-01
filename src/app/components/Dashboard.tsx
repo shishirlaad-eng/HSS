@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   X,
   Check,
+  SlidersHorizontal,
   ListChecks,
   IdCard,
   ArrowLeft,
@@ -163,16 +164,6 @@ const MEMBER_STATUS_CFG = {
   rejected:                   { label: 'Rejected',          chipCls: 'bg-error-50 text-error-700 border-error-200 dark:bg-error-950 dark:text-error-400 dark:border-error-800' },
 };
 
-//â”€â”€ Mock Donations (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-const mockMyDonations = [
-  { id: 'DON-001', datetime: '2026-05-28T14:32:00', amount: 25.00,  type: 'recurring' },
-  { id: 'DON-002', datetime: '2026-04-15T09:15:00', amount: 50.00,  type: 'online'    },
-  { id: 'DON-003', datetime: '2026-03-22T18:47:00', amount: 10.00,  type: 'recurring' },
-  { id: 'DON-004', datetime: '2026-02-10T11:05:00', amount: 100.00, type: 'online'    },
-  { id: 'DON-005', datetime: '2026-01-05T16:20:00', amount: 25.00,  type: 'recurring' },
-];
-
 // â”€â”€ Mock Attendance (member view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const mockMyAttendance = [
@@ -292,20 +283,17 @@ function MemberDashboard({
         </div>
       </div>
 
-      {/* â”€â”€ Row 1: Donut stat cards - My Attendance · Suchana · Karyakrams · My Dakshina â”€â”€ */}
+      {/* â”€â”€ Row 1: Donut stat cards - My Attendance · Suchana · Karyakrams â”€â”€ */}
       {(() => {
         const C      = 2 * Math.PI * 24;
         const offset = C / 4;
-        const totalDakshina = mockMyDonations.reduce((s, d) => s + d.amount, 0);
         const registeredEvents = 2;
-        const onlineDakshina = 150;
-        const recurringDakshina = 60;
         const donutCards = [
           {
             label:    'My Attendance',
             arc:      (attendancePct / 100) * C,
             color:    '#172E4D',
-            center:   `${attendancePct}%`,
+            center:   `${presentCount}`,
             centerSub: 'YTD',
             segments: [
               { label: 'Present', value: presentCount, color: '#4EAE33' },
@@ -351,26 +339,9 @@ function MemberDashboard({
             track:    'text-sky-100 dark:text-sky-900/60',
             onClick:  () => onNavigate?.('event-management'),
           },
-          {
-            label:    'My Dakshina',
-            display:  'split',
-            arc:      Math.min(totalDakshina / 500, 1) * C,
-            color:    '#1D9E75',
-            center:   `£${totalDakshina.toFixed(0)}`,
-            segments: [
-              { label: 'Online', value: onlineDakshina, color: '#1D9E75', prefix: '£' },
-              { label: 'Recurring', value: recurringDakshina, color: '#65c44a', prefix: '£' },
-            ],
-            sub:      'YTD Total',
-            detail:   '',
-            detailRows: ['150 Online', '60 Recurring'],
-            bg:       'bg-emerald-50 dark:bg-emerald-950/30',
-            track:    'text-emerald-100 dark:text-emerald-900/60',
-            onClick:  () => onNavigate?.('my-donations'),
-          },
         ];
         return (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {donutCards.map(card => {
               const segmentTotal = card.segments.reduce((sum, segment) => sum + segment.value, 0);
               let segmentCursor = offset;
@@ -395,20 +366,6 @@ function MemberDashboard({
                     <p className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-2 text-center">
                       {card.segments[1].value} Other
                     </p>
-                  </div>
-                ) : (card as any).display === 'split' ? (
-                  /* â”€â”€ Split Metric: My Dakshina â”€â”€ */
-                  <div className="flex-1 flex flex-col items-center justify-center py-2">
-                    <span className="text-5xl font-bold leading-none" style={{ color: card.color }}>{card.center}</span>
-                    <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1.5 mb-4">{card.sub}</p>
-                    <div className="flex items-center gap-5">
-                      {card.segments.map((seg, i) => (
-                        <div key={seg.label} className="flex flex-col items-center">
-                          <span className="text-lg font-bold leading-none" style={{ color: seg.color }}>{seg.prefix ?? ''}{seg.value}</span>
-                          <span className="text-[12px] font-semibold text-neutral-500 dark:text-neutral-400 mt-1">{seg.label}</span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 ) : (
                   /* â”€â”€ Donut chart (default) â”€â”€ */
@@ -1578,26 +1535,72 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  // â”€â”€ Drill-down filters (Nagar/Vibhag/Kendriya Admin only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Lets these roles view their own rolled-up dashboard (default, nothing
+  // selected) or drill into a specific lower-level Shakha's own dashboard,
+  // reusing ShakhaAdminDashboard unmodified via an "effective scope" that
+  // shadows the real role scope only for what gets passed into it below.
+  const [drillRegion, setDrillRegion] = useState('');
+  const [drillTown, setDrillTown]     = useState('');
+  const [drillCentre, setDrillCentre] = useState('');
+
+  const vibhagOptions = selectedRole === 'Kendriya Admin' && scope.country
+    ? (MASTERS_CASCADE.regions[scope.country] ?? [])
+    : [];
+  const nagarOptions =
+    selectedRole === 'Kendriya Admin' ? (drillRegion ? (MASTERS_CASCADE.towns[drillRegion] ?? []) : []) :
+    selectedRole === 'Vibhag Admin' && scope.region ? (MASTERS_CASCADE.towns[scope.region] ?? []) :
+    [];
+  const shakhaOptions =
+    selectedRole === 'Kendriya Admin' ? (drillTown ? (MASTERS_CASCADE.centres[drillTown] ?? []) : []) :
+    selectedRole === 'Vibhag Admin'   ? (drillTown ? (MASTERS_CASCADE.centres[drillTown] ?? []) : []) :
+    selectedRole === 'Nagar Admin' && scope.town ? (MASTERS_CASCADE.centres[scope.town] ?? []) :
+    [];
+
+  const hasDrillFilter = !!(drillRegion || drillTown || drillCentre);
+  const clearDrillFilters = () => { setDrillRegion(''); setDrillTown(''); setDrillCentre(''); };
+
+  const effectiveScope: RoleScope = useMemo(() => {
+    if (selectedRole === 'Kendriya Admin') {
+      if (drillCentre) return { ...scope, level: 'centre', region: drillRegion, town: drillTown, centre: drillCentre };
+      if (drillTown)   return { ...scope, level: 'town', region: drillRegion, town: drillTown };
+      if (drillRegion) return { ...scope, level: 'regional', region: drillRegion };
+      return scope;
+    }
+    if (selectedRole === 'Vibhag Admin') {
+      if (drillCentre) return { ...scope, level: 'centre', town: drillTown, centre: drillCentre };
+      if (drillTown)   return { ...scope, level: 'town', town: drillTown };
+      return scope;
+    }
+    if (selectedRole === 'Nagar Admin') {
+      if (drillCentre) return { ...scope, level: 'centre', centre: drillCentre };
+      return scope;
+    }
+    return scope;
+  }, [selectedRole, scope, drillRegion, drillTown, drillCentre]);
+
+  const ROLLUP_ROLES = ['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin'];
+
   return (
     <div className="px-6 py-6">
 
       {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PageHeader
         title={
-          scope.centre  ? `${scope.centre} - Dashboard`  :
-          scope.town    ? `${scope.town} - Dashboard`    :
-          scope.region  ? `${scope.region} - Dashboard`  :
-          scope.country ? `${scope.country} - Dashboard` :
+          effectiveScope.centre  ? `${effectiveScope.centre} - Dashboard`  :
+          effectiveScope.town    ? `${effectiveScope.town} - Dashboard`    :
+          effectiveScope.region  ? `${effectiveScope.region} - Dashboard`  :
+          effectiveScope.country ? `${effectiveScope.country} - Dashboard` :
           "Dashboard"
         }
         subtitle={
-          scope.centre
-            ? `Nagar: ${scope.town} · Vibhag: ${scope.region}`
-            : scope.town && !scope.centre
-              ? `Vibhag: ${scope.region}`
-              : scope.region && !scope.town
-                ? `Country: ${scope.country}`
-                : scope.country && !scope.region
+          effectiveScope.centre
+            ? `Nagar: ${effectiveScope.town} · Vibhag: ${effectiveScope.region}`
+            : effectiveScope.town && !effectiveScope.centre
+              ? `Vibhag: ${effectiveScope.region}`
+              : effectiveScope.region && !effectiveScope.town
+                ? `Country: ${effectiveScope.country}`
+                : effectiveScope.country && !effectiveScope.region
                   ? undefined
                   : `${greeting} - here's what's happening across the network`
         }
@@ -1608,11 +1611,61 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       >
       </PageHeader>
 
-      {/* Shakha Admin gets its own Sankhya-focused dashboard; every other admin
-          role keeps the generic HierarchyKpiSection panels. Both are scoped via
-          filterByScope(scope). */}
-      {selectedRole === 'Shakha Admin' ? (
-        <ShakhaAdminDashboard scope={scope} onNavigate={onNavigate} />
+      {/* â”€â”€ Drill-down filter bar â”€â”€ Nagar/Vibhag/Kendriya Admin only â”€â”€ */}
+      {['Nagar Admin', 'Vibhag Admin', 'Kendriya Admin'].includes(selectedRole) && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+
+          {selectedRole === 'Kendriya Admin' && (
+            <select
+              value={drillRegion}
+              onChange={e => { setDrillRegion(e.target.value); setDrillTown(''); setDrillCentre(''); }}
+              className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+            >
+              <option value="">All Vibhags</option>
+              {vibhagOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          )}
+
+          {(selectedRole === 'Kendriya Admin' || selectedRole === 'Vibhag Admin') && (
+            <select
+              value={drillTown}
+              onChange={e => { setDrillTown(e.target.value); setDrillCentre(''); }}
+              disabled={selectedRole === 'Kendriya Admin' && !drillRegion}
+              className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Nagars</option>
+              {nagarOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          )}
+
+          <select
+            value={drillCentre}
+            onChange={e => setDrillCentre(e.target.value)}
+            disabled={selectedRole !== 'Nagar Admin' && !drillTown}
+            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">All Shakhas</option>
+            {shakhaOptions.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          {hasDrillFilter && (
+            <button
+              onClick={clearDrillFilters}
+              className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Shakha/Nagar/Vibhag/Kendriya Admin all get the same Sankhya-focused
+          dashboard, rolled up to their (possibly drilled-down) effective
+          scope; every other admin role keeps the generic HierarchyKpiSection
+          panels. Both are scoped via filterByScope(scope). */}
+      {ROLLUP_ROLES.includes(selectedRole) ? (
+        <ShakhaAdminDashboard scope={effectiveScope} onNavigate={onNavigate} />
       ) : (
         <HierarchyKpiSection scope={scope} onNavigate={onNavigate} />
       )}

@@ -11,7 +11,7 @@ import {
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge, getAgeGroup } from '../../mockAPI/membersData';
-import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons } from '../../mockAPI/eventsData';
+import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons, KARYAKRAM_TYPE_OPTIONS } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -156,6 +156,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
 
   const [formData, setFormData] = useState({
     name:                event.name,
+    karyakramType:       event.karyakramType ?? '',
+    karyakramTypeOther:  event.karyakramTypeOther ?? '',
     description:         event.description ?? '',
     imageUrl:            event.imageUrl ?? '',
     host:                event.host,
@@ -284,11 +286,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
     if (isUnset(formData.targetRegions))             errs.targetRegions             = 'Please select "All" or specific Vibhags.';
     if (isUnset(formData.targetTowns))                errs.targetTowns                = 'Please select "All" or specific Nagars.';
     if (isUnset(formData.targetCentres))              errs.targetCentres              = 'Please select "All" or specific Shakhas.';
-    if (isUnset(formData.filterAgeCategories))        errs.filterAgeCategories        = 'Please select "All" or specific age categories.';
-    if (isUnset(formData.filterGenders))              errs.filterGenders              = 'Please select "All" or specific genders.';
-    if (isUnset(formData.filterResponsibilityLevels)) errs.filterResponsibilityLevels = 'Please select "All" or specific responsibility levels.';
-    if (isUnset(formData.filterJobTitles))            errs.filterJobTitles            = 'Please select "All" or specific Sangh responsibilities.';
-    if (isUnset(formData.filterResponsibilityTypes))  errs.filterResponsibilityTypes  = 'Please select "All" or specific responsibility types.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -329,6 +326,8 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
       const updated: Event = {
         ...event,
         name:           formData.name.trim(),
+        karyakramType:      (formData.karyakramType || undefined) as Event['karyakramType'],
+        karyakramTypeOther: formData.karyakramType === 'Other' ? (formData.karyakramTypeOther.trim() || undefined) : undefined,
         description:    formData.description.trim() || undefined,
         imageUrl:       formData.imageUrl || undefined,
         host:           formData.host.trim(),
@@ -477,6 +476,28 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       />
                       <ErrorText>{touched && errors.name}</ErrorText>
                     </FormField>
+                  </div>
+                  <div className="md:col-span-2">
+                    <FormField>
+                      <FormLabel>Karyakram Type</FormLabel>
+                      <FormSelect value={formData.karyakramType} onChange={e => set('karyakramType', e.target.value)} disabled={blocked}>
+                        <option value="">Select Karyakram type…</option>
+                        {KARYAKRAM_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </FormSelect>
+                    </FormField>
+                    {formData.karyakramType === 'Other' && (
+                      <div className="mt-3">
+                        <FormField>
+                          <FormLabel>Please specify</FormLabel>
+                          <FormInput
+                            value={formData.karyakramTypeOther}
+                            onChange={e => set('karyakramTypeOther', e.target.value)}
+                            placeholder="Enter Karyakram type"
+                            disabled={blocked}
+                          />
+                        </FormField>
+                      </div>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <FormField>
@@ -852,7 +873,7 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
 
               <Card title="Demographic Filters">
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                  Required — consciously choose "All" (to target everyone within scope) or specific values for each.
+                  Optional — choose "All" or specific values to narrow the audience, or leave as-is to target everyone within scope.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div ref={el => { fieldRefs.current.filterAgeCategories = el; }}>
@@ -862,7 +883,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
                       selected={formData.filterAgeCategories}
                       disabled={blocked}
-                      required
                       error={touched && !!errors.filterAgeCategories}
                       errorMessage={touched ? errors.filterAgeCategories : undefined}
                       onChange={v => set('filterAgeCategories', v as AgeGroup[])}
@@ -943,7 +963,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       getLabel={v => v === 'male' ? 'Male' : 'Female'}
                       selected={formData.filterGenders}
                       disabled={blocked}
-                      required
                       error={touched && !!errors.filterGenders}
                       errorMessage={touched ? errors.filterGenders : undefined}
                       onChange={v => set('filterGenders', v as ('male' | 'female')[])}
@@ -955,7 +974,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
                       selected={formData.filterResponsibilityLevels}
                       disabled={blocked}
-                      required
                       error={touched && !!errors.filterResponsibilityLevels}
                       errorMessage={touched ? errors.filterResponsibilityLevels : undefined}
                       onChange={v => set('filterResponsibilityLevels', v)}
@@ -967,7 +985,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       options={ROLE_TYPE_OPTIONS}
                       selected={formData.filterJobTitles}
                       disabled={blocked}
-                      required
                       error={touched && !!errors.filterJobTitles}
                       errorMessage={touched ? errors.filterJobTitles : undefined}
                       onChange={v => set('filterJobTitles', v)}
@@ -979,7 +996,6 @@ export default function EventEdit({ event, onBack, onSave }: EventEditProps) {
                       options={[...RESPONSIBILITY_TYPE_OPTIONS]}
                       selected={formData.filterResponsibilityTypes}
                       disabled={blocked}
-                      required
                       error={touched && !!errors.filterResponsibilityTypes}
                       errorMessage={touched ? errors.filterResponsibilityTypes : undefined}
                       onChange={v => set('filterResponsibilityTypes', v)}

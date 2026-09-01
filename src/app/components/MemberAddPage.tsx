@@ -3,7 +3,8 @@
 // Unified single-page registration form, mirroring the member's own
 // "complete your registration" screen layout.
 // ─────────────────────────────────────────────────────────────
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertCircle, ArrowLeft, Save, Send } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText } from './hb/common';
@@ -24,6 +25,107 @@ import {
 } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
+
+// ── Shakha search — picks the Shakha first (searchable), then derives
+// Nagar/Vibhag read-only, mirroring MyProfile.tsx's Registration flow. ──
+const ALL_SHAKHA_NAMES = Object.values(MASTERS_CASCADE.centres).flat();
+
+function getLocationForCentre(activityCentre: string) {
+  for (const [town, centres] of Object.entries(MASTERS_CASCADE.centres)) {
+    if (!centres.includes(activityCentre)) continue;
+    for (const [region, towns] of Object.entries(MASTERS_CASCADE.towns)) {
+      if (towns.includes(town)) return { country: 'HSS UK', region, town, activityCentre };
+    }
+  }
+  return null;
+}
+
+function ShakhaAutocomplete({ value, onChange, error }: {
+  value: string;
+  onChange: (centre: string) => void;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        inputRef.current && !inputRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const updateRect = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open]);
+
+  const suggestions = useMemo(() =>
+    query.trim().length >= 1
+      ? ALL_SHAKHA_NAMES.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : ALL_SHAKHA_NAMES.slice(0, 8),
+    [query],
+  );
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        placeholder="Type to search Shakhas…"
+        onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
+        onFocus={() => setOpen(true)}
+        className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+          error
+            ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+            : 'border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+        }`}
+      />
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          {suggestions.length > 0 ? suggestions.map(centre => (
+            <button
+              key={centre}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setQuery(centre); setOpen(false); onChange(centre); }}
+              className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            >
+              {centre}
+            </button>
+          )) : (
+            <div className="px-3 py-2 text-sm text-neutral-400 dark:text-neutral-500">No Shakhas found.</div>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 const OCCUPATION_OPTIONS = [
   'Student',
@@ -134,9 +236,6 @@ export default function MemberAddPage({
   const calcAge = form.dateOfBirth ? getAge(form.dateOfBirth) : null;
   const derivedMemberType: MemberType | '' = form.dateOfBirth ? getMemberTypeFromAge(form.dateOfBirth) : '';
 
-  const regionOptions = form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : [];
-  const townOptions   = form.region  ? (MASTERS_CASCADE.towns[form.region]     ?? []) : [];
-  const centreOptions = form.town    ? (MASTERS_CASCADE.centres[form.town]      ?? []) : [];
 
   const errCls = (has?: string) => has ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
 
@@ -146,8 +245,6 @@ export default function MemberAddPage({
       setForm(prev => {
         const next = { ...prev, [key]: val };
         if (key === 'country') { next.region = ''; next.town = ''; next.activityCentre = ''; }
-        if (key === 'region')  { next.town = ''; next.activityCentre = ''; }
-        if (key === 'town')    { next.activityCentre = ''; }
         if (key === 'isFirstAider' && val !== 'yes') { next.firstAidQualificationLevel = ''; next.firstAidQualificationExpiryDate = ''; }
         if (key === 'medicalInfoDeclared' && val !== 'yes') { next.medicalInfoDetails = ''; }
         if (key === 'allergiesDeclared' && val !== 'yes') { next.allergies = ''; }
@@ -544,36 +641,37 @@ export default function MemberAddPage({
           <Card title="Shakha Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <FormField>
+                <FormLabel required>Shakha</FormLabel>
+                <ShakhaAutocomplete
+                  value={form.activityCentre}
+                  error={!!errors.activityCentre}
+                  onChange={centre => {
+                    const loc = getLocationForCentre(centre);
+                    setForm(prev => ({
+                      ...prev,
+                      activityCentre: centre,
+                      town: loc?.town ?? '',
+                      region: loc?.region ?? '',
+                    }));
+                  }}
+                />
+                <ErrorText>{errors.activityCentre}</ErrorText>
+              </FormField>
+              <FormField>
+                <FormLabel>Nagar</FormLabel>
+                <FormInput value={form.town} readOnly disabled placeholder="Derived from Shakha" />
+              </FormField>
+              <FormField>
+                <FormLabel>Vibhag</FormLabel>
+                <FormInput value={form.region} readOnly disabled placeholder="Derived from Shakha" />
+              </FormField>
+              <FormField>
                 <FormLabel required>Country</FormLabel>
                 <FormSelect value={form.country} onChange={set('country')} className={errCls(errors.country)}>
                   <option value="">Select country</option>
                   {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
                 </FormSelect>
                 <ErrorText>{errors.country}</ErrorText>
-              </FormField>
-              <FormField>
-                <FormLabel required>Vibhag</FormLabel>
-                <FormSelect value={form.region} onChange={set('region')} disabled={!form.country} className={errCls(errors.region)}>
-                  <option value="">{form.country ? 'Select Vibhag' : 'Select country first'}</option>
-                  {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                </FormSelect>
-                <ErrorText>{errors.region}</ErrorText>
-              </FormField>
-              <FormField>
-                <FormLabel required>Nagar</FormLabel>
-                <FormSelect value={form.town} onChange={set('town')} disabled={!form.region} className={errCls(errors.town)}>
-                  <option value="">{form.region ? 'Select Nagar' : 'Select Vibhag first'}</option>
-                  {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                </FormSelect>
-                <ErrorText>{errors.town}</ErrorText>
-              </FormField>
-              <FormField>
-                <FormLabel required>Shakha</FormLabel>
-                <FormSelect value={form.activityCentre} onChange={set('activityCentre')} disabled={!form.town} className={errCls(errors.activityCentre)}>
-                  <option value="">{form.town ? 'Select Shakha' : 'Select Nagar first'}</option>
-                  {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                </FormSelect>
-                <ErrorText>{errors.activityCentre}</ErrorText>
               </FormField>
             </div>
           </Card>

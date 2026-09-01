@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
-import { mockCoupons } from '../../mockAPI/eventsData';
+import { mockCoupons, KARYAKRAM_TYPE_OPTIONS } from '../../mockAPI/eventsData';
 import { formatDate } from '../../utils/formatDate';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,7 +35,8 @@ export type ListKey =
   | 'utsav-options'
   | 'incident-type'
   | 'incident-outcome'
-  | 'coupons';
+  | 'coupons'
+  | 'karyakram-types';
 
 export interface ConfigItem {
   id: string;
@@ -89,7 +90,8 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
   {
     label: 'Karyakrams',
     lists: [
-      { key: 'coupons', label: 'Coupons', idPrefix: 'CPN' },
+      { key: 'coupons',         label: 'Coupons',         idPrefix: 'CPN' },
+      { key: 'karyakram-types', label: 'Karyakram Types', idPrefix: 'KTP' },
     ],
   },
 ];
@@ -124,6 +126,7 @@ const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'incident-type':        makeItems('INT', ['Minor Injury', 'Major Injury', 'Illness', 'Allergic Reaction', 'Other']),
   'incident-outcome':     makeItems('INO', ['Returned to Activity', 'Sent Home', 'Taken to Hospital', 'Ambulance Called']),
   'coupons':              mockCoupons.map(c => ({ ...c })),
+  'karyakram-types':      makeItems('KTP', [...KARYAKRAM_TYPE_OPTIONS]),
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────

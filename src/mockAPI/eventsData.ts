@@ -20,11 +20,40 @@ export interface EventTermsSection {
   description: string;   // rich-text HTML
 }
 
+// Karyakram Type — single-select classification, maintained via HSS UK Setup >
+// Configurable Lists ("Karyakram Types", see ConfigurableListsMaster.tsx).
+export const KARYAKRAM_TYPE_OPTIONS = [
+  'Abhyaas Varg',
+  'Nagar Shibir',
+  'Vibhag Shibir',
+  'Sewa',
+  'Sampark',
+  'Shareerik',
+  'Bauddhik',
+  'Nidhi',
+  'Prachaar',
+  'National Karyakarta Varg',
+  'Pratinidhi Sabha',
+  'Kishor(i) Shibir',
+  'Tarun(i) Shibir',
+  'Yuva(ti) Shibir',
+  'Jyestha(a) Shibir',
+  'KKM',
+  'Other',
+] as const;
+
+export type KaryakramType = typeof KARYAKRAM_TYPE_OPTIONS[number];
+
 export interface Event {
   id: string;
   name: string;
   host: string;
   status: 'draft' | 'published' | 'active' | 'cancelled' | 'completed';
+
+  // Karyakram Type — single-select, maintained via HSS UK Setup > Configurable
+  // Lists. karyakramTypeOther only meaningful when karyakramType === 'Other'.
+  karyakramType?: KaryakramType;
+  karyakramTypeOther?: string;
 
   // Members assigned to administer this event (approve registrations, check-in,
   // manage details) — not restricted to the creator's own Shakha/scope.

@@ -1728,7 +1728,7 @@ export default function EventDetail({
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                         Registration Details
                       </h4>
-                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4">
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Name</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vMember?.name ?? vp.name}</p>
@@ -1744,10 +1744,6 @@ export default function EventDetail({
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Time of Registration</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vRegDate ? vRegDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Not recorded'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Type</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.ticketTypeLabel ?? '—'}</p>
                         </div>
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Status</label>
@@ -1775,10 +1771,6 @@ export default function EventDetail({
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Phone</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vp.phone || '—'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Participant Type</label>
-                          <p className="text-sm text-neutral-900 dark:text-white capitalize">{vp.memberType}</p>
                         </div>
                         {vp.isCoordinator && (
                           <div>
