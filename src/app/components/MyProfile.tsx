@@ -1007,15 +1007,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   };
 
   const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
-    setProfile(current => {
-      const next = { ...current, [field]: value };
-      if (field === 'country') {
-        next.region = '';
-        next.town = '';
-        next.activityCentre = '';
-      }
-      return next;
-    });
+    setProfile(current => ({ ...current, [field]: value }));
     if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: false }));
   };
 
@@ -1762,6 +1754,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                           const loc = getLocationForCentre(centre);
                           setOrganisationField('town', loc?.town ?? '');
                           setOrganisationField('region', loc?.region ?? '');
+                          setOrganisationField('country', loc?.country ?? '');
                         }}
                       />
                       <ErrorText>{fieldErrors.activityCentre && 'Shakha is required.'}</ErrorText>
@@ -1785,9 +1778,8 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                 <EditableInfoItem
                   label="Country"
                   value={profile.country}
-                  isEditing={effectiveEditing}
-                  onChange={value => setOrganisationField('country', value)}
-                  options={MASTERS_CASCADE.countries}
+                  isEditing={false}
+                  onChange={() => {}}
                 />
                 {!isPostRegistration && <InfoItem label="Age Category">{profile.dateOfBirth ? getAgeGroupLabel(profile.dateOfBirth) : '—'}</InfoItem>}
               </InfoSection>

@@ -1799,16 +1799,16 @@ export default function EventDetail({
                           <p className="text-sm text-neutral-900 dark:text-white">{vp.discountCodeUsed ?? 'None'}</p>
                         </div>
                         <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Donation Amount</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.donationAmount ? `£${vp.donationAmount}` : 'No donation'}</p>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Amount Paid</label>
+                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">£{vAmountPaid.toFixed(2)}</p>
                         </div>
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Gift Aid Claimed</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vp.giftAidClaimed ? 'Yes' : 'No'}</p>
                         </div>
                         <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Amount Paid</label>
-                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">£{vAmountPaid.toFixed(2)}</p>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Donation Amount</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.donationAmount ? `£${vp.donationAmount}` : 'No donation'}</p>
                         </div>
                         {(vp.refundedAmount ?? 0) > 0 && (
                           <div>

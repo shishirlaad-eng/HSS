@@ -49,7 +49,7 @@ function statusDot(status: ShakhaSession['status']) {
 function statusLabel(status: ShakhaSession['status']) {
   if (status === 'completed') return 'Completed';
   if (status === 'cancelled') return 'Cancelled';
-  return 'Scheduled';
+  return 'Active';
 }
 
 function attendanceRate(s: ShakhaSession) {
@@ -438,7 +438,7 @@ export default function Sessions() {
       {/* ── Legend + count ── */}
       <div className="flex items-center gap-4 mb-3">
         {[
-          { label: 'Scheduled', dot: 'bg-primary-500' },
+          { label: 'Active', dot: 'bg-primary-500' },
           { label: 'Completed', dot: 'bg-success-500' },
           { label: 'Cancelled', dot: 'bg-error-500' },
         ].map(l => (

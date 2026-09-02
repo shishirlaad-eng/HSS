@@ -30,7 +30,7 @@ import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
 import { formatDate as fmtDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
-const AGE_GROUP_ORDER: AgeGroup[] = ['bal', 'shishu', 'kishor', 'tarun', 'yuva', 'jyestha'];
+const AGE_GROUP_ORDER: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
 
 function fmtMoney(n: number) {
   return `£${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -134,49 +134,6 @@ function GuruPujaReportModal({
       maxWidth="max-w-3xl"
     >
       <div className="space-y-5">
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">Income by Age Category</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {AGE_GROUP_ORDER.map(g => {
-              const cashErr = touched && amounts[g].cash !== '' && (isNaN(Number(amounts[g].cash)) || Number(amounts[g].cash) < 0);
-              const chequeErr = touched && amounts[g].cheque !== '' && (isNaN(Number(amounts[g].cheque)) || Number(amounts[g].cheque) < 0);
-              return (
-                <div key={g} className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">{AGE_GROUP_LABELS[g]}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FormLabel>Cash</FormLabel>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                        <input
-                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
-                          value={amounts[g].cash}
-                          onChange={e => setAmount(g, 'cash', e.target.value)}
-                          className={`${fieldCls(cashErr)} pl-6`}
-                        />
-                      </div>
-                      <ErrorText>{cashErr && 'Invalid amount.'}</ErrorText>
-                    </div>
-                    <div>
-                      <FormLabel>Cheque</FormLabel>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                        <input
-                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
-                          value={amounts[g].cheque}
-                          onChange={e => setAmount(g, 'cheque', e.target.value)}
-                          className={`${fieldCls(chequeErr)} pl-6`}
-                        />
-                      </div>
-                      <ErrorText>{chequeErr && 'Invalid amount.'}</ErrorText>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900">
             <p className="text-xs text-primary-700 dark:text-primary-300">Total Cash Income</p>
@@ -189,6 +146,52 @@ function GuruPujaReportModal({
           <div className="px-4 py-3 rounded-lg bg-neutral-900 dark:bg-white">
             <p className="text-xs text-neutral-300 dark:text-neutral-600 flex items-center gap-1"><Calculator className="w-3 h-3" /> Total Income</p>
             <p className="text-lg font-bold text-white dark:text-neutral-900">{fmtMoney(totalIncome)}</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">Income by Age Category</h3>
+          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-3 gap-3 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Age Category</span>
+              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Cash</span>
+              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Cheque</span>
+            </div>
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              {AGE_GROUP_ORDER.map(g => {
+                const cashErr = touched && amounts[g].cash !== '' && (isNaN(Number(amounts[g].cash)) || Number(amounts[g].cash) < 0);
+                const chequeErr = touched && amounts[g].cheque !== '' && (isNaN(Number(amounts[g].cheque)) || Number(amounts[g].cheque) < 0);
+                return (
+                  <div key={g} className="grid grid-cols-3 gap-3 px-3 py-3 items-start">
+                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 pt-2">{AGE_GROUP_LABELS[g]}</p>
+                    <div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                        <input
+                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
+                          value={amounts[g].cash}
+                          onChange={e => setAmount(g, 'cash', e.target.value)}
+                          className={`${fieldCls(cashErr)} pl-6`}
+                        />
+                      </div>
+                      <ErrorText>{cashErr && 'Invalid amount.'}</ErrorText>
+                    </div>
+                    <div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                        <input
+                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
+                          value={amounts[g].cheque}
+                          onChange={e => setAmount(g, 'cheque', e.target.value)}
+                          className={`${fieldCls(chequeErr)} pl-6`}
+                        />
+                      </div>
+                      <ErrorText>{chequeErr && 'Invalid amount.'}</ErrorText>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -367,13 +370,13 @@ export default function GuruPujaReport() {
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{fmtDate(s.date)}</td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{s.activityCentre}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${shakhaStatus.cls}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${shakhaStatus.cls} whitespace-nowrap`}>
                           {shakhaStatus.label}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{present}/{s.totalExpected}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${reportStatus.cls}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${reportStatus.cls} whitespace-nowrap`}>
                           {reportStatus.label}
                         </span>
                       </td>
