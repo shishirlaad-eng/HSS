@@ -58,6 +58,27 @@ export interface EmailTemplateItem {
   content: string;
 }
 
+// Configurable via Lists and Options → Communications → Email Template Categories
+// (ConfigurableListsMaster.tsx). Kept here (not in that file) and imported there,
+// mirroring the existing 'coupons' pattern — the canonical array lives with its
+// primary consumer, and edits made in Lists and Options are mirrored back into it.
+export interface EmailTemplateCategoryItem {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive';
+  lastUpdated: string;
+}
+
+export const EMAIL_TEMPLATE_CATEGORIES: EmailTemplateCategoryItem[] = [
+  { id: 'ETC-001', name: 'Onboarding',     status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-002', name: 'Security',       status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-003', name: 'Karyakrams',     status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-004', name: 'Billing',        status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-005', name: 'General',        status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-006', name: 'Authentication', status: 'active', lastUpdated: '2024-01-15' },
+  { id: 'ETC-007', name: 'Registration',   status: 'active', lastUpdated: '2024-01-15' },
+];
+
 interface RichEditorProps {
   initialValue: string;
   onChange: (value: string) => void;
@@ -137,6 +158,24 @@ const initialTemplates: EmailTemplateItem[] = [
     status: 'inactive',
     lastUpdated: '2024-02-15',
     content: '<h2>Monthly Activity Summary</h2>\n<p>Dear {user_name},</p>\n<p>Your continuous activity summary for the preceding operational month is now available for download under your account portal.</p>'
+  },
+  {
+    id: 'TPL-005',
+    name: 'Account Verification',
+    subject: 'Verify your email address to activate your account',
+    category: 'Authentication',
+    status: 'active',
+    lastUpdated: '2026-09-01',
+    content: '<h2>Verify Your Email</h2>\n<p>Hi {user_name},</p>\n<p>Please confirm this is your email address by clicking the link below:</p>\n<p><a href="{verification_link}">Verify My Email</a></p>\n<p>Once verified, you can log in and continue.</p>'
+  },
+  {
+    id: 'TPL-006',
+    name: 'Member Registration Confirmation',
+    subject: 'Your MyHSS registration has been submitted',
+    category: 'Registration',
+    status: 'active',
+    lastUpdated: '2026-09-01',
+    content: '<h2>Registration Submitted</h2>\n<p>Hi {user_name},</p>\n<p>Thank you for registering with MyHSS. Your application has been submitted and is now awaiting review by your Shakha Karyawaha.</p>\n<p>We will notify you as soon as a decision has been made.</p>'
   },
 ];
 
@@ -425,11 +464,9 @@ export default function EmailTemplates() {
                     onChange={e => setActiveTemplate({...activeTemplate, category: e.target.value})}
                     className="h-7 text-xs py-0 px-2 w-28"
                   >
-                    <option value="Onboarding">Onboarding</option>
-                    <option value="Security">Security</option>
-                    <option value="Karyakrams">Karyakrams</option>
-                    <option value="Billing">Billing</option>
-                    <option value="General">General</option>
+                    {EMAIL_TEMPLATE_CATEGORIES.filter(c => c.status === 'active').map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
                   </FormSelect>
                 </div>
               </div>

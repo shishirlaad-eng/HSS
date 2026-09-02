@@ -111,25 +111,13 @@ export const getNavigationData = (
       id: "members-management-group",
       label: "Members",
       icon: UserCheck,
-      active: ['members', 'karyakartas', 'compliance', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
+      active: ['members', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
       subItems: [
         {
           id: "members",
           label: "All Members",
           onClick: () => onNavigate("members"),
           active: currentPage === "members",
-        },
-        {
-          id: "karyakartas",
-          label: "Responsibilities and Roles",
-          onClick: () => onNavigate("karyakartas"),
-          active: currentPage === "karyakartas",
-        },
-        {
-          id: "compliance",
-          label: "Compliance",
-          onClick: () => onNavigate("compliance"),
-          active: currentPage === "compliance",
         },
         {
           id: "emergency-details",
@@ -200,15 +188,27 @@ export const getNavigationData = (
       active: currentPage === "attendance-log",
     }] : [{
       id: "attendance-group",
-      label: "Attendance",
+      label: "Shakha",
       icon: ClipboardCheck,
-      active: ['sessions', 'first-aid-incidents'].includes(currentPage),
+      active: ['sessions', 'karyakartas', 'compliance', 'first-aid-incidents', 'guru-puja-report'].includes(currentPage),
       subItems: [
         {
           id: "sessions",
-          label: "Shakha",
+          label: "Sankhya",
           onClick: () => onNavigate("sessions"),
           active: currentPage === "sessions",
+        },
+        {
+          id: "karyakartas",
+          label: "Responsibilities & Roles",
+          onClick: () => onNavigate("karyakartas"),
+          active: currentPage === "karyakartas",
+        },
+        {
+          id: "compliance",
+          label: "Compliance",
+          onClick: () => onNavigate("compliance"),
+          active: currentPage === "compliance",
         },
         ...(['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
           id: "first-aid-incidents",
@@ -216,6 +216,12 @@ export const getNavigationData = (
           onClick: () => onNavigate("first-aid-incidents"),
           active: currentPage === "first-aid-incidents",
         }] : []),
+        {
+          id: "guru-puja-report",
+          label: "Guru Puja Report",
+          onClick: () => onNavigate("guru-puja-report"),
+          active: currentPage === "guru-puja-report",
+        },
       ],
     }]),
 

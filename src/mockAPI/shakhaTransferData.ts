@@ -24,6 +24,27 @@ const REQUESTS_KEY = 'hssShakhaTransferRequests';
 const OVERRIDES_KEY = 'hssMemberCentreOverrides';
 export const TRANSFER_CHANGE_EVENT = 'hss-shakha-transfer-change';
 
+// Dummy seed so a Shakha Transfer Request is visible on Pending Approvals out of
+// the box, without first walking through the member-side "change Shakha" flow.
+const SEED_TRANSFER_REQUESTS: ShakhaTransferRequest[] = [
+  {
+    id: 'TRF-SEED-001',
+    memberId: 'MEM-3021',
+    memberName: 'Rohan Mehta',
+    memberRole: 'Teen Member',
+    fromCountry: 'HSS UK',
+    fromRegion: 'London & South East',
+    fromTown: 'Wembley',
+    fromCentre: 'Wembley Activity Centre',
+    toCountry: 'HSS UK',
+    toRegion: 'London & South East',
+    toTown: 'Harrow',
+    toCentre: 'Harrow Activity Centre',
+    status: 'pending',
+    requestedAt: '2026-08-31T09:47:00.000Z',
+  },
+];
+
 export interface MemberCentreOverride {
   country: string;
   region: string;
@@ -47,7 +68,7 @@ function writeJson(key: string, value: unknown) {
 }
 
 export function getTransferRequests(): ShakhaTransferRequest[] {
-  return readJson<ShakhaTransferRequest[]>(REQUESTS_KEY, []);
+  return readJson<ShakhaTransferRequest[]>(REQUESTS_KEY, SEED_TRANSFER_REQUESTS);
 }
 
 export function getPendingTransferForMember(memberId: string) {

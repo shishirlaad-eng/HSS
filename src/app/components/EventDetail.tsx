@@ -1781,12 +1781,15 @@ export default function EventDetail({
                       </div>
                     </div>
 
-                    {hasTicketTypes && (
                     <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
                       <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                        Payment Information
+                        Ticket Information
                       </h4>
                       <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Type</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vTicket?.label ?? 'Free Karyakram'}</p>
+                        </div>
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Ticket Price</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vTicket ? `£${vTicket.price}` : 'Free Karyakram'}</p>
@@ -1794,6 +1797,14 @@ export default function EventDetail({
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Discount Code Applied</label>
                           <p className="text-sm text-neutral-900 dark:text-white">{vp.discountCodeUsed ?? 'None'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Donation Amount</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.donationAmount ? `£${vp.donationAmount}` : 'No donation'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Gift Aid Claimed</label>
+                          <p className="text-sm text-neutral-900 dark:text-white">{vp.giftAidClaimed ? 'Yes' : 'No'}</p>
                         </div>
                         <div>
                           <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Amount Paid</label>
@@ -1819,25 +1830,6 @@ export default function EventDetail({
                         )}
                       </div>
                     </div>
-                    )}
-
-                    {(event.donationEnabled || !!vp.donationAmount) && (
-                    <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                      <h4 className="text-[19px] font-bold text-neutral-900 dark:text-white px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-                        Donation Information
-                      </h4>
-                      <div className="px-6 pb-6 pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Donation Amount</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.donationAmount ? `£${vp.donationAmount}` : 'No donation'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1">Gift Aid Claimed</label>
-                          <p className="text-sm text-neutral-900 dark:text-white">{vp.giftAidClaimed ? 'Yes' : 'No'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    )}
 
                     {mockEventGuestProfiles[vp.memberId] && (() => {
                       const gp = mockEventGuestProfiles[vp.memberId];

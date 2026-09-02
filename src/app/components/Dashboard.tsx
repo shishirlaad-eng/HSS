@@ -293,7 +293,7 @@ function MemberDashboard({
             label:    'My Attendance',
             arc:      (attendancePct / 100) * C,
             color:    '#172E4D',
-            center:   `${presentCount}`,
+            center:   `${presentCount + presentAnotherShakha}`,
             centerSub: 'YTD',
             segments: [
               { label: 'Present', value: presentCount, color: '#4EAE33' },

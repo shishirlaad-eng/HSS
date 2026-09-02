@@ -920,6 +920,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [postRegEditing, setPostRegEditing] = useState(isPostRegistration);
   const effectiveEditing = !isUnderReview && (isEditing || postRegEditing);
   const [selectedAddress, setSelectedAddress] = useState('');
+  const [postcodeSearch, setPostcodeSearch] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [upgradeChildId, setUpgradeChildId] = useState<string | null>(null);
@@ -1011,11 +1012,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
       if (field === 'country') {
         next.region = '';
         next.town = '';
-        next.activityCentre = '';
-      } else if (field === 'region') {
-        next.town = '';
-        next.activityCentre = '';
-      } else if (field === 'town') {
         next.activityCentre = '';
       }
       return next;
@@ -1410,44 +1406,57 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               <InfoSection title="Contact Details">
                 <EditableInfoItem label="Contact Number" required  value={profile.phone}           isEditing={effectiveEditing && !activeChildId} onChange={v => setField("phone", v)}  phone error={fieldErrors.phone} errorMessage="Contact number is required." disabled={lockCarriedOverPhone} />
                 <EditableInfoItem label="Email Address" required   value={profile.email}           isEditing={effectiveEditing && selectedRole === 'Super Admin'} onChange={v => setField("email", v)}  type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." disabled={lockCarriedOverDetails} />
-                <EditableInfoItem
-                  label="Post Code"
-                  required
-                  value={profile.postCode}
-                  isEditing={effectiveEditing}
-                  onChange={v => { setField("postCode", v); setSelectedAddress(''); }}
-                  error={fieldErrors.postCode}
-                  errorMessage="Post code is required."
-                />
                 {effectiveEditing && (
-                  <div>
-                    <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Select Address</label>
-                    <FormSelect
-                      value={selectedAddress}
-                      disabled={profile.postCode.trim().length < 4}
-                      onChange={e => {
-                        const idx = e.target.value;
-                        setSelectedAddress(idx);
-                        const options = mockAddressesForPostcode(profile.postCode, profile.town);
-                        const picked = options[Number(idx)];
-                        if (picked) {
-                          setField("buildingName", picked.buildingName);
-                          setField("addressLine1", picked.addressLine1);
-                          setField("contactTownCity", picked.town);
-                        }
-                      }}
-                    >
-                      <option value="">{profile.postCode.trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
-                      {mockAddressesForPostcode(profile.postCode, profile.town).map((opt, i) => (
-                        <option key={i} value={i}>{opt.label}</option>
-                      ))}
-                    </FormSelect>
-                  </div>
+                  <>
+                    <div>
+                      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Find Address</label>
+                      <input
+                        type="text"
+                        value={postcodeSearch}
+                        onChange={e => { setPostcodeSearch(e.target.value); setSelectedAddress(''); }}
+                        placeholder="Enter a post code to search"
+                        className="w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Select Address</label>
+                      <FormSelect
+                        value={selectedAddress}
+                        disabled={postcodeSearch.trim().length < 4}
+                        onChange={e => {
+                          const idx = e.target.value;
+                          setSelectedAddress(idx);
+                          const options = mockAddressesForPostcode(postcodeSearch, profile.town);
+                          const picked = options[Number(idx)];
+                          if (picked) {
+                            setField("buildingName", picked.buildingName);
+                            setField("addressLine1", picked.addressLine1);
+                            setField("contactTownCity", picked.town);
+                            setField("postCode", postcodeSearch.toUpperCase());
+                          }
+                        }}
+                      >
+                        <option value="">{postcodeSearch.trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
+                        {mockAddressesForPostcode(postcodeSearch, profile.town).map((opt, i) => (
+                          <option key={i} value={i}>{opt.label}</option>
+                        ))}
+                      </FormSelect>
+                    </div>
+                  </>
                 )}
                 <EditableInfoItem label="Building Name"   value={profile.buildingName}    isEditing={effectiveEditing} onChange={v => setField("buildingName", v)} />
                 <EditableInfoItem label="Address Line 1" required  value={profile.addressLine1}    isEditing={effectiveEditing} onChange={v => setField("addressLine1", v)} error={fieldErrors.addressLine1} errorMessage="Address line 1 is required." />
                 <EditableInfoItem label="Address Line 2"  value={profile.addressLine2}    isEditing={effectiveEditing} onChange={v => setField("addressLine2", v)} />
                 <EditableInfoItem label="Town / City" required     value={profile.contactTownCity} isEditing={effectiveEditing} onChange={v => setField("contactTownCity", v)} error={fieldErrors.contactTownCity} errorMessage="Town / city is required." />
+                <EditableInfoItem
+                  label="Post Code"
+                  required
+                  value={profile.postCode}
+                  isEditing={effectiveEditing}
+                  onChange={v => setField("postCode", v)}
+                  error={fieldErrors.postCode}
+                  errorMessage="Post code is required."
+                />
               </InfoSection>
 
               {isPostRegistration && showGuardian && !activeChildId && (

@@ -43,6 +43,7 @@ import ComplianceManagement from "./components/ComplianceManagement";
 import EmergencyDetails from "./components/EmergencyDetails";
 import IncidentManagement from "./components/IncidentManagement";
 import UtsavCashIncome from "./components/UtsavCashIncome";
+import GuruPujaReport from "./components/GuruPujaReport";
 import DonationCollection from "./components/DonationCollection";
 import { RoleScopeProvider } from "./contexts/RoleScopeContext";
 
@@ -479,6 +480,8 @@ export default function App() {
           />
         ) : currentPage === "first-aid-incidents" ? (
           <IncidentManagement />
+        ) : currentPage === "guru-puja-report" ? (
+          <GuruPujaReport />
         ) : currentPage === "utsav-income" ? (
           <UtsavCashIncome />
         ) : currentPage === "karyakram-donations" ? (

@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS } from '../../mockAPI/membersData';
 import { mockRoles } from '../../mockAPI/rolesData';
 import { mockCoupons, KARYAKRAM_TYPE_OPTIONS } from '../../mockAPI/eventsData';
+import { EMAIL_TEMPLATE_CATEGORIES } from './EmailTemplates';
 import { formatDate } from '../../utils/formatDate';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +37,8 @@ export type ListKey =
   | 'incident-type'
   | 'incident-outcome'
   | 'coupons'
-  | 'karyakram-types';
+  | 'karyakram-types'
+  | 'email-template-categories';
 
 export interface ConfigItem {
   id: string;
@@ -94,6 +96,12 @@ const CATEGORIES: { label: string; lists: { key: ListKey; label: string; idPrefi
       { key: 'karyakram-types', label: 'Karyakram Types', idPrefix: 'KTP' },
     ],
   },
+  {
+    label: 'Communications',
+    lists: [
+      { key: 'email-template-categories', label: 'Email Template Categories', idPrefix: 'ETC' },
+    ],
+  },
 ];
 
 const LIST_META: Record<ListKey, { label: string; idPrefix: string }> = {} as any;
@@ -125,8 +133,9 @@ const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
   'utsav-options':        makeItems('UTS', ['None', 'Makar Sankranti', 'Varsh Pratipada', 'Guru Purnima', 'Rakshabandhan', 'Vijya Dashmi']),
   'incident-type':        makeItems('INT', ['Minor Injury', 'Major Injury', 'Illness', 'Allergic Reaction', 'Other']),
   'incident-outcome':     makeItems('INO', ['Returned to Activity', 'Sent Home', 'Taken to Hospital', 'Ambulance Called']),
-  'coupons':              mockCoupons.map(c => ({ ...c })),
-  'karyakram-types':      makeItems('KTP', [...KARYAKRAM_TYPE_OPTIONS]),
+  'coupons':                    mockCoupons.map(c => ({ ...c })),
+  'karyakram-types':            makeItems('KTP', [...KARYAKRAM_TYPE_OPTIONS]),
+  'email-template-categories':  EMAIL_TEMPLATE_CATEGORIES.map(c => ({ ...c })),
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -201,6 +210,12 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
       if (selectedList === 'coupons') {
         mockCoupons.length = 0;
         mockCoupons.push(...next.map(i => ({ id: i.id, name: i.name, status: i.status, lastUpdated: i.lastUpdated })));
+      }
+      // 'email-template-categories' is read live by EmailTemplates.tsx's Category
+      // dropdown — mirror edits back the same way as 'coupons' above.
+      if (selectedList === 'email-template-categories') {
+        EMAIL_TEMPLATE_CATEGORIES.length = 0;
+        EMAIL_TEMPLATE_CATEGORIES.push(...next.map(i => ({ id: i.id, name: i.name, status: i.status, lastUpdated: i.lastUpdated })));
       }
       return { ...prev, [selectedList]: next };
     });

@@ -92,7 +92,7 @@ function MemberRow({ m }: { m: Member }) {
 // Member-facing "My Attendance" log (AttendanceLog.tsx) — solid primary band
 // for the top tier, progressively lighter/more-indented neutral bands below.
 const GROUP_TIER_STYLE = {
-  top: {
+  kendriya: {
     padding: 'px-4',
     bg: 'bg-primary-700 dark:bg-primary-950 hover:bg-primary-800 dark:hover:bg-primary-900',
     text: 'text-white',
@@ -100,21 +100,29 @@ const GROUP_TIER_STYLE = {
     count: 'text-white/60',
     border: '',
   },
+  vibhag: {
+    padding: 'pl-6 pr-4',
+    bg: 'bg-primary-100 dark:bg-primary-900/40 hover:bg-primary-200 dark:hover:bg-primary-900/60',
+    text: 'text-primary-900 dark:text-primary-100',
+    icon: 'text-primary-600 dark:text-primary-300',
+    count: 'text-primary-700/70 dark:text-primary-300/70',
+    border: 'border-y border-primary-200 dark:border-primary-900',
+  },
   nagar: {
     padding: 'pl-8 pr-4',
-    bg: 'bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800',
+    bg: 'bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700',
     text: 'text-neutral-900 dark:text-white',
     icon: 'text-neutral-500',
     count: 'text-neutral-500 dark:text-neutral-400',
-    border: 'border-y border-neutral-200 dark:border-neutral-800',
+    border: 'border-y border-neutral-300 dark:border-neutral-700',
   },
   shakha: {
     padding: 'pl-12 pr-4',
     bg: 'bg-neutral-50 dark:bg-neutral-900/60 hover:bg-neutral-100 dark:hover:bg-neutral-800/60',
     text: 'text-neutral-800 dark:text-neutral-200',
-    icon: 'text-neutral-400',
+    icon: 'text-primary-500 dark:text-primary-400',
     count: 'text-neutral-400 dark:text-neutral-500',
-    border: 'border-y border-neutral-100 dark:border-neutral-800/60',
+    border: 'border-y border-l-4 border-neutral-100 dark:border-neutral-800/60 border-l-primary-300 dark:border-l-primary-700',
   },
 } as const;
 
@@ -495,7 +503,7 @@ export default function KaryakartaDirectoryReport() {
                           count={grouped.kendriyaMembers.length}
                           collapsed={collapsedGroups.has('kendriya')}
                           onToggle={() => toggleGroup('kendriya')}
-                          tier="top"
+                          tier="kendriya"
                         />
                         {!collapsedGroups.has('kendriya') && grouped.kendriyaMembers.map(m => <MemberRow key={m.id} m={m} />)}
                       </Fragment>
@@ -512,7 +520,7 @@ export default function KaryakartaDirectoryReport() {
                               count={rg.regionTotal}
                               collapsed={collapsedGroups.has(regionKey)}
                               onToggle={() => toggleGroup(regionKey)}
-                              tier="top"
+                              tier="vibhag"
                             />
                             {!collapsedGroups.has(regionKey) && (
                               <>
