@@ -67,6 +67,7 @@ import {
   mockEventGuestProfiles,
 } from '../../mockAPI/eventsData';
 import { mockMembers, getAgeGroupLabel } from '../../mockAPI/membersData';
+import { MemberMultiSelect } from './EventFormFields';
 import { formatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
@@ -263,6 +264,11 @@ export default function EventDetail({
   const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
   const cancelledList   = allParticipants.filter(p => p.rsvp === 'cancelled');
   const waitlistedList  = allParticipants.filter(p => p.waitlisted && p.rsvp === 'requested');
+  // Pool for "Target Specific Members" on Karyakram Suchana — registered
+  // (going) + waiting-list participants only, resolved to full member records.
+  const announcementAudienceMembers = [...goingList, ...waitlistedList]
+    .map(p => mockMembers.find(m => m.id === p.memberId))
+    .filter((m): m is typeof mockMembers[number] => !!m);
   const rsvpFilteredParticipants =
     rsvpFilter === 'all'        ? allParticipants :
     rsvpFilter === 'requested'  ? requestedList :
@@ -796,6 +802,8 @@ export default function EventDetail({
   const [announcementMediaUrl, setAnnouncementMediaUrl] = useState('');
   const [announcementContentType, setAnnouncementContentType] = useState<'text' | 'image' | 'video'>('text');
   const [announcementTargets, setAnnouncementTargets] = useState<('requested' | 'going' | 'waitlisted')[]>([]);
+  const [announcementTargetSpecificOnly, setAnnouncementTargetSpecificOnly] = useState(false);
+  const [announcementTargetMemberIds, setAnnouncementTargetMemberIds] = useState<string[]>([]);
   const [announcementPushEnabled, setAnnouncementPushEnabled] = useState(true);
   const [announcementPushSchedule, setAnnouncementPushSchedule] = useState<'instant' | 'scheduled'>('instant');
   const [announcementPushScheduledAt, setAnnouncementPushScheduledAt] = useState('');
@@ -812,6 +820,8 @@ export default function EventDetail({
     setAnnouncementMediaUrl('');
     setAnnouncementContentType('text');
     setAnnouncementTargets([]);
+    setAnnouncementTargetSpecificOnly(false);
+    setAnnouncementTargetMemberIds([]);
     setAnnouncementPushEnabled(true);
     setAnnouncementPushSchedule('instant');
     setAnnouncementPushScheduledAt('');
@@ -837,6 +847,10 @@ export default function EventDetail({
       toast.error('Please pick an email notification schedule date & time.');
       return;
     }
+    if (announcementTargetSpecificOnly && announcementTargetMemberIds.length === 0) {
+      toast.error('Please select at least one member.');
+      return;
+    }
     setEventAnnouncements(prev => [
       {
         id: `ANN-${Date.now()}`,
@@ -849,6 +863,7 @@ export default function EventDetail({
         emailEnabled: announcementEmailEnabled,
         ...(announcementEmailEnabled ? { emailSchedule: announcementEmailSchedule, ...(announcementEmailSchedule === 'scheduled' ? { emailScheduledAt: announcementEmailScheduledAt } : {}) } : {}),
         ...(announcementTargets.length > 0 ? { targetStatuses: announcementTargets } : {}),
+        ...(announcementTargetSpecificOnly && announcementTargetMemberIds.length > 0 ? { targetMemberIds: announcementTargetMemberIds } : {}),
         ...(announcementMediaUrl ? { mediaUrl: announcementMediaUrl, contentType: announcementContentType } : {}),
       },
       ...prev,
@@ -1053,7 +1068,7 @@ export default function EventDetail({
                           toast.success("Thanks — we've noted your interest and will notify you if a spot opens up.");
                         }}
                       >
-                        <UsersIcon className="w-3.5 h-3.5" /> Interested to Join
+                        <UsersIcon className="w-3.5 h-3.5" /> Join Waiting List
                       </button>
                     )
                   ) : (
@@ -2754,6 +2769,33 @@ export default function EventDetail({
                             );
                           })}
                         </div>
+                      </div>
+
+                      {/* Target Specific Members */}
+                      <div>
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                          <input
+                            type="checkbox"
+                            checked={announcementTargetSpecificOnly}
+                            onChange={e => { setAnnouncementTargetSpecificOnly(e.target.checked); if (!e.target.checked) setAnnouncementTargetMemberIds([]); }}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                          />
+                          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            Target Specific Members
+                          </span>
+                        </label>
+                        {announcementTargetSpecificOnly && (
+                          <div className="mt-2">
+                            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+                              Select Members <span className="text-neutral-400 font-normal">(registered and waiting-list participants only)</span>
+                            </label>
+                            <MemberMultiSelect
+                              selectedIds={announcementTargetMemberIds}
+                              onChange={setAnnouncementTargetMemberIds}
+                              members={announcementAudienceMembers}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Notification Channels */}

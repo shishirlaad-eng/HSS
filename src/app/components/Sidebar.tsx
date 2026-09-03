@@ -128,7 +128,6 @@ export function Sidebar({
 
   // Translate nav labels using the language context
   const { t } = useLanguage();
-  const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const navLabelMap: Record<string, string> = {
     // 1. Dashboard
     "dashboard": t.nav.dashboard,
@@ -136,7 +135,7 @@ export function Sidebar({
     // 2. Members Management
     "members-management-group":      "Members",
     "members":                        "All Members",
-    "karyakartas":                    "Responsibilities and Roles",
+    "karyakartas":                    "Responsibilities & Roles",
     "compliance":                     "Compliance",
     "emergency-details":              "Emergency Details",
     "pending-approvals":              "Pending Karyawaha Approvals",
@@ -148,9 +147,9 @@ export function Sidebar({
     // 4. Suchana (Announcements)
     "announcements":                  "Suchana",
 
-    // 5. Attendance
-    "attendance-group":               isMemberRole ? "My Attendance" : "Attendance",
-    "sessions":                       "Shakha",
+    // 5. Shakha (formerly Attendance)
+    "attendance-group":               "Shakha",
+    "sessions":                       "Sankhya",
     "first-aid-incidents":            "First Aid Incidents",
 
     // 5b. Dakshina

@@ -306,7 +306,7 @@ export default function Sessions() {
     <div className="sticky-listing-table p-6" style={stickyTableStyle}>
       <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-1">
       <PageHeader
-        title="Shakha"
+        title="Sankhya"
         subtitle={isMemberRole ? undefined : "View and manage recurring Shakha gatherings"}
         breadcrumbs={[
           { label: 'Sankhya' },

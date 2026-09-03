@@ -407,7 +407,7 @@ export default function AttendanceLog() {
         {/* ── PAGE HEADER ── */}
         <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
         <PageHeader
-          title={scope.selfOnly ? "My Attendance" : "Sankhya Log"}
+          title={scope.selfOnly ? "My Sankhya" : "Sankhya Log"}
           subtitle={scope.selfOnly ? "Your Personal Attendance Record" : "Complete record of member Sankhya across all Shakha gatherings."}
           >
           {/* Search + Advanced Filter panel — admin only */}

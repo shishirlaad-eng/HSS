@@ -90,6 +90,7 @@ const EMPTY_FORM = {
   specificAgeAsAtDate: '',
   specificAgeFrom: '',
   specificAgeTo: '',
+  targetAllMembers: null as boolean | null,
   targetSpecificOnly: false,
   targetMemberIds: [] as string[],
   targetRegions: [] as string[],
@@ -117,6 +118,18 @@ function countMatchingMembers(
   members: typeof mockMembers,
   regionOptions: string[], townOptions: string[], centreOptions: string[],
 ): number {
+  if (f.targetAllMembers !== false) {
+    // Yes (or not yet answered) — everyone within the geographic scope, no
+    // demographic filtering and no specific-member invites (that field only
+    // renders once the answer is explicitly No).
+    return members.filter(m => {
+      if (!isFullSelection(f.targetRegions, regionOptions) && !f.targetRegions.includes(m.region)) return false;
+      if (!isFullSelection(f.targetTowns, townOptions) && !f.targetTowns.includes(m.town)) return false;
+      if (!isFullSelection(f.targetCentres, centreOptions) && !f.targetCentres.includes(m.activityCentre)) return false;
+      return true;
+    }).length;
+  }
+
   if (f.targetSpecificOnly) return f.targetMemberIds.length;
 
   return members.filter(m => {
@@ -212,6 +225,15 @@ function formStateFromEvent(event: Event): typeof EMPTY_FORM {
     specificAgeAsAtDate: event.filterSpecificAge?.asAtDate ?? '',
     specificAgeFrom: event.filterSpecificAge?.from ?? '',
     specificAgeTo: event.filterSpecificAge?.to ?? '',
+    // Pre-existing events predate this question — infer the answer so old data
+    // doesn't silently look unfiltered: if nothing was ever filtered/targeted
+    // specifically, that's a "Yes"; any real filter or specific-member list means
+    // it was effectively "No" (and reveals those filters as before).
+    targetAllMembers: event.targetAllMembers ?? (
+      (event.targetMemberIds?.length ?? 0) === 0 &&
+      !event.filterAgeCategories && !event.filterGenders && !event.filterJobTitles &&
+      !event.filterResponsibilityLevels && !event.filterResponsibilityTypes && !event.filterSpecificAge
+    ),
     targetSpecificOnly: (event.targetMemberIds?.length ?? 0) > 0,
     targetMemberIds: event.targetMemberIds ?? [],
     targetRegions: event.targetRegions ?? [ALL_SENTINEL],
@@ -290,6 +312,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
   const FIELD_ORDER = [
     'name', 'startDate', 'startTime', 'endDate', 'endTime',
     'targetRegions', 'targetTowns', 'targetCentres',
+    'targetAllMembers',
     'filterAgeCategories', 'filterGenders', 'filterResponsibilityLevels', 'filterJobTitles', 'filterResponsibilityTypes',
     'targetMemberIds',
     'paymentType', 'priceCategories', 'couponCode',
@@ -297,6 +320,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
   const FIELD_TAB: Record<string, CreateTab> = {
     name: 'basics', startDate: 'basics', startTime: 'basics', endDate: 'basics', endTime: 'basics',
     targetMemberIds: 'audience', targetRegions: 'audience', targetTowns: 'audience', targetCentres: 'audience',
+    targetAllMembers: 'audience',
     filterAgeCategories: 'audience', filterGenders: 'audience', filterResponsibilityLevels: 'audience',
     filterJobTitles: 'audience', filterResponsibilityTypes: 'audience',
     paymentType: 'payment', priceCategories: 'payment', couponCode: 'payment',
@@ -320,12 +344,13 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!formData.name.trim())         errs.name           = 'This field is required.';
-    if (formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
+    if (formData.targetAllMembers === false && formData.targetSpecificOnly && formData.targetMemberIds.length === 0) {
       errs.targetMemberIds = 'Please select at least one member.';
     }
     if (isUnset(formData.targetRegions))             errs.targetRegions             = 'Please select "All" or specific Vibhags.';
     if (isUnset(formData.targetTowns))                errs.targetTowns                = 'Please select "All" or specific Nagars.';
     if (isUnset(formData.targetCentres))              errs.targetCentres              = 'Please select "All" or specific Shakhas.';
+    if (formData.targetAllMembers === null)          errs.targetAllMembers          = 'Please answer this question.';
     if (!formData.startDate)           errs.startDate      = 'This field is required.';
     if (!formData.startTime)           errs.startTime      = 'This field is required.';
     if (!formData.endDate)             errs.endDate        = 'This field is required.';
@@ -381,12 +406,13 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       selfCheckInEnabled: formData.selfCheckInEnabled,
       guestPaymentType: formData.guestRegistrationEnabled ? 'free' : undefined,
       customQuestions: formData.customQuestions.length > 0 ? formData.customQuestions : undefined,
-      filterAgeCategories: !isAllSelected(formData.filterAgeCategories) ? formData.filterAgeCategories : undefined,
-      filterGenders:       !isAllSelected(formData.filterGenders)       ? formData.filterGenders       : undefined,
-      filterJobTitles:     !isAllSelected(formData.filterJobTitles)     ? formData.filterJobTitles     : undefined,
-      filterResponsibilityLevels: !isAllSelected(formData.filterResponsibilityLevels) ? formData.filterResponsibilityLevels : undefined,
-      filterResponsibilityTypes:  !isAllSelected(formData.filterResponsibilityTypes)  ? formData.filterResponsibilityTypes  : undefined,
-      filterSpecificAge: formData.specificAgeOperator ? (
+      targetAllMembers: formData.targetAllMembers ?? undefined,
+      filterAgeCategories: formData.targetAllMembers === false && !isAllSelected(formData.filterAgeCategories) ? formData.filterAgeCategories : undefined,
+      filterGenders:       formData.targetAllMembers === false && !isAllSelected(formData.filterGenders)       ? formData.filterGenders       : undefined,
+      filterJobTitles:     formData.targetAllMembers === false && !isAllSelected(formData.filterJobTitles)     ? formData.filterJobTitles     : undefined,
+      filterResponsibilityLevels: formData.targetAllMembers === false && !isAllSelected(formData.filterResponsibilityLevels) ? formData.filterResponsibilityLevels : undefined,
+      filterResponsibilityTypes:  formData.targetAllMembers === false && !isAllSelected(formData.filterResponsibilityTypes)  ? formData.filterResponsibilityTypes  : undefined,
+      filterSpecificAge: formData.targetAllMembers === false && formData.specificAgeOperator ? (
         formData.specificAgeOperator === 'between'
           ? { operator: 'between' as const, from: formData.specificAgeFrom || undefined, to: formData.specificAgeTo || undefined }
           : { operator: formData.specificAgeOperator, value: formData.specificAgeValue ? parseInt(formData.specificAgeValue) : undefined, asAtDate: formData.specificAgeAsAtDate || undefined }
@@ -394,7 +420,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
       targetRegions: !isFullSelection(formData.targetRegions, regionOptions) ? formData.targetRegions : undefined,
       targetTowns:   !isFullSelection(formData.targetTowns, townOptions)     ? formData.targetTowns   : undefined,
       targetCentres: !isFullSelection(formData.targetCentres, centreOptions) ? formData.targetCentres : undefined,
-      targetMemberIds: formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
+      targetMemberIds: formData.targetAllMembers === false && formData.targetSpecificOnly ? formData.targetMemberIds : undefined,
       eventAdminIds: formData.eventAdminIds.length > 0 ? formData.eventAdminIds : undefined,
       termsSections: formData.termsSections.length > 0 ? formData.termsSections : undefined,
       confirmationSubject: formData.confirmationSubject.trim() || undefined,
@@ -772,9 +798,13 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
           {activeTab === 'audience' && (
             <div className="space-y-5">
               <>
-                  <Card title="Scope">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900">
+                    This Karyakram will be available to <strong className="text-neutral-900 dark:text-white">{matchingMemberCount.toLocaleString()}</strong> member{matchingMemberCount !== 1 ? 's' : ''} based on the audience and targeting filters below.
+                  </p>
+
+                  <Card title="Geographic Filter">
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                      Required — consciously choose "All" or specific values for each. Nothing is targeted by default.
+                      Please select which Vibhag, Nagar and Shakha this karyakram is for
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div ref={el => { fieldRefs.current.targetRegions = el; }}>
@@ -824,160 +854,193 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                   </Card>
 
                   <Card title="Demographic Filters">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                      Optional — choose "All" or specific values to narrow the audience, or leave as-is to target everyone within scope.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div ref={el => { fieldRefs.current.filterAgeCategories = el; }}>
-                        <MultiSelectField
-                          label="Age Category"
-                          options={AGE_GROUP_OPTIONS.map(o => o.value)}
-                          getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
-                          selected={formData.filterAgeCategories}
-                          error={touched && !!errors.filterAgeCategories}
-                          errorMessage={touched ? errors.filterAgeCategories : undefined}
-                          onChange={v => set('filterAgeCategories', v as AgeGroup[])}
-                        />
+                    <div ref={el => { fieldRefs.current.targetAllMembers = el; }} className="mb-4">
+                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                        Is this karyakram available to ALL members of the selected Shakha/Nagar/Vibhag?
+                      </p>
+                      <div className="flex items-center gap-5">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="radio"
+                            name="targetAllMembers"
+                            checked={formData.targetAllMembers === true}
+                            onChange={() => set('targetAllMembers', true)}
+                            className="w-4 h-4 accent-primary-600"
+                          />
+                          <span className="text-sm text-neutral-700 dark:text-neutral-300">Yes</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="radio"
+                            name="targetAllMembers"
+                            checked={formData.targetAllMembers === false}
+                            onChange={() => set('targetAllMembers', false)}
+                            className="w-4 h-4 accent-primary-600"
+                          />
+                          <span className="text-sm text-neutral-700 dark:text-neutral-300">No</span>
+                        </label>
                       </div>
-                      <FormField className="md:col-span-3">
-                        <FormLabel>Specific Age</FormLabel>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <FormSelect
-                            value={formData.specificAgeOperator}
-                            onChange={e => {
-                              const op = e.target.value;
-                              set('specificAgeOperator', op);
-                              if ((op === '=' || op === '>' || op === '<') && !formData.specificAgeAsAtDate) {
-                                set('specificAgeAsAtDate', new Date().toISOString().split('T')[0]);
-                              }
-                            }}
-                            className="w-40"
-                          >
-                            <option value="">Not filtered</option>
-                            <option value="=">Equals to</option>
-                            <option value=">">Greater than or equal to</option>
-                            <option value="<">Less than or equal to</option>
-                            <option value="between">Between</option>
-                          </FormSelect>
-                          {(formData.specificAgeOperator === '=' || formData.specificAgeOperator === '>' || formData.specificAgeOperator === '<') && (
-                            <>
-                              <FormInput
-                                type="number"
-                                min="0"
-                                value={formData.specificAgeValue}
-                                onChange={e => set('specificAgeValue', e.target.value)}
-                                placeholder="Age"
-                                className="w-32"
-                              />
-                              <span className="text-sm text-neutral-400">as at</span>
-                              <FormInput
-                                type="date"
-                                value={formData.specificAgeAsAtDate}
-                                onChange={e => set('specificAgeAsAtDate', e.target.value)}
-                                className="w-44"
-                              />
-                            </>
-                          )}
-                          {formData.specificAgeOperator === 'between' && (
-                            <>
-                              <FormInput
-                                type="date"
-                                value={formData.specificAgeFrom}
-                                onChange={e => set('specificAgeFrom', e.target.value)}
-                                className="w-44"
-                              />
-                              <span className="text-sm text-neutral-400">to</span>
-                              <FormInput
-                                type="date"
-                                value={formData.specificAgeTo}
-                                onChange={e => set('specificAgeTo', e.target.value)}
-                                className="w-44"
-                              />
-                              {formData.specificAgeFrom && formData.specificAgeTo && (
-                                <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
-                                  Age {getAge(formData.specificAgeTo)} – {getAge(formData.specificAgeFrom)}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </FormField>
-                      <div ref={el => { fieldRefs.current.filterGenders = el; }}>
-                        <MultiSelectField
-                          label="Gender"
-                          options={['male', 'female']}
-                          getLabel={v => v === 'male' ? 'Male' : 'Female'}
-                          selected={formData.filterGenders}
-                          error={touched && !!errors.filterGenders}
-                          errorMessage={touched ? errors.filterGenders : undefined}
-                          onChange={v => set('filterGenders', v as ('male' | 'female')[])}
-                        />
-                      </div>
-                      <div ref={el => { fieldRefs.current.filterResponsibilityLevels = el; }}>
-                        <MultiSelectField
-                          label="Responsibility Level"
-                          options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
-                          selected={formData.filterResponsibilityLevels}
-                          error={touched && !!errors.filterResponsibilityLevels}
-                          errorMessage={touched ? errors.filterResponsibilityLevels : undefined}
-                          onChange={v => set('filterResponsibilityLevels', v)}
-                        />
-                      </div>
-                      <div ref={el => { fieldRefs.current.filterJobTitles = el; }}>
-                        <MultiSelectField
-                          label="Sangh Responsibility"
-                          options={ROLE_TYPE_OPTIONS}
-                          selected={formData.filterJobTitles}
-                          error={touched && !!errors.filterJobTitles}
-                          errorMessage={touched ? errors.filterJobTitles : undefined}
-                          onChange={v => set('filterJobTitles', v)}
-                        />
-                      </div>
-                      <div ref={el => { fieldRefs.current.filterResponsibilityTypes = el; }}>
-                        <MultiSelectField
-                          label="Responsibility Type"
-                          options={[...RESPONSIBILITY_TYPE_OPTIONS]}
-                          selected={formData.filterResponsibilityTypes}
-                          error={touched && !!errors.filterResponsibilityTypes}
-                          errorMessage={touched ? errors.filterResponsibilityTypes : undefined}
-                          onChange={v => set('filterResponsibilityTypes', v)}
-                        />
-                      </div>
+                      <ErrorText>{touched && errors.targetAllMembers}</ErrorText>
                     </div>
-                  </Card>
 
-                  <Card title="Target Specific Members">
-                    <div className="space-y-4">
-                      <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                        <input
-                          type="checkbox"
-                          checked={formData.targetSpecificOnly}
-                          onChange={e => set('targetSpecificOnly', e.target.checked)}
-                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
-                        />
-                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                          Invite specific members only
-                        </span>
-                      </label>
-                      {formData.targetSpecificOnly && (
-                        <FormField>
-                          <FormLabel required>Select Members</FormLabel>
-                          <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
-                            <MemberMultiSelect
-                              selectedIds={formData.targetMemberIds}
-                              onChange={ids => set('targetMemberIds', ids)}
-                              members={scopedMembers}
-                            />
+                    {formData.targetAllMembers === false && (
+                      <>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                          Please use the filters below to define who the karyakram is applicable to.
+                        </p>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div ref={el => { fieldRefs.current.filterAgeCategories = el; }}>
+                              <MultiSelectField
+                                label="Age Category"
+                                options={AGE_GROUP_OPTIONS.map(o => o.value)}
+                                getLabel={v => AGE_GROUP_OPTIONS.find(o => o.value === v)?.label ?? v}
+                                selected={formData.filterAgeCategories}
+                                error={touched && !!errors.filterAgeCategories}
+                                errorMessage={touched ? errors.filterAgeCategories : undefined}
+                                onChange={v => set('filterAgeCategories', v as AgeGroup[])}
+                              />
+                            </div>
+                            <div ref={el => { fieldRefs.current.filterGenders = el; }}>
+                              <MultiSelectField
+                                label="Gender"
+                                options={['male', 'female']}
+                                getLabel={v => v === 'male' ? 'Male' : 'Female'}
+                                selected={formData.filterGenders}
+                                error={touched && !!errors.filterGenders}
+                                errorMessage={touched ? errors.filterGenders : undefined}
+                                onChange={v => set('filterGenders', v as ('male' | 'female')[])}
+                              />
+                            </div>
                           </div>
-                          <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
-                        </FormField>
-                      )}
-                    </div>
-                  </Card>
 
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 px-1">
-                    This Karyakram will be available to <strong className="text-neutral-900 dark:text-white">{matchingMemberCount.toLocaleString()}</strong> member{matchingMemberCount !== 1 ? 's' : ''} based on the audience and targeting filters above.
-                  </p>
+                          <FormField>
+                            <FormLabel>Specific Age</FormLabel>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <FormSelect
+                                value={formData.specificAgeOperator}
+                                onChange={e => {
+                                  const op = e.target.value;
+                                  set('specificAgeOperator', op);
+                                  if ((op === '=' || op === '>' || op === '<') && !formData.specificAgeAsAtDate) {
+                                    set('specificAgeAsAtDate', new Date().toISOString().split('T')[0]);
+                                  }
+                                }}
+                                className="w-40"
+                              >
+                                <option value="">Not filtered</option>
+                                <option value="=">Equals to</option>
+                                <option value=">">Greater than or equal to</option>
+                                <option value="<">Less than or equal to</option>
+                                <option value="between">Between</option>
+                              </FormSelect>
+                              {(formData.specificAgeOperator === '=' || formData.specificAgeOperator === '>' || formData.specificAgeOperator === '<') && (
+                                <>
+                                  <FormInput
+                                    type="number"
+                                    min="0"
+                                    value={formData.specificAgeValue}
+                                    onChange={e => set('specificAgeValue', e.target.value)}
+                                    placeholder="Age"
+                                    className="w-32"
+                                  />
+                                  <span className="text-sm text-neutral-400">as at</span>
+                                  <FormInput
+                                    type="date"
+                                    value={formData.specificAgeAsAtDate}
+                                    onChange={e => set('specificAgeAsAtDate', e.target.value)}
+                                    className="w-44"
+                                  />
+                                </>
+                              )}
+                              {formData.specificAgeOperator === 'between' && (
+                                <>
+                                  <FormInput
+                                    type="date"
+                                    value={formData.specificAgeFrom}
+                                    onChange={e => set('specificAgeFrom', e.target.value)}
+                                    className="w-44"
+                                  />
+                                  <span className="text-sm text-neutral-400">to</span>
+                                  <FormInput
+                                    type="date"
+                                    value={formData.specificAgeTo}
+                                    onChange={e => set('specificAgeTo', e.target.value)}
+                                    className="w-44"
+                                  />
+                                  {formData.specificAgeFrom && formData.specificAgeTo && (
+                                    <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                                      Age {getAge(formData.specificAgeTo)} – {getAge(formData.specificAgeFrom)}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </FormField>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div ref={el => { fieldRefs.current.filterResponsibilityLevels = el; }}>
+                              <MultiSelectField
+                                label="Responsibility Level"
+                                options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                                selected={formData.filterResponsibilityLevels}
+                                error={touched && !!errors.filterResponsibilityLevels}
+                                errorMessage={touched ? errors.filterResponsibilityLevels : undefined}
+                                onChange={v => set('filterResponsibilityLevels', v)}
+                              />
+                            </div>
+                            <div ref={el => { fieldRefs.current.filterJobTitles = el; }}>
+                              <MultiSelectField
+                                label="Sangh Responsibility"
+                                options={ROLE_TYPE_OPTIONS}
+                                selected={formData.filterJobTitles}
+                                error={touched && !!errors.filterJobTitles}
+                                errorMessage={touched ? errors.filterJobTitles : undefined}
+                                onChange={v => set('filterJobTitles', v)}
+                              />
+                            </div>
+                            <div ref={el => { fieldRefs.current.filterResponsibilityTypes = el; }}>
+                              <MultiSelectField
+                                label="Responsibility Type"
+                                options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                                selected={formData.filterResponsibilityTypes}
+                                error={touched && !!errors.filterResponsibilityTypes}
+                                errorMessage={touched ? errors.filterResponsibilityTypes : undefined}
+                                onChange={v => set('filterResponsibilityTypes', v)}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit mt-4 mb-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.targetSpecificOnly}
+                                onChange={e => set('targetSpecificOnly', e.target.checked)}
+                                className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                              />
+                              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                Invite specific members (that would NOT be part of the filters above)
+                              </span>
+                            </label>
+                            {formData.targetSpecificOnly && (
+                              <FormField>
+                                <FormLabel required>Select Members</FormLabel>
+                                <div ref={el => { fieldRefs.current.targetMemberIds = el; }}>
+                                  <MemberMultiSelect
+                                    selectedIds={formData.targetMemberIds}
+                                    onChange={ids => set('targetMemberIds', ids)}
+                                    members={scopedMembers}
+                                  />
+                                </div>
+                                <ErrorText>{touched && errors.targetMemberIds}</ErrorText>
+                              </FormField>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </Card>
               </>
             </div>
           )}

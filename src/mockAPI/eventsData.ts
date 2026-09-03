@@ -114,6 +114,7 @@ export interface Event {
   targetTowns?: string[];
   targetCentres?: string[];
   targetMemberIds?: string[];   // set when inviting specific members only
+  targetAllMembers?: boolean;   // Yes = everyone in the selected scope, no demographic filtering
 
   // Target audience filters
   filterAgeCategories?: ('bal' | 'shishu' | 'kishor' | 'tarun' | 'yuva' | 'jyestha')[];
@@ -268,6 +269,9 @@ export interface EventAnnouncement {
   // Demographic filter — which participant statuses this announcement is
   // targeted at. Empty/undefined = sent to all participants.
   targetStatuses?: ('requested' | 'going' | 'waitlisted')[];
+  // Set when targeting specific registered/waiting-list members only, instead of
+  // (or in addition to) the status-based filter above.
+  targetMemberIds?: string[];
   pushEnabled?: boolean;
   pushSchedule?: 'instant' | 'scheduled';
   pushScheduledAt?: string;

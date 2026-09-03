@@ -53,7 +53,7 @@ export const getNavigationData = (
       },
       {
         id: "attendance-group",
-        label: "My Attendance",
+        label: "Shakha",
         icon: ClipboardCheck,
         onClick: () => onNavigate("attendance-log"),
         active: currentPage === "attendance-log",
