@@ -48,6 +48,7 @@ import {
   ArrowUp,
   ArrowDown,
   Maximize2,
+  Plus,
 } from 'lucide-react';
 import { SecondaryButton, IconButton, Pagination, SearchBar, AdvancedSearchPanel } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
@@ -871,8 +872,8 @@ export default function EventDetail({
     resetAnnouncementForm();
     toast.success(
       (announcementPushEnabled && announcementPushSchedule === 'scheduled') || (announcementEmailEnabled && announcementEmailSchedule === 'scheduled')
-        ? 'Announcement scheduled.'
-        : 'Announcement posted.'
+        ? 'Suchana scheduled.'
+        : 'Suchana posted.'
     );
   };
 
@@ -880,7 +881,7 @@ export default function EventDetail({
     if (!confirm('Delete this announcement?')) return;
     setEventAnnouncements(prev => prev.filter(a => a.id !== id));
     setViewingAnnouncementId(prev => prev === id ? null : prev);
-    toast.success('Announcement deleted.');
+    toast.success('Suchana deleted.');
   };
 
   // ── Media list (local, starts from mock) ───────────────────────────────────
@@ -989,7 +990,7 @@ export default function EventDetail({
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     // Members only see Media once the Karyakram has happened — nothing to post beforehand.
     ...((!isMember || past) ? [{ id: 'media' as Tab, label: `Media (${mediaPosts.length})` }] : []),
-    { id: 'announcements', label: `Karyakram Announcements (${eventAnnouncements.length})` },
+    { id: 'announcements', label: `Karyakram Suchana (${eventAnnouncements.length})` },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -2533,7 +2534,7 @@ export default function EventDetail({
                     onClick={() => { setViewingAnnouncementId(null); setShowAnnouncementMediaLightbox(false); }}
                     className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4" /> Back to Announcements
+                    <ChevronLeft className="w-4 h-4" /> Back to Suchanas
                   </button>
                   <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6">
                     <div className="flex items-start justify-between gap-3">
@@ -2564,7 +2565,7 @@ export default function EventDetail({
                         onClick={() => setShowAnnouncementMediaLightbox(true)}
                         className="mt-4 block w-full group relative"
                       >
-                        <img src={viewingAnnouncement.mediaUrl} alt="Announcement attachment" className="w-full max-h-[480px] rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain cursor-pointer transition-opacity group-hover:opacity-90" />
+                        <img src={viewingAnnouncement.mediaUrl} alt="Suchana attachment" className="w-full max-h-[480px] rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain cursor-pointer transition-opacity group-hover:opacity-90" />
                         <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg">
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5">
                             <Maximize2 className="w-3.5 h-3.5" /> Click to expand
@@ -2608,7 +2609,7 @@ export default function EventDetail({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Karyakram Announcements</h3>
+                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Karyakram Suchana</h3>
                       <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         {eventAnnouncements.length} {eventAnnouncements.length === 1 ? 'item' : 'items'}
                       </span>
@@ -2618,7 +2619,7 @@ export default function EventDetail({
                         onClick={() => setShowAnnouncementForm(v => !v)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs font-medium transition-colors"
                       >
-                        <Megaphone className="w-3.5 h-3.5" /> Post Announcement
+                        <Plus className="w-3.5 h-3.5" /> New Suchana
                       </button>
                     )}
                   </div>
@@ -2626,7 +2627,7 @@ export default function EventDetail({
                   {showAnnouncementForm && (
                     <div className="border border-primary-200 dark:border-primary-900/40 bg-primary-50/40 dark:bg-primary-950/10 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">New Announcement</h4>
+                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">New Suchana</h4>
                         <button onClick={resetAnnouncementForm} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
                           <X className="w-4 h-4" />
                         </button>
@@ -2899,7 +2900,7 @@ export default function EventDetail({
                           onClick={handlePostAnnouncement}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                         >
-                          {(announcementPushEnabled && announcementPushSchedule === 'scheduled') || (announcementEmailEnabled && announcementEmailSchedule === 'scheduled') ? 'Schedule Announcement' : 'Post Announcement'}
+                          {(announcementPushEnabled && announcementPushSchedule === 'scheduled') || (announcementEmailEnabled && announcementEmailSchedule === 'scheduled') ? 'Schedule Suchana' : 'Post Suchana'}
                         </button>
                       </div>
                     </div>
@@ -2958,7 +2959,7 @@ export default function EventDetail({
                   ) : (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <Megaphone className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mb-3" />
-                      <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No announcements yet</p>
+                      <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No Suchana yet</p>
                       <p className="text-xs text-neutral-400 mt-1">Updates about this Karyakram will appear here.</p>
                     </div>
                   )}
@@ -2991,7 +2992,7 @@ export default function EventDetail({
           {viewingAnnouncement.contentType === 'image' ? (
             <img
               src={viewingAnnouncement.mediaUrl}
-              alt="Announcement attachment"
+              alt="Suchana attachment"
               className="max-h-[85vh] max-w-full object-contain rounded-lg"
             />
           ) : (

@@ -477,15 +477,6 @@ export default function MemberAddPage({
                 <ErrorText>{errors.email}</ErrorText>
               </FormField>
               <FormField>
-                <FormLabel>Secondary Contact Number</FormLabel>
-                <PhoneInput value={form.secondaryPhone} onChange={v => setForm(prev => ({ ...prev, secondaryPhone: v }))} placeholder="7700 000001" />
-              </FormField>
-              <FormField>
-                <FormLabel>Secondary Email Address</FormLabel>
-                <FormInput type="email" value={form.secondaryEmail} onChange={set('secondaryEmail')} placeholder="secondary@example.com" className={errCls(errors.secondaryEmail)} />
-                <ErrorText>{errors.secondaryEmail}</ErrorText>
-              </FormField>
-              <FormField>
                 <FormLabel required>Post Code</FormLabel>
                 <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" className={errCls(errors.postCode)} />
                 <ErrorText>{errors.postCode}</ErrorText>

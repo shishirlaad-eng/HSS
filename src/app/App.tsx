@@ -34,6 +34,8 @@ import ShakhaDirectoryReport from "./components/ShakhaDirectoryReport";
 import KaryakartaDirectoryReport from "./components/KaryakartaDirectoryReport";
 import { SiteMap } from "./components/SiteMap";
 import { GlobalFooter } from "./components/GlobalFooter";
+import Policies from "./components/Policies";
+import PolicyView from "./components/PolicyView";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
 import NonMemberDashboard from "./components/NonMemberDashboard";
@@ -127,6 +129,7 @@ export default function App() {
   });
 
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("Super Admin");
   const [isPostRegistration, setIsPostRegistration] = useState(false);
   const [isUnderReview, setIsUnderReview] = useState(false);
@@ -544,6 +547,10 @@ export default function App() {
           />
         ) : currentPage === "logs" ? (
           <LogsPage />
+        ) : currentPage === "policies" ? (
+          <Policies onSelectPolicy={id => { setSelectedPolicyId(id); setCurrentPage('policy-detail'); }} />
+        ) : currentPage === "policy-detail" ? (
+          <PolicyView policyId={selectedPolicyId} onBack={() => setCurrentPage('policies')} />
 
         /* ── Developer reference pages (files kept, hidden from prod nav) ── */
         ) : currentPage === "ui-kit" ? (
@@ -559,9 +566,10 @@ export default function App() {
         )}
 
         {/* Global Footer */}
-        <GlobalFooter 
-          isSidebarCollapsed={isSidebarCollapsed} 
-          menuOrientation={menuOrientation} 
+        <GlobalFooter
+          isSidebarCollapsed={isSidebarCollapsed}
+          menuOrientation={menuOrientation}
+          onNavigate={handleNavigate}
         />
       </main>
 

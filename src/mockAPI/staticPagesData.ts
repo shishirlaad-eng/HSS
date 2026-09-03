@@ -7,6 +7,10 @@ export interface StaticPage {
   updatedBy: string;
 }
 
+export function nextStaticPageId(): string {
+  return `SP-${String(mockStaticPages.length + 1).padStart(3, '0')}`;
+}
+
 export const mockStaticPages: StaticPage[] = [
   {
     id: 'SP-001',

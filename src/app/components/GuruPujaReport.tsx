@@ -17,7 +17,7 @@ import {
 import type { FilterCondition } from './hb/listing';
 import { FormModal, FormField, FormLabel, FormInput, ErrorText } from './hb/common';
 import { mockSessions, ShakhaSession } from '../../mockAPI/attendanceData';
-import { AgeGroup, AGE_GROUP_LABELS } from '../../mockAPI/membersData';
+import { AgeGroup } from '../../mockAPI/membersData';
 import {
   GuruPujaAmount,
   GuruPujaReportEntry,
@@ -31,6 +31,18 @@ import { formatDate as fmtDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
 const AGE_GROUP_ORDER: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
+
+// Age-category definitions specific to the Guru Puja Report — deliberately local
+// to this popup rather than the app-wide AGE_GROUP_LABELS, since these ranges
+// (with the 31 Aug / 1 Sept cut-off) are Guru Puja-specific reference data.
+const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; range: string }> = {
+  shishu:  { name: 'Shishu',    range: '0 years old to 5 years old' },
+  bal:     { name: 'Bal(ika)',  range: '6 years to 12 years old (by 31st August of that year)' },
+  kishor:  { name: 'Kishor(i)', range: '12 years old (from 1st Sept of that year) to 16 years old (by 31st August of that year)' },
+  tarun:   { name: 'Tarun(i)',  range: '16 years old (from 1st Sept of that year) to 29 years old' },
+  yuva:    { name: 'Yuva(ti)',  range: '30 years old to 59 years old' },
+  jyestha: { name: 'Jyestha(a)', range: '60 years and older' },
+};
 
 function fmtMoney(n: number) {
   return `£${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -163,7 +175,10 @@ function GuruPujaReportModal({
                 const chequeErr = touched && amounts[g].cheque !== '' && (isNaN(Number(amounts[g].cheque)) || Number(amounts[g].cheque) < 0);
                 return (
                   <div key={g} className="grid grid-cols-3 gap-3 px-3 py-3 items-start">
-                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 pt-2">{AGE_GROUP_LABELS[g]}</p>
+                    <div className="pt-2">
+                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{GURU_PUJA_AGE_GROUP_INFO[g].name}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{GURU_PUJA_AGE_GROUP_INFO[g].range}</p>
+                    </div>
                     <div>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>

@@ -1,70 +1,94 @@
-import { useState, useEffect, useRef } from 'react';
-import { 
-  ArrowLeft, 
-  Save, 
-  FileText, 
-  Globe, 
-  AlertCircle,
-  CheckCircle2
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormTextarea, ErrorText } from './hb/common/Form';
-import { StaticPage } from '../../mockAPI/staticPagesData';
+import { FormField, FormLabel, FormInput, ErrorText } from './hb/common/Form';
+import { RichTextEditor } from './hb/common';
+import { StaticPage, nextStaticPageId } from '../../mockAPI/staticPagesData';
 import { toast } from 'sonner';
 
 interface StaticPageEditProps {
-  page: StaticPage;
+  page?: StaticPage;
   onBack: () => void;
+  onCreate?: (page: StaticPage) => void;
 }
 
-export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
-  const [content, setContent] = useState(page.content);
+// Existing pages predate the rich text editor and store plain '\n'-delimited
+// text — turn that into paragraphs/line-breaks so it reads correctly once
+// loaded into a contentEditable HTML editor. Content that already contains
+// markup (anything authored/edited since) is left untouched.
+function toEditableHtml(content: string): string {
+  if (/<[a-z][\s\S]*>/i.test(content)) return content;
+  return content
+    .split(/\n\n+/)
+    .map(para => `<p>${para.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export default function StaticPageEdit({ page, onBack, onCreate }: StaticPageEditProps) {
+  const isCreate = !page;
+  const [name, setName] = useState(page?.name ?? '');
+  const [content, setContent] = useState(() => toEditableHtml(page?.content ?? ''));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameTouched, setNameTouched] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    setHasChanges(content !== page.content);
-  }, [content, page.content]);
+    if (isCreate) {
+      setHasChanges(name.trim() !== '' || stripHtml(content) !== '');
+    } else {
+      setHasChanges(name !== page!.name || content !== toEditableHtml(page!.content));
+    }
+  }, [name, content]);
 
-  const validateContent = (text: string) => {
-    if (!text || text.trim().length === 0) {
-      return "Content is required.";
-    }
-    if (text.trim().length < 20) {
-      return "Content must be at least 20 characters.";
-    }
-    if (text.length > 20000) {
-      return "Content must not exceed 20,000 characters.";
-    }
-    if (/<script|iframe|on\w+=/i.test(text)) {
-      return "Content contains unsupported elements or scripts.";
-    }
+  const validateContent = (html: string) => {
+    const text = stripHtml(html);
+    if (!text) return 'Content is required.';
+    if (text.length < 20) return 'Content must be at least 20 characters.';
+    if (text.length > 20000) return 'Content must not exceed 20,000 characters.';
+    if (/<script|iframe|on\w+=/i.test(html)) return 'Content contains unsupported elements or scripts.';
     return null;
   };
 
-  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const nameError = !name.trim() ? 'Title is required.' : null;
 
   const handleSave = async () => {
+    setNameTouched(true);
     const validationError = validateContent(content);
-    if (validationError) {
+    if (nameError || validationError) {
       setError(validationError);
-      toast.error(validationError);
-      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      contentRef.current?.focus();
+      if (validationError) toast.error(validationError);
+      else if (nameError) toast.error(nameError);
       return;
     }
 
     setIsSaving(true);
     setError(null);
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success("Page updated successfully.");
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isCreate) {
+        const created: StaticPage = {
+          id: nextStaticPageId(),
+          name: name.trim(),
+          slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          content,
+          lastUpdated: new Date().toISOString(),
+          updatedBy: 'Admin',
+        };
+        onCreate?.(created);
+        toast.success('Policy created successfully.');
+      } else {
+        toast.success('Page updated successfully.');
+      }
       setHasChanges(false);
+      onBack();
     } catch (err) {
-      setError("Unable to update static page. Please try again.");
+      setError('Unable to save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -72,7 +96,7 @@ export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
 
   const handleBack = () => {
     if (hasChanges) {
-      if (confirm("You have unsaved changes. Are you sure you want to leave?")) {
+      if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
         onBack();
       }
     } else {
@@ -87,116 +111,65 @@ export default function StaticPageEdit({ page, onBack }: StaticPageEditProps) {
       <div className="max-w-[100%] mx-auto">
         {/* PAGE HEADER */}
         <PageHeader
-          title="Static Page Details"
+          title={isCreate ? 'Add Policy' : 'Static Page Details'}
           breadcrumbs={[
             { label: 'Configurations', href: '#' },
             { label: 'Static Pages', onClick: onBack },
-            { label: 'Edit Page', current: true },
+            { label: isCreate ? 'Add Policy' : 'Edit Page', current: true },
           ]}
         >
           <div className="flex items-center gap-3">
             <SecondaryButton icon={ArrowLeft} onClick={handleBack}>
               Back
             </SecondaryButton>
-            <PrimaryButton 
-              icon={Save} 
+            <PrimaryButton
+              icon={Save}
               onClick={handleSave}
               isLoading={isSaving}
-              disabled={!!validationError || !hasChanges || isSaving}
+              disabled={isSaving}
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? 'Saving...' : isCreate ? 'Create Policy' : 'Save Changes'}
             </PrimaryButton>
           </div>
         </PageHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* MAIN FORM AREA */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
-                <FileText className="w-4 h-4 text-primary-600" />
-                Page Content Editor
-              </div>
-
-              <div className="space-y-4">
-                <FormField>
-                  <FormLabel required>Content</FormLabel>
-                  <FormTextarea
-                    ref={contentRef}
-                    value={content}
-                    onChange={(e) => { setContent(e.target.value); setError(null); }}
-                    placeholder="Enter page content here..."
-                    rows={20}
-                    className={`font-sans leading-relaxed text-base ${
-                      (error || (validationError && content.length > 0)) ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''
-                    }`}
-                  />
-                  <ErrorText>{error || (validationError && content.length > 0 ? validationError : undefined)}</ErrorText>
-                </FormField>
-
-                <div className="flex justify-between items-center text-xs text-neutral-400">
-                  <span>Minimum 20 characters required</span>
-                  <span className={content.length > 20000 ? "text-error-500" : ""}>
-                    {content.length.toLocaleString()} / 20,000 characters
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-neutral-900 dark:text-white border-b border-neutral-100 dark:border-neutral-800 pb-4">
+            <FileText className="w-4 h-4 text-primary-600" />
+            {isCreate ? 'New Policy' : 'Page Content Editor'}
           </div>
 
-          {/* SIDEBAR METADATA */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-6">Page Metadata</h3>
-              
-              <div className="space-y-5">
-                <FormField>
-                  <FormLabel>Page Name</FormLabel>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-sm text-neutral-600 dark:text-neutral-400 font-medium">
-                    <FileText className="w-4 h-4 text-neutral-400" />
-                    {page.name}
-                  </div>
-                </FormField>
+          <div className="space-y-4">
+            <FormField>
+              <FormLabel required>Title</FormLabel>
+              <FormInput
+                value={name}
+                onChange={e => { setName(e.target.value); }}
+                onBlur={() => setNameTouched(true)}
+                placeholder="e.g. Refund Policy"
+                className={nameTouched && nameError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
+              />
+              <ErrorText>{nameTouched ? nameError ?? undefined : undefined}</ErrorText>
+            </FormField>
 
-                <FormField>
-                  <FormLabel>System Slug</FormLabel>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-sm text-neutral-500 dark:text-neutral-500 font-mono">
-                    <Globe className="w-4 h-4 text-neutral-400" />
-                    /{page.slug}
-                  </div>
-                </FormField>
+            <FormField>
+              <FormLabel required>Content</FormLabel>
+              <RichTextEditor
+                value={content}
+                onChange={html => { setContent(html); setError(null); }}
+                placeholder="Enter page content here..."
+                minHeight="360px"
+                maxHeight="640px"
+                className={(error || (validationError && stripHtml(content).length > 0)) ? 'border-error-400 dark:border-error-600' : ''}
+              />
+              <ErrorText>{error || (validationError && stripHtml(content).length > 0 ? validationError : undefined)}</ErrorText>
+            </FormField>
 
-                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-start gap-3 p-3 bg-primary-50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/30 rounded-lg">
-                    <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400 mt-0.5" />
-                    <p className="text-xs text-primary-900 dark:text-primary-100 leading-normal">
-                      Metadata is system-defined and cannot be changed to preserve application routing.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* VALIDATION HINTS */}
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-warning-500" />
-                Guidelines
-              </h3>
-              <ul className="space-y-3 text-xs text-neutral-600 dark:text-neutral-400">
-                <li className="flex gap-2">
-                  <span className="w-1 h-1 rounded-full bg-neutral-400 mt-1.5 flex-shrink-0"></span>
-                  Use clear, concise language for legal pages.
-                </li>
-                <li className="flex gap-2">
-                  <span className="w-1 h-1 rounded-full bg-neutral-400 mt-1.5 flex-shrink-0"></span>
-                  Avoid pasting content from word processors with heavy formatting.
-                </li>
-                <li className="flex gap-2">
-                  <span className="w-1 h-1 rounded-full bg-neutral-400 mt-1.5 flex-shrink-0"></span>
-                  HTML tags are not supported and will be filtered out.
-                </li>
-              </ul>
+            <div className="flex justify-between items-center text-xs text-neutral-400">
+              <span>Minimum 20 characters required</span>
+              <span className={stripHtml(content).length > 20000 ? 'text-error-500' : ''}>
+                {stripHtml(content).length.toLocaleString()} / 20,000 characters
+              </span>
             </div>
           </div>
         </div>

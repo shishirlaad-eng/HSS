@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
-import { 
-  FileText, 
-  Edit, 
-  Clock, 
+import {
+  FileText,
+  Edit,
+  Clock,
   User as UserIcon,
   ShieldCheck,
   RefreshCw,
@@ -10,11 +10,13 @@ import {
   Download,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Plus,
 } from 'lucide-react';
-import { 
-  PageHeader, 
+import {
+  PageHeader,
   IconButton,
+  PrimaryButton,
   SearchBar,
   ViewModeSwitcher,
   ColumnVisibilityPanel,
@@ -30,9 +32,10 @@ type ViewMode = 'grid' | 'list' | 'table';
 
 export default function StaticPages() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [pages] = useState<StaticPage[]>(mockStaticPages);
+  const [pages, setPages] = useState<StaticPage[]>(mockStaticPages);
   const [selectedPage, setSelectedPage] = useState<StaticPage | null>(null);
   const [showEdit, setShowEdit] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -116,15 +119,30 @@ export default function StaticPages() {
   const handleBackToList = () => {
     setShowEdit(false);
     setSelectedPage(null);
+    setShowCreate(false);
+  };
+
+  const handlePolicyCreated = (created: StaticPage) => {
+    mockStaticPages.push(created);
+    setPages(prev => [...prev, created]);
   };
 
   const formatDate = (dateString: string) => sharedFormatDateTime(dateString);
 
   if (showEdit && selectedPage) {
     return (
-      <StaticPageEdit 
-        page={selectedPage} 
-        onBack={handleBackToList} 
+      <StaticPageEdit
+        page={selectedPage}
+        onBack={handleBackToList}
+      />
+    );
+  }
+
+  if (showCreate) {
+    return (
+      <StaticPageEdit
+        onBack={handleBackToList}
+        onCreate={handlePolicyCreated}
       />
     );
   }
@@ -169,6 +187,9 @@ export default function StaticPages() {
               onToggleColumn={toggleColumn}
               anchorRef={columnAnchorRef}
             />
+            <PrimaryButton icon={Plus} onClick={() => setShowCreate(true)}>
+              Add Policy
+            </PrimaryButton>
           </div>
         </PageHeader>
         </div>
