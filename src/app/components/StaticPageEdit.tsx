@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, ErrorText } from './hb/common/Form';
-import { RichTextEditor } from './hb/common';
+import { RichTextEditor, StatusSlider } from './hb/common';
 import { StaticPage, nextStaticPageId } from '../../mockAPI/staticPagesData';
 import { toast } from 'sonner';
 
@@ -10,7 +10,13 @@ interface StaticPageEditProps {
   page?: StaticPage;
   onBack: () => void;
   onCreate?: (page: StaticPage) => void;
+  onSave?: (page: StaticPage) => void;
 }
+
+const VISIBILITY_OPTIONS = [
+  { value: 'visible', label: 'Visible', color: 'bg-success-500' },
+  { value: 'hidden', label: 'Hidden', color: 'bg-neutral-400 dark:bg-neutral-600' },
+];
 
 // Existing pages predate the rich text editor and store plain '\n'-delimited
 // text — turn that into paragraphs/line-breaks so it reads correctly once
@@ -28,10 +34,11 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-export default function StaticPageEdit({ page, onBack, onCreate }: StaticPageEditProps) {
+export default function StaticPageEdit({ page, onBack, onCreate, onSave }: StaticPageEditProps) {
   const isCreate = !page;
   const [name, setName] = useState(page?.name ?? '');
   const [content, setContent] = useState(() => toEditableHtml(page?.content ?? ''));
+  const [visible, setVisible] = useState(page?.visible ?? true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nameTouched, setNameTouched] = useState(false);
@@ -41,9 +48,9 @@ export default function StaticPageEdit({ page, onBack, onCreate }: StaticPageEdi
     if (isCreate) {
       setHasChanges(name.trim() !== '' || stripHtml(content) !== '');
     } else {
-      setHasChanges(name !== page!.name || content !== toEditableHtml(page!.content));
+      setHasChanges(name !== page!.name || content !== toEditableHtml(page!.content) || visible !== (page!.visible ?? true));
     }
-  }, [name, content]);
+  }, [name, content, visible]);
 
   const validateContent = (html: string) => {
     const text = stripHtml(html);
@@ -79,10 +86,19 @@ export default function StaticPageEdit({ page, onBack, onCreate }: StaticPageEdi
           content,
           lastUpdated: new Date().toISOString(),
           updatedBy: 'Admin',
+          visible,
         };
         onCreate?.(created);
         toast.success('Policy created successfully.');
       } else {
+        const updated: StaticPage = {
+          ...page!,
+          name: name.trim(),
+          content,
+          visible,
+          lastUpdated: new Date().toISOString(),
+        };
+        onSave?.(updated);
         toast.success('Page updated successfully.');
       }
       setHasChanges(false);
@@ -150,6 +166,19 @@ export default function StaticPageEdit({ page, onBack, onCreate }: StaticPageEdi
                 className={nameTouched && nameError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
               />
               <ErrorText>{nameTouched ? nameError ?? undefined : undefined}</ErrorText>
+            </FormField>
+
+            <FormField>
+              <FormLabel>Visibility</FormLabel>
+              <StatusSlider
+                value={visible ? 'visible' : 'hidden'}
+                onChange={v => setVisible(v === 'visible')}
+                options={VISIBILITY_OPTIONS}
+                className="max-w-xs"
+              />
+              <p className="text-xs text-neutral-400 mt-1.5">
+                Controls whether this page appears on the member-facing Policies page.
+              </p>
             </FormField>
 
             <FormField>

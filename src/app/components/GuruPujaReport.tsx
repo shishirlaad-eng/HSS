@@ -5,11 +5,12 @@
 // Distinct from the separate "Guru Purnima Cash Income" feature.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo, useEffect } from 'react';
-import { Calculator, ClipboardList, Pencil } from 'lucide-react';
+import { Calculator, ClipboardList, Pencil, MoreVertical, FileSpreadsheet } from 'lucide-react';
 import {
   PageHeader,
   SearchBar,
   PrimaryButton,
+  IconButton,
   Pagination,
   AdvancedSearchPanel,
   useStickyListingHeader,
@@ -324,6 +325,53 @@ export default function GuruPujaReport() {
     setEditingSession(null);
   };
 
+  const handleExportCSV = () => {
+    if (!sorted.length) { toast.error('No data to export.'); return; }
+    const headers = [
+      'Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status', 'Attendance', 'Report Status',
+      ...AGE_GROUP_ORDER.flatMap(g => [`${GURU_PUJA_AGE_GROUP_INFO[g].name} Cash`, `${GURU_PUJA_AGE_GROUP_INFO[g].name} Cheque`]),
+      'Total Cash', 'Total Cheque', 'Total Income',
+      'Date Banked', 'Banked By', 'Paying In Ref No',
+    ];
+    const rows = sorted.map(s => {
+      const entry = entryFor(s.id);
+      const shakhaStatus = shakhaStatusPill(s.status);
+      const reportStatus = reportStatusPill(entry?.isComplete ?? false);
+      const present = s.attendanceRecords.filter(r => r.status === 'present').length;
+      const amounts = entry?.amounts;
+      const totalCash = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cash ?? 0), 0) : 0;
+      const totalCheque = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cheque ?? 0), 0) : 0;
+      return [
+        fmtDate(s.date),
+        `"${s.activityCentre}"`,
+        `"${s.town}"`,
+        `"${s.region}"`,
+        shakhaStatus.label,
+        `${present}/${s.totalExpected}`,
+        reportStatus.label,
+        ...AGE_GROUP_ORDER.flatMap(g => [
+          (amounts?.[g]?.cash ?? 0).toFixed(2),
+          (amounts?.[g]?.cheque ?? 0).toFixed(2),
+        ]),
+        totalCash.toFixed(2),
+        totalCheque.toFixed(2),
+        (totalCash + totalCheque).toFixed(2),
+        entry?.dateBanked ? fmtDate(entry.dateBanked) : '',
+        entry?.bankedBy ? `"${entry.bankedBy}"` : '',
+        entry?.payingInRefNo ? `"${entry.payingInRefNo}"` : '',
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `guru-puja-report_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported.');
+  };
+
   const filterOptions: Record<string, string[]> = {
     ...(scope.showRegionFilter ? { 'Vibhag': scopedFilterOptions.regionOptions } : {}),
     ...(scope.showTownFilter   ? { 'Nagar':   scopedFilterOptions.townOptions   } : {}),
@@ -359,6 +407,13 @@ export default function GuruPujaReport() {
                 title="Filter Guru Puja Report"
               />
             </div>
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExportCSV },
+              ]}
+            />
           </PageHeader>
         </div>
 

@@ -287,6 +287,7 @@ export default function PendingApprovals() {
 
   const [viewMode, setViewMode]     = useState<ViewMode>(() => selectedRole === 'Super Admin' ? 'table' : 'grid');
   const [pageState, setPageState]   = useState<PageState>('list');
+  const [activeTab, setActiveTab]   = useState<'approvals' | 'transfers'>('approvals');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
@@ -598,65 +599,39 @@ export default function PendingApprovals() {
         </PageHeader>
         </div>
 
-        {pendingTransfers.length > 0 && (
-          <div className="mb-6 bg-white dark:bg-neutral-950 border border-primary-200 dark:border-primary-900 rounded-xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-primary-100 dark:border-primary-900 bg-primary-50/60 dark:bg-primary-950/20">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Shakha Transfer Requests</h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Requests awaiting approval from the receiving Shakha.
-                  </p>
-                </div>
-                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
-                  {pendingTransfers.length} pending
+        {/* TAB BAR */}
+        <div className="border-b border-neutral-200 dark:border-neutral-800 mb-6">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('approvals')}
+              className={`px-4 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2 ${
+                activeTab === 'approvals'
+                  ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                  : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              Karyawaha Approvals
+            </button>
+            <button
+              onClick={() => setActiveTab('transfers')}
+              className={`px-4 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === 'transfers'
+                  ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                  : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              Shakha Transfer
+              {pendingTransfers.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  {pendingTransfers.length}
                 </span>
-              </div>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {pendingTransfers.map(request => (
-                <div key={request.id} className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-neutral-900 dark:text-white">{request.memberName}</span>
-                      <span className="text-xs font-mono text-neutral-400">{request.memberId}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900">
-                        Pending transfer
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                      <span className="font-medium">{request.fromCentre}</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-primary-500" />
-                      <span className="font-medium text-primary-700 dark:text-primary-300">{request.toCentre}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-neutral-400">
-                      Requested {formatDateTime(request.requestedAt)} · {request.memberRole}
-                    </p>
-                  </div>
-                  {canReviewTransfers && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => handleTransferReview(request, 'approved')}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Approve Transfer
-                      </button>
-                      <button
-                        onClick={() => handleTransferReview(request, 'rejected')}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
+        {activeTab === 'approvals' && (
+        <>
         {/* SUMMARY WIDGETS */}
         {showSummary && (
           <SummaryWidgets
@@ -893,6 +868,64 @@ export default function PendingApprovals() {
             />
           )}
         </div>
+        </>
+        )}
+
+        {activeTab === 'transfers' && (
+          <div className="space-y-3">
+            {pendingTransfers.length > 0 ? pendingTransfers.map(request => (
+              <div
+                key={request.id}
+                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-neutral-900 dark:text-white font-semibold truncate">{request.memberName}</span>
+                    <span className="text-xs text-neutral-400 font-mono">{request.memberId}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900">
+                      Pending transfer
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-neutral-400" />{request.fromCentre} <ArrowRight className="w-3.5 h-3.5 text-neutral-400" /> {request.toCentre}
+                    </span>
+                    <span>
+                      Requested {formatDateTime(request.requestedAt)} · {(() => {
+                        const m = mockMembers.find(mem => mem.id === request.memberId);
+                        return m ? getAgeGroupLabel(m.dateOfBirth) : request.memberRole;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+                {canReviewTransfers && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleTransferReview(request, 'approved')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f1fced] text-[#3d8928] border border-[#b8efa0] hover:bg-[#e2fad1] transition-colors"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleTransferReview(request, 'rejected')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#fff0f0] text-[#9a0c17] border border-[#ffaaab] hover:bg-[#ffe0e0] transition-colors"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mb-2" />
+                <h3 className="text-sm font-medium text-neutral-900 dark:text-white">No pending Shakha transfer requests.</h3>
+                <p className="text-xs text-neutral-500 mt-1">All transfer requests have been reviewed.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* MODALS */}

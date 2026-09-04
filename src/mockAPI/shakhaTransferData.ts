@@ -29,9 +29,9 @@ export const TRANSFER_CHANGE_EVENT = 'hss-shakha-transfer-change';
 const SEED_TRANSFER_REQUESTS: ShakhaTransferRequest[] = [
   {
     id: 'TRF-SEED-001',
-    memberId: 'MEM-3021',
-    memberName: 'Rohan Mehta',
-    memberRole: 'Teen Member',
+    memberId: 'MBR-001',
+    memberName: 'Arjun Sharma',
+    memberRole: 'Adult Member',
     fromCountry: 'HSS UK',
     fromRegion: 'London & South East',
     fromTown: 'Wembley',

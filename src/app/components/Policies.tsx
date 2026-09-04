@@ -5,7 +5,7 @@
 // same card look as the admin Static Pages screen, minus admin controls.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
-import { FileText, Clock, User as UserIcon } from 'lucide-react';
+import { FileText, Clock } from 'lucide-react';
 import { PageHeader, SearchBar } from './hb/listing';
 import { mockStaticPages, StaticPage } from '../../mockAPI/staticPagesData';
 import { formatDateTime } from '../../utils/formatDate';
@@ -16,7 +16,8 @@ export default function Policies({ onSelectPolicy }: { onSelectPolicy: (id: stri
   const filteredPages = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return mockStaticPages.filter((page: StaticPage) =>
-      page.name.toLowerCase().includes(q) || page.id.toLowerCase().includes(q)
+      page.visible !== false &&
+      (page.name.toLowerCase().includes(q) || page.id.toLowerCase().includes(q))
     );
   }, [searchQuery]);
 
@@ -52,17 +53,9 @@ export default function Policies({ onSelectPolicy }: { onSelectPolicy: (id: stri
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                     <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                    <span className="truncate">{formatDateTime(page.lastUpdated)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                    <UserIcon className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                    <span className="truncate">By {page.updatedBy}</span>
+                    <span className="truncate">Last Updated {formatDateTime(page.lastUpdated)}</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex justify-end items-center mt-auto">
-                <span className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Policy</span>
               </div>
             </div>
           ))}
