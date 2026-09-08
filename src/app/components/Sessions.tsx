@@ -35,9 +35,9 @@ function formatDate(iso: string) {
 }
 
 function statusColor(status: ShakhaSession['status']) {
-  if (status === 'completed')  return 'bg-success-50 text-success-700 dark:bg-success-950/20 dark:text-success-400 border-success-200 dark:border-success-800';
+  if (status === 'completed')  return 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200 dark:border-blue-800';
   if (status === 'cancelled')  return 'bg-error-50 text-error-700 dark:bg-error-950/20 dark:text-error-400 border-error-200 dark:border-error-800';
-  return 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400 border-primary-200 dark:border-primary-800';
+  return 'bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border-success-200 dark:border-success-800';
 }
 
 function statusDot(status: ShakhaSession['status']) {
@@ -438,8 +438,8 @@ export default function Sessions() {
       {/* ── Legend + count ── */}
       <div className="flex items-center gap-4 mb-3">
         {[
-          { label: 'Active', dot: 'bg-primary-500' },
-          { label: 'Completed', dot: 'bg-success-500' },
+          { label: 'Active', dot: 'bg-success-500' },
+          { label: 'Completed', dot: 'bg-blue-500' },
           { label: 'Cancelled', dot: 'bg-error-500' },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
@@ -536,7 +536,7 @@ export default function Sessions() {
                     <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
                   )}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${statusColor(s.status)}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs whitespace-nowrap ${statusColor(s.status)}`}>
                       {statusLabel(s.status)}
                     </span>
                   </td>

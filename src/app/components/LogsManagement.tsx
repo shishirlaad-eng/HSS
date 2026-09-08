@@ -27,9 +27,11 @@ import {
   Check,
   FileSpreadsheet,
   FileText,
-  BarChart3
+  BarChart3,
+  CalendarDays,
+  X
 } from 'lucide-react';
-import { 
+import {
   PageHeader,
   SearchBar,
   IconButton,
@@ -38,6 +40,7 @@ import {
   ColumnVisibilityPanel,
   ViewModeSwitcher,
   SummaryWidgets,
+  DateRangeFilter,
   useStickyListingHeader,
   type ColumnConfig,
   type FilterCondition
@@ -62,7 +65,7 @@ import {
 } from '../../mockAPI/logsData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
-import { formatDate as sharedFormatDate } from '../../utils/formatDate';
+import { formatDate as sharedFormatDate, formatDateRange } from '../../utils/formatDate';
 
 export type LogModuleType = 'login' | 'audit' | 'api' | 'email';
 
@@ -149,6 +152,13 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   // Column Visibility State
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const columnAnchorRef = useRef<HTMLDivElement>(null);
+
+  // Date/time range filter (login logs)
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
 
   // Config based on log type
   const config = useMemo(() => {
@@ -345,14 +355,26 @@ export default function LogsManagement({ type }: LogsManagementProps) {
       };
 
       const activeFilters = filters.filter(f => f.values && f.values.length > 0);
-      return activeFilters.length === 0
+      const matchesAdvanced = activeFilters.length === 0
         ? true
         : activeFilters.reduce<boolean>((acc, f, i) => {
             if (i === 0) return evalFilter(f);
             return f.logicOp === 'OR' ? (acc || evalFilter(f)) : (acc && evalFilter(f));
           }, true);
+      if (!matchesAdvanced) return false;
+
+      // 3. Explicit date/time range filter
+      if (dateStart || dateEnd) {
+        const itemTimestamp = getTimestampField(item, type);
+        if (!itemTimestamp) return false;
+        const itemDate = new Date(itemTimestamp).toISOString().slice(0, 10);
+        if (dateStart && itemDate < dateStart) return false;
+        if (dateEnd && itemDate > dateEnd) return false;
+      }
+
+      return true;
     });
-  }, [config.data, searchQuery, filters, type]);
+  }, [config.data, searchQuery, filters, type, dateStart, dateEnd]);
 
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a: any, b: any) => {
@@ -583,6 +605,45 @@ export default function LogsManagement({ type }: LogsManagementProps) {
               filterOptions={config.filterOptions}
             />
           </div>
+
+          {type === 'login' && (
+            <div className="relative" ref={dateFilterRef}>
+              <button
+                onClick={() => setShowDateFilter(p => !p)}
+                title="Filter by login date/time"
+                className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  dateStart
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                    : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+                }`}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                {dateStart ? (dateLabel || formatDateRange(dateStart, dateEnd)) : 'Login Date/Time'}
+                {dateStart && (
+                  <span
+                    role="button"
+                    onClick={e => { e.stopPropagation(); setDateStart(''); setDateEnd(''); setDateLabel(''); }}
+                    className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                  >
+                    <X className="w-3 h-3" />
+                  </span>
+                )}
+              </button>
+              <DateRangeFilter
+                isOpen={showDateFilter}
+                onClose={() => setShowDateFilter(false)}
+                startDate={dateStart}
+                endDate={dateEnd}
+                onApply={(start, end, label) => {
+                  setDateStart(start);
+                  setDateEnd(end);
+                  setDateLabel(label || '');
+                  setCurrentPage(1);
+                }}
+                title="Login Date/Time Range"
+              />
+            </div>
+          )}
 
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton icon={RefreshCw} onClick={() => toast.success('Data refreshed')} title="Refresh" />
