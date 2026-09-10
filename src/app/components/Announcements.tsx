@@ -211,6 +211,7 @@ interface CreateForm {
   targetRegions: string[];   // empty = All
   targetTowns: string[];     // empty = All
   targetCentres: string[];   // empty = All
+  targetAllMembers: boolean | null;
   targetSpecificOnly: boolean;
   targetMemberIds: string[];
   filterAgeCategories: ('child' | 'teen' | 'adult')[];
@@ -236,6 +237,7 @@ const blankForm = (): CreateForm => ({
   targetRegions: [],
   targetTowns: [],
   targetCentres: [],
+  targetAllMembers: null,
   targetSpecificOnly: false,
   targetMemberIds: [],
   filterAgeCategories: [],
@@ -593,7 +595,9 @@ export default function Announcements({
     else if (bodyIsOver) errs.body = 'Message must not exceed 150 words.';
     if ((form.contentType === 'image' || form.contentType === 'video') && !form.mediaUrl.trim())
       errs.mediaUrl = 'Please upload an image or video attachment.';
-    if (form.targetSpecificOnly && form.targetMemberIds.length === 0)
+    if (form.targetAllMembers === null)
+      errs.targetAllMembers = 'Please answer this question.';
+    if (form.targetAllMembers === false && form.targetSpecificOnly && form.targetMemberIds.length === 0)
       errs.targetMemberIds = 'Please select at least one member.';
     if (form.pushEnabled  && form.pushSchedule  === 'scheduled' && !form.pushScheduledAt)  errs.pushScheduledAt  = 'Schedule date/time required.';
     if (form.emailEnabled && form.emailSchedule === 'scheduled' && !form.emailScheduledAt) errs.emailScheduledAt = 'Schedule date/time required.';
@@ -636,12 +640,13 @@ export default function Announcements({
           targetRegions: form.targetRegions,
           targetTowns:   form.targetTowns,
           targetCentres: form.targetCentres,
-          targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
-          filterAgeCategories: form.filterAgeCategories,
-          filterGenders:       form.filterGenders,
-          filterResponsibilityLevels: form.filterResponsibilityLevels,
-          filterJobTitles:     form.filterJobTitles,
-          filterResponsibilityTypes:  form.filterResponsibilityTypes,
+          targetAllMembers: form.targetAllMembers ?? undefined,
+          targetMemberIds: form.targetAllMembers === false && form.targetSpecificOnly ? form.targetMemberIds : undefined,
+          filterAgeCategories: form.targetAllMembers === false ? form.filterAgeCategories : [],
+          filterGenders:       form.targetAllMembers === false ? form.filterGenders       : [],
+          filterResponsibilityLevels: form.targetAllMembers === false ? form.filterResponsibilityLevels : [],
+          filterJobTitles:     form.targetAllMembers === false ? form.filterJobTitles     : [],
+          filterResponsibilityTypes:  form.targetAllMembers === false ? form.filterResponsibilityTypes  : [],
           push: {
             enabled:     form.pushEnabled,
             schedule:    form.pushSchedule,
@@ -678,12 +683,13 @@ export default function Announcements({
         targetRegions: form.targetRegions,
         targetTowns:   form.targetTowns,
         targetCentres: form.targetCentres,
-        targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
-        filterAgeCategories: form.filterAgeCategories,
-        filterGenders:       form.filterGenders,
-        filterResponsibilityLevels: form.filterResponsibilityLevels,
-        filterJobTitles:     form.filterJobTitles,
-        filterResponsibilityTypes:  form.filterResponsibilityTypes,
+        targetAllMembers: form.targetAllMembers ?? undefined,
+        targetMemberIds: form.targetAllMembers === false && form.targetSpecificOnly ? form.targetMemberIds : undefined,
+        filterAgeCategories: form.targetAllMembers === false ? form.filterAgeCategories : [],
+        filterGenders:       form.targetAllMembers === false ? form.filterGenders       : [],
+        filterResponsibilityLevels: form.targetAllMembers === false ? form.filterResponsibilityLevels : [],
+        filterJobTitles:     form.targetAllMembers === false ? form.filterJobTitles     : [],
+        filterResponsibilityTypes:  form.targetAllMembers === false ? form.filterResponsibilityTypes  : [],
         push: {
           enabled:     form.pushEnabled,
           schedule:    form.pushSchedule,
@@ -758,6 +764,16 @@ export default function Announcements({
       targetRegions:       ann.targetRegions ?? (ann.targetRegion ? [ann.targetRegion] : []),
       targetTowns:         ann.targetTowns   ?? (ann.targetTown   ? [ann.targetTown]   : []),
       targetCentres:       ann.targetCentres ?? (ann.targetCentre ? [ann.targetCentre] : []),
+      // Pre-existing Suchanas predate this question — infer the answer so old
+      // data doesn't silently look unfiltered: if nothing was ever filtered or
+      // targeted specifically, that's a "Yes"; any real filter or specific-member
+      // list means it was effectively "No" (and reveals those filters as before).
+      targetAllMembers: ann.targetAllMembers ?? (
+        (ann.targetMemberIds?.length ?? 0) === 0 &&
+        (ann.filterAgeCategories?.length ?? 0) === 0 && (ann.filterGenders?.length ?? 0) === 0 &&
+        (ann.filterResponsibilityLevels?.length ?? 0) === 0 && (ann.filterJobTitles?.length ?? 0) === 0 &&
+        (ann.filterResponsibilityTypes?.length ?? 0) === 0
+      ),
       targetSpecificOnly:  (ann.targetMemberIds?.length ?? 0) > 0,
       targetMemberIds:     ann.targetMemberIds ?? [],
       filterAgeCategories: (ann.filterAgeCategories as any) ?? [],
@@ -884,7 +900,7 @@ export default function Announcements({
 
                   {/* Attachment */}
                   <FormField>
-                    <FormLabel>Attachment</FormLabel>
+                    <FormLabel>Banner Image</FormLabel>
                     <div className="flex items-center gap-2">
                       <label className={`${btnGhost} cursor-pointer`}>
                         <Image className="w-4 h-4" />
@@ -900,26 +916,6 @@ export default function Announcements({
                             reader.onload = () => {
                               setField('mediaUrl', String(reader.result));
                               setField('contentType', 'image');
-                            };
-                            reader.readAsDataURL(file);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
-                      <label className={`${btnGhost} cursor-pointer`}>
-                        <Video className="w-4 h-4" />
-                        Upload Video
-                        <input
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setField('mediaUrl', String(reader.result));
-                              setField('contentType', 'video');
                             };
                             reader.readAsDataURL(file);
                             e.target.value = '';
@@ -963,97 +959,131 @@ export default function Announcements({
             {/* ── Audience and Targeting tab ── */}
             {createTab === 'audience' && (
               <div className="space-y-5">
-                <Card title="Target Specific Members">
-                  <div className="space-y-4">
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                      <input
-                        type="checkbox"
-                        checked={form.targetSpecificOnly}
-                        onChange={e => setField('targetSpecificOnly', e.target.checked)}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
-                      />
-                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                        Send this Suchana to specific members only
-                      </span>
-                    </label>
-                    {form.targetSpecificOnly && (
-                      <FormField>
-                        <FormLabel required>Select Members</FormLabel>
-                        <MemberMultiSelect
-                          selectedIds={form.targetMemberIds}
-                          onChange={ids => setField('targetMemberIds', ids)}
-                        />
-                        {formErrors.targetMemberIds && <p className="text-xs text-red-600 mt-1">{formErrors.targetMemberIds}</p>}
-                      </FormField>
-                    )}
+                <Card title="Geographic Filter">
+                  <p className="text-xs text-neutral-400 -mt-2 mb-4">
+                    Please select which Vibhag, Nagar and Shakha this Suchana is for
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <MultiSelectField
+                      label="Region"
+                      options={regionOptions}
+                      selected={form.targetRegions}
+                      disabled={!scope.showRegionFilter}
+                      onChange={v => { setField('targetRegions', v); setField('targetTowns', []); setField('targetCentres', []); }}
+                    />
+                    <MultiSelectField
+                      label="Town"
+                      options={townOptions}
+                      selected={form.targetTowns}
+                      disabled={!scope.showTownFilter}
+                      onChange={v => { setField('targetTowns', v); setField('targetCentres', []); }}
+                    />
+                    <MultiSelectField
+                      label="Activity Centre"
+                      options={centreOptions}
+                      selected={form.targetCentres}
+                      disabled={!scope.showCentreFilter}
+                      onChange={v => setField('targetCentres', v)}
+                    />
                   </div>
                 </Card>
 
-                {!form.targetSpecificOnly && (
-                  <>
-                    <Card title="Scope">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <MultiSelectField
-                          label="Region"
-                          options={regionOptions}
-                          selected={form.targetRegions}
-                          disabled={!scope.showRegionFilter}
-                          onChange={v => { setField('targetRegions', v); setField('targetTowns', []); setField('targetCentres', []); }}
+                <Card title="Demographic Filters">
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      Is this Suchana available to ALL members of the selected Shakha/Nagar/Vibhag?
+                    </p>
+                    <div className="flex items-center gap-5">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="targetAllMembers"
+                          checked={form.targetAllMembers === true}
+                          onChange={() => setField('targetAllMembers', true)}
+                          className="w-4 h-4 accent-primary-600"
                         />
-                        <MultiSelectField
-                          label="Town"
-                          options={townOptions}
-                          selected={form.targetTowns}
-                          disabled={!scope.showTownFilter}
-                          onChange={v => { setField('targetTowns', v); setField('targetCentres', []); }}
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">Yes</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="targetAllMembers"
+                          checked={form.targetAllMembers === false}
+                          onChange={() => setField('targetAllMembers', false)}
+                          className="w-4 h-4 accent-primary-600"
                         />
-                        <MultiSelectField
-                          label="Activity Centre"
-                          options={centreOptions}
-                          selected={form.targetCentres}
-                          disabled={!scope.showCentreFilter}
-                          onChange={v => setField('targetCentres', v)}
-                        />
-                      </div>
-                    </Card>
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">No</span>
+                      </label>
+                    </div>
+                    {formErrors.targetAllMembers && <p className="text-xs text-red-600 mt-1">{formErrors.targetAllMembers}</p>}
+                  </div>
 
-                    <Card title="Demographic Filters">
-                      <p className="text-xs text-neutral-400 -mt-2 mb-2">Optional — leave as "All" to target everyone.</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <MultiSelectField
-                          label="Age Category"
-                          options={['teen', 'adult']}
-                          selected={form.filterAgeCategories}
-                          onChange={v => setField('filterAgeCategories', v as ('child' | 'teen' | 'adult')[])}
-                        />
-                        <MultiSelectField
-                          label="Gender"
-                          options={['male', 'female']}
-                          selected={form.filterGenders}
-                          onChange={v => setField('filterGenders', v as ('male' | 'female')[])}
-                        />
-                        <MultiSelectField
-                          label="Responsibility Level"
-                          options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
-                          selected={form.filterResponsibilityLevels}
-                          onChange={v => setField('filterResponsibilityLevels', v)}
-                        />
-                        <MultiSelectField
-                          label="Sangh Responsibility"
-                          options={JOB_TITLE_OPTIONS}
-                          selected={form.filterJobTitles}
-                          onChange={v => setField('filterJobTitles', v)}
-                        />
-                        <MultiSelectField
-                          label="Responsibility Type"
-                          options={[...RESPONSIBILITY_TYPE_OPTIONS]}
-                          selected={form.filterResponsibilityTypes}
-                          onChange={v => setField('filterResponsibilityTypes', v)}
-                        />
+                  {form.targetAllMembers === false && (
+                    <>
+                      <p className="text-xs text-neutral-400 mb-4">
+                        Please use the filters below to define who the Suchana is applicable to.
+                      </p>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <MultiSelectField
+                            label="Age Category"
+                            options={['teen', 'adult']}
+                            selected={form.filterAgeCategories}
+                            onChange={v => setField('filterAgeCategories', v as ('child' | 'teen' | 'adult')[])}
+                          />
+                          <MultiSelectField
+                            label="Gender"
+                            options={['male', 'female']}
+                            selected={form.filterGenders}
+                            onChange={v => setField('filterGenders', v as ('male' | 'female')[])}
+                          />
+                          <MultiSelectField
+                            label="Responsibility Level"
+                            options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
+                            selected={form.filterResponsibilityLevels}
+                            onChange={v => setField('filterResponsibilityLevels', v)}
+                          />
+                          <MultiSelectField
+                            label="Sangh Responsibility"
+                            options={JOB_TITLE_OPTIONS}
+                            selected={form.filterJobTitles}
+                            onChange={v => setField('filterJobTitles', v)}
+                          />
+                          <MultiSelectField
+                            label="Responsibility Type"
+                            options={[...RESPONSIBILITY_TYPE_OPTIONS]}
+                            selected={form.filterResponsibilityTypes}
+                            onChange={v => setField('filterResponsibilityTypes', v)}
+                          />
+                        </div>
+
+                        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit mt-4 mb-2">
+                            <input
+                              type="checkbox"
+                              checked={form.targetSpecificOnly}
+                              onChange={e => setField('targetSpecificOnly', e.target.checked)}
+                              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                            />
+                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                              Invite specific members (that would NOT be part of the filters above)
+                            </span>
+                          </label>
+                          {form.targetSpecificOnly && (
+                            <FormField>
+                              <FormLabel required>Select Members</FormLabel>
+                              <MemberMultiSelect
+                                selectedIds={form.targetMemberIds}
+                                onChange={ids => setField('targetMemberIds', ids)}
+                              />
+                              {formErrors.targetMemberIds && <p className="text-xs text-red-600 mt-1">{formErrors.targetMemberIds}</p>}
+                            </FormField>
+                          )}
+                        </div>
                       </div>
-                    </Card>
-                  </>
-                )}
+                    </>
+                  )}
+                </Card>
               </div>
             )}
 
@@ -1227,7 +1257,6 @@ export default function Announcements({
             {/* Body */}
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
               <div className="px-6 pt-4 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-                <cc.icon className={`w-4 h-4 ${cc.color}`} />
                 <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">Message</h4>
               </div>
               <div className={isMemberRole ? 'px-6 py-6' : 'px-6 py-5'}>
@@ -1487,8 +1516,6 @@ export default function Announcements({
   const renderAnnouncementCard = (ann: Announcement) => {
     const sc  = STATUS_CFG[ann.status];
     const pc  = PRIORITY_CFG[ann.priority];
-    const cc  = CONTENT_CFG[ann.contentType];
-    const ContentIcon = cc.icon;
 
     return (
       <div
@@ -1502,11 +1529,6 @@ export default function Announcements({
 
           <div className="flex-1 px-5 py-4">
             <div className="flex items-start gap-4">
-              {/* Content type icon */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center mt-0.5">
-                <ContentIcon className={`w-5 h-5 ${cc.color}`} />
-              </div>
-
               {/* Main content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">

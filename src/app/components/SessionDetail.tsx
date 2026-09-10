@@ -137,6 +137,7 @@ export default function SessionDetail({
   allSessions,
   onBack,
   onMarkAttendance,
+  onAddGuest,
   onCancelSession,
   onDeleteSession,
   onEditSession,
@@ -145,6 +146,7 @@ export default function SessionDetail({
   allSessions: ShakhaSession[];
   onBack: () => void;
   onMarkAttendance: (sessionId: string, memberId: string, status: AttendanceRecord['status']) => void;
+  onAddGuest?: (sessionId: string, guest: { firstName: string; lastName: string; ageCategory: AttendanceRecord['ageCategory'] }) => void;
   onCancelSession?: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onEditSession?: (sessionId: string) => void;
@@ -160,6 +162,10 @@ export default function SessionDetail({
   const [expandedMemberId,  setExpandedMemberId]  = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<AttendanceSortKey>('attendanceCount');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [showAddGuest,    setShowAddGuest]    = useState(false);
+  const [guestFirstName,  setGuestFirstName]  = useState('');
+  const [guestLastName,   setGuestLastName]   = useState('');
+  const [guestAgeCategory, setGuestAgeCategory] = useState<AttendanceRecord['ageCategory']>('tarun');
   const { scope, selectedRole } = useRoleScope();
   const isMemberRole = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
   const selfMemberId = isMemberRole ? scope.selfMemberId : undefined;
@@ -195,6 +201,23 @@ export default function SessionDetail({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id, session.status]);
+
+  const handleAddGuest = () => {
+    if (!guestFirstName.trim() || !guestLastName.trim()) {
+      toast.error('First Name and Last Name are required.');
+      return;
+    }
+    onAddGuest?.(session.id, {
+      firstName: guestFirstName.trim(),
+      lastName:  guestLastName.trim(),
+      ageCategory: guestAgeCategory,
+    });
+    toast.success('Guest added to the attendance list.');
+    setGuestFirstName('');
+    setGuestLastName('');
+    setGuestAgeCategory('tarun');
+    setShowAddGuest(false);
+  };
 
   const handleConfirmCancel = async () => {
     if (!onCancelSession) return;
@@ -461,6 +484,20 @@ export default function SessionDetail({
                         <X className="w-3.5 h-3.5" /> Clear
                       </button>
                     )}
+
+                    {/* Add Guest — walk-in attendee, not a registered member */}
+                    {!isMemberRole && onAddGuest && (
+                      <button
+                        onClick={() => setShowAddGuest(prev => !prev)}
+                        className={`flex items-center gap-1.5 px-3 h-9 text-sm font-medium rounded-lg border transition-colors flex-shrink-0 ${
+                          showAddGuest
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                        }`}
+                      >
+                        <UserPlus className="w-3.5 h-3.5" /> Add Guest
+                      </button>
+                    )}
                   </div>
 
                   {/* Filtered result count */}
@@ -491,9 +528,73 @@ export default function SessionDetail({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                          {showAddGuest && (
+                            <tr className="bg-primary-50/40 dark:bg-primary-950/20">
+                              <td className="px-4 py-2.5"></td>
+                              <td className="px-2 py-2.5">
+                                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center">
+                                  <UserPlus className="w-3.5 h-3.5 text-primary-700 dark:text-primary-300" />
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={guestFirstName}
+                                  onChange={e => setGuestFirstName(e.target.value)}
+                                  onKeyDown={e => e.key === 'Enter' && handleAddGuest()}
+                                  placeholder="First Name"
+                                  className="w-full h-8 px-2 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                />
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <input
+                                  type="text"
+                                  value={guestLastName}
+                                  onChange={e => setGuestLastName(e.target.value)}
+                                  onKeyDown={e => e.key === 'Enter' && handleAddGuest()}
+                                  placeholder="Last Name"
+                                  className="w-full h-8 px-2 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                />
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <select
+                                  value={guestAgeCategory}
+                                  onChange={e => setGuestAgeCategory(e.target.value as AttendanceRecord['ageCategory'])}
+                                  className="h-8 px-2 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                  <option value="bal">Bal(ika) (0–5)</option>
+                                  <option value="shishu">Shishu (6–11)</option>
+                                  <option value="kishor">Kishor(i) (12–16)</option>
+                                  <option value="tarun">Tarun(i) (17–30)</option>
+                                  <option value="yuva">Yuva(ti) (30–60)</option>
+                                  <option value="jyestha">Jyestha(a) (60+)</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-2.5"></td>
+                              <td className="px-4 py-2.5"></td>
+                              <td className="px-4 py-2.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => { setShowAddGuest(false); setGuestFirstName(''); setGuestLastName(''); }}
+                                    className="px-2.5 h-8 text-xs font-medium rounded-md text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={handleAddGuest}
+                                    className="px-2.5 h-8 text-xs font-medium rounded-md bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                           {filteredRecords.map(r => {
                             const attendanceCount = attendanceCountMap.get(r.memberId) ?? 0;
-                            const isGuest = !!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre;
+                            const isGuest = r.memberId.startsWith('GUEST-') ||
+                              (!!homeCentreMap.get(r.memberId) && homeCentreMap.get(r.memberId) !== session.activityCentre);
                             const initials = r.memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                             const { firstName, lastName } = memberNameMap.get(r.memberId)
                               ?? { firstName: r.memberName.split(' ')[0], lastName: r.memberName.split(' ').slice(1).join(' ') };

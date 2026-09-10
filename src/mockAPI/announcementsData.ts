@@ -38,6 +38,10 @@ export interface Announcement {
   targetTowns?: string[];
   targetCentres?: string[];
 
+  // Whether this Suchana targets ALL members within the selected Shakha/Nagar/
+  // Vibhag (Yes) or a narrower set via demographic filters / specific members (No)
+  targetAllMembers?: boolean;
+
   // Send to specific members only, bypassing scope/demographic filters
   targetMemberIds?: string[];
 

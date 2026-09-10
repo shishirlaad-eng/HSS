@@ -77,6 +77,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
   const [customAmount, setCustomAmount]     = useState('');
 
   // Form fields
+  const [giftAid, setGiftAid]       = useState<boolean | null>(null);
   const [email, setEmail]           = useState('');
   const [name, setName]             = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -90,8 +91,8 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
   const [success, setSuccess]   = useState(false);
 
   const cardRef = useRef<HTMLInputElement>(null);
-  const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const FIELD_ORDER = ['amount', 'email', 'card', 'expiry', 'cvc', 'name'];
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+  const FIELD_ORDER = ['amount', 'giftAid', 'email', 'card', 'expiry', 'cvc', 'name'];
 
   const amount = customAmount !== '' ? parseFloat(customAmount) : (selectedPreset ?? 0);
   const brand  = detectBrand(cardNumber);
@@ -106,6 +107,7 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
     if (!mm || mm.length < 2 || expiry.replace(/\s/g, '').length < 4) e.expiry = 'MM / YY required';
     if (cvc.length < 3) e.cvc = 'Enter CVC';
     if (!amount || amount < 1) e.amount = 'Enter a Dakshina amount (min £1)';
+    if (giftAid === null) e.giftAid = 'Please answer the Gift Aid question.';
     return e;
   }
 
@@ -277,6 +279,45 @@ export default function StripeDonation({ onBack }: StripeDonationProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Gift Aid */}
+                <div
+                  ref={el => { fieldRefs.current.giftAid = el; }}
+                  className={`rounded-lg border p-4 ${errors.giftAid ? 'border-red-400 dark:border-red-500' : 'border-neutral-200 dark:border-neutral-700'}`}
+                >
+                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+                    Apply one off Gift Aid?
+                  </p>
+                  <div className="space-y-2.5">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="giftAid"
+                        checked={giftAid === true}
+                        onChange={() => { setGiftAid(true); setErrors(err => ({ ...err, giftAid: '' })); }}
+                        className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                      />
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        <span className="font-semibold text-neutral-900 dark:text-white">YES: </span>
+                        The PERSON PAYING for this registration is a UK Tax Payer and wants to GIFT AID this donation
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="giftAid"
+                        checked={giftAid === false}
+                        onChange={() => { setGiftAid(false); setErrors(err => ({ ...err, giftAid: '' })); }}
+                        className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                      />
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        <span className="font-semibold text-neutral-900 dark:text-white">NO: </span>
+                        The PERSON PAYING for this registration does NOT want to Gift Aid this donation
+                      </span>
+                    </label>
+                  </div>
+                  {errors.giftAid && <p className="text-xs text-red-500 mt-2">{errors.giftAid}</p>}
+                </div>
 
                 {/* Email */}
                 <div>

@@ -196,6 +196,26 @@ export default function Sessions() {
     setSelectedSession(prev => (prev ? updateSession(prev) : prev));
   };
 
+  // Walk-in attendee with no member record — added ad-hoc from the Shakha's
+  // attendance list (First Name, Last Name, Age Category only; not a real member).
+  const handleAddGuest = (sessionId: string, guest: { firstName: string; lastName: string; ageCategory: AttendanceRecord['ageCategory'] }) => {
+    const guestRecord: AttendanceRecord = {
+      memberId: `GUEST-${Date.now()}`,
+      memberName: `${guest.firstName} ${guest.lastName}`.trim(),
+      // Not collected for walk-in guests — left blank rather than guessed.
+      gender: '' as AttendanceRecord['gender'],
+      ageCategory: guest.ageCategory,
+      jobTitle: 'Guest',
+      status: 'unmarked',
+    };
+
+    const updateSession = (session: ShakhaSession): ShakhaSession =>
+      session.id !== sessionId ? session : { ...session, attendanceRecords: [...session.attendanceRecords, guestRecord] };
+
+    setSessions(prev => prev.map(updateSession));
+    setSelectedSession(prev => (prev ? updateSession(prev) : prev));
+  };
+
   // Cascade options
   const regionOptions  = browse
     ? (MASTERS_CASCADE.regions[scope.country ?? 'HSS UK'] ?? [])
@@ -285,6 +305,7 @@ export default function Sessions() {
         allSessions={sessions}
         onBack={() => setSelectedSession(null)}
         onMarkAttendance={handleMarkAttendance}
+        onAddGuest={handleAddGuest}
         onCancelSession={canManageShakha ? handleCancelSession : undefined}
         onDeleteSession={selectedRole === 'Super Admin' ? handleDeleteSession : undefined}
         onEditSession={canManageShakha ? (id) => { const s = sessions.find(ss => ss.id === id); if (s) setEditSession(s); } : undefined}
@@ -486,7 +507,6 @@ export default function Sessions() {
               </tr>
             ) : paginatedSessions.map(s => {
               const isToday   = s.date === todayIso;
-              const rate      = attendanceRate(s);
               const present   = s.attendanceRecords.filter(r => r.status === 'present').length;
               const total     = s.attendanceRecords.length;
               const dateObj   = new Date(s.date + 'T00:00:00');
@@ -546,18 +566,10 @@ export default function Sessions() {
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                          {present}/{total}
+                        <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {present}
                         </span>
-                        {rate !== null && (
-                          <span className={`text-xs font-medium ${
-                            rate >= 75 ? 'text-success-600 dark:text-success-400' :
-                            rate >= 50 ? 'text-amber-600 dark:text-amber-400' :
-                            'text-error-600 dark:text-error-400'
-                          }`}>
-                            ({rate}%)
-                          </span>
-                        )}
+                        <span className="text-xs text-neutral-400 dark:text-neutral-500">Present</span>
                       </div>
                     )}
                   </td>

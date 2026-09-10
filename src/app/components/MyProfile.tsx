@@ -1381,10 +1381,9 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <InfoSection title="Personal Details">
                 <EditableInfoItem label="First Name" required    value={profile.firstName}   isEditing={effectiveEditing} onChange={v => setField("firstName", v)} error={fieldErrors.firstName} errorMessage="First name is required." disabled={lockCarriedOverDetails} />
-                {!isPostRegistration && <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>}
+                <EditableInfoItem label="Last Name" required     value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Last name is required." disabled={lockCarriedOverDetails} />
                 <EditableInfoItem label="Middle Name"   value={profile.middleName}  isEditing={effectiveEditing} onChange={v => setField("middleName", v)} />
                 <EditableInfoItem label="Gender" required        value={profile.gender}      isEditing={effectiveEditing} onChange={v => setField("gender", v)} options={["Male", "Female"]} error={fieldErrors.gender} errorMessage="Gender is required." />
-                <EditableInfoItem label="Last Name" required     value={profile.surname}     isEditing={effectiveEditing} onChange={v => setField("surname", v)} error={fieldErrors.surname} errorMessage="Last name is required." disabled={lockCarriedOverDetails} />
                 {effectiveEditing ? (
                   <EditableInfoItem label="Date of Birth" required value={profile.dateOfBirth} isEditing onChange={v => setField("dateOfBirth", v)} type="date" error={fieldErrors.dateOfBirth} errorMessage="Date of birth is required." />
                 ) : (
@@ -1393,6 +1392,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">(Age: {getAge(profile.dateOfBirth)})</span>
                   </InfoItem>
                 )}
+                {!isPostRegistration && <InfoItem label="Membership ID">{valueOrDash(profile.membershipId)}</InfoItem>}
               </InfoSection>
 
               <InfoSection title="Contact Details">

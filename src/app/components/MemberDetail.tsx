@@ -972,7 +972,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Personal Details">
                   <EditableInfoItem label="First Name" required value={form.firstName ?? ''} isEditing={isEditing} onChange={v => setField('firstName', v)} error={fieldErrors.firstName} errorMessage="First name is required." />
-                  <InfoItem label="Membership ID">{member.id}</InfoItem>
+                  <EditableInfoItem label="Last Name" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} error={fieldErrors.surname} errorMessage="Last name is required." />
                   <EditableInfoItem label="Middle Name" value={form.middleName ?? ''} isEditing={isEditing} onChange={v => setField('middleName', v)} />
                   <EditableInfoItem
                     label="Gender"
@@ -985,7 +985,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     error={fieldErrors.gender}
                     errorMessage="Gender is required."
                   />
-                  <EditableInfoItem label="Last Name" required value={form.surname ?? ''} isEditing={isEditing} onChange={v => setField('surname', v)} error={fieldErrors.surname} errorMessage="Last name is required." />
                   <EditableInfoItem
                     label="Date of Birth"
                     required
@@ -997,6 +996,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     error={fieldErrors.dateOfBirth}
                     errorMessage="Date of birth is required."
                   />
+                  <InfoItem label="Membership ID">{member.id}</InfoItem>
                   <InfoItem label="Full Name">{member.name}</InfoItem>
                   <InfoItem label="Age Group"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
                 </InfoSection>

@@ -32,7 +32,7 @@ import {
   useStickyListingHeader,
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
-import { mockSessions, SHAKHA_TYPES, getSessionShakhaType } from '../../mockAPI/attendanceData';
+import { mockSessions, SHAKHA_TYPES, getSessionShakhaType, AttendanceStatus } from '../../mockAPI/attendanceData';
 import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -72,7 +72,7 @@ export interface LogEntry {
   region:         string;
   town:           string;
   activityCentre: string;
-  attendanceStatus: 'present' | 'absent';
+  attendanceStatus: AttendanceStatus;
   markedAt?: string;
 }
 
@@ -128,14 +128,20 @@ type SortKey = 'memberName' | 'date' | 'activityCentre' | 'jobTitle' | 'attendan
 type SortDir = 'asc' | 'desc';
 
 // ── Status badge ──────────────────────────────────────────────
-function StatusBadge({ status }: { status: 'present' | 'absent' }) {
-  return status === 'present' ? (
+function StatusBadge({ status }: { status: AttendanceStatus }) {
+  if (status === 'present') return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700 dark:bg-success-950 dark:text-success-400 border border-success-200 dark:border-success-800">
       <CheckCircle2 className="w-3 h-3" /> Present
     </span>
-  ) : (
+  );
+  if (status === 'absent') return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error-50 text-error-700 dark:bg-error-950 dark:text-error-400 border border-error-200 dark:border-error-800">
       <XCircle className="w-3 h-3" /> Absent
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
+      <Clock className="w-3 h-3" /> Upcoming
     </span>
   );
 }
@@ -246,6 +252,10 @@ export default function AttendanceLog() {
   const [collapsedYears,     setCollapsedYears]     = useState<Set<string>>(new Set());
   const [collapsedMonths,    setCollapsedMonths]    = useState<Set<string>>(new Set());
 
+  // Completed / Scheduled tabs — Member & Teen self-view only
+  const [attendanceTab, setAttendanceTab] = useState<'completed' | 'scheduled'>('completed');
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   const activeFilterCount = filters.filter(f => f.values.length > 0).length;
 
   // ── Filter + sort ─────────────────────────────────────────
@@ -282,6 +292,15 @@ export default function AttendanceLog() {
       if (dateFrom && r.date < dateFrom) return false;
       if (dateTo   && r.date > dateTo)   return false;
 
+      // Completed / Scheduled tab — self-view only. Scheduled = future Shakhas
+      // (haven't happened yet); Completed = everything up to and including today,
+      // covering both status "Completed" and "Active" sessions.
+      if (scope.selfOnly) {
+        const isFuture = r.date > todayStr;
+        if (attendanceTab === 'scheduled' && !isFuture) return false;
+        if (attendanceTab === 'completed' && isFuture)  return false;
+      }
+
       // Advanced filters
       const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
@@ -315,7 +334,7 @@ export default function AttendanceLog() {
     });
 
     return rows;
-  }, [searchQuery, filters, dateFrom, dateTo, sortKey, sortDir, scopedLogEntries]);
+  }, [searchQuery, filters, dateFrom, dateTo, sortKey, sortDir, scopedLogEntries, scope.selfOnly, attendanceTab, todayStr]);
 
   const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = pageSize === 0 ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -512,6 +531,28 @@ export default function AttendanceLog() {
               { label: 'Attendance Rate', value: `${rate}%`,       icon: 'BarChart3',   color: 'sky'     },
             ]}
           />
+        )}
+
+        {/* ── COMPLETED / SCHEDULED TABS — self-view only ── */}
+        {scope.selfOnly && (
+          <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+            {([
+              { id: 'completed' as const, label: 'Completed' },
+              { id: 'scheduled' as const, label: 'Scheduled' },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setAttendanceTab(tab.id); setPage(1); }}
+                className={`px-4 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                  attendanceTab === tab.id
+                    ? 'border-primary-600 dark:border-primary-400 text-neutral-900 dark:text-white font-semibold'
+                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* ── ACTIVE FILTER CHIPS ── */}

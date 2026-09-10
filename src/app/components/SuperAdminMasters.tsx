@@ -27,6 +27,15 @@ import { formatDate as sharedFormatDate } from '../../utils/formatDate';
 type ViewMode = 'grid' | 'list' | 'table';
 export type MasterType = 'country' | 'region' | 'town' | 'centre' | 'role-types' | 'configurable-lists';
 
+// Ref Data — Shakha Type options for the Activity Centre (Shakha) form
+export const SHAKHA_TYPE_OPTIONS = [
+  'Swayamsevak Shakha',
+  'Sevika Shakha',
+  'Parivaar Shakha',
+  'Milan',
+  'Sampark Kendra',
+] as const;
+
 export interface MasterItem {
   id: string;
   name: string;
@@ -38,6 +47,7 @@ export interface MasterItem {
   lastUpdated: string;
   childCount?: number;
   // Activity Centre extras
+  shakhaType?: string;
   // Selected member (holding Shakha Karyawaha Pramukh) whose name/phone are
   // shown as this centre's contact — chosen via autocomplete, not typed in.
   karyawahaPramukhId?: string;
@@ -592,6 +602,7 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
       regionName:  (masterType === 'town' || masterType === 'centre') ? '' : undefined,
       townName:    masterType === 'centre' ? '' : undefined,
       // Activity Centre extras
+      shakhaType:   masterType === 'centre' ? '' : undefined,
       contactEmail: masterType === 'centre' ? '' : undefined,
       addressLine1: masterType === 'centre' ? '' : undefined,
       addressLine2: masterType === 'centre' ? '' : undefined,
@@ -1350,6 +1361,23 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                   />
                   <ErrorText>{fieldErrors.name && `${config.nameLabel} is required.`}</ErrorText>
                 </FormField>
+
+                {masterType === 'centre' && (
+                  <FormField>
+                    <FormLabel>Shakha Type</FormLabel>
+                    {modalMode === 'view' ? (
+                      <FormInput value={activeItem.shakhaType || '—'} readOnly />
+                    ) : (
+                      <FormSelect
+                        value={activeItem.shakhaType ?? ''}
+                        onChange={e => setActiveItem({ ...activeItem, shakhaType: e.target.value })}
+                      >
+                        <option value="">Select Shakha Type</option>
+                        {SHAKHA_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </FormSelect>
+                    )}
+                  </FormField>
+                )}
               </FormSection>
 
               {/* Contact Details (Activity Centre only) — locked and blank while
