@@ -380,7 +380,6 @@ function ShakhaAutocomplete({ value, onChange, error }: {
         ref={inputRef}
         type="text"
         value={query}
-        placeholder="Type to search Shakhas…"
         onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
         onFocus={() => setOpen(true)}
         className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
@@ -794,7 +793,6 @@ function UpgradeChildToTeenScreen({
               type="tel"
               value={guardianPhone}
               onChange={e => setGuardianPhone(e.target.value)}
-              placeholder="e.g. +44 7700 900123"
               className={inputCls(errors.guardianPhone)}
             />
             <ErrorText>{errors.guardianPhone}</ErrorText>
@@ -819,7 +817,6 @@ function UpgradeChildToTeenScreen({
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder={`e.g. ${displayFirstName.toLowerCase()}@email.com`}
               className={inputCls(errors.email)}
             />
             <ErrorText>{errors.email}</ErrorText>
@@ -1406,7 +1403,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                         type="text"
                         value={postcodeSearch}
                         onChange={e => { setPostcodeSearch(e.target.value); setSelectedAddress(''); }}
-                        placeholder="Enter a post code to search"
                         className="w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400 transition-colors"
                       />
                     </div>
@@ -1486,7 +1482,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       {!RELATIONSHIP_OPTIONS.includes(profile.emergencyContactRelationship) && (
                         <FormInput
                           type="text"
-                          placeholder="Please specify"
                           value={profile.emergencyContactRelationship}
                           onChange={e => setField("emergencyContactRelationship", e.target.value)}
                           className={fieldErrors.emergencyContactRelationship ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
@@ -1511,7 +1506,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     if (v !== "Yes") setField("medicalInfoDetails", "");
                   }}
                   options={["No", "Yes"]}
-                  placeholderOption={isPostRegistration ? "Select option" : undefined}
+                  placeholderOption={isPostRegistration ? "Please select" : undefined}
                   error={fieldErrors.medicalInfoDeclared}
                 />
                 {profile.medicalInfoDeclared === "Yes" && (
@@ -1534,7 +1529,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     if (v !== "Yes") { setField("allergies", ""); setField("epiPen", ""); }
                   }}
                   options={["No", "Yes"]}
-                  placeholderOption={isPostRegistration ? "Select option" : undefined}
+                  placeholderOption={isPostRegistration ? "Please select" : undefined}
                   error={fieldErrors.allergiesDeclared}
                 />
                 {profile.allergiesDeclared === "Yes" && (
@@ -1568,7 +1563,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       {profile.dietaryRequirements.split(',').map(s => s.trim()).includes('Other') && (
                         <FormInput
                           type="text"
-                          placeholder="Please specify"
                           value={profile.dietaryOtherSpecify}
                           onChange={e => setField("dietaryOtherSpecify", e.target.value)}
                         />
@@ -1632,7 +1626,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               <div className="space-y-5">
                 {!activeChildId && (
                 <InfoSection title="First Aid" cols={4}>
-                  <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} placeholderOption={isPostRegistration ? "Select option" : undefined} error={fieldErrors.isFirstAider} />
+                  <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} placeholderOption={isPostRegistration ? "Please select" : undefined} error={fieldErrors.isFirstAider} />
                   {profile.isFirstAider === "Yes" && (
                     <>
                       <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
@@ -1819,7 +1813,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                       {!OCCUPATION_OPTIONS.includes(profile.occupation) && (
                         <FormInput
                           type="text"
-                          placeholder="Please specify"
                           value={profile.occupation}
                           onChange={e => setField("occupation", e.target.value)}
                         />
@@ -2142,7 +2135,6 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
                     <SearchBar
                       value={historySearch}
                       onChange={v => { setHistorySearch(v); setHistoryPage(1); }}
-                      placeholder="Search history..."
                     />
                   </div>
                   <div className="relative" ref={historyDateRef}>

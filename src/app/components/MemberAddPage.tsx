@@ -92,7 +92,6 @@ function ShakhaAutocomplete({ value, onChange, error }: {
         ref={inputRef}
         type="text"
         value={query}
-        placeholder="Type to search Shakhas…"
         onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
         onFocus={() => setOpen(true)}
         className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
@@ -429,17 +428,17 @@ export default function MemberAddPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField>
                 <FormLabel required>First Name</FormLabel>
-                <FormInput value={form.firstName} onChange={set('firstName')} placeholder="First name" className={errCls(errors.firstName)} />
+                <FormInput value={form.firstName} onChange={set('firstName')} className={errCls(errors.firstName)} />
                 <ErrorText>{errors.firstName}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel>Middle Name</FormLabel>
-                <FormInput value={form.middleName} onChange={set('middleName')} placeholder="Middle name" />
+                <FormInput value={form.middleName} onChange={set('middleName')} />
               </FormField>
               <FormField>
                 <FormLabel required>Gender</FormLabel>
                 <FormSelect value={form.gender} onChange={set('gender')} className={errCls(errors.gender)}>
-                  <option value="">Select gender</option>
+                  <option value="">Please select</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </FormSelect>
@@ -447,7 +446,7 @@ export default function MemberAddPage({
               </FormField>
               <FormField>
                 <FormLabel required>Last Name</FormLabel>
-                <FormInput value={form.lastName} onChange={set('lastName')} placeholder="Last name" className={errCls(errors.lastName)} />
+                <FormInput value={form.lastName} onChange={set('lastName')} className={errCls(errors.lastName)} />
                 <ErrorText>{errors.lastName}</ErrorText>
               </FormField>
               <FormField className="sm:col-span-2">
@@ -468,35 +467,35 @@ export default function MemberAddPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField>
                 <FormLabel required>Contact Number</FormLabel>
-                <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} placeholder="7700 000000" error={!!errors.phone} />
+                <PhoneInput value={form.phone} onChange={v => setForm(prev => ({ ...prev, phone: v }))} error={!!errors.phone} />
                 <ErrorText>{errors.phone}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel required>Email Address</FormLabel>
-                <FormInput type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" className={errCls(errors.email)} />
+                <FormInput type="email" value={form.email} onChange={set('email')} className={errCls(errors.email)} />
                 <ErrorText>{errors.email}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel required>Post Code</FormLabel>
-                <FormInput value={form.postCode} onChange={set('postCode')} placeholder="Post code" className={errCls(errors.postCode)} />
+                <FormInput value={form.postCode} onChange={set('postCode')} className={errCls(errors.postCode)} />
                 <ErrorText>{errors.postCode}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel>Building Name</FormLabel>
-                <FormInput value={form.buildingName} onChange={set('buildingName')} placeholder="Building name" />
+                <FormInput value={form.buildingName} onChange={set('buildingName')} />
               </FormField>
               <FormField>
                 <FormLabel required>Address Line 1</FormLabel>
-                <FormInput value={form.addressLine1} onChange={set('addressLine1')} placeholder="Address line 1" className={errCls(errors.addressLine1)} />
+                <FormInput value={form.addressLine1} onChange={set('addressLine1')} className={errCls(errors.addressLine1)} />
                 <ErrorText>{errors.addressLine1}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel>Address Line 2</FormLabel>
-                <FormInput value={form.addressLine2} onChange={set('addressLine2')} placeholder="Address line 2" />
+                <FormInput value={form.addressLine2} onChange={set('addressLine2')} />
               </FormField>
               <FormField className="sm:col-span-2">
                 <FormLabel required>Town / City</FormLabel>
-                <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} placeholder="Town / City" className={errCls(errors.contactTownCity)} />
+                <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} className={errCls(errors.contactTownCity)} />
                 <ErrorText>{errors.contactTownCity}</ErrorText>
               </FormField>
             </div>
@@ -507,22 +506,22 @@ export default function MemberAddPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField>
                 <FormLabel required>Contact Name</FormLabel>
-                <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="Emergency contact name" className={errCls(errors.emergencyContactName)} />
+                <FormInput value={form.emergencyContactName} onChange={set('emergencyContactName')} className={errCls(errors.emergencyContactName)} />
                 <ErrorText>{errors.emergencyContactName}</ErrorText>
               </FormField>
               <FormField>
-                <FormLabel required>Contact Phone Number</FormLabel>
-                <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} placeholder="7700 000000" error={!!errors.emergencyContactPhone} />
+                <FormLabel required>Contact number</FormLabel>
+                <PhoneInput value={form.emergencyContactPhone} onChange={v => setForm(prev => ({ ...prev, emergencyContactPhone: v }))} error={!!errors.emergencyContactPhone} />
                 <ErrorText>{errors.emergencyContactPhone}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel required>Contact Email</FormLabel>
-                <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} placeholder="emergency@example.com" className={errCls(errors.emergencyContactEmail)} />
+                <FormInput type="email" value={form.emergencyContactEmail} onChange={set('emergencyContactEmail')} className={errCls(errors.emergencyContactEmail)} />
                 <ErrorText>{errors.emergencyContactEmail}</ErrorText>
               </FormField>
               <FormField>
                 <FormLabel required>Contact Relationship</FormLabel>
-                <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="e.g. Spouse" className={errCls(errors.emergencyContactRelationship)} />
+                <FormInput value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} className={errCls(errors.emergencyContactRelationship)} />
                 <ErrorText>{errors.emergencyContactRelationship}</ErrorText>
               </FormField>
 
@@ -530,22 +529,22 @@ export default function MemberAddPage({
                 <>
                   <FormField>
                     <FormLabel required>Parent / Guardian Name</FormLabel>
-                    <FormInput value={form.guardianName} onChange={set('guardianName')} placeholder="Guardian name" className={errCls(errors.guardianName)} />
+                    <FormInput value={form.guardianName} onChange={set('guardianName')} className={errCls(errors.guardianName)} />
                     <ErrorText>{errors.guardianName}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Parent / Guardian Phone Number</FormLabel>
-                    <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} placeholder="7700 000000" error={!!errors.guardianPhone} />
+                    <PhoneInput value={form.guardianPhone} onChange={v => setForm(prev => ({ ...prev, guardianPhone: v }))} error={!!errors.guardianPhone} />
                     <ErrorText>{errors.guardianPhone}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Parent / Guardian Email</FormLabel>
-                    <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} placeholder="guardian@example.com" className={errCls(errors.guardianEmail)} />
+                    <FormInput type="email" value={form.guardianEmail} onChange={set('guardianEmail')} className={errCls(errors.guardianEmail)} />
                     <ErrorText>{errors.guardianEmail}</ErrorText>
                   </FormField>
                   <FormField>
                     <FormLabel required>Parent / Guardian Relationship</FormLabel>
-                    <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} placeholder="Relationship" className={errCls(errors.guardianRelationship)} />
+                    <FormInput value={form.guardianRelationship} onChange={set('guardianRelationship')} className={errCls(errors.guardianRelationship)} />
                     <ErrorText>{errors.guardianRelationship}</ErrorText>
                   </FormField>
                 </>
@@ -559,7 +558,7 @@ export default function MemberAddPage({
               <FormField>
                 <FormLabel required>Do you have any medical conditions?</FormLabel>
                 <FormSelect value={form.medicalInfoDeclared} onChange={set('medicalInfoDeclared')}>
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
                 </FormSelect>
@@ -567,7 +566,7 @@ export default function MemberAddPage({
               <FormField>
                 <FormLabel required>Do you have any allergies?</FormLabel>
                 <FormSelect value={form.allergiesDeclared} onChange={set('allergiesDeclared')}>
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
                 </FormSelect>
@@ -575,13 +574,13 @@ export default function MemberAddPage({
               {form.medicalInfoDeclared === 'yes' && (
                 <FormField className="sm:col-span-2">
                   <FormLabel>Medical Condition Details</FormLabel>
-                  <FormTextarea rows={2} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} placeholder="Details of medical condition(s)" />
+                  <FormTextarea rows={2} value={form.medicalInfoDetails} onChange={set('medicalInfoDetails')} />
                 </FormField>
               )}
               {form.allergiesDeclared === 'yes' && (
                 <FormField className="sm:col-span-2">
                   <FormLabel>Allergy Details</FormLabel>
-                  <FormTextarea rows={2} value={form.allergies} onChange={set('allergies')} placeholder="Details of allergies" />
+                  <FormTextarea rows={2} value={form.allergies} onChange={set('allergies')} />
                 </FormField>
               )}
               <FormField className="sm:col-span-2">
@@ -590,7 +589,7 @@ export default function MemberAddPage({
                   value={form.dietaryRequirements[0] ?? ''}
                   onChange={e => setForm(prev => ({ ...prev, dietaryRequirements: e.target.value ? [e.target.value as DietaryRequirement] : [] }))}
                 >
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   {DIETARY_REQUIREMENTS.map(item => <option key={item} value={item}>{item}</option>)}
                 </FormSelect>
               </FormField>
@@ -603,7 +602,7 @@ export default function MemberAddPage({
               <FormField className={canEditQualifiedFirstAider ? '' : 'sm:col-span-2'}>
                 <FormLabel required>Are you a first aider for HSS?</FormLabel>
                 <FormSelect value={form.isFirstAider} onChange={set('isFirstAider')} disabled={!canEditQualifiedFirstAider}>
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
                 </FormSelect>
@@ -613,7 +612,7 @@ export default function MemberAddPage({
                   <FormField>
                     <FormLabel>Level of Qualification</FormLabel>
                     <FormSelect value={form.firstAidQualificationLevel} onChange={set('firstAidQualificationLevel')}>
-                      <option value="">Select qualification</option>
+                      <option value="">Please select</option>
                       {FIRST_AID_QUALIFICATION_OPTIONS.map(option => (
                         <option key={option} value={option}>{option}</option>
                       ))}
@@ -650,16 +649,16 @@ export default function MemberAddPage({
               </FormField>
               <FormField>
                 <FormLabel>Nagar</FormLabel>
-                <FormInput value={form.town} readOnly disabled placeholder="Derived from Shakha" />
+                <FormInput value={form.town} readOnly disabled />
               </FormField>
               <FormField>
                 <FormLabel>Vibhag</FormLabel>
-                <FormInput value={form.region} readOnly disabled placeholder="Derived from Shakha" />
+                <FormInput value={form.region} readOnly disabled />
               </FormField>
               <FormField>
                 <FormLabel required>Country</FormLabel>
                 <FormSelect value={form.country} onChange={set('country')} className={errCls(errors.country)}>
-                  <option value="">Select country</option>
+                  <option value="">Please select</option>
                   {MASTERS_CASCADE.countries.map(c => <option key={c} value={c}>{c}</option>)}
                 </FormSelect>
                 <ErrorText>{errors.country}</ErrorText>
@@ -673,20 +672,20 @@ export default function MemberAddPage({
               <FormField>
                 <FormLabel>Occupation</FormLabel>
                 <FormSelect value={form.occupation} onChange={set('occupation')}>
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   {OCCUPATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                 </FormSelect>
                 {form.occupation === 'Other - With box to specify' && (
-                  <FormInput className="mt-2" value={form.occupationOther} onChange={set('occupationOther')} placeholder="Specify occupation" />
+                  <FormInput className="mt-2" value={form.occupationOther} onChange={set('occupationOther')} />
                 )}
               </FormField>
               <FormField>
                 <FormLabel>Originating State in India</FormLabel>
-                <FormInput value={form.originatingStateIndia} onChange={set('originatingStateIndia')} placeholder="State" />
+                <FormInput value={form.originatingStateIndia} onChange={set('originatingStateIndia')} />
               </FormField>
               <FormField className="sm:col-span-2">
                 <FormLabel>Additional Notes / Comments</FormLabel>
-                <FormTextarea rows={3} value={form.additionalNotes} onChange={set('additionalNotes')} placeholder="Anything else worth noting" />
+                <FormTextarea rows={3} value={form.additionalNotes} onChange={set('additionalNotes')} />
               </FormField>
               <FormField className="sm:col-span-2">
                 <FormLabel>Spoken Language(s)</FormLabel>
@@ -694,7 +693,7 @@ export default function MemberAddPage({
                   value={form.spokenLanguages[0] ?? ''}
                   onChange={e => setForm(prev => ({ ...prev, spokenLanguages: e.target.value ? [e.target.value] : [] }))}
                 >
-                  <option value="">Select option</option>
+                  <option value="">Please select</option>
                   {SPOKEN_LANGUAGE_OPTIONS.map(lang => <option key={lang} value={lang}>{lang}</option>)}
                 </FormSelect>
               </FormField>

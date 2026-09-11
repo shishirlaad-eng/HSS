@@ -293,7 +293,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                         id="email"
                         type="email"
                         className={`pl-9 ${errCls('loginEmail')}`}
-                        placeholder="admin@company.com"
                         value={email}
                         onChange={e => { setEmail(e.target.value); clearError('loginEmail'); }}
                         disabled={isLoading}
@@ -311,7 +310,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                         id="password"
                         type="password"
                         className={`pl-9 ${errCls('loginPassword')}`}
-                        placeholder="••••••••"
                         value={password}
                         onChange={e => { setPassword(e.target.value); clearError('loginPassword'); }}
                         disabled={isLoading}
@@ -392,7 +390,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                       type="text"
                       maxLength={6}
                       className={`pl-9 tracking-[0.5em] text-center text-lg font-medium ${errCls('otp')}`}
-                      placeholder="------"
                       value={otp}
                       onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); clearError('otp'); }}
                       disabled={isLoading}
@@ -461,7 +458,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                       id="forgot-email"
                       type="email"
                       className={`pl-9 ${errCls('forgotEmail')}`}
-                      placeholder="admin@company.com"
                       value={email}
                       onChange={e => { setEmail(e.target.value); clearError('forgotEmail'); }}
                       disabled={isLoading}
@@ -514,7 +510,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                         type="text"
                         maxLength={6}
                         className={`pl-9 tracking-[0.5em] text-center text-lg font-medium ${errCls('resetOtp')}`}
-                        placeholder="------"
                         value={otp}
                         onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); clearError('resetOtp'); }}
                         disabled={isLoading}
@@ -532,7 +527,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                         id="new-password"
                         type="password"
                         className={`pl-9 ${errCls('newPassword')}`}
-                        placeholder="••••••••"
                         value={newPassword}
                         onChange={e => { setNewPassword(e.target.value); clearError('newPassword'); }}
                         disabled={isLoading}
@@ -553,7 +547,6 @@ export default function SuperAdminAuth({ onLoginSuccess, onRegisterSuccess, onGu
                         id="confirm-password"
                         type="password"
                         className={`pl-9 ${errCls('confirmPassword')}`}
-                        placeholder="••••••••"
                         value={confirmPassword}
                         onChange={e => { setConfirmPassword(e.target.value); clearError('confirmPassword'); }}
                         disabled={isLoading}

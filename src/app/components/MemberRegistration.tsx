@@ -173,28 +173,28 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           <div className="grid grid-cols-2 gap-4">
             <FormField>
               <FormLabel required>{onAccountCreated ? 'Parent/Guardian First Name' : 'First Name'}</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.firstName = el; }} value={form.firstName} onChange={set('firstName')} placeholder="e.g. Arjun" className={errCls('firstName')} />
+              <FormInput ref={el => { fieldRefs.current.firstName = el; }} value={form.firstName} onChange={set('firstName')} className={errCls('firstName')} />
               <ErrorText>{errors.firstName}</ErrorText>
             </FormField>
             <FormField>
               <FormLabel required>{onAccountCreated ? 'Parent/Guardian Last Name' : 'Last Name'}</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.lastName = el; }} value={form.lastName} onChange={set('lastName')} placeholder="e.g. Sharma" className={errCls('lastName')} />
+              <FormInput ref={el => { fieldRefs.current.lastName = el; }} value={form.lastName} onChange={set('lastName')} className={errCls('lastName')} />
               <ErrorText>{errors.lastName}</ErrorText>
             </FormField>
           </div>
           <FormField>
             <FormLabel required>{onAccountCreated ? 'Parent/Guardian Email' : 'Email'}</FormLabel>
-            <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={form.email} onChange={set('email')} placeholder="e.g. arjun@email.com" className={errCls('email')} />
+            <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={form.email} onChange={set('email')} className={errCls('email')} />
             <ErrorText>{errors.email}</ErrorText>
           </FormField>
           <FormField>
             <FormLabel required>Password</FormLabel>
-            <FormInput ref={el => { fieldRefs.current.password = el; }} type="password" value={form.password} onChange={set('password')} placeholder="Min. 8 characters" className={errCls('password')} />
+            <FormInput ref={el => { fieldRefs.current.password = el; }} type="password" value={form.password} onChange={set('password')} className={errCls('password')} />
             <ErrorText>{errors.password}</ErrorText>
           </FormField>
           <FormField>
             <FormLabel required>Confirm Password</FormLabel>
-            <FormInput ref={el => { fieldRefs.current.confirmPassword = el; }} type="password" value={form.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter your password" className={errCls('confirmPassword')} />
+            <FormInput ref={el => { fieldRefs.current.confirmPassword = el; }} type="password" value={form.confirmPassword} onChange={set('confirmPassword')} className={errCls('confirmPassword')} />
             <ErrorText>{errors.confirmPassword}</ErrorText>
           </FormField>
           {onAccountCreated && (
