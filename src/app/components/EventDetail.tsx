@@ -49,6 +49,7 @@ import {
   ArrowDown,
   Maximize2,
   Plus,
+  Info,
 } from 'lucide-react';
 import { SecondaryButton, IconButton, Pagination, SearchBar, AdvancedSearchPanel } from './hb/listing';
 import type { MenuItem } from './hb/listing/IconButton';
@@ -72,6 +73,9 @@ import { MemberMultiSelect } from './EventFormFields';
 import { formatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { toast } from 'sonner';
+
+// ─── Gift Aid info popup copy ─────────────────────────────────────────────────
+const GIFT_AID_INFO_TEXT = `Gift Aid is an income tax relief designed to benefit charities. <br>If you're a UK taxpayer, Gift Aid increases the value of your charity donation by 25%, because the charity can reclaim the basic rate of tax on your gift – at no extra cost to you. <br><br>I have paid sufficient UK income tax and/or capital gains tax to cover all of my charitable donations equal to the tax that the charity will claim from H.M. Revenue & Customs and I am aware that other taxes such as council tax and vat do not qualify.  <br><br>I understand that I am liable for the difference if the income tax and capital gains tax payable by me for the current tax year is less than the amount of tax that all the charities and CASCs that I donate to will reclaim on my gifts made or deemed to be made in that year.`;
 
 // ─── Price display helper ─────────────────────────────────────────────────────
 function formatPriceRange(event: Event): string {
@@ -437,7 +441,18 @@ export default function EventDetail({
   const [selectedTicketId, setSelectedTicketId] = useState('');
   const [ticketError, setTicketError] = useState('');
   const [donationAmount, setDonationAmount] = useState('');
-  const [giftAidChecked, setGiftAidChecked] = useState(false);
+  const [giftAid, setGiftAid] = useState<boolean | null>(null);
+  const [showGiftAidInfo, setShowGiftAidInfo] = useState(false);
+  const giftAidInfoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showGiftAidInfo) return;
+    const handler = (e: MouseEvent) => {
+      if (giftAidInfoRef.current && !giftAidInfoRef.current.contains(e.target as Node)) setShowGiftAidInfo(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showGiftAidInfo]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
 
@@ -458,7 +473,7 @@ export default function EventDetail({
     appliedCode?: string;
     ticket?: { id: string; label: string };
     donation?: number;
-    giftAid?: boolean;
+    giftAid?: boolean | null;
   } | null>(null);
 
   // ── Karyakram Confirmation popup — shown right after a successful registration.
@@ -504,7 +519,7 @@ export default function EventDetail({
     appliedCode?: string,
     ticket?: { id: string; label: string },
     donation?: number,
-    giftAid?: boolean,
+    giftAid?: boolean | null,
   ) => {
     if (!myMemberId) return;
     const me = mockMembers.find(m => m.id === myMemberId);
@@ -591,7 +606,7 @@ export default function EventDetail({
     setSelectedTicketId('');
     setTicketError('');
     setDonationAmount('');
-    setGiftAidChecked(false);
+    setGiftAid(null);
     setAgreedToTerms(false);
     setTermsError('');
     setShowAttendQuestions(true);
@@ -646,7 +661,7 @@ export default function EventDetail({
         appliedCode,
         ticket: ticket ? { id: ticket.id, label: ticket.label } : undefined,
         donation: donation > 0 ? donation : undefined,
-        giftAid: giftAidChecked,
+        giftAid,
       });
       const me = mockMembers.find(m => m.id === myMemberId);
       setPaymentAmount(totalPayable.toFixed(2));
@@ -667,7 +682,7 @@ export default function EventDetail({
       appliedCode,
       ticket ? { id: ticket.id, label: ticket.label } : undefined,
       donation > 0 ? donation : undefined,
-      giftAidChecked,
+      giftAid,
     );
     setShowAttendQuestions(false);
   };
@@ -3337,15 +3352,57 @@ export default function EventDetail({
                     className="w-full text-sm pl-6 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
-                <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer mt-2">
-                  <input
-                    type="checkbox"
-                    checked={giftAidChecked}
-                    onChange={e => setGiftAidChecked(e.target.checked)}
-                    className="rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span>Receive Gift Aid</span>
-                </label>
+                <div className="mt-3 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                      Apply one off Gift Aid?
+                    </p>
+                    <div className="relative" ref={giftAidInfoRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowGiftAidInfo(p => !p)}
+                        title="What is Gift Aid?"
+                        className="flex items-center justify-center w-4 h-4 rounded-full text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                      </button>
+                      {showGiftAidInfo && (
+                        <div
+                          className="absolute z-50 top-full left-0 mt-2 w-80 max-w-[85vw] p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-lg text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: GIFT_AID_INFO_TEXT }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="eventGiftAid"
+                        checked={giftAid === true}
+                        onChange={() => setGiftAid(true)}
+                        className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                      />
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        <span className="font-semibold text-neutral-900 dark:text-white">YES: </span>
+                        The PERSON PAYING for this registration is a UK Tax Payer and wants to GIFT AID this donation
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="eventGiftAid"
+                        checked={giftAid === false}
+                        onChange={() => setGiftAid(false)}
+                        className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                      />
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        <span className="font-semibold text-neutral-900 dark:text-white">NO: </span>
+                        The PERSON PAYING for this registration does NOT want to Gift Aid this donation
+                      </span>
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 

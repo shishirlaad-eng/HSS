@@ -485,7 +485,7 @@ export default function Sessions() {
               {(scope.showRegionFilter || scope.showTownFilter) && <SortTh label="Region" sortKey="region" current={sortKey} dir={sortDir} onSort={handleSort} />}
               {scope.showTownFilter && <SortTh label="Town" sortKey="town" current={sortKey} dir={sortDir} onSort={handleSort} />}
               <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={handleSort} />
-              <SortTh label="Attendance" sortKey="attendanceRate" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <SortTh label="Sankhya" sortKey="attendanceRate" current={sortKey} dir={sortDir} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
