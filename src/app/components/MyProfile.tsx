@@ -667,6 +667,44 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
   );
 }
 
+function SubmitForApprovalModal({ isOpen, onClose, onConfirm, name }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  name: string;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          </div>
+          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Submit for Approval</h3>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-5 space-y-2">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            Please confirm that all the details {name ? `for ${name} ` : ''}entered across every tab are correct before submitting.
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Once submitted, the profile is sent for approval and further changes will need to be re-approved.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-200 dark:border-neutral-800">
+          <SecondaryButton onClick={onClose}>Go Back &amp; Review</SecondaryButton>
+          <PrimaryButton icon={Save} onClick={onConfirm}>Confirm &amp; Submit</PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Member profile view ───────────────────────────────────────
 
 type ProfileTab = 'personal' | 'organisation' | 'compliance' | 'sangh' | 'history' | 'guardian' | 'other' | 'roles' | 'otherProfiles';
@@ -920,6 +958,17 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
   const [postcodeSearch, setPostcodeSearch] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+  const requestSubmitForApproval = () => {
+    if (!validateComplianceForSubmit()) return;
+    setShowSubmitConfirm(true);
+  };
+  const confirmSubmitForApproval = () => {
+    setShowSubmitConfirm(false);
+    handleSave();
+    onSubmitForApproval?.();
+  };
   const [upgradeChildId, setUpgradeChildId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [historyPage, setHistoryPage] = useState(1);
@@ -1282,12 +1331,12 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {isUnderReview ? null : isPostRegistration && postRegEditing ? (
             <>
               <SecondaryButton icon={Save} onClick={() => { handleSave(); setPostRegEditing(false); }}>Save as Draft</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={requestSubmitForApproval}>Submit for Approval</PrimaryButton>
             </>
           ) : isPostRegistration && !postRegEditing ? (
             <>
               <SecondaryButton icon={Edit} onClick={() => setPostRegEditing(true)}>Edit Profile</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={requestSubmitForApproval}>Submit for Approval</PrimaryButton>
             </>
           ) : isEditing ? (
             <>
@@ -2246,12 +2295,12 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
           {postRegEditing ? (
             <>
               <SecondaryButton icon={Save} onClick={() => { handleSave(); setPostRegEditing(false); }}>Save as Draft</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={requestSubmitForApproval}>Submit for Approval</PrimaryButton>
             </>
           ) : (
             <>
               <SecondaryButton icon={Edit} onClick={() => setPostRegEditing(true)}>Edit Profile</SecondaryButton>
-              <PrimaryButton icon={Save} onClick={() => { if (!validateComplianceForSubmit()) return; handleSave(); onSubmitForApproval?.(); }}>Submit for Approval</PrimaryButton>
+              <PrimaryButton icon={Save} onClick={requestSubmitForApproval}>Submit for Approval</PrimaryButton>
             </>
           )}
         </div>
@@ -2261,6 +2310,12 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
+      />
+      <SubmitForApprovalModal
+        isOpen={showSubmitConfirm}
+        onClose={() => setShowSubmitConfirm(false)}
+        onConfirm={confirmSubmitForApproval}
+        name={profile.firstName}
       />
     </div>
   );
