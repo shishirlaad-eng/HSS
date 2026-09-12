@@ -1523,7 +1523,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                     </div>
                     <div className="px-5 py-4 grid grid-cols-2 gap-4">
                       <MiniField
-                        label="Qualified First Aider"
+                        label="Are you a qualified First Aider?"
                         required
                         value={form.isFirstAider ? 'Yes' : 'No'}
                         isEditing={isEditing}

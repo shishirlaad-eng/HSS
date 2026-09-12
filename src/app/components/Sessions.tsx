@@ -569,7 +569,6 @@ export default function Sessions() {
                         <span className="text-sm font-medium text-neutral-900 dark:text-white">
                           {present}
                         </span>
-                        <span className="text-xs text-neutral-400 dark:text-neutral-500">Present</span>
                       </div>
                     )}
                   </td>

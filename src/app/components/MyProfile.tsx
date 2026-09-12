@@ -1117,7 +1117,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
     if (!isPostRegistration) return true;
     const missing: string[] = [];
     const errs: Record<string, boolean> = {};
-    if (!activeChildId && !profile.isFirstAider) { missing.push('"Are you a first aider for HSS?"'); errs.isFirstAider = true; }
+    if (!activeChildId && !profile.isFirstAider) { missing.push('"Are you a qualified First Aider?"'); errs.isFirstAider = true; }
     if (!profile.medicalInfoDeclared) { missing.push('"Do you have any medical conditions?"'); errs.medicalInfoDeclared = true; }
     if (!profile.allergiesDeclared) { missing.push('"Do you have any allergies?"'); errs.allergiesDeclared = true; }
     if (missing.length) {
@@ -1626,7 +1626,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
               <div className="space-y-5">
                 {!activeChildId && (
                 <InfoSection title="First Aid" cols={4}>
-                  <EditableInfoItem label="Are you a first aider for HSS?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} placeholderOption={isPostRegistration ? "Please select" : undefined} error={fieldErrors.isFirstAider} />
+                  <EditableInfoItem label="Are you a qualified First Aider?" required value={profile.isFirstAider}                   isEditing={effectiveEditing} onChange={v => setField("isFirstAider", v)}                   options={["No", "Yes"]} placeholderOption={isPostRegistration ? "Please select" : undefined} error={fieldErrors.isFirstAider} />
                   {profile.isFirstAider === "Yes" && (
                     <>
                       <EditableInfoItem label="Expiry Date"                     value={profile.firstAidQualificationExpiryDate} isEditing={effectiveEditing} onChange={v => setField("firstAidQualificationExpiryDate", v)} type="date" />
