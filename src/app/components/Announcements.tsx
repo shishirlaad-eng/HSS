@@ -932,6 +932,9 @@ export default function Announcements({
                         </button>
                       )}
                     </div>
+                    <p className="text-xs text-neutral-400 mt-1.5">
+                      Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
+                    </p>
 
                     {form.mediaUrl && form.contentType === 'image' && (
                       <img src={form.mediaUrl} alt="Attachment preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />

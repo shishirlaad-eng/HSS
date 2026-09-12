@@ -155,7 +155,6 @@ export function Sidebar({
     // 5b. Dakshina
     "my-donations":                   "Dakshina",
     "utsav-income":                   "Guru Purnima Cash Income",
-    "karyakram-donations":            "Donation Collection",
 
     // 6. Reports
     "reports-group":                  "Reports",

@@ -141,34 +141,13 @@ export const getNavigationData = (
     },
 
     // ── 4. Karyakrams ────────────────────────────────────────────
-    // Only Karyakram Admin/Coordinator get the Donation Collection sub-item —
-    // every other role keeps the plain, single-click "Karyakrams" leaf.
-    ...(['Karyakram Admin', 'Karyakram Coordinator'].includes(selectedRole) ? [{
-      id: "event-management",
-      label: "Karyakrams",
-      icon: Calendar,
-      active: ['event-management', 'karyakram-donations'].includes(currentPage),
-      subItems: [
-        {
-          id: "event-management",
-          label: "Karyakrams",
-          onClick: () => onNavigate("event-management"),
-          active: currentPage === "event-management",
-        },
-        {
-          id: "karyakram-donations",
-          label: "Donation Collection",
-          onClick: () => onNavigate("karyakram-donations"),
-          active: currentPage === "karyakram-donations",
-        },
-      ],
-    }] : [{
+    {
       id: "event-management",
       label: "Karyakrams",
       icon: Calendar,
       onClick: () => onNavigate("event-management"),
       active: currentPage === "event-management",
-    }]),
+    },
 
     // ── 5. Suchana (Announcements) ───────────────────────────────
     {

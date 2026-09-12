@@ -110,16 +110,6 @@ export const availableModules: ModulePermission[] = [
       { id: "export", name: "Export CSV",        code: "utsav_income_export" },
     ],
   },
-  // 8. Donation Collection (Karyakram — per-attendee, not Utsav Cash Income)
-  {
-    id: "karyakram-donations",
-    name: "Donation Collection",
-    actions: [
-      { id: "view",   name: "View / List",      code: "karyakram_donations_view" },
-      { id: "add",    name: "Record Donation",   code: "karyakram_donations_add" },
-      { id: "export", name: "Export CSV",       code: "karyakram_donations_export" },
-    ],
-  },
   // 9. Reports
   {
     id: "reports",
@@ -319,7 +309,6 @@ export const mockRoles: Role[] = [
       members:       ["view"],
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view"],
-      "karyakram-donations": ["view", "add", "export"],
     },
   },
 
@@ -415,7 +404,6 @@ export const mockRoles: Role[] = [
       members:       ["view"],
       events:        ["view", "edit"],
       announcements: ["view"],
-      "karyakram-donations": ["view", "add", "export"],
     },
   },
 ];
@@ -444,7 +432,6 @@ const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   announcements: ['announcements'],
   attendance:    ['attendance-group'],
   "utsav-income": ['utsav-income'],
-  "karyakram-donations": ['karyakram-donations'],
   reports:       ['reports-group'],
   masters:       ['masters-group'],
   rbac:          ['role-management'],

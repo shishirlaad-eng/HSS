@@ -45,6 +45,8 @@ export interface ConfigItem {
   name: string;
   status: 'active' | 'inactive';
   lastUpdated: string;
+  // Age Groups list only
+  ageRange?: string;
 }
 
 // ─── Category / list config ───────────────────────────────────────────────────
@@ -119,7 +121,20 @@ function makeItems(idPrefix: string, names: string[]): ConfigItem[] {
 }
 
 const INITIAL_DATA: Record<ListKey, ConfigItem[]> = {
-  'age-groups':           makeItems('AGE', ['Bal (0–5)', 'Shishu (6–11)', 'Kishor (12–16)', 'Tarun (17–30)', 'Yuva (30–60)', 'Jyestha (60+)']),
+  'age-groups':           [
+    { name: 'Bal (0–5)',      ageRange: '0–5'   },
+    { name: 'Shishu (6–11)',  ageRange: '6–11'  },
+    { name: 'Kishor (12–16)', ageRange: '12–16' },
+    { name: 'Tarun (17–30)',  ageRange: '17–30' },
+    { name: 'Yuva (30–60)',   ageRange: '30–60' },
+    { name: 'Jyestha (60+)',  ageRange: '60+'   },
+  ].map((item, i) => ({
+    id: `AGE-${String(i + 1).padStart(3, '0')}`,
+    name: item.name,
+    ageRange: item.ageRange,
+    status: 'active' as const,
+    lastUpdated: '2024-01-15',
+  })),
   'dietary-requirements': makeItems('DIT', ['Coeliac', 'Gluten-free', 'Vegan', 'Lacto (allows dairy)', 'Paleo Diet', 'Ketogenic (low carbohydrate, high fat)', 'Low GI (limits carbohydrate intake)', 'FODMAP', 'No Onions or Garlic', 'Other - With box to specify']),
   'spoken-languages':     makeItems('LNG', ['Assamese', 'Bengali', 'English', 'Gujarati', 'Hindi', 'Kannada', 'Konkani', 'Malayalam', 'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Tamil', 'Telugu', 'Other']),
   'occupation':           makeItems('OCC', ['Student', 'Employed - Full Time', 'Employed - Part Time', 'Self-Employed', 'Retired', 'Unemployed', 'Homemaker', 'Other']),
@@ -237,12 +252,20 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
 
   const handleCreateNew = () => {
     const newId = `${meta.idPrefix}-${String(currentItems.length + 1).padStart(3, '0')}`;
-    setActiveItem({ id: newId, name: '', status: 'active', lastUpdated: new Date().toISOString().split('T')[0] });
+    setActiveItem({
+      id: newId,
+      name: '',
+      status: 'active',
+      lastUpdated: new Date().toISOString().split('T')[0],
+      ...(selectedList === 'age-groups' ? { ageRange: '' } : {}),
+    });
     setModalMode('create');
   };
 
   const [nameError, setNameError] = useState(false);
+  const [ageRangeError, setAgeRangeError] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  const ageRangeRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     if (!activeItem?.name?.trim()) {
@@ -253,6 +276,14 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
       return;
     }
     setNameError(false);
+    if (selectedList === 'age-groups' && !activeItem?.ageRange?.trim()) {
+      setAgeRangeError(true);
+      toast.error('Age Range is required.');
+      ageRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      ageRangeRef.current?.focus();
+      return;
+    }
+    setAgeRangeError(false);
     const saved = { ...activeItem, lastUpdated: new Date().toISOString().split('T')[0] } as ConfigItem;
     if (modalMode === 'create') {
       setItems(prev => [...prev, saved]);
@@ -588,7 +619,7 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
         {/* ── CRUD MODAL ────────────────────────────────────────────────────── */}
         <FormModal
           isOpen={modalMode !== null}
-          onClose={() => { setModalMode(null); setActiveItem(null); setNameError(false); }}
+          onClose={() => { setModalMode(null); setActiveItem(null); setNameError(false); setAgeRangeError(false); }}
           title={
             modalMode === 'create' ? `Add ${meta.label} Item` :
             modalMode === 'edit'   ? 'Edit Item' :
@@ -612,6 +643,22 @@ export default function ConfigurableListsMaster({ selectedRole = 'Super Admin' }
                   <ErrorText>{nameError && 'Name is required.'}</ErrorText>
                 </FormField>
               </FormSection>
+              {selectedList === 'age-groups' && (
+                <FormSection>
+                  <FormField>
+                    <FormLabel required={modalMode !== 'view'}>Age Range</FormLabel>
+                    <FormInput
+                      ref={ageRangeRef}
+                      value={activeItem.ageRange ?? ''}
+                      onChange={e => { setActiveItem({ ...activeItem, ageRange: e.target.value }); setAgeRangeError(false); }}
+                      readOnly={modalMode === 'view'}
+                      placeholder="e.g. 0–5"
+                      className={ageRangeError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
+                    />
+                    <ErrorText>{ageRangeError && 'Age Range is required.'}</ErrorText>
+                  </FormField>
+                </FormSection>
+              )}
               <FormSection>
                 <FormField>
                   <FormLabel>Status</FormLabel>

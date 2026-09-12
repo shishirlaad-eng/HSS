@@ -157,6 +157,107 @@ function valueOrDash(value?: string | string[] | boolean | null) {
   return value && String(value).trim() ? String(value) : '—';
 }
 
+function getLocationForCentre(activityCentre: string) {
+  for (const [town, centres] of Object.entries(MASTERS_CASCADE.centres)) {
+    if (!centres.includes(activityCentre)) continue;
+    for (const [region, towns] of Object.entries(MASTERS_CASCADE.towns)) {
+      if (towns.includes(town)) return { country: 'HSS UK', region, town, activityCentre };
+    }
+  }
+  return null;
+}
+
+// ── Shakha search — matches MyProfile.tsx's Organisation tab: pick the Shakha
+// first (searchable), then Nagar/Vibhag/Country are derived read-only via
+// getLocationForCentre() rather than being independently editable dropdowns.
+const ALL_SHAKHA_NAMES = Object.values(MASTERS_CASCADE.centres).flat();
+
+function ShakhaAutocomplete({ value, onChange, error }: {
+  value: string;
+  onChange: (centre: string) => void;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        inputRef.current && !inputRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) { setRect(null); return; }
+    const updateRect = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open]);
+
+  const suggestions = useMemo(() =>
+    query.trim().length >= 1
+      ? ALL_SHAKHA_NAMES.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : ALL_SHAKHA_NAMES.slice(0, 8),
+    [query],
+  );
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); onChange(e.target.value); }}
+        onFocus={() => setOpen(true)}
+        className={`w-full text-sm rounded-lg border px-3 py-2 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+          error
+            ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30'
+            : 'border-neutral-200 dark:border-neutral-800 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+        }`}
+      />
+      {open && rect && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[999] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+          style={{ top: rect.top, left: rect.left, width: rect.width }}
+        >
+          {suggestions.length > 0 ? suggestions.map(centre => (
+            <button
+              key={centre}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setQuery(centre); setOpen(false); onChange(centre); }}
+              className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            >
+              {centre}
+            </button>
+          )) : (
+            <div className="px-3 py-2 text-sm text-neutral-400 dark:text-neutral-500">No Shakhas found.</div>
+          )}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 const RELATIONSHIP_OPTIONS = ['Spouse', 'Sibling', 'Parent', 'Child'];
 
 const OCCUPATION_OPTIONS = ['Student', 'Business man', 'Job'];
@@ -582,20 +683,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   };
 
   const setOrganisationField = (field: 'country' | 'region' | 'town' | 'activityCentre', value: string) => {
-    setForm(cur => {
-      const next = { ...cur, [field]: value };
-      if (field === 'country') {
-        next.region = '';
-        next.town = '';
-        next.activityCentre = '';
-      } else if (field === 'region') {
-        next.town = '';
-        next.activityCentre = '';
-      } else if (field === 'town') {
-        next.activityCentre = '';
-      }
-      return next;
-    });
+    setForm(cur => ({ ...cur, [field]: value }));
     if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: false }));
   };
 
@@ -1187,42 +1275,46 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {/* ── ORGANISATION TAB ───────────────────────────── */}
             {activeTab === 'organisation' && (
               <InfoSection title="Organisation Details" cols={4}>
+                <div>
+                  <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">
+                    Shakha<span className="text-error-500 ml-0.5">*</span>
+                  </label>
+                  {isEditing ? (
+                    <>
+                      <ShakhaAutocomplete
+                        value={form.activityCentre ?? ''}
+                        error={fieldErrors.activityCentre}
+                        onChange={centre => {
+                          setOrganisationField('activityCentre', centre);
+                          const loc = getLocationForCentre(centre);
+                          setOrganisationField('town', loc?.town ?? '');
+                          setOrganisationField('region', loc?.region ?? '');
+                          setOrganisationField('country', loc?.country ?? '');
+                        }}
+                      />
+                      <ErrorText>{fieldErrors.activityCentre && 'Shakha is required.'}</ErrorText>
+                    </>
+                  ) : (
+                    <p className="text-sm text-neutral-900 dark:text-white font-medium">{valueOrDash(form.activityCentre)}</p>
+                  )}
+                </div>
                 <EditableInfoItem
-                  label="Country / Organisation"
-                  value={form.country ?? ''}
-                  isEditing={isEditing}
-                  onChange={v => setOrganisationField('country', v)}
-                  options={MASTERS_CASCADE.countries.map(c => ({ value: c, label: c }))}
+                  label="Nagar"
+                  value={form.town ?? ''}
+                  isEditing={false}
+                  onChange={() => {}}
                 />
                 <EditableInfoItem
                   label="Vibhag"
-                  required
                   value={form.region ?? ''}
-                  isEditing={isEditing}
-                  onChange={v => setOrganisationField('region', v)}
-                  options={(form.country ? (MASTERS_CASCADE.regions[form.country] ?? []) : []).map(r => ({ value: r, label: r }))}
-                  error={fieldErrors.region}
-                  errorMessage="Vibhag is required."
+                  isEditing={false}
+                  onChange={() => {}}
                 />
                 <EditableInfoItem
-                  label="Nagar"
-                  required
-                  value={form.town ?? ''}
-                  isEditing={isEditing}
-                  onChange={v => setOrganisationField('town', v)}
-                  options={(form.region ? (MASTERS_CASCADE.towns[form.region] ?? []) : []).map(t => ({ value: t, label: t }))}
-                  error={fieldErrors.town}
-                  errorMessage="Nagar is required."
-                />
-                <EditableInfoItem
-                  label="Shakha"
-                  required
-                  value={form.activityCentre ?? ''}
-                  isEditing={isEditing}
-                  onChange={v => setOrganisationField('activityCentre', v)}
-                  options={(form.town ? (MASTERS_CASCADE.centres[form.town] ?? []) : []).map(c => ({ value: c, label: c }))}
-                  error={fieldErrors.activityCentre}
-                  errorMessage="Shakha is required."
+                  label="Country"
+                  value={form.country ?? ''}
+                  isEditing={false}
+                  onChange={() => {}}
                 />
                 <InfoItem label="Age Category"><AgeGroupBadge dateOfBirth={member.dateOfBirth} /></InfoItem>
               </InfoSection>

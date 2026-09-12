@@ -31,6 +31,7 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
   const [showStandingOrder, setShowStandingOrder]  = useState(false);
   const [frequency, setFrequency]                  = useState<RecurringFrequency>('Monthly');
   const [amount, setAmount]                        = useState('');
+  const [giftAid, setGiftAid]                      = useState<boolean | null>(null);
   const closeModal = () => setShowModal(false);
 
   const handleSetupStandingOrder = () => {
@@ -38,6 +39,7 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
     setShowStandingOrder(false);
     setFrequency('Monthly');
     setAmount('');
+    setGiftAid(null);
   };
 
   if (showStandingOrder) {
@@ -124,15 +126,49 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
             </div>
           </div>
 
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
+            <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              Apply one off Gift Aid?
+            </p>
+            <div className="space-y-2.5">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="recurringGiftAid"
+                  checked={giftAid === true}
+                  onChange={() => setGiftAid(true)}
+                  className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                />
+                <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  <span className="font-semibold text-neutral-900 dark:text-white">YES: </span>
+                  The PERSON PAYING for this registration is a UK Tax Payer and wants to GIFT AID this donation
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="recurringGiftAid"
+                  checked={giftAid === false}
+                  onChange={() => setGiftAid(false)}
+                  className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+                />
+                <span className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  <span className="font-semibold text-neutral-900 dark:text-white">NO: </span>
+                  The PERSON PAYING for this registration does NOT want to Gift Aid this donation
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={() => setShowStandingOrder(false)}
+              onClick={() => { setShowStandingOrder(false); setFrequency('Monthly'); setAmount(''); setGiftAid(null); }}
               className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
-              disabled={!amount}
+              disabled={!amount || giftAid === null}
               onClick={handleSetupStandingOrder}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-all"
             >
