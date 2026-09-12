@@ -992,11 +992,6 @@ export default function MemberManagement({
             </div>
           )}
 
-          {mp.canAdd && !karyakartasOnly && (
-            <PrimaryButton icon={Plus} onClick={() => setPageState('add')}>
-              Add Member
-            </PrimaryButton>
-          )}
           {(isSuperAdmin || selectedRole === 'Shakha Admin') && karyakartasOnly && (
             <PrimaryButton onClick={() => setShowAssignModal(true)}>
               Assign Responsibility

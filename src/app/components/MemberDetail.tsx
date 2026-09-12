@@ -1134,7 +1134,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
 
                 <InfoSection title="Emergency Contact Details">
                   <EditableInfoItem label="Contact Name" required value={form.emergencyContactName ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactName', v)} error={fieldErrors.emergencyContactName} errorMessage="Contact name is required." />
-                  <EditableInfoItem label="Contact Phone Number" required value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone error={fieldErrors.emergencyContactPhone} errorMessage="Contact phone number is required." />
+                  <EditableInfoItem label="Contact Number" required value={form.emergencyContactPhone ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactPhone', v)} phone error={fieldErrors.emergencyContactPhone} errorMessage="Contact phone number is required." />
                   <EditableInfoItem label="Contact Email" required value={form.emergencyContactEmail ?? ''} isEditing={isEditing} onChange={v => setField('emergencyContactEmail', v)} type="email" error={fieldErrors.emergencyContactEmail} errorMessage="Enter a valid contact email address." />
                   <div>
                     <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Contact Relationship<span className="text-error-600 ml-0.5">*</span></label>

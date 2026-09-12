@@ -667,36 +667,108 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm }: {
   );
 }
 
-function SubmitForApprovalModal({ isOpen, onClose, onConfirm, name }: {
+// ── Review-summary row/section helpers for SubmitForApprovalModal ──────────
+function SummaryRow({ label, value }: { label: string; value?: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-1.5">
+      <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">{label}</span>
+      <span className="text-xs font-medium text-neutral-900 dark:text-white text-right">{value ?? '—'}</span>
+    </div>
+  );
+}
+
+function SummarySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+      <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800">
+        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{title}</p>
+      </div>
+      <div className="px-4 py-2 divide-y divide-neutral-100 dark:divide-neutral-800">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SubmitForApprovalModal({ isOpen, onClose, onConfirm, name, profile }: {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   name: string;
+  profile: MemberProfileForm;
 }) {
   if (!isOpen) return null;
+  const fullAddress = [profile.buildingName, profile.addressLine1, profile.addressLine2, profile.contactTownCity, profile.postCode]
+    .filter(v => v && v.trim())
+    .join(', ');
+  const hasGuardian = !!profile.guardianName?.trim();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
           <div className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center flex-shrink-0">
             <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
           </div>
-          <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Submit for Approval</h3>
+          <div>
+            <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white">Review Before Submitting</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Please check the details {name ? `for ${name} ` : ''}below are correct before submitting for approval.
+            </p>
+          </div>
         </div>
 
-        {/* Body */}
-        <div className="px-5 py-5 space-y-2">
-          <p className="text-sm text-neutral-700 dark:text-neutral-300">
-            Please confirm that all the details {name ? `for ${name} ` : ''}entered across every tab are correct before submitting.
-          </p>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Once submitted, the profile is sent for approval and further changes will need to be re-approved.
-          </p>
+        {/* Body — review summary */}
+        <div className="px-5 py-4 space-y-4 overflow-y-auto slim-scroll">
+          <SummarySection title="Personal Details">
+            <SummaryRow label="First Name" value={valueOrDash(profile.firstName)} />
+            <SummaryRow label="Middle Name" value={valueOrDash(profile.middleName)} />
+            <SummaryRow label="Last Name" value={valueOrDash(profile.surname)} />
+            <SummaryRow label="Gender" value={profile.gender ? <span className="capitalize">{profile.gender}</span> : undefined} />
+            <SummaryRow
+              label="Date of Birth"
+              value={profile.dateOfBirth ? `${sharedFormatDate(profile.dateOfBirth)} (${getAgeGroupLabel(profile.dateOfBirth)})` : undefined}
+            />
+          </SummarySection>
+
+          <SummarySection title="Contact Details">
+            <SummaryRow label="Contact Number" value={valueOrDash(profile.phone)} />
+            <SummaryRow label="Email Address" value={valueOrDash(profile.email)} />
+            <SummaryRow label="Address" value={fullAddress || undefined} />
+          </SummarySection>
+
+          <SummarySection title="Organisation">
+            <SummaryRow label="Shakha" value={valueOrDash(profile.activityCentre)} />
+            <SummaryRow label="Nagar" value={valueOrDash(profile.town)} />
+            <SummaryRow label="Vibhag" value={valueOrDash(profile.region)} />
+            <SummaryRow label="Country" value={valueOrDash(profile.country)} />
+          </SummarySection>
+
+          {hasGuardian && (
+            <SummarySection title="Parent / Guardian">
+              <SummaryRow label="Name" value={valueOrDash(profile.guardianName)} />
+              <SummaryRow label="Phone Number" value={valueOrDash(profile.guardianPhone)} />
+              <SummaryRow label="Email" value={valueOrDash(profile.guardianEmail)} />
+              <SummaryRow label="Relationship" value={valueOrDash(profile.guardianRelationship)} />
+            </SummarySection>
+          )}
+
+          <SummarySection title="Compliance">
+            <SummaryRow label="Qualified First Aider" value={valueOrDash(profile.isFirstAider)} />
+            <SummaryRow label="Medical Conditions" value={profile.medicalInfoDeclared === 'yes' ? valueOrDash(profile.medicalInfoDetails) : valueOrDash(profile.medicalInfoDeclared)} />
+            <SummaryRow label="Allergies" value={profile.allergiesDeclared === 'yes' ? valueOrDash(profile.allergies) : valueOrDash(profile.allergiesDeclared)} />
+          </SummarySection>
+
+          <SummarySection title="Other Information">
+            <SummaryRow label="Occupation" value={valueOrDash(profile.occupation)} />
+            <SummaryRow label="Spoken Language(s)" value={valueOrDash(profile.spokenLanguages)} />
+            <SummaryRow label="Originating State in India" value={valueOrDash(profile.originatingStateIndia)} />
+          </SummarySection>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex-shrink-0">
           <SecondaryButton onClick={onClose}>Go Back &amp; Review</SecondaryButton>
           <PrimaryButton icon={Save} onClick={onConfirm}>Confirm &amp; Submit</PrimaryButton>
         </div>
@@ -2316,6 +2388,7 @@ function MemberProfileView({ selectedRole, isPostRegistration = false, isUnderRe
         onClose={() => setShowSubmitConfirm(false)}
         onConfirm={confirmSubmitForApproval}
         name={profile.firstName}
+        profile={profile}
       />
     </div>
   );
