@@ -135,6 +135,7 @@ export function Sidebar({
     // 2. Members Management
     "members-management-group":      "Members",
     "members":                        "All Members",
+    "non-member-accounts":            "Non-Member Accounts",
     "karyakartas":                    "Responsibilities & Roles",
     "compliance":                     "Compliance",
     "emergency-details":              "Emergency Details",
@@ -154,6 +155,7 @@ export function Sidebar({
 
     // 5b. Dakshina
     "my-donations":                   "Dakshina",
+    "shakha-dakshina":                "Shakha Dakshina",
     "utsav-income":                   "Guru Purnima Cash Income",
 
     // 6. Reports
@@ -161,13 +163,16 @@ export function Sidebar({
     "report-members":                 "Members Report",
     "report-events":                  "Karyakram Report",
     "report-donations":               "Nidhi Report",
-    "report-attendance":              "Attendance Report",
+    "report-attendance":              "Sankhya Report",
     "report-refunds":                 "Refund Report",
     "report-karyakarta":              "Karyakarta Report",
     "report-ayu-shreni":              "Ayu Shreni Directory",
     "report-myhss-role":              "MyHSS Role Report",
     "report-shakha-directory":        "Shakha Directory",
     "report-karyakarta-directory":    "Karyakarta Directory",
+
+    // 6b. Directory
+    "directory-group":                "Directory",
 
     // 7. HSS (UK) Setup
     "masters-group":                  "HSS (UK) Setup",

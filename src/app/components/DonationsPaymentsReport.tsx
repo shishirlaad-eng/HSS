@@ -18,8 +18,6 @@ import {
   Banknote,
   CreditCard,
   Download,
-  Gift,
-  HandCoins,
   PoundSterling,
   ReceiptText,
   SlidersHorizontal,
@@ -30,7 +28,6 @@ import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { formatDate } from '../../utils/formatDate';
 import {
   mockDonations,
-  type DonationStatus,
   type IncomeStream,
 } from '../../mockAPI/donationsData';
 
@@ -44,16 +41,6 @@ const STREAM_LABELS: Record<IncomeStream, string> = {
   'online-donation': 'Online Donations',
   'cash-income': 'Cash Income',
   'standing-order': 'Regular Standing Order Payments',
-};
-
-const DONATION_STATUS_LABELS: Record<string, string> = {
-  received: 'Received',
-  refunded: 'Refunded',
-};
-
-const DONATION_STATUS_COLORS: Record<string, string> = {
-  received: '#22c55e',
-  refunded: '#8b5cf6',
 };
 
 function fmt(n: number) {
@@ -141,7 +128,6 @@ export default function DonationsPaymentsReport() {
   const [filterTown, setFilterTown] = useState('');
   const [filterCentre, setFilterCentre] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
-  const [filterDonationStatus, setFilterDonationStatus] = useState('');
 
   const countryOptions = useMemo(() => {
     return Array.from(new Set(mockDonations.map(d => d.country))).sort();
@@ -158,7 +144,7 @@ export default function DonationsPaymentsReport() {
     const towns = filterTown ? [filterTown] : townOptions;
     return Array.from(new Set(towns.flatMap(town => MASTERS_CASCADE.centres[town] ?? [])));
   }, [filterTown, townOptions]);
-  const hasFilter = !!(filterCountry || filterRegion || filterTown || filterCentre || filterPeriod !== 'all' || filterDonationStatus);
+  const hasFilter = !!(filterCountry || filterRegion || filterTown || filterCentre || filterPeriod !== 'all');
 
   const clearFilters = () => {
     setFilterCountry('');
@@ -166,7 +152,6 @@ export default function DonationsPaymentsReport() {
     setFilterTown('');
     setFilterCentre('');
     setFilterPeriod('all');
-    setFilterDonationStatus('');
   };
 
   const dateInPeriod = (date: string) => {
@@ -188,11 +173,10 @@ export default function DonationsPaymentsReport() {
       if (filterRegion && donation.region !== filterRegion) return false;
       if (filterTown && donation.town !== filterTown) return false;
       if (filterCentre && donation.activityCentre !== filterCentre) return false;
-      if (filterDonationStatus && donation.status !== filterDonationStatus) return false;
       if (!dateInPeriod(donation.date)) return false;
       return true;
     });
-  }, [filterCountry, filterRegion, filterTown, filterCentre, filterPeriod, filterDonationStatus]);
+  }, [filterCountry, filterRegion, filterTown, filterCentre, filterPeriod]);
 
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
   const onlineDonations = receivedDonations
@@ -211,14 +195,6 @@ export default function DonationsPaymentsReport() {
     { key: 'cash-income' as IncomeStream, name: STREAM_LABELS['cash-income'], value: cashIncome },
     { key: 'standing-order' as IncomeStream, name: STREAM_LABELS['standing-order'], value: standingOrderPayments },
   ].filter(item => item.value > 0), [onlineDonations, cashIncome, standingOrderPayments]);
-
-  const donationStatusData = useMemo(() => {
-    const map: Record<string, number> = { received: 0, refunded: 0 };
-    filteredDonations.filter(d => d.status === 'received' || d.status === 'refunded').forEach(d => { map[d.status] += d.amount; });
-    return Object.entries(map)
-      .map(([key, value]) => ({ key: key as DonationStatus, name: DONATION_STATUS_LABELS[key as DonationStatus], value }))
-      .filter(item => item.value > 0);
-  }, [filteredDonations]);
 
   const regionData = useMemo(() => {
     const map: Record<string, {
@@ -336,10 +312,6 @@ export default function DonationsPaymentsReport() {
             <option value="90d">Last 90 Days</option>
             <option value="ytd">Year to Date</option>
           </select>
-          <select value={filterDonationStatus} onChange={e => setFilterDonationStatus(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[140px]">
-            <option value="">All Donation Status</option>
-            {Object.entries(DONATION_STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
               <X className="w-3.5 h-3.5" /> Clear
@@ -357,7 +329,7 @@ export default function DonationsPaymentsReport() {
           <KpiCard label="Total Regular Standing Order Payments" value={money(standingOrderPayments)} icon={ReceiptText} color="bg-primary-500" />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="mt-6 grid grid-cols-1 gap-6">
           <ChartCard title="Income Stream Split" subtitle="Online donations, cash income and regular standing order payments">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
@@ -380,20 +352,6 @@ export default function DonationsPaymentsReport() {
                 ))}
               </div>
             </div>
-          </ChartCard>
-
-          <ChartCard title="Donation Status" subtitle="Donation amounts by current status">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={donationStatusData} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="value" name="Amount" radius={[4, 4, 0, 0]}>
-                  {donationStatusData.map(d => <Cell key={d.key} fill={DONATION_STATUS_COLORS[d.key]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
           </ChartCard>
         </div>
 
@@ -429,29 +387,6 @@ export default function DonationsPaymentsReport() {
           </ChartCard>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 flex items-center gap-3">
-            <Gift className="w-5 h-5 text-blue-500" />
-            <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Online Donations</p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">Received online giving</p>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 flex items-center gap-3">
-            <HandCoins className="w-5 h-5 text-success-500" />
-            <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Cash Income</p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">Recorded Shakha cash income</p>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 flex items-center gap-3">
-            <ReceiptText className="w-5 h-5 text-primary-500" />
-            <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Standing Orders</p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">Regular standing order payments</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

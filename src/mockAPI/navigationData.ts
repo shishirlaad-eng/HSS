@@ -9,7 +9,25 @@ import {
   Settings,
   History,
   ReceiptText,
+  BookOpenText,
 } from "lucide-react";
+import { hasPermission } from "./rolesData";
+
+// Each Reports sub-item has its own view action in the "reports" module (RBAC),
+// so it can be shown/hidden per role independently rather than the whole
+// Reports section being all-or-nothing. Keys match SubMenuItem.id below.
+const REPORT_VIEW_ACTIONS: Record<string, string> = {
+  "report-members":               "members_view",
+  "report-events":                "events_view",
+  "report-donations":             "donations_view",
+  "report-attendance":            "attendance_view",
+  "report-refunds":               "refunds_view",
+  "report-karyakarta":            "karyakarta_view",
+  "report-ayu-shreni":            "ayu_shreni_view",
+  "report-myhss-role":            "myhss_role_view",
+  "report-shakha-directory":      "shakha_directory_view",
+  "report-karyakarta-directory":  "karyakarta_directory_view",
+};
 
 export interface SubMenuItem {
   id: string;
@@ -82,6 +100,22 @@ export const getNavigationData = (
     ];
   }
 
+  const reportSubItems: SubMenuItem[] = [
+    { id: "report-members",              label: "Members Report",       onClick: () => onNavigate("report-members"),              active: currentPage === "report-members" },
+    { id: "report-events",               label: "Karyakram Report",     onClick: () => onNavigate("report-events"),               active: currentPage === "report-events" },
+    { id: "report-donations",            label: "Nidhi Report",         onClick: () => onNavigate("report-donations"),            active: currentPage === "report-donations" },
+    { id: "report-attendance",           label: "Sankhya Report",       onClick: () => onNavigate("report-attendance"),           active: currentPage === "report-attendance" },
+    { id: "report-refunds",              label: "Refund Report",        onClick: () => onNavigate("report-refunds"),              active: currentPage === "report-refunds" },
+    { id: "report-karyakarta",           label: "Karyakarta Report",    onClick: () => onNavigate("report-karyakarta"),           active: currentPage === "report-karyakarta" },
+    { id: "report-myhss-role",           label: "MyHSS Role Report",    onClick: () => onNavigate("report-myhss-role"),           active: currentPage === "report-myhss-role" },
+  ].filter(item => hasPermission(selectedRole, "reports", REPORT_VIEW_ACTIONS[item.id]));
+
+  const directorySubItems: SubMenuItem[] = [
+    { id: "report-shakha-directory",     label: "Shakha Directory",     onClick: () => onNavigate("report-shakha-directory"),     active: currentPage === "report-shakha-directory" },
+    { id: "report-karyakarta-directory", label: "Karyakarta Directory", onClick: () => onNavigate("report-karyakarta-directory"), active: currentPage === "report-karyakarta-directory" },
+    { id: "report-ayu-shreni",           label: "Ayu Shreni Directory", onClick: () => onNavigate("report-ayu-shreni"),           active: currentPage === "report-ayu-shreni" },
+  ].filter(item => hasPermission(selectedRole, "reports", REPORT_VIEW_ACTIONS[item.id]));
+
   return [
 
     // ── 1. Dashboard ─────────────────────────────────────────────
@@ -111,7 +145,7 @@ export const getNavigationData = (
       id: "members-management-group",
       label: "Members",
       icon: UserCheck,
-      active: ['members', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals'].includes(currentPage),
+      active: ['members', 'emergency-details', 'pending-approvals', 'pending-guardian-approvals', 'non-member-accounts'].includes(currentPage),
       subItems: [
         {
           id: "members",
@@ -125,13 +159,19 @@ export const getNavigationData = (
           onClick: () => onNavigate("emergency-details"),
           active: currentPage === "emergency-details",
         },
-        {
+        ...(hasPermission(selectedRole, "non-member-accounts", "view") ? [{
+          id: "non-member-accounts",
+          label: "Non-Member Accounts",
+          onClick: () => onNavigate("non-member-accounts"),
+          active: currentPage === "non-member-accounts",
+        }] : []),
+        ...(hasPermission(selectedRole, "pending-approvals", "view") ? [{
           id: "pending-approvals",
           label: "Pending Karyawaha Approvals",
           onClick: () => onNavigate("pending-approvals"),
           active: currentPage === "pending-approvals",
-        },
-        ...(['Super Admin', 'Shakha Admin'].includes(selectedRole) ? [{
+        }] : []),
+        ...(hasPermission(selectedRole, "pending-guardian-approvals", "view") ? [{
           id: "pending-guardian-approvals",
           label: "Pending Parent/Guardian Approvals",
           onClick: () => onNavigate("pending-guardian-approvals"),
@@ -177,30 +217,30 @@ export const getNavigationData = (
           onClick: () => onNavigate("sessions"),
           active: currentPage === "sessions",
         },
-        {
+        ...(hasPermission(selectedRole, "karyakartas", "view") ? [{
           id: "karyakartas",
           label: "Responsibilities & Roles",
           onClick: () => onNavigate("karyakartas"),
           active: currentPage === "karyakartas",
-        },
-        {
+        }] : []),
+        ...(hasPermission(selectedRole, "compliance", "view") ? [{
           id: "compliance",
           label: "Compliance",
           onClick: () => onNavigate("compliance"),
           active: currentPage === "compliance",
-        },
-        ...(['Shakha Admin', 'Nagar Admin', 'Vibhag Admin', 'Kendriya Admin', 'Super Admin'].includes(selectedRole) ? [{
+        }] : []),
+        ...(hasPermission(selectedRole, "first-aid-incidents", "view") ? [{
           id: "first-aid-incidents",
           label: "First Aid Incidents",
           onClick: () => onNavigate("first-aid-incidents"),
           active: currentPage === "first-aid-incidents",
         }] : []),
-        {
+        ...(hasPermission(selectedRole, "guru-puja-report", "view") ? [{
           id: "guru-puja-report",
           label: "Guru Puja Report",
           onClick: () => onNavigate("guru-puja-report"),
           active: currentPage === "guru-puja-report",
-        },
+        }] : []),
       ],
     }]),
 
@@ -209,7 +249,7 @@ export const getNavigationData = (
       id: "my-donations",
       label: "Dakshina",
       icon: ReceiptText,
-      active: ['my-donations', 'utsav-income'].includes(currentPage),
+      active: ['my-donations', 'shakha-dakshina', 'utsav-income'].includes(currentPage),
       subItems: [
         {
           id: "my-donations",
@@ -217,6 +257,12 @@ export const getNavigationData = (
           onClick: () => onNavigate("my-donations"),
           active: currentPage === "my-donations",
         },
+        ...(hasPermission(selectedRole, "shakha-dakshina", "view") ? [{
+          id: "shakha-dakshina",
+          label: "Shakha Dakshina",
+          onClick: () => onNavigate("shakha-dakshina"),
+          active: currentPage === "shakha-dakshina",
+        }] : []),
         ...(['Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin', 'Reporting User'].includes(selectedRole) ? [{
           id: "utsav-income",
           label: "Guru Purnima Cash Income",
@@ -226,74 +272,26 @@ export const getNavigationData = (
       ],
     },
 
-    // ── 7. Reports ───────────────────────────────────────────────
-    {
+    // ── 7. Reports ─────────────────────────────────────────────── each
+    // report is gated by its own "reports" module action (see reportSubItems
+    // above), so the group itself only appears when at least one report is
+    // permitted for this role — never as an empty, unclickable dropdown.
+    ...(reportSubItems.length > 0 ? [{
       id: "reports-group",
       label: "Reports",
       icon: BarChart3,
-      subItems: [
-        {
-          id: "report-members",
-          label: "Members Report",
-          onClick: () => onNavigate("report-members"),
-          active: currentPage === "report-members",
-        },
-        {
-          id: "report-events",
-          label: "Karyakram Report",
-          onClick: () => onNavigate("report-events"),
-          active: currentPage === "report-events",
-        },
-        {
-          id: "report-donations",
-          label: "Nidhi Report",
-          onClick: () => onNavigate("report-donations"),
-          active: currentPage === "report-donations",
-        },
-        {
-          id: "report-attendance",
-          label: "Attendance Report",
-          onClick: () => onNavigate("report-attendance"),
-          active: currentPage === "report-attendance",
-        },
-        {
-          id: "report-refunds",
-          label: "Refund Report",
-          onClick: () => onNavigate("report-refunds"),
-          active: currentPage === "report-refunds",
-        },
-        {
-          id: "report-karyakarta",
-          label: "Karyakarta Report",
-          onClick: () => onNavigate("report-karyakarta"),
-          active: currentPage === "report-karyakarta",
-        },
-        {
-          id: "report-ayu-shreni",
-          label: "Ayu Shreni Directory",
-          onClick: () => onNavigate("report-ayu-shreni"),
-          active: currentPage === "report-ayu-shreni",
-        },
-        {
-          id: "report-myhss-role",
-          label: "MyHSS Role Report",
-          onClick: () => onNavigate("report-myhss-role"),
-          active: currentPage === "report-myhss-role",
-        },
-        {
-          id: "report-shakha-directory",
-          label: "Shakha Directory",
-          onClick: () => onNavigate("report-shakha-directory"),
-          active: currentPage === "report-shakha-directory",
-        },
-        {
-          id: "report-karyakarta-directory",
-          label: "Karyakarta Directory",
-          onClick: () => onNavigate("report-karyakarta-directory"),
-          active: currentPage === "report-karyakarta-directory",
-        },
-      ],
-    },
+      subItems: reportSubItems,
+    }] : []),
+
+    // ── 7b. Directory ──────────────────────────────────────────── directory
+    // listings (Shakha, Karyakarta, Ayu Shreni), split out from Reports so
+    // they read as reference lookups rather than generated reports.
+    ...(directorySubItems.length > 0 ? [{
+      id: "directory-group",
+      label: "Directory",
+      icon: BookOpenText,
+      subItems: directorySubItems,
+    }] : []),
 
     // ── 8. Settings ──────────────────────────────────────────────
     {

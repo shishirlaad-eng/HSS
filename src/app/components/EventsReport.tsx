@@ -18,11 +18,8 @@ import {
   Activity,
   CalendarCheck2,
   Download,
-  Image,
   SlidersHorizontal,
   Ticket,
-  TrendingUp,
-  Users,
   X,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
@@ -51,12 +48,6 @@ const STATUS_COLORS: Record<Event['status'], string> = {
 const PAYMENT_COLORS = {
   free: '#06b6d4',
   paid: '#f59e0b',
-};
-
-const RSVP_COLORS = {
-  going: '#22c55e',
-  maybe: '#f59e0b',
-  notGoing: '#ef4444',
 };
 
 const CHART_PALETTE = [
@@ -236,8 +227,6 @@ export default function EventsReport() {
   const totalGoingWithCapacity = filtered.reduce((sum, e) => sum + (e.capacity ? e.metrics.going : 0), 0);
   const totalRevenuePotential = filtered.reduce((sum, e) => sum + (e.paymentType === 'paid' ? e.metrics.going * (e.price ?? 0) : 0), 0);
   const fillRate = totalCapacity > 0 ? (totalGoingWithCapacity / totalCapacity) * 100 : 0;
-  const responseRate = totalResponses > 0 ? (totalGoing / totalResponses) * 100 : 0;
-  const cancelledRate = totalEvents > 0 ? (filtered.filter(e => e.status === 'cancelled').length / totalEvents) * 100 : 0;
 
   const statusData = useMemo(() => {
     const map: Record<Event['status'], number> = {
@@ -300,18 +289,18 @@ export default function EventsReport() {
     const end = keys[keys.length - 1];
     const [startYear, startMonth] = start.split('-').map(Number);
     const [endYear, endMonth] = end.split('-').map(Number);
-    const map: Record<string, { events: number; responses: number }> = {};
+    const map: Record<string, { events: number; attended: number }> = {};
 
     for (let cursor = new Date(startYear, startMonth - 1, 1); cursor <= new Date(endYear, endMonth - 1, 1); cursor.setMonth(cursor.getMonth() + 1)) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-      map[key] = { events: 0, responses: 0 };
+      map[key] = { events: 0, attended: 0 };
     }
 
     filtered.forEach(e => {
       const key = monthKey(e.startDate);
-      if (!map[key]) map[key] = { events: 0, responses: 0 };
+      if (!map[key]) map[key] = { events: 0, attended: 0 };
       map[key].events += 1;
-      map[key].responses += e.metrics.participantCount;
+      map[key].attended += e.metrics.going;
     });
 
     return Object.entries(map).map(([key, values]) => ({
@@ -320,39 +309,28 @@ export default function EventsReport() {
     }));
   }, [filtered]);
 
+  const statusByRegion = useMemo(() => {
+    const map: Record<string, Record<Event['status'], number>> = {};
+    masterRegionOptions.forEach(region => {
+      map[region] = { draft: 0, published: 0, active: 0, cancelled: 0, completed: 0 };
+    });
+    filtered.forEach(e => {
+      if (!map[e.region]) map[e.region] = { draft: 0, published: 0, active: 0, cancelled: 0, completed: 0 };
+      map[e.region][e.status] += 1;
+    });
+    return Object.entries(map)
+      .map(([region, values]) => ({
+        region: shortName(region, 22),
+        fullRegion: region,
+        ...values,
+      }))
+      .sort((a, b) => masterRegionOptions.indexOf(a.fullRegion) - masterRegionOptions.indexOf(b.fullRegion));
+  }, [filtered, masterRegionOptions]);
+
   const capacityByRegion = useMemo(
     () => [...byRegion],
     [byRegion],
   );
-  const regionActivityRanking = useMemo(
-    () => [...byRegion].sort((a, b) => b.events - a.events || b.responses - a.responses),
-    [byRegion],
-  );
-  const regionCapacityRanking = useMemo(
-    () => byRegion.filter(r => r.capacity > 0).sort((a, b) => b.fillRate - a.fillRate),
-    [byRegion],
-  );
-
-  const engagementByStatus = useMemo(() => {
-    const map: Record<Event['status'], { responses: number; media: number }> = {
-      draft: { responses: 0, media: 0 },
-      published: { responses: 0, media: 0 },
-      active: { responses: 0, media: 0 },
-      cancelled: { responses: 0, media: 0 },
-      completed: { responses: 0, media: 0 },
-    };
-    filtered.forEach(e => {
-      map[e.status].responses += e.metrics.participantCount;
-      map[e.status].media += e.metrics.mediaCount;
-    });
-    return Object.entries(map)
-      .map(([key, values]) => ({ status: STATUS_LABELS[key as Event['status']], ...values }))
-      .filter(item => item.responses > 0 || item.media > 0);
-  }, [filtered]);
-
-  const mostActiveRegion = regionActivityRanking[0]?.events ? regionActivityRanking[0].fullRegion : 'No Karyakram activity';
-  const strongestFillRegion = regionCapacityRanking[0]?.fullRegion ?? 'No capacity data';
-  const averageResponses = totalEvents > 0 ? Math.round(totalResponses / totalEvents) : 0;
 
   const handleExport = () => {
     const rows: string[][] = [
@@ -385,8 +363,8 @@ export default function EventsReport() {
       ...byRegion.map(r => [r.fullRegion, String(r.events), String(r.responses), String(r.going), String(r.capacity), pct(r.fillRate), String(r.media)]),
       [],
       ['MONTHLY TREND'],
-      ['Month', 'Karyakrams', 'Responses'],
-      ...monthlyTrend.map(r => [r.month, String(r.events), String(r.responses)]),
+      ['Month', 'Karyakrams', 'Attended'],
+      ...monthlyTrend.map(r => [r.month, String(r.events), String(r.attended)]),
     ];
     const csv = rows.map(r => r.map(c => `"${c.replaceAll('"', '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -511,34 +489,12 @@ export default function EventsReport() {
           </span>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <KpiCard label="Total Karyakrams" value={totalEvents} icon={CalendarCheck2} color="bg-primary-500" />
           <KpiCard label="Published / Active" value={activePipeline} icon={Activity} color="bg-success-500" />
-          <KpiCard label="Total Responses" value={totalResponses} icon={Users} color="bg-blue-500" sub={`${pct(responseRate)} confirmed going`} />
-          <KpiCard label="Average Fill Rate" value={pct(fillRate)} icon={TrendingUp} color="bg-violet-500" sub={totalCapacity > 0 ? `${fmt(totalGoingWithCapacity)} of ${fmt(totalCapacity)} capacity` : 'Capacity not set'} />
-          <KpiCard label="Media Posts" value={totalMedia} icon={Image} color="bg-cyan-500" />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Most Active Region</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{mostActiveRegion}</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Strongest Fill Rate</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{strongestFillRegion}</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Avg Responses / Karyakram</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{fmt(averageResponses)}</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Cancellation Rate</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{pct(cancelledRate)}</p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard title="Karyakram Status Breakdown" subtitle="Karyakram lifecycle mix for the selected scope">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
@@ -557,35 +513,6 @@ export default function EventsReport() {
                       <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{d.name}</span>
                     </div>
                     <span className="text-xs font-semibold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ChartCard>
-
-          <ChartCard title="RSVP Response Mix" subtitle="Aggregate response intent across filtered Karyakrams">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={rsvpData} cx="50%" cy="50%" innerRadius={48} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {rsvpData.map(entry => <Cell key={entry.key} fill={RSVP_COLORS[entry.key as keyof typeof RSVP_COLORS]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-3">
-                {rsvpData.map(d => (
-                  <div key={d.key}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400">{d.name}</span>
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: totalResponses > 0 ? `${Math.round((d.value / totalResponses) * 100)}%` : '0%', backgroundColor: RSVP_COLORS[d.key as keyof typeof RSVP_COLORS] }}
-                      />
-                    </div>
                   </div>
                 ))}
               </div>
@@ -627,16 +554,17 @@ export default function EventsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Karyakrams by Region" subtitle="All configured regions, including regions with no matching Karyakrams">
-            <ResponsiveContainer width="100%" height={Math.max(240, byRegion.length * 42 + 60)}>
-              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
+          <ChartCard title="Karyakram Status by Region" subtitle="Karyakram lifecycle status mix per Vibhag, including regions with no matching Karyakrams">
+            <ResponsiveContainer width="100%" height={Math.max(240, statusByRegion.length * 42 + 60)}>
+              <BarChart data={statusByRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="events" name="Karyakrams" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
-                <Bar dataKey="responses" name="Responses" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={18} />
+                {(Object.keys(STATUS_LABELS) as Event['status'][]).map(status => (
+                  <Bar key={status} dataKey={status} name={STATUS_LABELS[status]} stackId="status" fill={STATUS_COLORS[status]} barSize={18} />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -656,8 +584,8 @@ export default function EventsReport() {
           </ChartCard>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Karyakrams Over Time" subtitle="Monthly Karyakram count and response volume">
+        <div className="mt-6 grid grid-cols-1 gap-6">
+          <ChartCard title="Karyakrams Over Time" subtitle="Monthly Karyakram count and attendance volume">
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={monthlyTrend} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -667,22 +595,8 @@ export default function EventsReport() {
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line yAxisId="left" type="monotone" dataKey="events" name="Karyakrams" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
-                <Line yAxisId="right" type="monotone" dataKey="responses" name="Responses" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} />
+                <Line yAxisId="right" type="monotone" dataKey="attended" name="Attended" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} />
               </LineChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Engagement by Karyakram Status" subtitle="Responses and media posts grouped by lifecycle status">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={engagementByStatus} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="status" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="responses" name="Responses" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="media" name="Media Posts" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         </div>

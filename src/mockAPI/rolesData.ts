@@ -100,14 +100,60 @@ export const availableModules: ModulePermission[] = [
       { id: "delete",   name: "Delete Shakha",         code: "attendance_delete" },
     ],
   },
-  // 7. Utsav Cash Income (Guru Purnima, etc.)
+  // 7. Pending Karyawaha Approvals
   {
-    id: "utsav-income",
-    name: "Utsav Cash Income",
+    id: "pending-approvals",
+    name: "Pending Karyawaha Approvals",
     actions: [
-      { id: "view",   name: "View / List",       code: "utsav_income_view" },
-      { id: "add",    name: "Record Cash Income", code: "utsav_income_add" },
-      { id: "export", name: "Export CSV",        code: "utsav_income_export" },
+      { id: "view",    name: "View / List", code: "pending_approvals_view" },
+      { id: "approve", name: "Approve",     code: "pending_approvals_approve" },
+      { id: "reject",  name: "Reject",      code: "pending_approvals_reject" },
+    ],
+  },
+  // 7b. Pending Parent/Guardian Approvals
+  {
+    id: "pending-guardian-approvals",
+    name: "Pending Parent/Guardian Approvals",
+    actions: [
+      { id: "view",    name: "View / List", code: "pending_guardian_approvals_view" },
+      { id: "approve", name: "Approve",     code: "pending_guardian_approvals_approve" },
+      { id: "reject",  name: "Reject",      code: "pending_guardian_approvals_reject" },
+    ],
+  },
+  // 7c. Guru Puja Report
+  {
+    id: "guru-puja-report",
+    name: "Guru Puja Report",
+    actions: [
+      { id: "view",   name: "View / List", code: "guru_puja_report_view" },
+      { id: "export", name: "Export CSV",  code: "guru_puja_report_export" },
+    ],
+  },
+  // 7d. First Aid Incidents
+  {
+    id: "first-aid-incidents",
+    name: "First Aid Incidents",
+    actions: [
+      { id: "view", name: "View / List",       code: "first_aid_incidents_view" },
+      { id: "add",  name: "Record Incident",   code: "first_aid_incidents_add" },
+      { id: "edit", name: "Edit Incident",     code: "first_aid_incidents_edit" },
+    ],
+  },
+  // 7e. Compliance
+  {
+    id: "compliance",
+    name: "Compliance",
+    actions: [
+      { id: "view", name: "View / List", code: "compliance_view" },
+    ],
+  },
+  // 7f. Responsibilities & Roles (Karyakartas)
+  {
+    id: "karyakartas",
+    name: "Responsibilities & Roles",
+    actions: [
+      { id: "view",   name: "View / List",            code: "karyakartas_view" },
+      { id: "assign", name: "Assign Responsibility",  code: "karyakartas_assign" },
     ],
   },
   // 9. Reports
@@ -156,12 +202,15 @@ export const availableModules: ModulePermission[] = [
       { id: "edit",   name: "Edit Settings",           code: "settings_edit" },
     ],
   },
-  // 12. Audit Logging
+  // 12. Audit Logging — one action per log tab, so e.g. Login Logs (IPs/devices)
+  // can be granted without also exposing Email Logs content, or vice versa.
   {
     id: "audit-logs",
     name: "Audit Logging",
     actions: [
-      { id: "view",   name: "View Audit Logs",         code: "audit_view" },
+      { id: "login_view", name: "View Login Logs", code: "audit_login_view" },
+      { id: "audit_view", name: "View Audit Logs",  code: "audit_audit_view" },
+      { id: "email_view", name: "View Email Logs",  code: "audit_email_view" },
     ],
   },
   // 13. My Donations (member-facing)
@@ -170,6 +219,23 @@ export const availableModules: ModulePermission[] = [
     name: "My Donations",
     actions: [
       { id: "view", name: "View My Donations", code: "my_donations_view" },
+    ],
+  },
+  // 14. Shakha Dakshina (admin-facing — Shakha Admin and above)
+  {
+    id: "shakha-dakshina",
+    name: "Shakha Dakshina",
+    actions: [
+      { id: "view",   name: "View / List", code: "shakha_dakshina_view" },
+      { id: "export", name: "Export CSV",  code: "shakha_dakshina_export" },
+    ],
+  },
+  // 15. Non-Member Accounts (Super Admin only)
+  {
+    id: "non-member-accounts",
+    name: "Non-Member Accounts",
+    actions: [
+      { id: "view", name: "View / List", code: "non_member_accounts_view" },
     ],
   },
 ];
@@ -195,11 +261,18 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "delete", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      "utsav-income": ["view", "add", "export"],
+      "pending-approvals":          ["view", "approve", "reject"],
+      "pending-guardian-approvals": ["view", "approve", "reject"],
+      "guru-puja-report":           ["view", "export"],
+      "first-aid-incidents":        ["view", "add", "edit"],
+      compliance:    ["view"],
+      karyakartas:   ["view", "assign"],
+      "shakha-dakshina": ["view", "export"],
+      "non-member-accounts": ["view"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
       rbac:          ["view", "edit", "add", "delete"],
       settings:      ["view", "edit"],
-      "audit-logs":  ["view"],
+      "audit-logs":  ["login_view", "audit_view", "email_view"],
     },
   },
 
@@ -221,7 +294,12 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log"],
-      "utsav-income": ["view", "add", "export"],
+      "pending-approvals":   ["view", "approve", "reject"],
+      "guru-puja-report":    ["view", "export"],
+      "first-aid-incidents": ["view", "add", "edit"],
+      compliance:    ["view"],
+      karyakartas:   ["view"],
+      "shakha-dakshina": ["view", "export"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
@@ -244,7 +322,12 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      "utsav-income": ["view", "add", "export"],
+      "pending-approvals":   ["view", "approve", "reject"],
+      "guru-puja-report":    ["view", "export"],
+      "first-aid-incidents": ["view", "add", "edit"],
+      compliance:    ["view"],
+      karyakartas:   ["view"],
+      "shakha-dakshina": ["view", "export"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
@@ -267,7 +350,12 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      "utsav-income": ["view", "add", "export"],
+      "pending-approvals":   ["view", "approve", "reject"],
+      "guru-puja-report":    ["view", "export"],
+      "first-aid-incidents": ["view", "add", "edit"],
+      compliance:    ["view"],
+      karyakartas:   ["view"],
+      "shakha-dakshina": ["view", "export"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
@@ -289,7 +377,13 @@ export const mockRoles: Role[] = [
       events:        ["view", "add", "edit", "cancel", "export"],
       announcements: ["view", "add", "edit", "delete"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
-      "utsav-income": ["view", "add", "export"],
+      "pending-approvals":          ["view", "approve", "reject"],
+      "pending-guardian-approvals": ["view", "approve", "reject"],
+      "guru-puja-report":           ["view", "export"],
+      "first-aid-incidents":        ["view", "add", "edit"],
+      compliance:    ["view"],
+      karyakartas:   ["view", "assign"],
+      "shakha-dakshina": ["view", "export"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
@@ -327,7 +421,6 @@ export const mockRoles: Role[] = [
       members:       ["view", "export"],
       events:        ["view", "export"],
       announcements: ["view"],
-      "utsav-income": ["view", "export"],
       reports:       ["members_view", "members_export", "events_view", "events_export", "attendance_view", "attendance_export", "donations_view", "donations_export", "refunds_view", "refunds_export", "karyakarta_view", "ayu_shreni_view", "ayu_shreni_export", "myhss_role_view", "myhss_role_export", "shakha_directory_view", "shakha_directory_export", "karyakarta_directory_view", "karyakarta_directory_export"],
     },
   },
@@ -347,6 +440,9 @@ export const mockRoles: Role[] = [
       events:        ["view"],
       announcements: ["view"],
       attendance:    ["view", "view_log", "add", "edit", "delete"],
+      "guru-puja-report": ["view", "export"],
+      compliance:    ["view"],
+      karyakartas:   ["view"],
     },
   },
 
@@ -431,19 +527,31 @@ const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   events:        ['event-management'],
   announcements: ['announcements'],
   attendance:    ['attendance-group'],
-  "utsav-income": ['utsav-income'],
-  reports:       ['reports-group'],
+  reports:       ['reports-group', 'directory-group'],
   masters:       ['masters-group'],
   rbac:          ['role-management'],
   settings:      ['settings-group'],
   'audit-logs':  ['audit-logging'],
   'my-donations': ['my-donations'],
+  'shakha-dakshina': ['my-donations'],
 };
 
 /**
  * Returns the set of top-level nav group IDs visible for a given role name.
  * A module is visible if the role has at least one permission action for it.
  */
+/**
+ * Generic action-level permission check — e.g. hasPermission('Reporting User',
+ * 'reports', 'members_view') for the "Members Report" nav item / page. Reports
+ * each have their own view/export action in the "reports" module (see above),
+ * so this is how each report gets its own independent RBAC control rather than
+ * the whole Reports section being shown or hidden as one block.
+ */
+export function hasPermission(roleName: string, moduleId: string, actionId: string): boolean {
+  const role = mockRoles.find(r => r.name === roleName);
+  return (role?.permissions?.[moduleId] ?? []).includes(actionId);
+}
+
 export function getPermittedNavIds(roleName: string): Set<string> {
   const role = mockRoles.find(r => r.name === roleName);
   if (!role) return new Set(Object.values(PERMISSION_TO_NAV_IDS).flat()); // fallback: show all

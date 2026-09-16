@@ -278,7 +278,7 @@ function RejectReasonModal({
 // ── Main component ────────────────────────────────────────────
 
 export default function PendingApprovals() {
-  const mp = useModulePermissions('members');
+  const mp = useModulePermissions('pending-approvals');
   const { scope, selectedRole } = useRoleScope();
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
@@ -497,7 +497,6 @@ export default function PendingApprovals() {
           mode="approval"
           onApprove={mp.canApprove ? () => openModal(liveMember, 'approve') : undefined}
           onReject={mp.canApprove  ? () => openModal(liveMember, 'reject')  : undefined}
-          hideComplianceTab={selectedRole === 'Shakha Admin'}
         />
         <ApproveConfirmModal
           isOpen={modal.isOpen && modal.action === 'approve'}

@@ -162,6 +162,34 @@ export const mockMemberDonations: MemberDonationRecord[] = [
   { id: 'MDON-004', memberId: 'WBL-001', datetime: '2026-02-10T11:05:00', amount: 100, activityCentre: 'Harrow Activity Centre' },
   { id: 'MDON-005', memberId: 'WBL-001', datetime: '2026-01-05T16:20:00', amount: 25,  activityCentre: 'Harrow Activity Centre' },
   { id: 'MDON-006', memberId: 'WBL-004', datetime: '2026-05-09T12:15:00', amount: 15,  activityCentre: 'Wembley Activity Centre' },
+  { id: 'MDON-007', memberId: 'MBR-001', datetime: '2026-06-02T10:00:00', amount: 30,  activityCentre: 'Wembley Activity Centre' },
+  { id: 'MDON-008', memberId: 'MBR-003', datetime: '2026-05-18T09:40:00', amount: 40,  activityCentre: 'Birmingham East Activity Centre' },
+];
+
+export type RecurringDakshinaFrequency = 'Monthly' | 'Quarterly' | 'Annually';
+export type RecurringDakshinaStatus = 'active' | 'cancelled';
+
+// Recurring Dakshina commitments — recorded from the details a member provides
+// after setting up a standing order with their own bank (see MyDonations.tsx's
+// Recurring Dakshina flow). HSS (UK) cannot see or initiate the actual bank
+// transfer, only what the member told us they set up.
+export interface RecurringDakshinaRecord {
+  id: string;
+  memberId: string;
+  activityCentre: string;
+  frequency: RecurringDakshinaFrequency;
+  amount: number;
+  firstPaymentDate: string; // ISO date
+  giftAid: boolean;
+  status: RecurringDakshinaStatus;
+}
+
+export const mockRecurringDakshina: RecurringDakshinaRecord[] = [
+  { id: 'RDK-001', memberId: 'WBL-001', activityCentre: 'Wembley Activity Centre',           frequency: 'Monthly',   amount: 25,  firstPaymentDate: '2025-01-05', giftAid: true,  status: 'active' },
+  { id: 'RDK-002', memberId: 'MBR-001', activityCentre: 'Wembley Activity Centre',           frequency: 'Monthly',   amount: 15,  firstPaymentDate: '2025-03-10', giftAid: true,  status: 'active' },
+  { id: 'RDK-003', memberId: 'MBR-003', activityCentre: 'Birmingham East Activity Centre',   frequency: 'Quarterly', amount: 60,  firstPaymentDate: '2024-11-01', giftAid: false, status: 'active' },
+  { id: 'RDK-004', memberId: 'WBL-003', activityCentre: 'Wembley Activity Centre',           frequency: 'Annually',  amount: 100, firstPaymentDate: '2024-06-15', giftAid: true,  status: 'active' },
+  { id: 'RDK-005', memberId: 'MBR-005', activityCentre: 'Manchester Central Activity Centre', frequency: 'Monthly',  amount: 20,  firstPaymentDate: '2025-02-01', giftAid: false, status: 'cancelled' },
 ];
 
 export const mockDonations: DonationRecord[] = [

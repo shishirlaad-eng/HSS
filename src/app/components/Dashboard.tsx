@@ -43,6 +43,7 @@ import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_
 import { mockEvents, mockParticipants, type Event as HSSSEvent } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockDonations, type IncomeStream } from '../../mockAPI/donationsData';
+import { mockLoginLogs } from '../../mockAPI/logsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
 import { formatDate as sharedFormatDate } from '../../utils/formatDate';
@@ -487,21 +488,6 @@ function MemberDashboard({
                     <p className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug">
                       {AGE_GROUP_LABELS[currentMember.ageGroup.toLowerCase() as keyof typeof AGE_GROUP_LABELS] ?? currentMember.ageGroup}
                     </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Status</p>
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs ${
-                      currentMember.status === 'Active'
-                        ? 'bg-success-50 dark:bg-success-950/20 border-success-200 dark:border-success-800'
-                        : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
-                    }`}>
-                      <span className={`whitespace-nowrap ${currentMember.status === 'Active' ? 'text-success-700 dark:text-success-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                        {currentMember.status}
-                      </span>
-                    </span>
                   </div>
                 </div>
               </div>
@@ -1081,6 +1067,39 @@ function HierarchyKpiSection({
       present: s.attendanceRecords.filter(r => r.status === 'present').length,
     }));
 
+    // â”€â”€ Chart: MyHSS Login Trend â”€â”€ last 7 days, Total / Web / App
+    const loginTrendData = (() => {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const days: { key: string; date: string }[] = [];
+      for (let offset = 6; offset >= 0; offset--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - offset);
+        days.push({ key: d.toISOString().slice(0, 10), date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) });
+      }
+      return days.map(({ key, date }) => {
+        const dayLogins = mockLoginLogs.filter(l => l.loginTime.slice(0, 10) === key && l.status === 'Success');
+        const app = dayLogins.filter(l => l.browser.startsWith('MyHSS App')).length;
+        const web = dayLogins.length - app;
+        return { date, total: dayLogins.length, web, app };
+      });
+    })();
+
+    // â”€â”€ Chart: New Member Registrations â”€â”€ most recent 6 calendar months that have data
+    const newMemberRegData = (() => {
+      const counts = new Map<string, number>();
+      scopedMembers.forEach(m => {
+        const key = m.registrationDate.slice(0, 7); // YYYY-MM
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      });
+      return [...counts.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-6)
+        .map(([key, count]) => ({
+          month: new Date(key + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+          count,
+        }));
+    })();
+
     // â”€â”€ Chart: Responsibility Type â”€â”€
     const respTypeData = [...RESPONSIBILITY_TYPE_OPTIONS, COMPLIANCE_NOT_SET]
       .map(t => ({
@@ -1126,6 +1145,7 @@ function HierarchyKpiSection({
       gbp,
       statusData, ageData, incomeStreamData, attendanceTrendData, respTypeData,
       recentSessionsData, dbsData, firstAidData, safeguardingData,
+      loginTrendData, newMemberRegData,
     };
   }, [scope]);
 
@@ -1165,6 +1185,25 @@ function HierarchyKpiSection({
             </div>
           </ChartCard>
 
+          {/* MyHSS Login Trend */}
+          <ChartCard
+            title="MyHSS Login Trend"
+            subtitle="Total, Web and App logins over the last 7 days"
+          >
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={kpis.loginTrendData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="total" name="Total Login" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="web" name="Web Login" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="app" name="App Login" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
           {/* Monthly Attendance Trend */}
           <ChartCard
             title="Monthly Attendance Trend"
@@ -1182,6 +1221,23 @@ function HierarchyKpiSection({
                 <Line type="monotone" dataKey="rate" name="Attendance Rate %" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="average" name="Average %" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* New Member Registrations */}
+          <ChartCard
+            title="New Member Registrations"
+            subtitle="New registrations by month, most recent 6 months on record"
+            onClick={() => onNavigate?.('members')}
+          >
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={kpis.newMemberRegData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="count" name="New Members" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 

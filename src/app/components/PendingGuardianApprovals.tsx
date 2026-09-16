@@ -480,7 +480,6 @@ export default function PendingGuardianApprovals() {
           onStatusChange={() => {}}
           onDelete={() => {}}
           mode="approval"
-          hideComplianceTab={selectedRole === 'Shakha Admin'}
           onApprove={isSuperAdmin ? () => openModal(liveMember, 'approve') : undefined}
           onReject={isSuperAdmin ? () => openModal(liveMember, 'reject') : undefined}
         />

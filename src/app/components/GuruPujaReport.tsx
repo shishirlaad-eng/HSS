@@ -92,6 +92,7 @@ function GuruPujaReportModal({
   const [payingInRefNo, setPayingInRefNo] = useState(entry?.payingInRefNo ?? '');
   const [isComplete, setIsComplete] = useState(entry?.isComplete ?? false);
   const [touched, setTouched] = useState(false);
+  const [isEditing, setIsEditing] = useState(!entry);
 
   const setAmount = (g: AgeGroup, channel: 'cash' | 'cheque', v: string) =>
     setAmounts(p => ({ ...p, [g]: { ...p[g], [channel]: v } }));
@@ -180,30 +181,39 @@ function GuruPujaReportModal({
                       <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{GURU_PUJA_AGE_GROUP_INFO[g].name}</p>
                       <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{GURU_PUJA_AGE_GROUP_INFO[g].range}</p>
                     </div>
-                    <div>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                        <input
-                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
-                          value={amounts[g].cash}
-                          onChange={e => setAmount(g, 'cash', e.target.value)}
-                          className={`${fieldCls(cashErr)} pl-6`}
-                        />
-                      </div>
-                      <ErrorText>{cashErr && 'Invalid amount.'}</ErrorText>
-                    </div>
-                    <div>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
-                        <input
-                          type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
-                          value={amounts[g].cheque}
-                          onChange={e => setAmount(g, 'cheque', e.target.value)}
-                          className={`${fieldCls(chequeErr)} pl-6`}
-                        />
-                      </div>
-                      <ErrorText>{chequeErr && 'Invalid amount.'}</ErrorText>
-                    </div>
+                    {isEditing ? (
+                      <>
+                        <div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                            <input
+                              type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
+                              value={amounts[g].cash}
+                              onChange={e => setAmount(g, 'cash', e.target.value)}
+                              className={`${fieldCls(cashErr)} pl-6`}
+                            />
+                          </div>
+                          <ErrorText>{cashErr && 'Invalid amount.'}</ErrorText>
+                        </div>
+                        <div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">£</span>
+                            <input
+                              type="number" step="0.01" min="0" inputMode="decimal" placeholder="0.00"
+                              value={amounts[g].cheque}
+                              onChange={e => setAmount(g, 'cheque', e.target.value)}
+                              className={`${fieldCls(chequeErr)} pl-6`}
+                            />
+                          </div>
+                          <ErrorText>{chequeErr && 'Invalid amount.'}</ErrorText>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="pt-2 text-sm text-neutral-700 dark:text-neutral-300">{fmtMoney(num(amounts[g].cash))}</p>
+                        <p className="pt-2 text-sm text-neutral-700 dark:text-neutral-300">{fmtMoney(num(amounts[g].cheque))}</p>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -211,38 +221,75 @@ function GuruPujaReportModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField>
-            <FormLabel>Date Banked</FormLabel>
-            <FormInput type="date" value={dateBanked} onChange={e => setDateBanked(e.target.value)} />
-          </FormField>
-          <FormField>
-            <FormLabel>Banked By</FormLabel>
-            <FormInput value={bankedBy} onChange={e => setBankedBy(e.target.value)} placeholder="Name" />
-          </FormField>
-          <FormField>
-            <FormLabel>Paying In Ref No</FormLabel>
-            <FormInput value={payingInRefNo} onChange={e => setPayingInRefNo(e.target.value)} placeholder="Reference" />
-          </FormField>
-        </div>
+        {isEditing ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <FormField>
+              <FormLabel>Date Banked</FormLabel>
+              <FormInput type="date" value={dateBanked} onChange={e => setDateBanked(e.target.value)} />
+            </FormField>
+            <FormField>
+              <FormLabel>Banked By</FormLabel>
+              <FormInput value={bankedBy} onChange={e => setBankedBy(e.target.value)} placeholder="Name" />
+            </FormField>
+            <FormField>
+              <FormLabel>Paying In Ref No</FormLabel>
+              <FormInput value={payingInRefNo} onChange={e => setPayingInRefNo(e.target.value)} placeholder="Reference" />
+            </FormField>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Date Banked</p>
+              <p className="text-sm text-neutral-900 dark:text-white mt-0.5">{dateBanked ? fmtDate(dateBanked) : '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Banked By</p>
+              <p className="text-sm text-neutral-900 dark:text-white mt-0.5">{bankedBy || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Paying In Ref No</p>
+              <p className="text-sm text-neutral-900 dark:text-white mt-0.5">{payingInRefNo || '—'}</p>
+            </div>
+          </div>
+        )}
 
-        <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isComplete}
-            onChange={e => setIsComplete(e.target.checked)}
-            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500/30"
-          />
-          Guru Puja Report is all complete
-        </label>
+        {isEditing ? (
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isComplete}
+              onChange={e => setIsComplete(e.target.checked)}
+              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500/30"
+            />
+            Guru Puja Report is all complete
+          </label>
+        ) : (
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            Guru Puja Report is all complete: <span className="font-medium text-neutral-900 dark:text-white">{isComplete ? 'Yes' : 'No'}</span>
+          </p>
+        )}
 
         <div className="flex justify-end gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
-            Cancel
-          </button>
-          <button onClick={handleSubmit} className="px-4 py-2 text-sm rounded-lg font-semibold bg-[#172E4D] hover:bg-[#172E4D]/80 text-white transition-colors">
-            Save Changes
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => (entry ? setIsEditing(false) : onClose())}
+                className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              >
+                Cancel
+              </button>
+              <button onClick={handleSubmit} className="px-4 py-2 text-sm rounded-lg font-semibold bg-[#172E4D] hover:bg-[#172E4D]/80 text-white transition-colors">
+                Save Changes
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                Close
+              </button>
+              <PrimaryButton icon={Pencil} onClick={() => setIsEditing(true)}>Edit</PrimaryButton>
+            </>
+          )}
         </div>
       </div>
     </FormModal>
@@ -422,7 +469,7 @@ export default function GuruPujaReport() {
             <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                  {['Date', 'Shakha', 'Shakha Status', 'Attendance', 'Report Status', ''].map(h => (
+                  {['Date', 'Shakha', 'Shakha Status', 'Attendance', 'Report Status'].map(h => (
                     <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
                       {h}
                     </th>
@@ -436,7 +483,11 @@ export default function GuruPujaReport() {
                   const reportStatus = reportStatusPill(entry?.isComplete ?? false);
                   const present = s.attendanceRecords.filter(r => r.status === 'present').length;
                   return (
-                    <tr key={s.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                    <tr
+                      key={s.id}
+                      onClick={() => setEditingSession(s)}
+                      className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                    >
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{fmtDate(s.date)}</td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{s.activityCentre}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
@@ -450,14 +501,11 @@ export default function GuruPujaReport() {
                           {reportStatus.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <PrimaryButton icon={Pencil} onClick={() => setEditingSession(s)}>Edit</PrimaryButton>
-                      </td>
                     </tr>
                   );
                 }) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center">
+                    <td colSpan={5} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <ClipboardList className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">

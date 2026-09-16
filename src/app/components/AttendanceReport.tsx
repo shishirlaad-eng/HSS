@@ -16,7 +16,6 @@ import {
 } from 'recharts';
 import {
   CalendarCheck2,
-  CheckCircle2,
   ClipboardCheck,
   Download,
   SlidersHorizontal,
@@ -42,12 +41,6 @@ const STATUS_COLORS: Record<ShakhaSession['status'], string> = {
   scheduled: '#3b82f6',
   completed: '#22c55e',
   cancelled: '#ef4444',
-};
-
-const ATTENDANCE_COLORS = {
-  present: '#22c55e',
-  absent: '#ef4444',
-  unmarked: '#94a3b8',
 };
 
 const AGE_COLORS: Record<AgeGroup, string> = {
@@ -156,12 +149,14 @@ export default function AttendanceReport() {
   const [filterShakhaType, setFilterShakhaType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
   const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
   const townOptions = filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [];
   const centreOptions = filterTown ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [];
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterShakhaType || filterStatus || filterPeriod !== 'all');
+  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterShakhaType || filterStatus || filterPeriod !== 'all' || customStart || customEnd);
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -170,6 +165,8 @@ export default function AttendanceReport() {
     setFilterShakhaType('');
     setFilterStatus('');
     setFilterPeriod('all');
+    setCustomStart('');
+    setCustomEnd('');
   };
 
   const filtered = useMemo(() => {
@@ -192,13 +189,18 @@ export default function AttendanceReport() {
       if (filterPeriod === 'ytd' && date < startYear) return false;
       if (filterPeriod === 'scheduled' && session.status !== 'scheduled') return false;
       if (filterPeriod === 'completed' && session.status !== 'completed') return false;
+      if (filterPeriod === 'custom') {
+        if (customStart && session.date < customStart) return false;
+        if (customEnd && session.date > customEnd) return false;
+      }
       return true;
     });
-  }, [filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, filterPeriod]);
+  }, [filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, filterPeriod, customStart, customEnd]);
 
   const totalSessions = filtered.length;
   const completedSessions = filtered.filter(s => s.status === 'completed').length;
   const scheduledSessions = filtered.filter(s => s.status === 'scheduled').length;
+  const activeSessions = scheduledSessions; // this app's UI shows the "scheduled" status as "Active"
   const cancelledSessions = filtered.filter(s => s.status === 'cancelled').length;
   const totalExpected = filtered.reduce((sum, s) => sum + s.totalExpected, 0);
   const totalPresent = filtered.reduce((sum, s) => sum + sessionAttendance(s).present, 0);
@@ -216,12 +218,6 @@ export default function AttendanceReport() {
       .filter(item => item.value > 0);
   }, [filtered]);
 
-  const attendanceMix = useMemo(() => [
-    { key: 'present', name: 'Present', value: totalPresent },
-    { key: 'absent', name: 'Absent', value: totalAbsent },
-    { key: 'unmarked', name: 'Unmarked', value: totalUnmarked },
-  ], [totalPresent, totalAbsent, totalUnmarked]);
-
   const byRegion = useMemo(() => {
     const map: Record<string, { sessions: number; present: number; absent: number; expected: number }> = {};
     regionOptions.forEach(region => { map[region] = { sessions: 0, present: 0, absent: 0, expected: 0 }; });
@@ -237,6 +233,7 @@ export default function AttendanceReport() {
       region: shortName(region, 22),
       fullRegion: region,
       attendanceRate: values.present + values.absent > 0 ? Math.round((values.present / (values.present + values.absent)) * 100) : 0,
+      avgPresent: values.sessions > 0 ? Math.round((values.present / values.sessions) * 10) / 10 : 0,
       ...values,
     }));
   }, [filtered, regionOptions]);
@@ -272,7 +269,11 @@ export default function AttendanceReport() {
       map[type].present += summary.present;
       map[type].absent += summary.absent;
     });
-    return Object.entries(map).map(([type, values]) => ({ type, ...values }));
+    return Object.entries(map).map(([type, values]) => ({
+      type,
+      avgPresent: values.sessions > 0 ? Math.round((values.present / values.sessions) * 10) / 10 : 0,
+      ...values,
+    }));
   }, [filtered]);
 
   const byAgeGroup = useMemo(() => {
@@ -282,12 +283,14 @@ export default function AttendanceReport() {
         if (record.status === 'present') map[record.ageCategory] += 1;
       });
     });
+    const denom = completedSessions > 0 ? completedSessions : 1;
     return (Object.entries(map) as [AgeGroup, number][]).map(([key, count]) => ({
       group: AGE_GROUP_LABELS[key],
       key,
       count,
+      average: Math.round((count / denom) * 10) / 10,
     }));
-  }, [filtered]);
+  }, [filtered, completedSessions]);
 
   const genderData = useMemo(() => {
     let male = 0;
@@ -299,12 +302,38 @@ export default function AttendanceReport() {
         if (record.gender === 'female') female += 1;
       });
     });
+    const denom = completedSessions > 0 ? completedSessions : 1;
     return [
-      { name: 'Male', value: male, key: 'male' },
-      { name: 'Female', value: female, key: 'female' },
+      { name: 'Male', value: Math.round((male / denom) * 10) / 10, total: male, key: 'male' },
+      { name: 'Female', value: Math.round((female / denom) * 10) / 10, total: female, key: 'female' },
     ];
+  }, [filtered, completedSessions]);
+
+  // Shakhas held in the filtered period with zero Present marks recorded
+  const noPresentSessions = useMemo(() => {
+    return [...filtered]
+      .filter(s => sessionAttendance(s).present === 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [filtered]);
 
+  // Sankhya trend across the filtered Shakhas — same series as the Shakha
+  // Admin dashboard's "Sankhya - Rolling 3 months" chart (Total/Average/Male/Female)
+  const sankhyaTrendData = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const raw = sorted.map(session => {
+      const present = session.attendanceRecords.filter(r => r.status === 'present');
+      return {
+        date: formatDate(session.date),
+        total: present.length,
+        male: present.filter(r => r.gender === 'male').length,
+        female: present.filter(r => r.gender === 'female').length,
+      };
+    });
+    const avgTotal = raw.length ? Math.round(raw.reduce((sum, d) => sum + d.total, 0) / raw.length) : 0;
+    return raw.map(d => ({ ...d, average: avgTotal }));
+  }, [filtered]);
+
+  // Kept for CSV export only — the visual chart now uses sankhyaTrendData above
   const monthlyTrend = useMemo(() => {
     const keys = filtered.map(s => monthKey(s.date)).sort();
     if (!keys.length) return [];
@@ -426,7 +455,28 @@ export default function AttendanceReport() {
             <option value="ytd">Year to Date</option>
             <option value="completed">Completed Only</option>
             <option value="scheduled">Scheduled Only</option>
+            <option value="custom">Custom Range</option>
           </select>
+
+          {filterPeriod === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                max={customEnd || undefined}
+                className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <span className="text-xs text-neutral-400">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                min={customStart || undefined}
+                className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </>
+          )}
 
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
@@ -439,12 +489,11 @@ export default function AttendanceReport() {
           </span>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 xl:grid-cols-5 gap-4">
-          <KpiCard label="Total Shakhas" value={totalSessions} icon={CalendarCheck2} color="bg-primary-500" />
-          <KpiCard label="Completed Shakhas" value={completedSessions} icon={ClipboardCheck} color="bg-success-500" sub={`${pct(completionRate)} completion rate`} />
-          <KpiCard label="Attendance Rate" value={pct(attendanceRate)} icon={TrendingUp} color="bg-blue-500" sub={`${fmt(totalPresent)} present of ${fmt(totalMarked)} marked`} />
+        <div className="mt-6 grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <KpiCard label="Total Shakhas" value={activeSessions} icon={CalendarCheck2} color="bg-primary-500" sub="Active Shakhas" />
+          <KpiCard label="Completed Shakhas" value={completedSessions} icon={ClipboardCheck} color="bg-success-500" />
+          <KpiCard label="Total Attendance" value={totalPresent} icon={TrendingUp} color="bg-blue-500" sub="Present marks in the selected period" />
           <KpiCard label="Avg Present / Shakha" value={avgPresentPerSession} icon={Users} color="bg-violet-500" />
-          <KpiCard label="Scheduled Shakhas" value={scheduledSessions} icon={CheckCircle2} color="bg-cyan-500" />
         </div>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -462,60 +511,42 @@ export default function AttendanceReport() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ChartCard title="Attendance Mix" subtitle="Present, absent and unmarked attendance records">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={attendanceMix} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {attendanceMix.map(entry => <Cell key={entry.key} fill={ATTENDANCE_COLORS[entry.key as keyof typeof ATTENDANCE_COLORS]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-2">
-                {attendanceMix.map(d => (
-                  <div key={d.key} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: ATTENDANCE_COLORS[d.key as keyof typeof ATTENDANCE_COLORS] }} />
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{d.name}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartCard title="Average Sankhya by Vibhag" subtitle="Average Present count per Vibhag, including Vibhags with no attendance data">
+            <ResponsiveContainer width="100%" height={Math.max(260, byRegion.length * 42 + 60)}>
+              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="avgPresent" name="Average Present" radius={[0, 4, 4, 0]} barSize={22}>
+                  {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Shakha Status" subtitle="Scheduled, completed and cancelled Shakhas">
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {statusData.map(entry => <Cell key={entry.key} fill={STATUS_COLORS[entry.key]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-2">
-                {statusData.map(d => (
-                  <div key={d.key} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[d.key] }} />
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{d.name}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <ChartCard title="Shakhas by Shakha Type" subtitle="Average Present count across the 5 Shakha types">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byShakhaType} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                <XAxis dataKey="type" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="avgPresent" name="Average Present" radius={[4, 4, 0, 0]}>
+                  {byShakhaType.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </ChartCard>
+        </div>
 
-          <ChartCard title="Present by Gender" subtitle="Aggregate present marks by gender">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartCard title="Present by Gender" subtitle="Average Present count per Shakha, by gender">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
-                  <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                  <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="total">
                     <Cell fill="#3b82f6" />
                     <Cell fill="#ec4899" />
                   </Pie>
@@ -527,72 +558,25 @@ export default function AttendanceReport() {
                   <div key={d.key}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-neutral-600 dark:text-neutral-400">{d.name}</span>
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{fmt(d.value)}</span>
+                      <span className="text-sm font-bold text-neutral-900 dark:text-white">{d.value} avg</span>
                     </div>
                     <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: totalPresent > 0 ? `${Math.round((d.value / totalPresent) * 100)}%` : '0%', backgroundColor: i === 0 ? '#3b82f6' : '#ec4899' }} />
+                      <div className="h-full rounded-full" style={{ width: totalPresent > 0 ? `${Math.round((d.total / totalPresent) * 100)}%` : '0%', backgroundColor: i === 0 ? '#3b82f6' : '#ec4899' }} />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </ChartCard>
-        </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Attendance Rate by Region" subtitle="All configured UK regions, including regions with no attendance data">
-            <ResponsiveContainer width="100%" height={Math.max(260, byRegion.length * 42 + 60)}>
-              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="attendanceRate" name="Attendance Rate %" radius={[0, 4, 4, 0]} barSize={22}>
-                  {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Shakhas by Shakha Type" subtitle="Shakha count and attendance marks by Shakha type">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byShakhaType} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="type" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="sessions" name="Shakhas" fill={PRIMARY} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="absent" name="Absent" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Top Activity Centres" subtitle="Centres with the highest number of filtered Shakhas">
-            <ResponsiveContainer width="100%" height={Math.max(260, byCentre.length * 42 + 60)}>
-              <BarChart data={byCentre} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="centre" tick={{ fontSize: 10, fill: '#6b7280' }} width={135} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="sessions" name="Shakhas" fill={PRIMARY} radius={[0, 4, 4, 0]} barSize={18} />
-                <Bar dataKey="present" name="Present" fill="#22c55e" radius={[0, 4, 4, 0]} barSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Present by Age Group" subtitle="Aggregate present marks across HSS age groups">
+          <ChartCard title="Present by Age Group" subtitle="Average Present count per Shakha, across HSS age groups">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byAgeGroup} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                 <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Present Marks" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="average" name="Average Present" radius={[4, 4, 0, 0]}>
                   {byAgeGroup.map(entry => <Cell key={entry.key} fill={AGE_COLORS[entry.key]} />)}
                 </Bar>
               </BarChart>
@@ -601,17 +585,56 @@ export default function AttendanceReport() {
         </div>
 
         <div className="mt-6">
-          <ChartCard title="Monthly Attendance Trend" subtitle="Shakhas and attendance rate over time">
+          <ChartCard title="Shakha with No Present" subtitle="Shakhas held in the selected period with zero Present marks recorded">
+            {noPresentSessions.length === 0 ? (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 py-6 text-center">
+                Every Shakha in the selected period has at least one Present mark.
+              </p>
+            ) : (
+              <div className="overflow-x-auto max-h-80 overflow-y-auto slim-scroll">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 bg-white dark:bg-neutral-950">
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="py-2 pr-4 text-xs font-semibold text-neutral-500 dark:text-neutral-400">Date</th>
+                      <th className="py-2 pr-4 text-xs font-semibold text-neutral-500 dark:text-neutral-400">Shakha</th>
+                      <th className="py-2 pr-4 text-xs font-semibold text-neutral-500 dark:text-neutral-400">Vibhag</th>
+                      <th className="py-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {noPresentSessions.map(session => (
+                      <tr key={session.id}>
+                        <td className="py-2 pr-4 text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{formatDate(session.date)}</td>
+                        <td className="py-2 pr-4 text-neutral-900 dark:text-white font-medium whitespace-nowrap">{session.activityCentre.replace(' Activity Centre', '')}</td>
+                        <td className="py-2 pr-4 text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{session.region}</td>
+                        <td className="py-2 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: STATUS_COLORS[session.status] }}>
+                            <XCircle className="w-3.5 h-3.5" />
+                            {STATUS_LABELS[session.status]}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ChartCard>
+        </div>
+
+        <div className="mt-6">
+          <ChartCard title="Sankhya Trend" subtitle="Shakhas in the selected period - total, average, male and female Sankhya">
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={monthlyTrend} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
+              <LineChart data={sankhyaTrendData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#6b7280' }} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line yAxisId="left" type="monotone" dataKey="sessions" name="Shakhas" stroke={PRIMARY} strokeWidth={2.5} dot={{ r: 3, fill: PRIMARY, strokeWidth: 0 }} />
-                <Line yAxisId="right" type="monotone" dataKey="attendanceRate" name="Attendance Rate %" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3, fill: '#22c55e', strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="total"   name="Sankhya" stroke="#172E4D" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="average" name="Average" stroke="#f59e0b" strokeWidth={2}   strokeDasharray="4 4" dot={false} />
+                <Line type="monotone" dataKey="male"    name="Male"    stroke="#3b82f6" strokeWidth={2}   dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="female"  name="Female"  stroke="#ec4899" strokeWidth={2}   dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>

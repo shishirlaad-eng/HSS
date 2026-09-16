@@ -41,6 +41,8 @@ import SuperAdminAuth from "./components/SuperAdminAuth";
 import NonMemberDashboard from "./components/NonMemberDashboard";
 import StripeDonation from "./components/StripeDonation";
 import MyDonations from "./components/MyDonations";
+import ShakhaDakshina from "./components/ShakhaDakshina";
+import NonMemberAccounts from "./components/NonMemberAccounts";
 import ComplianceManagement from "./components/ComplianceManagement";
 import EmergencyDetails from "./components/EmergencyDetails";
 import IncidentManagement from "./components/IncidentManagement";
@@ -404,6 +406,8 @@ export default function App() {
           <StripeDonation onBack={() => handleNavigate("dashboard")} />
         ) : currentPage === "my-donations" ? (
           <MyDonations onGiveDakshina={() => handleNavigate("donate")} />
+        ) : currentPage === "shakha-dakshina" ? (
+          <ShakhaDakshina />
         ) : currentPage === "dashboard" ? (
           <Dashboard
             onNavigate={handleNavigate}
@@ -444,6 +448,8 @@ export default function App() {
               setCurrentPage('members');
             }}
           />
+        ) : currentPage === "non-member-accounts" ? (
+          <NonMemberAccounts />
         ) : currentPage === "pending-approvals" ? (
           <PendingApprovals />
         ) : currentPage === "pending-guardian-approvals" ? (

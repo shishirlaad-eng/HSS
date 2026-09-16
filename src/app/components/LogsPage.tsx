@@ -1,21 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { User, Shield, Mail } from 'lucide-react';
 import LogsManagement, { LogModuleType } from './LogsManagement';
+import { useModulePermissions } from '../contexts/RoleScopeContext';
 
 interface Tab {
   id: LogModuleType;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  action: string;
 }
 
-const TABS: Tab[] = [
-  { id: 'login', label: 'Login Logs',  icon: User   },
-  { id: 'audit', label: 'Audit Logs',  icon: Shield },
-  { id: 'email', label: 'Email Logs',  icon: Mail   },
+const ALL_TABS: Tab[] = [
+  { id: 'login', label: 'Login Logs',  icon: User,   action: 'login_view' },
+  { id: 'audit', label: 'Audit Logs',  icon: Shield, action: 'audit_view' },
+  { id: 'email', label: 'Email Logs',  icon: Mail,   action: 'email_view' },
 ];
 
 export default function LogsPage() {
-  const [activeTab, setActiveTab] = useState<LogModuleType>('login');
+  const alp = useModulePermissions('audit-logs');
+  const tabs = useMemo(() => ALL_TABS.filter(tab => alp.has(tab.action)), [alp]);
+  const [activeTab, setActiveTab] = useState<LogModuleType>(tabs[0]?.id ?? 'login');
 
   return (
     <div className="bg-neutral-50 dark:bg-neutral-950 min-h-screen">
@@ -25,7 +29,7 @@ export default function LogsPage() {
           className="flex items-center px-6 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           aria-label="Log type tabs"
         >
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (

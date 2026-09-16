@@ -126,6 +126,19 @@ function AgeGroupBadge({ dateOfBirth }: { dateOfBirth: string }) {
   return <span className="text-sm font-normal text-neutral-900 dark:text-white">{AGE_GROUP_LABELS[group]}</span>;
 }
 
+function AccountTypeBadge({ category }: { category?: 'Member' | 'Non-Member' }) {
+  const isNonMember = category === 'Non-Member';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${
+      isNonMember
+        ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+        : 'bg-success-50 text-success-700 dark:bg-success-950/20 dark:text-success-400 border-success-200 dark:border-success-800'
+    }`}>
+      {isNonMember ? 'Non-Member' : 'Member'}
+    </span>
+  );
+}
+
 function RoleText({ role }: { role: string }) {
   return (
     <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
@@ -488,8 +501,13 @@ export default function MemberManagement({
   const [members, setMembers] = useState<Member[]>(() => filterByScope(mockMembers, scope));
   const [transferVersion, setTransferVersion] = useState(0);
 
-  // Re-scope when role switches (scope comes from context which updates on role change)
-  const scopedMembers = useMemo(() => filterByScope(mockMembers, scope), [scope, transferVersion]);
+  // Re-scope when role switches (scope comes from context which updates on role change).
+  // Members awaiting approval (pending / pending-parental-consent) are excluded here —
+  // they only appear in the Pending Karyawaha / Guardian Approvals pages, not All Members.
+  const scopedMembers = useMemo(
+    () => filterByScope(mockMembers, scope).filter(m => m.status !== 'pending' && m.status !== 'pending-parental-consent'),
+    [scope, transferVersion],
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>(
     TABLE_VIEW_DEFAULT_ROLES.includes(selectedRole) ? 'table' : 'grid'
@@ -550,6 +568,7 @@ export default function MemberManagement({
     { key: 'lastName',   label: 'Last Name'      },
     { key: 'shakha',     label: 'Shakha (Branch)' },
     { key: 'memberType', label: 'Age Category'   },
+    { key: 'accountType', label: 'Account Type'  },
     { key: 'email',      label: 'Email Address'  },
     { key: 'phone',      label: 'Contact Number' },
     { key: 'status',     label: 'Member Status'  },
@@ -577,7 +596,7 @@ export default function MemberManagement({
     karyakartasOnly
       ? { id: true, firstName: true, lastName: true, shakha: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
       : {
-          id: true, firstName: true, lastName: true, shakha: true, memberType: true, email: true, phone: true, status: true,
+          id: true, firstName: true, lastName: true, shakha: true, memberType: true, accountType: true, email: true, phone: true, status: true,
           regDate: true,
           townCity: false,
           emergencyContactName: false, emergencyContactPhone: false, emergencyContactEmail: false, emergencyContactRelationship: false,
@@ -649,12 +668,12 @@ export default function MemberManagement({
           case 'Status':
             return f.values.some(v => {
               if (v === 'Active')                    return m.status === 'active';
-              if (v === 'Pending Approval')          return m.status === 'pending';
-              if (v === 'Pending Parental Consent')  return m.status === 'pending-parental-consent';
               if (v === 'Inactive')                  return m.status === 'inactive';
               if (v === 'Rejected')                  return m.status === 'rejected';
               return false;
             });
+          case 'Account Type':
+            return f.values.some(v => v === (m.memberCategory ?? 'Member'));
           case 'Age Groups (years old)':
             return f.values.some(v => v === getAgeGroupLabel(m.dateOfBirth));
           case 'Gender':
@@ -724,8 +743,8 @@ export default function MemberManagement({
     const data = selectedIds.size > 0 ? sortedMembers.filter(m => selectedIds.has(m.id)) : sortedMembers;
     if (!data.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Membership ID,First Name,Last Name,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
-      ...data.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${formatDate(m.registrationDate)}"`),
+      'Membership ID,First Name,Last Name,Account Type,Email,Phone,Status,Country,Vibhag,Nagar,Shakha,Registration Date',
+      ...data.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.memberCategory ?? 'Member'}","${m.email}","${m.phone ?? ''}","${m.status}","${m.country}","${m.region}","${m.town}","${m.activityCentre}","${formatDate(m.registrationDate)}"`),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -931,6 +950,7 @@ export default function MemberManagement({
               showMatchModeToggle
               filterOptions={{
                 'Status':            MEMBER_FILTER_OPTIONS['Status'],
+                'Account Type':      MEMBER_FILTER_OPTIONS['Account Type'],
                 'Age Groups (years old)': MEMBER_FILTER_OPTIONS['Age Groups (years old)'],
                 'Gender':            MEMBER_FILTER_OPTIONS['Gender'],
                 'Responsibility':    MEMBER_FILTER_OPTIONS['Responsibility'],
@@ -1055,6 +1075,7 @@ export default function MemberManagement({
                         <RoleText role={m.jobTitle} />
                         <StatusBadge status={m.status} />
                         <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
+                        <AccountTypeBadge category={m.memberCategory} />
                         <span className="text-xs text-neutral-400 font-mono">{m.id}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -1135,6 +1156,7 @@ export default function MemberManagement({
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     <AgeGroupBadge dateOfBirth={m.dateOfBirth} />
+                    <AccountTypeBadge category={m.memberCategory} />
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                     <span className="flex items-center gap-1 text-neutral-500">
@@ -1222,6 +1244,9 @@ export default function MemberManagement({
                       )}
                       {visibleColumns.memberType && (
                         <td className="px-4 py-3.5"><AgeGroupBadge dateOfBirth={m.dateOfBirth} /></td>
+                      )}
+                      {visibleColumns.accountType && (
+                        <td className="px-4 py-3.5"><AccountTypeBadge category={m.memberCategory} /></td>
                       )}
                       {visibleColumns.email && (
                         <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">

@@ -526,11 +526,12 @@ interface MemberDetailProps {
   onEdit: () => void;
   onStatusChange: (action: ModalAction) => void;
   onDelete: () => void;
-  /** When set to 'approval', hides Edit/Deactivate/Delete and shows Approve + Reject instead */
+  /** When set to 'approval', hides Edit/Deactivate/Delete and shows Approve + Reject instead,
+   *  and also hides the Compliance Details and Responsibilities and Roles tabs — used only by
+   *  the Pending Karyawaha Approvals and Pending Parent/Guardian Approvals detail views. */
   mode?: 'approval';
   onApprove?: () => void;
   onReject?: () => void;
-  hideComplianceTab?: boolean;
   initialTab?: Tab;
   backLabel?: string;
 }
@@ -645,7 +646,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, hideComplianceTab, initialTab, backLabel }: MemberDetailProps) {
+export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, initialTab, backLabel }: MemberDetailProps) {
   const { selectedRole } = useRoleScope();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
 
@@ -797,13 +798,11 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     { id: 'personal',      label: 'Personal Info'          },
     ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation',  label: 'Organisation'           },
-    ...(!hideComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
-    { id: 'roles',         label: 'Responsibilities and Roles' },
+    ...(mode !== 'approval' ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
+    ...(mode !== 'approval' ? [{ id: 'roles' as Tab, label: 'Responsibilities and Roles' }] : []),
     { id: 'other',         label: 'Other Information'      },
-    ...(mode !== 'approval' ? [
-      { id: 'activity' as Tab, label: 'Activity' },
-      { id: 'history'  as Tab, label: 'History'  },
-    ] : []),
+    { id: 'activity' as Tab, label: 'Activity' },
+    { id: 'history'  as Tab, label: 'History'  },
   ];
 
   const isInFirst20 = useMemo(() => mockMembers.findIndex(m => m.id === member.id) < 20, [member.id]);

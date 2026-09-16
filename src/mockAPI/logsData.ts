@@ -370,6 +370,71 @@ export const mockLoginLogs: LoginLog[] = [
   },
 ];
 
+// ── Recent login activity, generated relative to "today" ────────
+// The 20 static entries above are fixed to May 2026 and go stale as the
+// prototype's "today" moves on — the Dashboard's "Login Trend (last 7 days)"
+// chart needs entries that are always genuinely within the last week, so
+// these are computed at load time instead of hardcoded. Appended additively;
+// the static seed above is untouched.
+const RECENT_LOGIN_USERS: { userName: string; email: string; role: string; location: string }[] = [
+  { userName: 'John Doe',       email: 'john.doe@hss.org.uk',       role: 'Super Admin',  location: 'London, UK' },
+  { userName: 'Sarah Smith',    email: 'sarah.smith@hss.org.uk',    role: 'Admin',        location: 'Birmingham, UK' },
+  { userName: 'Arjun Sharma',   email: 'arjun.sharma@example.com',  role: 'Shakha Admin', location: 'Wembley, UK' },
+  { userName: 'Priya Patel',    email: 'priya.patel@example.com',   role: 'Adult Member', location: 'Wembley, UK' },
+  { userName: 'Rahul Mehta',    email: 'rahul.mehta@example.com',   role: 'Adult Member', location: 'Harrow, UK' },
+  { userName: 'Deepa Nair',     email: 'deepa.nair@example.com',    role: 'Adult Member', location: 'Manchester, UK' },
+];
+const WEB_DEVICES = [
+  { device: 'MacBook Pro 14"', browser: 'Chrome 126.0', os: 'macOS 14.5' },
+  { device: 'Windows PC',      browser: 'Edge 126.0',   os: 'Windows 11' },
+  { device: 'Dell XPS 15',     browser: 'Firefox 127.0', os: 'Windows 11' },
+];
+const APP_DEVICES = [
+  { device: 'iPhone 15 Pro',        browser: 'MyHSS App 2.4', os: 'iOS 17.5' },
+  { device: 'Samsung Galaxy S24',   browser: 'MyHSS App 2.4', os: 'Android 14' },
+  { device: 'iPad Pro',             browser: 'MyHSS App 2.4', os: 'iPadOS 17.5' },
+];
+
+function generateRecentLoginLogs(): LoginLog[] {
+  const entries: LoginLog[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let seq = 0;
+  for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - dayOffset);
+    // 3 web + 2 app logins per day, deterministic (not random) so the data is stable across reloads
+    for (let i = 0; i < 5; i++) {
+      const isApp = i >= 3;
+      const user = RECENT_LOGIN_USERS[(dayOffset * 5 + i) % RECENT_LOGIN_USERS.length];
+      const deviceInfo = (isApp ? APP_DEVICES : WEB_DEVICES)[i % 3];
+      const hour = 7 + ((dayOffset * 5 + i) % 12);
+      const minute = (i * 17 + dayOffset * 7) % 60;
+      const loginTime = new Date(day);
+      loginTime.setHours(hour, minute, 0, 0);
+      seq += 1;
+      entries.push({
+        id: `LOG-R${String(seq).padStart(3, '0')}`,
+        userName: user.userName,
+        email: user.email,
+        role: user.role,
+        loginTime: loginTime.toISOString(),
+        logoutTime: null,
+        ipAddress: `82.132.${(200 + seq) % 255}.${(14 + seq) % 255}`,
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        status: 'Success',
+        location: user.location,
+        sessionDuration: dayOffset === 0 ? 'Active' : `${1 + (seq % 5)}h ${(seq * 7) % 60}m`,
+      });
+    }
+  }
+  return entries;
+}
+
+mockLoginLogs.push(...generateRecentLoginLogs());
+
 // ── Audit Logs ────────────────────────────────────────────────
 // 35 entries — all write/mutate actions across every HSS module
 // No view actions. No login actions (those live in Login Logs).
