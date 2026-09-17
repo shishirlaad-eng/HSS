@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, AddressLookup } from './hb/common';
 import {
   ShakhaSession,
   AttendanceRecord,
@@ -64,6 +64,7 @@ interface CreateForm {
   utsav: string;
   recurDays: number[];
   repeatUntil: string;
+  locationBuildingName: string;
   locationAddressLine1: string;
   locationAddressLine2: string;
   locationCity: string;
@@ -81,6 +82,7 @@ const EMPTY_FORM = (date: string): CreateForm => ({
   utsav: 'None',
   recurDays: [],
   repeatUntil: '',
+  locationBuildingName: '',
   locationAddressLine1: '',
   locationAddressLine2: '',
   locationCity: '',
@@ -90,6 +92,7 @@ const EMPTY_FORM = (date: string): CreateForm => ({
 // ── Helpers ───────────────────────────────────────────────────
 
 interface CentreLocationOption {
+  buildingName: string;
   line1: string;
   line2: string;
   city: string;
@@ -103,10 +106,10 @@ interface CentreLocationOption {
 function getCentreLocationOptions(centreName: string): { primary: CentreLocationOption | null; additional: CentreLocationOption | null } {
   const centre = initialCentres.find(c => c.name === centreName);
   const primary: CentreLocationOption | null = centre?.addressLine1
-    ? { line1: centre.addressLine1, line2: centre.addressLine2 ?? '', city: centre.city ?? '', postCode: centre.postCode ?? '' }
+    ? { buildingName: centre.buildingName ?? '', line1: centre.addressLine1, line2: centre.addressLine2 ?? '', city: centre.city ?? '', postCode: centre.postCode ?? '' }
     : null;
   const additional: CentreLocationOption | null = centre?.address2Line1
-    ? { line1: centre.address2Line1, line2: centre.address2Line2 ?? '', city: centre.address2City ?? '', postCode: centre.address2PostCode ?? '' }
+    ? { buildingName: centre.address2BuildingName ?? '', line1: centre.address2Line1, line2: centre.address2Line2 ?? '', city: centre.address2City ?? '', postCode: centre.address2PostCode ?? '' }
     : null;
   return { primary, additional };
 }
@@ -178,6 +181,7 @@ export default function CreateSession({
             repeatUntil:    '',
             // Legacy Shakhas created before this feature have no stored
             // location — fall back to the Shakha's primary address.
+            locationBuildingName: sessionToEdit.locationBuildingName ?? opts.primary?.buildingName ?? '',
             locationAddressLine1: sessionToEdit.locationAddressLine1 ?? opts.primary?.line1 ?? '',
             locationAddressLine2: sessionToEdit.locationAddressLine2 ?? opts.primary?.line2 ?? '',
             locationCity:         sessionToEdit.locationCity         ?? opts.primary?.city  ?? '',
@@ -193,6 +197,7 @@ export default function CreateSession({
             town:           showTownSelect   ? '' : (scope.town ?? ''),
             activityCentre: initialCentre,
             shakhaType:     scope.showCentreFilter ? '' : getShakhaTypeForCentre(initialCentre),
+            locationBuildingName: opts.primary?.buildingName ?? '',
             locationAddressLine1: opts.primary?.line1 ?? '',
             locationAddressLine2: opts.primary?.line2 ?? '',
             locationCity:         opts.primary?.city  ?? '',
@@ -234,6 +239,7 @@ export default function CreateSession({
     const opts = getCentreLocationOptions(v);
     setForm(f => ({
       ...f, activityCentre: v, shakhaType: getShakhaTypeForCentre(v),
+      locationBuildingName: opts.primary?.buildingName ?? '',
       locationAddressLine1: opts.primary?.line1 ?? '',
       locationAddressLine2: opts.primary?.line2 ?? '',
       locationCity:         opts.primary?.city  ?? '',
@@ -250,6 +256,7 @@ export default function CreateSession({
     if (!picked) return;
     setForm(f => ({
       ...f,
+      locationBuildingName: picked.buildingName,
       locationAddressLine1: picked.line1,
       locationAddressLine2: picked.line2,
       locationCity: picked.city,
@@ -307,6 +314,7 @@ export default function CreateSession({
       endTime:        form.endTime,
       status:         'scheduled' as const,
       totalExpected:  centreRecords.length,
+      locationBuildingName: form.locationBuildingName || undefined,
       locationAddressLine1: form.locationAddressLine1 || undefined,
       locationAddressLine2: form.locationAddressLine2 || undefined,
       locationCity:         form.locationCity || undefined,
@@ -386,6 +394,7 @@ export default function CreateSession({
           dayOfWeek:      new Date(form.date + 'T12:00:00').getDay(),
           attendanceRecords: buildAttendanceRecordsForCentre(form.activityCentre).map(r => ({ ...r })),
           totalExpected:  buildAttendanceRecordsForCentre(form.activityCentre).length,
+          locationBuildingName: form.locationBuildingName || undefined,
           locationAddressLine1: form.locationAddressLine1 || undefined,
           locationAddressLine2: form.locationAddressLine2 || undefined,
           locationCity:         form.locationCity || undefined,
@@ -618,38 +627,19 @@ export default function CreateSession({
                   Pulled through from the Shakha's address in HSS UK Setup — editable for this Shakha only. Drives geolocation for App check-in.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField className="md:col-span-2">
-                    <FormLabel>Address Line 1</FormLabel>
-                    <FormInput
-                      value={form.locationAddressLine1}
-                      onChange={e => setField('locationAddressLine1', e.target.value)}
-                      placeholder="Street address"
-                    />
-                  </FormField>
-                  <FormField className="md:col-span-2">
-                    <FormLabel>Address Line 2</FormLabel>
-                    <FormInput
-                      value={form.locationAddressLine2}
-                      onChange={e => setField('locationAddressLine2', e.target.value)}
-                      placeholder="Area / district (optional)"
-                    />
-                  </FormField>
-                  <FormField>
-                    <FormLabel>City</FormLabel>
-                    <FormInput
-                      value={form.locationCity}
-                      onChange={e => setField('locationCity', e.target.value)}
-                    />
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Post Code</FormLabel>
-                    <FormInput
-                      value={form.locationPostCode}
-                      onChange={e => setField('locationPostCode', e.target.value)}
-                    />
-                  </FormField>
-                </div>
+                <AddressLookup
+                  values={{
+                    buildingName: form.locationBuildingName,
+                    addressLine1: form.locationAddressLine1,
+                    addressLine2: form.locationAddressLine2,
+                    townCity: form.locationCity,
+                    postCode: form.locationPostCode,
+                  }}
+                  onChange={(field, value) => setField(
+                    ({ buildingName: 'locationBuildingName', addressLine1: 'locationAddressLine1', addressLine2: 'locationAddressLine2', townCity: 'locationCity', postCode: 'locationPostCode' } as const)[field],
+                    value,
+                  )}
+                />
               </div>
             )}
 
@@ -777,7 +767,7 @@ export default function CreateSession({
                     <MapPin className="w-3.5 h-3.5" /> Location
                   </dt>
                   <dd className="text-xs font-medium text-neutral-900 dark:text-white text-right">
-                    {[form.locationAddressLine1, form.locationCity, form.locationPostCode].filter(Boolean).join(', ') || '—'}
+                    {[form.locationBuildingName, form.locationAddressLine1, form.locationCity, form.locationPostCode].filter(Boolean).join(', ') || '—'}
                   </dd>
                 </div>
 

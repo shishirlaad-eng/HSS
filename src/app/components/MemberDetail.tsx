@@ -37,6 +37,7 @@ import {
 import { toast } from 'sonner';
 import { SecondaryButton, PrimaryButton, Pagination, SearchBar, DateRangeFilter } from './hb/listing';
 import { FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText } from './hb/common/Form';
+import { AddressLookup } from './hb/common/AddressLookup';
 import {
   Member,
   getAge,
@@ -496,26 +497,6 @@ function EditableInfoItem({
   );
 }
 
-// ── Mock postcode-to-address lookup ────────────────────────────
-
-const MOCK_STREET_NAMES = ['High Street', 'Church Road', 'Kings Avenue', 'Mill Lane', 'Victoria Street'];
-
-function mockAddressesForPostcode(postcode: string, fallbackTown: string): { label: string; buildingName: string; addressLine1: string; town: string }[] {
-  const cleaned = postcode.trim();
-  if (cleaned.length < 4) return [];
-  const seed = cleaned.toUpperCase().split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return [1, 2, 3].map(n => {
-    const street = MOCK_STREET_NAMES[(seed + n) % MOCK_STREET_NAMES.length];
-    const houseNumber = ((seed * n) % 90) + 1;
-    return {
-      label: `${houseNumber} ${street}`,
-      buildingName: '',
-      addressLine1: `${houseNumber} ${street}`,
-      town: fallbackTown,
-    };
-  });
-}
-
 // ── Props ─────────────────────────────────────────────────────
 
 type ModalAction = 'deactivate' | 'reactivate' | 'reject';
@@ -653,7 +634,6 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
   const [isEditing, setIsEditing]   = useState(false);
   const [form, setForm]             = useState<Member>(member);
   const [savedForm, setSavedForm]   = useState<Member>(member);
-  const [selectedAddress, setSelectedAddress] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -1091,44 +1071,39 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                 <InfoSection title="Contact Details">
                   <EditableInfoItem label="Contact Number" required value={form.phone ?? ''} isEditing={isEditing} onChange={v => setField('phone', v)} phone error={fieldErrors.phone} errorMessage="Contact number is required." />
                   <EditableInfoItem label="Email Address" required value={form.email} isEditing={isEditing && selectedRole === 'Super Admin'} onChange={v => setField('email', v)} type="email" error={fieldErrors.email} errorMessage="Enter a valid email address." />
-                  <EditableInfoItem
-                    label="Post Code"
-                    required
-                    value={form.postCode ?? ''}
-                    isEditing={isEditing}
-                    onChange={v => { setField('postCode', v); setSelectedAddress(''); }}
-                    error={fieldErrors.postCode}
-                    errorMessage="Post code is required."
-                  />
-                  {isEditing && (
-                    <div>
-                      <label className="text-xs text-neutral-500 dark:text-neutral-400 block mb-1.5">Select Address</label>
-                      <FormSelect
-                        value={selectedAddress}
-                        disabled={(form.postCode ?? '').trim().length < 4}
-                        onChange={e => {
-                          const idx = e.target.value;
-                          setSelectedAddress(idx);
-                          const options = mockAddressesForPostcode(form.postCode ?? '', member.town);
-                          const picked = options[Number(idx)];
-                          if (picked) {
-                            setField('buildingName', picked.buildingName);
-                            setField('addressLine1', picked.addressLine1);
-                            setField('contactTownCity', picked.town);
-                          }
+                  {isEditing ? (
+                    <div className="col-span-full">
+                      <AddressLookup
+                        values={{
+                          buildingName: form.buildingName ?? '',
+                          addressLine1: form.addressLine1 ?? '',
+                          addressLine2: form.addressLine2 ?? '',
+                          townCity: form.contactTownCity ?? '',
+                          postCode: form.postCode ?? '',
                         }}
-                      >
-                        <option value="">{(form.postCode ?? '').trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
-                        {mockAddressesForPostcode(form.postCode ?? '', member.town).map((opt, i) => (
-                          <option key={i} value={i}>{opt.label}</option>
-                        ))}
-                      </FormSelect>
+                        onChange={(field, value) => setField(field === 'townCity' ? 'contactTownCity' : field, value)}
+                        fallbackTown={member.town}
+                        errors={{
+                          addressLine1: !!fieldErrors.addressLine1,
+                          townCity: !!fieldErrors.contactTownCity,
+                          postCode: !!fieldErrors.postCode,
+                        }}
+                        errorMessages={{
+                          addressLine1: "Address line 1 is required.",
+                          townCity: "Town / city is required.",
+                          postCode: "Post code is required.",
+                        }}
+                      />
                     </div>
+                  ) : (
+                    <>
+                      <InfoItem label="Building Name">{form.buildingName || '-'}</InfoItem>
+                      <InfoItem label="Address Line 1" required>{form.addressLine1 || '-'}</InfoItem>
+                      <InfoItem label="Address Line 2">{form.addressLine2 || '-'}</InfoItem>
+                      <InfoItem label="Town / City" required>{form.contactTownCity || '-'}</InfoItem>
+                      <InfoItem label="Post Code" required>{form.postCode || '-'}</InfoItem>
+                    </>
                   )}
-                  <EditableInfoItem label="Building Name" value={form.buildingName ?? ''} isEditing={isEditing} onChange={v => setField('buildingName', v)} />
-                  <EditableInfoItem label="Address Line 1" required value={form.addressLine1 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine1', v)} error={fieldErrors.addressLine1} errorMessage="Address line 1 is required." />
-                  <EditableInfoItem label="Address Line 2" value={form.addressLine2 ?? ''} isEditing={isEditing} onChange={v => setField('addressLine2', v)} />
-                  <EditableInfoItem label="Town / City" required value={form.contactTownCity ?? ''} isEditing={isEditing} onChange={v => setField('contactTownCity', v)} error={fieldErrors.contactTownCity} errorMessage="Town / city is required." />
                 </InfoSection>
 
                 <InfoSection title="Emergency Contact Details">

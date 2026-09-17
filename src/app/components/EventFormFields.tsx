@@ -28,24 +28,6 @@ export const composeVenueAddress = (f: { venueBuildingName: string; venueAddress
   [f.venueBuildingName, f.venueAddressLine1, f.venueAddressLine2, f.venueTownCity, f.venuePostCode]
     .map(s => s.trim()).filter(Boolean).join(', ');
 
-// Mock postcode lookup (matches the pattern used on the member address form)
-const MOCK_STREET_NAMES = ['High Street', 'Church Road', 'Kings Avenue', 'Mill Lane', 'Victoria Street'];
-export function mockAddressesForPostcode(postcode: string, fallbackTown: string): { label: string; buildingName: string; addressLine1: string; town: string }[] {
-  const cleaned = postcode.trim();
-  if (cleaned.length < 4) return [];
-  const seed = cleaned.toUpperCase().split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return [1, 2, 3].map(n => {
-    const street = MOCK_STREET_NAMES[(seed + n) % MOCK_STREET_NAMES.length];
-    const houseNumber = ((seed * n) % 90) + 1;
-    return {
-      label: `${houseNumber} ${street}`,
-      buildingName: '',
-      addressLine1: `${houseNumber} ${street}`,
-      town: fallbackTown,
-    };
-  });
-}
-
 export function CheckChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
     <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${

@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, ArrowLeft, Save, Send } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, FormTextarea, PhoneInput, ErrorText, AddressLookup } from './hb/common';
 import {
   Member,
   MemberType,
@@ -475,29 +475,28 @@ export default function MemberAddPage({
                 <FormInput type="email" value={form.email} onChange={set('email')} className={errCls(errors.email)} />
                 <ErrorText>{errors.email}</ErrorText>
               </FormField>
-              <FormField>
-                <FormLabel required>Post Code</FormLabel>
-                <FormInput value={form.postCode} onChange={set('postCode')} className={errCls(errors.postCode)} />
-                <ErrorText>{errors.postCode}</ErrorText>
-              </FormField>
-              <FormField>
-                <FormLabel>Building Name</FormLabel>
-                <FormInput value={form.buildingName} onChange={set('buildingName')} />
-              </FormField>
-              <FormField>
-                <FormLabel required>Address Line 1</FormLabel>
-                <FormInput value={form.addressLine1} onChange={set('addressLine1')} className={errCls(errors.addressLine1)} />
-                <ErrorText>{errors.addressLine1}</ErrorText>
-              </FormField>
-              <FormField>
-                <FormLabel>Address Line 2</FormLabel>
-                <FormInput value={form.addressLine2} onChange={set('addressLine2')} />
-              </FormField>
-              <FormField className="sm:col-span-2">
-                <FormLabel required>Town / City</FormLabel>
-                <FormInput value={form.contactTownCity} onChange={set('contactTownCity')} className={errCls(errors.contactTownCity)} />
-                <ErrorText>{errors.contactTownCity}</ErrorText>
-              </FormField>
+            </div>
+            <div className="mt-4">
+              <AddressLookup
+                values={{
+                  buildingName: form.buildingName,
+                  addressLine1: form.addressLine1,
+                  addressLine2: form.addressLine2,
+                  townCity: form.contactTownCity,
+                  postCode: form.postCode,
+                }}
+                onChange={(field, value) => setForm(prev => ({ ...prev, [field === 'townCity' ? 'contactTownCity' : field]: value }))}
+                errors={{
+                  addressLine1: !!errors.addressLine1,
+                  townCity: !!errors.contactTownCity,
+                  postCode: !!errors.postCode,
+                }}
+                errorMessages={{
+                  addressLine1: errors.addressLine1,
+                  townCity: errors.contactTownCity,
+                  postCode: errors.postCode,
+                }}
+              />
             </div>
           </Card>
 

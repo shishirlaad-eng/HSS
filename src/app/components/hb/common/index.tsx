@@ -24,5 +24,7 @@ export {
   FormSelectItem
 } from "./Form";
 export { RichTextEditor } from "./RichTextEditor";
+export { AddressLookup } from "./AddressLookup";
+export type { AddressField, AddressValues } from "./AddressLookup";
 export { StatCard } from "./StatCard";
 export { StatusSlider } from "./StatusSlider";

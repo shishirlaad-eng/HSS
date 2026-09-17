@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Save, Globe, MapPin, Ticket, Copy } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
-import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, RichTextEditor, AddressLookup } from './hb/common';
 import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, AgeGroup, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAge, getAgeGroup, mockMembers } from '../../mockAPI/membersData';
 import { Event, EVENT_TERMS_AND_CONDITIONS, EVENT_CONFIRMATION_VARIABLES, DEFAULT_CONFIRMATION_SUBJECT, DEFAULT_CONFIRMATION_MESSAGE, mockCoupons, KARYAKRAM_TYPE_OPTIONS } from '../../mockAPI/eventsData';
 import { toast } from 'sonner';
@@ -21,7 +21,6 @@ import {
   isAllSelected,
   ALL_SENTINEL,
   composeVenueAddress,
-  mockAddressesForPostcode,
 } from './EventFormFields';
 
 interface EventCreateProps {
@@ -54,7 +53,6 @@ const EMPTY_FORM = {
   imageUrl: '',
   locationType: 'physical' as 'physical' | 'online',
   venuePostCode: '',
-  venueSelectedAddress: '',
   venueBuildingName: '',
   venueAddressLine1: '',
   venueAddressLine2: '',
@@ -300,11 +298,7 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
 
   const set = (field: string, value: any) => {
     if (isDraft) setIsDraft(false);
-    setFormData(prev => {
-      const next: any = { ...prev, [field]: value };
-      if (field === 'venuePostCode') { next.venueSelectedAddress = ''; }
-      return next;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const errCls = (key: string) => errors[key] ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
@@ -711,72 +705,38 @@ export default function EventCreate({ onBack, onSave, onPublish, cloneFrom }: Ev
                     </button>
                   </div>
                   {formData.locationType === 'physical' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField>
-                        <FormLabel>Post Code</FormLabel>
-                        <FormInput
-                          ref={el => { fieldRefs.current.venuePostCode = el; }}
-                          value={formData.venuePostCode}
-                          onChange={e => set('venuePostCode', e.target.value)}
-                          placeholder="Post code"
-                          className={errCls('venuePostCode')}
-                        />
-                        <ErrorText>{touched && errors.venuePostCode}</ErrorText>
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Select Address</FormLabel>
-                        <FormSelect
-                          value={formData.venueSelectedAddress}
-                          disabled={formData.venuePostCode.trim().length < 4}
-                          onChange={e => {
-                            const idx = e.target.value;
-                            set('venueSelectedAddress', idx);
-                            const options = mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity);
-                            const picked = options[Number(idx)];
-                            if (picked) {
-                              set('venueBuildingName', picked.buildingName);
-                              set('venueAddressLine1', picked.addressLine1);
-                              set('venueTownCity', picked.town);
-                            }
-                          }}
-                        >
-                          <option value="">{formData.venuePostCode.trim().length < 4 ? 'Enter a post code first' : 'Select an address'}</option>
-                          {mockAddressesForPostcode(formData.venuePostCode, formData.venueTownCity).map((opt, i) => (
-                            <option key={i} value={i}>{opt.label}</option>
-                          ))}
-                        </FormSelect>
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Building Name</FormLabel>
-                        <FormInput value={formData.venueBuildingName} onChange={e => set('venueBuildingName', e.target.value)} placeholder="Building name" />
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Address Line 1</FormLabel>
-                        <FormInput
-                          ref={el => { fieldRefs.current.venueAddressLine1 = el; }}
-                          value={formData.venueAddressLine1}
-                          onChange={e => set('venueAddressLine1', e.target.value)}
-                          placeholder="Address line 1"
-                          className={errCls('venueAddressLine1')}
-                        />
-                        <ErrorText>{touched && errors.venueAddressLine1}</ErrorText>
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Address Line 2</FormLabel>
-                        <FormInput value={formData.venueAddressLine2} onChange={e => set('venueAddressLine2', e.target.value)} placeholder="Address line 2" />
-                      </FormField>
-                      <FormField>
-                        <FormLabel>Town / City</FormLabel>
-                        <FormInput
-                          ref={el => { fieldRefs.current.venueTownCity = el; }}
-                          value={formData.venueTownCity}
-                          onChange={e => set('venueTownCity', e.target.value)}
-                          placeholder="Town / City"
-                          className={errCls('venueTownCity')}
-                        />
-                        <ErrorText>{touched && errors.venueTownCity}</ErrorText>
-                      </FormField>
-                    </div>
+                    <AddressLookup
+                      values={{
+                        buildingName: formData.venueBuildingName,
+                        addressLine1: formData.venueAddressLine1,
+                        addressLine2: formData.venueAddressLine2,
+                        townCity: formData.venueTownCity,
+                        postCode: formData.venuePostCode,
+                      }}
+                      onChange={(field, value) => set({
+                        buildingName: 'venueBuildingName',
+                        addressLine1: 'venueAddressLine1',
+                        addressLine2: 'venueAddressLine2',
+                        townCity: 'venueTownCity',
+                        postCode: 'venuePostCode',
+                      }[field], value)}
+                      fallbackTown={formData.venueTownCity}
+                      errors={{
+                        addressLine1: touched && !!errors.venueAddressLine1,
+                        townCity: touched && !!errors.venueTownCity,
+                        postCode: touched && !!errors.venuePostCode,
+                      }}
+                      errorMessages={{
+                        addressLine1: errors.venueAddressLine1,
+                        townCity: errors.venueTownCity,
+                        postCode: errors.venuePostCode,
+                      }}
+                      fieldRefs={{
+                        addressLine1: el => { fieldRefs.current.venueAddressLine1 = el; },
+                        townCity: el => { fieldRefs.current.venueTownCity = el; },
+                        postCode: el => { fieldRefs.current.venuePostCode = el; },
+                      }}
+                    />
                   ) : (
                     <FormField>
                       <FormLabel>Online Call URL</FormLabel>

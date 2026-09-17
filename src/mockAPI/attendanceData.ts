@@ -47,6 +47,7 @@ export interface ShakhaSession {
   // Shakha's address(es) set up in HSS UK Setup, but editable per session so a
   // Shakha that meets at two different venues across the week can pick which
   // one (or override it entirely). Drives geolocation for App check-in.
+  locationBuildingName?: string;
   locationAddressLine1?: string;
   locationAddressLine2?: string;
   locationCity?: string;

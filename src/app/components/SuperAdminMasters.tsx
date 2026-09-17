@@ -17,6 +17,7 @@ import {
 import {
   FormModal, FormSection, FormField, FormLabel,
   FormInput, FormSelect, StatusSlider, ErrorText,
+  AddressLookup,
 } from './hb/common';
 import { toast } from 'sonner';
 import { ROLE_TYPE_OPTIONS, MASTERS_CASCADE, mockMembers } from '../../mockAPI/membersData';
@@ -54,12 +55,14 @@ export interface MasterItem {
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
+  buildingName?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
   postCode?: string;
   // Optional second physical location — some Shakhas meet at two different
   // venues across the week. The primary address above is mandatory; this is not.
+  address2BuildingName?: string;
   address2Line1?: string;
   address2Line2?: string;
   address2City?: string;
@@ -1434,51 +1437,26 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                   out while creating; fill these in when you edit the Shakha afterwards. */}
               {masterType === 'centre' && (
                 <FormSection title="Address Details">
-                  <FormField>
-                    <FormLabel required={modalMode === 'edit'}>Address Line 1</FormLabel>
-                    <FormInput
-                      ref={addressLine1Ref}
-                      value={activeItem.addressLine1 ?? ''}
-                      onChange={e => { setActiveItem({ ...activeItem, addressLine1: e.target.value }); setFieldErrors(prev => ({ ...prev, addressLine1: false })); }}
-                      readOnly={modalMode === 'view'}
-                      disabled={modalMode === 'create'}
-                      placeholder="Street address"
-                      className={fieldErrors.addressLine1 ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
-                    />
-                    <ErrorText>{fieldErrors.addressLine1 && 'Address Line 1 is required.'}</ErrorText>
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Address Line 2</FormLabel>
-                    <FormInput
-                      value={activeItem.addressLine2 ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, addressLine2: e.target.value })}
-                      readOnly={modalMode === 'view'}
-                      disabled={modalMode === 'create'}
-                      placeholder="Area / district (optional)"
-                    />
-                  </FormField>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField>
-                      <FormLabel>City</FormLabel>
-                      <FormInput
-                        value={activeItem.city ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, city: e.target.value })}
-                        readOnly={modalMode === 'view'}
-                        disabled={modalMode === 'create'}
-                        placeholder="City"
-                      />
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Post Code</FormLabel>
-                      <FormInput
-                        value={activeItem.postCode ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, postCode: e.target.value })}
-                        readOnly={modalMode === 'view'}
-                        disabled={modalMode === 'create'}
-                        placeholder="e.g. BS1 4ST"
-                      />
-                    </FormField>
-                  </div>
+                  <AddressLookup
+                    values={{
+                      buildingName: activeItem.buildingName ?? '',
+                      addressLine1: activeItem.addressLine1 ?? '',
+                      addressLine2: activeItem.addressLine2 ?? '',
+                      townCity: activeItem.city ?? '',
+                      postCode: activeItem.postCode ?? '',
+                    }}
+                    onChange={(field, value) => {
+                      const key = field === 'townCity' ? 'city' : field;
+                      setActiveItem({ ...activeItem, [key]: value });
+                      if (field === 'addressLine1') setFieldErrors(prev => ({ ...prev, addressLine1: false }));
+                    }}
+                    fallbackTown={activeItem.city}
+                    readOnly={modalMode === 'view'}
+                    disabled={modalMode === 'create'}
+                    errors={{ addressLine1: fieldErrors.addressLine1 }}
+                    errorMessages={{ addressLine1: 'Address Line 1 is required.' }}
+                    fieldRefs={{ addressLine1: addressLine1Ref }}
+                  />
                 </FormSection>
               )}
 
@@ -1489,44 +1467,21 @@ export default function SuperAdminMasters({ masterType, onNavigate, selectedRole
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 -mt-2 mb-1">
                     Only needed if this Shakha meets at a second physical location on a different day.
                   </p>
-                  <FormField>
-                    <FormLabel>Address Line 1</FormLabel>
-                    <FormInput
-                      value={activeItem.address2Line1 ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, address2Line1: e.target.value })}
-                      readOnly={modalMode === 'view'}
-                      placeholder="Street address (optional)"
-                    />
-                  </FormField>
-                  <FormField>
-                    <FormLabel>Address Line 2</FormLabel>
-                    <FormInput
-                      value={activeItem.address2Line2 ?? ''}
-                      onChange={e => setActiveItem({ ...activeItem, address2Line2: e.target.value })}
-                      readOnly={modalMode === 'view'}
-                      placeholder="Area / district (optional)"
-                    />
-                  </FormField>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField>
-                      <FormLabel>City</FormLabel>
-                      <FormInput
-                        value={activeItem.address2City ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, address2City: e.target.value })}
-                        readOnly={modalMode === 'view'}
-                        placeholder="City"
-                      />
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Post Code</FormLabel>
-                      <FormInput
-                        value={activeItem.address2PostCode ?? ''}
-                        onChange={e => setActiveItem({ ...activeItem, address2PostCode: e.target.value })}
-                        readOnly={modalMode === 'view'}
-                        placeholder="e.g. BS1 4ST"
-                      />
-                    </FormField>
-                  </div>
+                  <AddressLookup
+                    values={{
+                      buildingName: activeItem.address2BuildingName ?? '',
+                      addressLine1: activeItem.address2Line1 ?? '',
+                      addressLine2: activeItem.address2Line2 ?? '',
+                      townCity: activeItem.address2City ?? '',
+                      postCode: activeItem.address2PostCode ?? '',
+                    }}
+                    onChange={(field, value) => {
+                      const key = ({ buildingName: 'address2BuildingName', addressLine1: 'address2Line1', addressLine2: 'address2Line2', townCity: 'address2City', postCode: 'address2PostCode' } as const)[field];
+                      setActiveItem({ ...activeItem, [key]: value });
+                    }}
+                    fallbackTown={activeItem.address2City}
+                    readOnly={modalMode === 'view'}
+                  />
                 </FormSection>
               )}
 

@@ -21,7 +21,7 @@ import {
   Briefcase,
 } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
-import { FormField, FormInput, FormLabel, FormSelect, FormTextarea, PhoneInput } from './hb/common';
+import { FormField, FormInput, FormLabel, FormSelect, FormTextarea, PhoneInput, AddressLookup } from './hb/common';
 import {
   DBSStatus, CertStatus,
   DIETARY_REQUIREMENTS,
@@ -742,11 +742,23 @@ export default function MemberEdit({ member, onBack, onSave }: MemberEditProps) 
                   <FormField><FormLabel>Secondary Contact Number</FormLabel><PhoneInput value={formData.secondaryPhone} onChange={v => setFormData(prev => ({ ...prev, secondaryPhone: v }))} /></FormField>
                   <FormField><FormLabel required>Primary Email Address</FormLabel><FormInput type="email" value={formData.email} onChange={set('email')} className={errCls('email')} readOnly={selectedRole !== 'Super Admin'} /></FormField>
                   <FormField><FormLabel>Secondary Email Address</FormLabel><FormInput type="email" value={formData.secondaryEmail} onChange={set('secondaryEmail')} className={errCls('secondaryEmail')} /></FormField>
-                  <FormField><FormLabel>Building Name</FormLabel><FormInput value={formData.buildingName} onChange={set('buildingName')} /></FormField>
-                  <FormField><FormLabel required>Town / City</FormLabel><FormInput value={formData.contactTownCity} onChange={set('contactTownCity')} className={errCls('contactTownCity')} /></FormField>
-                  <FormField><FormLabel required>Address Line 1</FormLabel><FormInput value={formData.addressLine1} onChange={set('addressLine1')} className={errCls('addressLine1')} /></FormField>
-                  <FormField><FormLabel required>Post Code</FormLabel><FormInput value={formData.postCode} onChange={set('postCode')} className={errCls('postCode')} /></FormField>
-                  <FormField><FormLabel>Address Line 2</FormLabel><FormInput value={formData.addressLine2} onChange={set('addressLine2')} /></FormField>
+                </div>
+                <div className="mt-6">
+                  <AddressLookup
+                    values={{
+                      buildingName: formData.buildingName,
+                      addressLine1: formData.addressLine1,
+                      addressLine2: formData.addressLine2,
+                      townCity: formData.contactTownCity,
+                      postCode: formData.postCode,
+                    }}
+                    onChange={(field, value) => setFormData(prev => ({ ...prev, [field === 'townCity' ? 'contactTownCity' : field]: value }))}
+                    errors={{
+                      addressLine1: !!errors.addressLine1,
+                      townCity: !!errors.contactTownCity,
+                      postCode: !!errors.postCode,
+                    }}
+                  />
                 </div>
               </EditSection>
 

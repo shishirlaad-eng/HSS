@@ -769,7 +769,7 @@ export default function SessionDetail({
                     <span className="block text-neutral-400 dark:text-neutral-500">{session.town}, {session.region}</span>
                     {session.locationAddressLine1 && (
                       <span className="block text-neutral-400 dark:text-neutral-500">
-                        {[session.locationAddressLine1, session.locationAddressLine2, session.locationCity, session.locationPostCode].filter(Boolean).join(', ')}
+                        {[session.locationBuildingName, session.locationAddressLine1, session.locationAddressLine2, session.locationCity, session.locationPostCode].filter(Boolean).join(', ')}
                       </span>
                     )}
                   </dd>

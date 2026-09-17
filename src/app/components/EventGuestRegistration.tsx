@@ -3,7 +3,7 @@ import {
   ArrowLeft, Clock, MapPin, Globe, CreditCard, ScrollText,
   ListChecks, Check,
 } from 'lucide-react';
-import { FormField, FormLabel, FormInput, FormSelect, ErrorText } from './hb/common';
+import { FormField, FormLabel, FormInput, FormSelect, ErrorText, AddressLookup } from './hb/common';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
 import {
   mockEvents, mockCoupons, EVENT_TERMS_AND_CONDITIONS,
@@ -426,29 +426,34 @@ export default function EventGuestRegistration({ onBack }: EventGuestRegistratio
               <FormInput ref={el => { fieldRefs.current.email = el; }} type="email" value={formData.email} onChange={e => set('email', e.target.value)} className={errCls('email')} />
               <ErrorText>{errors.email}</ErrorText>
             </FormField>
-            <FormField>
-              <FormLabel required>Post Code</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.postCode = el; }} value={formData.postCode} onChange={e => set('postCode', e.target.value)} className={errCls('postCode')} />
-              <ErrorText>{errors.postCode}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel>Building Name</FormLabel>
-              <FormInput value={formData.buildingName} onChange={e => set('buildingName', e.target.value)} />
-            </FormField>
-            <FormField>
-              <FormLabel required>Address Line 1</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.addressLine1 = el; }} value={formData.addressLine1} onChange={e => set('addressLine1', e.target.value)} className={errCls('addressLine1')} />
-              <ErrorText>{errors.addressLine1}</ErrorText>
-            </FormField>
-            <FormField>
-              <FormLabel>Address Line 2</FormLabel>
-              <FormInput value={formData.addressLine2} onChange={e => set('addressLine2', e.target.value)} />
-            </FormField>
-            <FormField>
-              <FormLabel required>Town / City</FormLabel>
-              <FormInput ref={el => { fieldRefs.current.town = el; }} value={formData.town} onChange={e => set('town', e.target.value)} className={errCls('town')} />
-              <ErrorText>{errors.town}</ErrorText>
-            </FormField>
+          </div>
+          <div className="mt-4">
+            <AddressLookup
+              values={{
+                buildingName: formData.buildingName,
+                addressLine1: formData.addressLine1,
+                addressLine2: formData.addressLine2,
+                townCity: formData.town,
+                postCode: formData.postCode,
+              }}
+              onChange={(field, value) => set(field === 'townCity' ? 'town' : field, value)}
+              fallbackTown={formData.town}
+              errors={{
+                addressLine1: !!errors.addressLine1,
+                townCity: !!errors.town,
+                postCode: !!errors.postCode,
+              }}
+              errorMessages={{
+                addressLine1: errors.addressLine1,
+                townCity: errors.town,
+                postCode: errors.postCode,
+              }}
+              fieldRefs={{
+                addressLine1: el => { fieldRefs.current.addressLine1 = el; },
+                townCity: el => { fieldRefs.current.town = el; },
+                postCode: el => { fieldRefs.current.postCode = el; },
+              }}
+            />
           </div>
         </Card>
 
