@@ -7,8 +7,11 @@ import {
   FormInput,
   FormLabel,
   ErrorText,
+  FormModal,
 } from './hb/common';
 import { PrimaryButton } from './hb/listing';
+import Policies from './Policies';
+import PolicyView from './PolicyView';
 
 interface RegistrationForm {
   firstName: string;
@@ -33,8 +36,10 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [isLegalAdult, setIsLegalAdult] = useState(false);
-  const [legalAdultError, setLegalAdultError] = useState('');
+  const [showPolicies, setShowPolicies] = useState(false);
+  const [policyId, setPolicyId] = useState<string | null>(null);
+  const [isAgeConfirmed, setIsAgeConfirmed] = useState(false);
+  const [ageConfirmError, setAgeConfirmError] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -80,9 +85,11 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const errs = validate();
-    const adultErr = onAccountCreated && !isLegalAdult ? 'You must confirm that you are 18 years of age or older and agree to the policies.' : '';
-    setLegalAdultError(adultErr);
-    if (Object.keys(errs).length > 0 || adultErr) {
+    const ageErr = isAgeConfirmed ? '' : (onAccountCreated
+      ? 'You must confirm that you are 18 years of age or older and agree to the policies.'
+      : 'You must confirm that you are 13 years of age or older and agree to the HSS (UK) Policies.');
+    setAgeConfirmError(ageErr);
+    if (Object.keys(errs).length > 0 || ageErr) {
       toast.error('Please fill in all required fields.');
       const firstKey = FIELD_ORDER.find(k => errs[k]);
       const el = firstKey ? fieldRefs.current[firstKey] : null;
@@ -197,22 +204,27 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
             <FormInput ref={el => { fieldRefs.current.confirmPassword = el; }} type="password" value={form.confirmPassword} onChange={set('confirmPassword')} className={errCls('confirmPassword')} />
             <ErrorText>{errors.confirmPassword}</ErrorText>
           </FormField>
-          {onAccountCreated && (
-            <div>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isLegalAdult}
-                  onChange={e => { setIsLegalAdult(e.target.checked); setLegalAdultError(''); }}
-                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-neutral-500 bg-white accent-primary-600 focus:ring-2 focus:ring-primary-500/40 dark:border-neutral-400 dark:bg-neutral-950"
-                />
-                <span className="text-sm text-neutral-700 dark:text-neutral-200">
-                  I confirm that I am 18 years of age or older and have read and agree to the HSS (UK) Privacy Policy and the MyHSS Terms &amp; Conditions.
-                </span>
-              </label>
-              <ErrorText>{legalAdultError}</ErrorText>
-            </div>
-          )}
+          <div>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAgeConfirmed}
+                onChange={e => { setIsAgeConfirmed(e.target.checked); setAgeConfirmError(''); }}
+                className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-neutral-500 bg-white accent-primary-600 focus:ring-2 focus:ring-primary-500/40 dark:border-neutral-400 dark:bg-neutral-950"
+              />
+              <span className="text-sm text-neutral-700 dark:text-neutral-200">
+                I confirm that I am {onAccountCreated ? '18' : '13'} years of age or older and have read and agree to the HSS (UK){' '}
+                <button
+                  type="button"
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); setPolicyId(null); setShowPolicies(true); }}
+                  className="underline underline-offset-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                >
+                  Policies
+                </button>.
+              </span>
+            </label>
+            <ErrorText>{ageConfirmError}</ErrorText>
+          </div>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -228,6 +240,12 @@ export default function MemberRegistration({ onBackToLogin, onRegistrationComple
           </PrimaryButton>
         </div>
       </form>
+
+      <FormModal isOpen={showPolicies} onClose={() => setShowPolicies(false)} title="HSS (UK) Policies" maxWidth="max-w-4xl">
+        {policyId
+          ? <PolicyView policyId={policyId} onBack={() => setPolicyId(null)} />
+          : <Policies onSelectPolicy={setPolicyId} />}
+      </FormModal>
     </div>
   );
 }

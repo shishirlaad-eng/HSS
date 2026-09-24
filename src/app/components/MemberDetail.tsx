@@ -416,6 +416,8 @@ function MiniField({
   options,
   displayValue,
   required = false,
+  error = false,
+  errorMessage,
 }: {
   label: string;
   value: string;
@@ -425,8 +427,11 @@ function MiniField({
   options?: { value: string; label: string }[];
   displayValue?: React.ReactNode;
   required?: boolean;
+  error?: boolean;
+  errorMessage?: string;
 }) {
-  const inputCls = 'w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white';
+  const errCls = error ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : '';
+  const inputCls = `w-full text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1.5 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white ${errCls}`;
   return (
     <div>
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
@@ -441,6 +446,7 @@ function MiniField({
       ) : (
         <input type={type} value={value} onChange={e => onChange(e.target.value)} className={inputCls} />
       )}
+      {error && errorMessage && <p className="text-xs text-error-600 mt-1">{errorMessage}</p>}
     </div>
   );
 }
@@ -745,6 +751,22 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     if (form.allergiesDeclared && !['Yes', 'No'].includes(form.epiPen ?? '')) {
       setFieldErrors(prev => ({ ...prev, epiPen: true }));
       toast.error('Please select whether the member carries an EpiPen.');
+      return;
+    }
+    if (form.isFirstAider && (
+      !form.compliance.firstAid || form.compliance.firstAid === 'N/A' ||
+      !form.firstAidQualificationExpiryDate?.trim() ||
+      !form.firstAidQualificationLevel?.trim() ||
+      !form.firstAidRef?.trim()
+    )) {
+      setFieldErrors(prev => ({
+        ...prev,
+        firstAidStatus: !form.compliance.firstAid || form.compliance.firstAid === 'N/A',
+        firstAidQualificationExpiryDate: !form.firstAidQualificationExpiryDate?.trim(),
+        firstAidQualificationLevel: !form.firstAidQualificationLevel?.trim(),
+        firstAidRef: !form.firstAidRef?.trim(),
+      }));
+      toast.error('First aid status, expiry date, qualification and reference number are required.');
       return;
     }
     setFieldErrors({});
@@ -1233,6 +1255,20 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                 </InfoSection>
 
+                {/* The Compliance tab is hidden in approval mode, so surface the
+                    First Aid answer given at registration here for the approver. */}
+                {mode === 'approval' && member.memberType !== 'child' && (
+                  <InfoSection title="First Aid" cols={4}>
+                    <InfoItem label="Are you a qualified First Aider?">{member.isFirstAider ? 'Yes' : 'No'}</InfoItem>
+                    {member.isFirstAider && (
+                      <>
+                        <InfoItem label="Expiry Date">{member.firstAidQualificationExpiryDate ? formatDate(member.firstAidQualificationExpiryDate) : '—'}</InfoItem>
+                        <InfoItem label="First Aid Qualification">{member.firstAidQualificationLevel || '—'}</InfoItem>
+                      </>
+                    )}
+                  </InfoSection>
+                )}
+
               </div>
             )}
 
@@ -1509,6 +1545,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                         <>
                           <MiniField
                             label="First Aid Status"
+                            required
+                            error={fieldErrors.firstAidStatus}
+                            errorMessage="First aid status is required."
                             value={form.compliance.firstAid}
                             isEditing={isEditing}
                             onChange={v => setComplianceField('firstAid', v)}
@@ -1516,6 +1555,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           />
                           <MiniField
                             label="Expiry Date"
+                            required
+                            error={fieldErrors.firstAidQualificationExpiryDate}
+                            errorMessage="Expiry date is required."
                             value={form.firstAidQualificationExpiryDate ?? ''}
                             isEditing={isEditing}
                             onChange={v => setField('firstAidQualificationExpiryDate', v)}
@@ -1524,12 +1566,23 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                           />
                           <MiniField
                             label="First Aid Qualification"
+                            required
+                            error={fieldErrors.firstAidQualificationLevel}
+                            errorMessage="First aid qualification is required."
                             value={form.firstAidQualificationLevel ?? ''}
                             isEditing={isEditing}
                             onChange={v => setField('firstAidQualificationLevel', v)}
                             options={FIRST_AID_QUALIFICATION_OPTIONS.map(o => ({ value: o, label: o }))}
                           />
-                          <MiniField label="Reference Number" value={form.firstAidRef ?? ''} isEditing={isEditing} onChange={v => setField('firstAidRef', v)} />
+                          <MiniField
+                            label="Reference Number"
+                            required
+                            error={fieldErrors.firstAidRef}
+                            errorMessage="Reference number is required."
+                            value={form.firstAidRef ?? ''}
+                            isEditing={isEditing}
+                            onChange={v => setField('firstAidRef', v)}
+                          />
                         </>
                       )}
                     </div>

@@ -784,7 +784,6 @@ export default function PendingApprovals() {
                 <thead>
                   <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
                     {[
-                      { key: 'id',        label: 'Member ID' },
                       { key: 'firstName', label: 'First Name' },
                       { key: 'surname',   label: 'Last Name' },
                       { key: 'memberType',label: 'Age Category' },
@@ -810,9 +809,6 @@ export default function PendingApprovals() {
                         onClick={() => { setSelectedMember(m); setPageState('detail'); }}
                         className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                       >
-                        <td className="px-4 py-3.5 text-sm font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">
-                          {m.id}
-                        </td>
                         <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors whitespace-nowrap">
                           {m.firstName ?? m.name.split(' ')[0]}
                         </td>
@@ -835,7 +831,7 @@ export default function PendingApprovals() {
                     );
                   }) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-20 text-center">
+                      <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <UserCheck className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">

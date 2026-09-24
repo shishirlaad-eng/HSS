@@ -249,14 +249,8 @@ export const getNavigationData = (
       id: "my-donations",
       label: "Dakshina",
       icon: ReceiptText,
-      active: ['my-donations', 'shakha-dakshina', 'utsav-income'].includes(currentPage),
+      active: ['shakha-dakshina', 'utsav-income'].includes(currentPage),
       subItems: [
-        {
-          id: "my-donations",
-          label: "My Dakshina",
-          onClick: () => onNavigate("my-donations"),
-          active: currentPage === "my-donations",
-        },
         ...(hasPermission(selectedRole, "shakha-dakshina", "view") ? [{
           id: "shakha-dakshina",
           label: "Shakha Dakshina",

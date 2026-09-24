@@ -1199,7 +1199,6 @@ export default function Announcements({
 
   if (pageState === 'detail' && selected) {
     const sc   = STATUS_CFG[selected.status];
-    const pc   = PRIORITY_CFG[selected.priority];
     const cc   = CONTENT_CFG[selected.contentType];
     const scpc = SCOPE_CFG[selected.scope];
     const ScopeIcon = scpc.icon;
@@ -1386,9 +1385,13 @@ export default function Announcements({
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">Priority</span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${pc.bg} ${pc.text}`}>
-                  {pc.label}
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">High priority</span>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                  selected.priority === 'high'
+                    ? 'bg-error-50 text-error-700 dark:bg-error-950/20 dark:text-error-400'
+                    : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
+                }`}>
+                  {selected.priority === 'high' ? 'Yes' : 'No'}
                 </span>
               </div>
               <div className="flex items-center justify-between">

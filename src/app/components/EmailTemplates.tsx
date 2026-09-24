@@ -5,7 +5,6 @@ import {
   Eye,
   Edit,
   Trash2,
-  Plus,
   RefreshCw,
   MoreVertical,
   Download,
@@ -692,10 +691,6 @@ export default function EmailTemplates() {
               placeholder="Search layouts..."
             />
             
-            <PrimaryButton icon={Plus} onClick={handleCreate}>
-              Add Template
-            </PrimaryButton>
-
             <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
 
             <IconButton

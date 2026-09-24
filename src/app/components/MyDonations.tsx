@@ -31,15 +31,22 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
   const [showStandingOrder, setShowStandingOrder]  = useState(false);
   const [frequency, setFrequency]                  = useState<RecurringFrequency>('Monthly');
   const [amount, setAmount]                        = useState('');
+  const [firstPaymentDate, setFirstPaymentDate]    = useState('');
   const [giftAid, setGiftAid]                      = useState<boolean | null>(null);
   const closeModal = () => setShowModal(false);
+  const todayIso = new Date().toISOString().split('T')[0];
 
-  const handleSetupStandingOrder = () => {
-    toast.success(`Recurring Dakshina of £${amount} ${frequency.toLowerCase()} submitted successfully.`);
+  const resetStandingOrder = () => {
     setShowStandingOrder(false);
     setFrequency('Monthly');
     setAmount('');
+    setFirstPaymentDate('');
     setGiftAid(null);
+  };
+
+  const handleSetupStandingOrder = () => {
+    toast.success(`Recurring Dakshina of £${amount} ${frequency.toLowerCase()} starting ${formatDate(firstPaymentDate)} submitted successfully.`);
+    resetStandingOrder();
   };
 
   if (showStandingOrder) {
@@ -126,6 +133,17 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
             </div>
           </div>
 
+          <div>
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-2">First payment date:</label>
+            <input
+              type="date"
+              min={todayIso}
+              value={firstPaymentDate}
+              onChange={e => setFirstPaymentDate(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+            />
+          </div>
+
           <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
             <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
               Apply one off Gift Aid?
@@ -162,13 +180,13 @@ export default function MyDonations({ onGiveDakshina }: { onGiveDakshina?: () =>
 
           <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={() => { setShowStandingOrder(false); setFrequency('Monthly'); setAmount(''); setGiftAid(null); }}
+              onClick={resetStandingOrder}
               className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
-              disabled={!amount || giftAid === null}
+              disabled={!amount || !firstPaymentDate || giftAid === null}
               onClick={handleSetupStandingOrder}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-all"
             >

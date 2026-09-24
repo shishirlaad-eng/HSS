@@ -39,10 +39,10 @@ import {
 } from 'recharts';
 import { PageHeader } from './hb/listing';
 import { StatCard } from './hb/common';
-import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS, RESPONSIBILITY_TYPE_OPTIONS, AgeGroup } from '../../mockAPI/membersData';
+import { mockMembers, MASTERS_CASCADE, getAgeGroupLabel, getAgeGroup, AGE_GROUP_LABELS, AgeGroup } from '../../mockAPI/membersData';
 import { mockEvents, mockParticipants, type Event as HSSSEvent } from '../../mockAPI/eventsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
-import { mockDonations, type IncomeStream } from '../../mockAPI/donationsData';
+import { mockDonations } from '../../mockAPI/donationsData';
 import { mockLoginLogs } from '../../mockAPI/logsData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, RoleScope } from '../../mockAPI/roleScope';
@@ -870,11 +870,6 @@ function KpiCard({
 // â”€â”€ Shakha analytics charts â”€â”€ colours/helpers, mirrors KaryakartaReport.tsx's
 // established chart styling so the visual language matches the rest of the app.
 
-const CHART_PALETTE = [
-  '#f59e0b', '#3b82f6', '#22c55e', '#ec4899', '#8b5cf6',
-  '#06b6d4', '#ef4444', '#84cc16', '#f97316', '#6366f1',
-];
-
 const STATUS_COLORS: Record<string, string> = {
   active: '#22c55e',
   pending: '#f59e0b',
@@ -889,28 +884,6 @@ const STATUS_LABELS: Record<string, string> = {
   inactive: 'Inactive',
   rejected: 'Rejected',
 };
-
-const AGE_COLORS: Record<AgeGroup, string> = {
-  bal:     '#fde68a',
-  shishu:  '#fbbf24',
-  kishor:  '#f59e0b',
-  tarun:   '#d97706',
-  yuva:    '#b45309',
-  jyestha: '#92400e',
-};
-
-const INCOME_COLORS: Record<string, string> = {
-  'online-donation': '#3b82f6',
-  'cash-income': '#22c55e',
-  'standing-order': '#f59e0b',
-};
-const INCOME_LABELS: Record<string, string> = {
-  'online-donation': 'Online Donations',
-  'cash-income': 'Cash Income',
-  'standing-order': 'Regular Standing Order Payments',
-};
-
-const COMPLIANCE_NOT_SET = 'Not Set';
 
 function chartFmt(n: number) { return n.toLocaleString(); }
 
@@ -1042,20 +1015,6 @@ function HierarchyKpiSection({
       .map(s => ({ key: s, name: STATUS_LABELS[s], value: scopedMembers.filter(m => m.status === s).length }))
       .filter(d => d.value > 0);
 
-    // â”€â”€ Chart: Age Group Distribution â”€â”€
-    const ageOrder: AgeGroup[] = ['bal', 'shishu', 'kishor', 'tarun', 'yuva', 'jyestha'];
-    const ageData = ageOrder.map(g => ({
-      key: g,
-      group: AGE_GROUP_LABELS[g].split(' ')[0],
-      count: scopedMembers.filter(m => getAgeGroup(m.dateOfBirth) === g).length,
-    }));
-
-    // â”€â”€ Chart: Income Stream Split â”€â”€
-    const incomeStreamOrder: IncomeStream[] = ['online-donation', 'cash-income', 'standing-order'];
-    const incomeStreamData = incomeStreamOrder
-      .map(s => ({ key: s, name: INCOME_LABELS[s], value: receivedDonations.filter(d => d.incomeStream === s).reduce((sum, d) => sum + d.amount, 0) }))
-      .filter(d => d.value > 0);
-
     // â”€â”€ Chart: Monthly Attendance Trend â”€â”€ last 8 Shakhas held, oldest to newest
     const last8Sessions = [...sortedSessions].slice(0, 8).reverse();
     const last8AvgRate = last8Sessions.length
@@ -1083,33 +1042,6 @@ function HierarchyKpiSection({
         return { date, total: dayLogins.length, web, app };
       });
     })();
-
-    // â”€â”€ Chart: New Member Registrations â”€â”€ most recent 6 calendar months that have data
-    const newMemberRegData = (() => {
-      const counts = new Map<string, number>();
-      scopedMembers.forEach(m => {
-        const key = m.registrationDate.slice(0, 7); // YYYY-MM
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-      });
-      return [...counts.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .slice(-6)
-        .map(([key, count]) => ({
-          month: new Date(key + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
-          count,
-        }));
-    })();
-
-    // â”€â”€ Chart: Responsibility Type â”€â”€
-    const respTypeData = [...RESPONSIBILITY_TYPE_OPTIONS, COMPLIANCE_NOT_SET]
-      .map(t => ({
-        key: t,
-        name: t,
-        value: t === COMPLIANCE_NOT_SET
-          ? scopedMembers.filter(m => !m.responsibilityType).length
-          : scopedMembers.filter(m => m.responsibilityType === t).length,
-      }))
-      .filter(d => d.value > 0);
 
     // â”€â”€ Chart: this Shakha's own recent Sankhya history (Held vs Present) â”€â”€
     // Kept scoped to the admin's own Shakha rather than comparing other centres —
@@ -1143,9 +1075,9 @@ function HierarchyKpiSection({
       totalIncome, onlineTotal, cashTotal, giftAidClaimable,
       firstAiders, dbsApproved, safeguarding,
       gbp,
-      statusData, ageData, incomeStreamData, attendanceTrendData, respTypeData,
+      statusData, attendanceTrendData,
       recentSessionsData, dbsData, firstAidData, safeguardingData,
-      loginTrendData, newMemberRegData,
+      loginTrendData,
     };
   }, [scope]);
 
@@ -1222,101 +1154,6 @@ function HierarchyKpiSection({
                 <Line type="monotone" dataKey="average" name="Average %" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          </ChartCard>
-
-          {/* New Member Registrations */}
-          <ChartCard
-            title="New Member Registrations"
-            subtitle="New registrations by month, most recent 6 months on record"
-            onClick={() => onNavigate?.('members')}
-          >
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={kpis.newMemberRegData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="New Members" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          {/* Age Group Distribution */}
-          <ChartCard
-            title="Age Group Distribution"
-            subtitle="Members across HSS age groups"
-            onClick={() => onNavigate?.('members')}
-          >
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={kpis.ageData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
-                  {kpis.ageData.map((entry, i) => <Cell key={i} fill={AGE_COLORS[entry.key]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          {/* Responsibility Type */}
-          <ChartCard
-            title="Responsibility Type"
-            subtitle="Pramukh / Pramukh (Saha) / Toli breakdown"
-            hint="Shows the different Karyakarta responsibilities held in the Shakha."
-            onClick={() => onNavigate?.('karyakartas')}
-          >
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie data={kpis.respTypeData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                    {kpis.respTypeData.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-1.5">
-                {kpis.respTypeData.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
-                      {d.name}
-                    </span>
-                    <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">{chartFmt(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ChartCard>
-
-          {/* Income Stream Split */}
-          <ChartCard
-            title="Income Stream Split"
-            subtitle="Online donations, cash income and regular standing order payments"
-            onClick={() => onNavigate?.('report-donations')}
-          >
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie data={kpis.incomeStreamData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                    {kpis.incomeStreamData.map((d, i) => <Cell key={i} fill={INCOME_COLORS[d.key]} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} formatter={(v: number) => kpis.gbp(v)} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex-1 space-y-1.5">
-                {kpis.incomeStreamData.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: INCOME_COLORS[d.key] }} />
-                      {d.name}
-                    </span>
-                    <span className="font-semibold text-neutral-900 dark:text-white flex-shrink-0">{kpis.gbp(d.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </ChartCard>
 
           {/* Recent Sankhya history + Compliance box */}

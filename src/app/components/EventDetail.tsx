@@ -1625,7 +1625,7 @@ export default function EventDetail({
                   )}
 
                   {/* Your Responses + Terms & Conditions — forced parallel row at the bottom */}
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:only-child]:col-span-2">
                     {isMember && myParticipation && event.customQuestions && event.customQuestions.length > 0 && (
                       <div className="bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
