@@ -62,7 +62,8 @@ import {
   AnnouncementScope,
   AnnouncementContent,
 } from '../../mockAPI/announcementsData';
-import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS } from '../../mockAPI/membersData';
+import { MASTERS_CASCADE, ROLE_TYPE_OPTIONS, mockMembers, RESPONSIBILITY_LEVEL_OPTIONS, RESPONSIBILITY_TYPE_OPTIONS, getAgeCategory } from '../../mockAPI/membersData';
+import { filterByScope } from '../../mockAPI/roleScope';
 import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 
 // ── Constants ─────────────────────────────────────────────────
@@ -553,6 +554,45 @@ export default function Announcements({
     ? form.targetTowns.flatMap(t => MASTERS_CASCADE.centres[t] ?? [])
     : Object.values(MASTERS_CASCADE.centres).flat();
 
+  // Live "will be available to N members" count shown at the top of the Audience
+  // and Targeting tab — scoped members narrowed by the geographic filter, then
+  // (when not "available to all") by the demographic filters, plus any
+  // specifically-invited members added on top.
+  const scopedMembersForReach = useMemo(() => filterByScope(mockMembers, scope), [scope]);
+  const matchingMemberCount = useMemo(() => {
+    const geoFiltered = scopedMembersForReach.filter(m => {
+      if (!isFullSelection(form.targetRegions, regionOptions) && !form.targetRegions.includes(m.region)) return false;
+      if (!isFullSelection(form.targetTowns, townOptions) && !form.targetTowns.includes(m.town)) return false;
+      if (!isFullSelection(form.targetCentres, centreOptions) && !form.targetCentres.includes(m.activityCentre)) return false;
+      return true;
+    });
+
+    if (form.targetAllMembers !== false) return geoFiltered.length;
+
+    const demographicFiltered = geoFiltered.filter(m => {
+      if (form.filterAgeCategories.length > 0 && !form.filterAgeCategories.includes(getAgeCategory(m.dateOfBirth))) return false;
+      if (form.filterGenders.length > 0 && !form.filterGenders.includes(m.gender)) return false;
+      if (form.filterJobTitles.length > 0 && !form.filterJobTitles.includes(m.jobTitle)) return false;
+      if (form.filterResponsibilityLevels.length > 0 && !(m.responsibilityLevel && form.filterResponsibilityLevels.includes(m.responsibilityLevel))) return false;
+      if (form.filterResponsibilityTypes.length > 0 && !(m.responsibilityType && form.filterResponsibilityTypes.includes(m.responsibilityType))) return false;
+      return true;
+    });
+
+    if (form.targetSpecificOnly && form.targetMemberIds.length > 0) {
+      const ids = new Set(demographicFiltered.map(m => m.id));
+      form.targetMemberIds.forEach(id => ids.add(id));
+      return ids.size;
+    }
+
+    return demographicFiltered.length;
+  }, [
+    scopedMembersForReach, regionOptions, townOptions, centreOptions,
+    form.targetRegions, form.targetTowns, form.targetCentres, form.targetAllMembers,
+    form.filterAgeCategories, form.filterGenders, form.filterJobTitles,
+    form.filterResponsibilityLevels, form.filterResponsibilityTypes,
+    form.targetSpecificOnly, form.targetMemberIds,
+  ]);
+
   // ── Computed KPIs ───────────────────────────────────────────
   const totalCount     = announcements.length;
   const sentCount      = announcements.filter(a => a.status === 'sent').length;
@@ -962,6 +1002,10 @@ export default function Announcements({
             {/* ── Audience and Targeting tab ── */}
             {createTab === 'audience' && (
               <div className="space-y-5">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900">
+                  This Suchana will be available to <strong className="text-neutral-900 dark:text-white">{matchingMemberCount.toLocaleString()}</strong> member{matchingMemberCount !== 1 ? 's' : ''} based on the audience and targeting filters below.
+                </p>
+
                 <Card title="Geographic Filter">
                   <p className="text-xs text-neutral-400 -mt-2 mb-4">
                     Please select which Vibhag, Nagar and Shakha this Suchana is for

@@ -125,8 +125,13 @@ export default function EmergencyDetails({
   const handleExportCsv = () => {
     if (!filtered.length) { toast.error('No data to export.'); return; }
     const csv = [
-      'Member ID,First Name,Last Name,Shakha,Contact Name,Contact Phone,Contact Email,Relationship,Medical Details,EpiPen,Allergies',
-      ...filtered.map(m => `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.activityCentre}","${m.emergencyContactName ?? ''}","${m.emergencyContactPhone ?? ''}","${m.emergencyContactEmail ?? ''}","${m.emergencyContactRelationship ?? ''}","${m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : ''}","${m.epiPen ?? ''}","${m.allergies ?? ''}"`),
+      'Member ID,First Name,Last Name,Shakha,Contact Name,Contact Phone,Contact Email,Relationship,Medical,EpiPen,Allergies,Special Dietary Requirements',
+      ...filtered.map(m => {
+        const dietaryLabel = (m.dietaryRequirements && m.dietaryRequirements.length)
+          ? m.dietaryRequirements.map(v => v === 'Other' ? `Other${m.dietaryOtherSpecify ? `: ${m.dietaryOtherSpecify}` : ''}` : v).join(', ')
+          : '';
+        return `"${m.id}","${m.firstName ?? m.name.split(' ')[0]}","${m.surname ?? m.name.split(' ').slice(1).join(' ')}","${m.activityCentre}","${m.emergencyContactName ?? ''}","${m.emergencyContactPhone ?? ''}","${m.emergencyContactEmail ?? ''}","${m.emergencyContactRelationship ?? ''}","${m.medicalInfoDeclared ? 'Yes' : 'No'}","${m.medicalInfoDeclared ? (m.epiPen ?? '') : ''}","${m.medicalInfoDeclared ? (m.allergies ?? '') : ''}","${m.medicalInfoDeclared ? dietaryLabel : ''}"`;
+      }),
     ].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -286,17 +291,22 @@ export default function EmergencyDetails({
                   <th className={TH_BASE}>Contact Phone <RequiredBadge /></th>
                   <th className={TH_BASE}>Contact Email <RequiredBadge /></th>
                   <th className={TH_BASE}>Relationship <RequiredBadge /></th>
-                  <th className={TH_BASE}>Medical Details</th>
+                  <th className={TH_BASE}>Medical</th>
                   <th className={TH_BASE}>EpiPen/Jext/Emerade?</th>
                   <th className={TH_BASE}>Any Allergies</th>
+                  <th className={TH_BASE}>Special Dietary Requirements</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-6 py-16 text-center text-sm text-neutral-400">No members found.</td>
+                    <td colSpan={13} className="px-6 py-16 text-center text-sm text-neutral-400">No members found.</td>
                   </tr>
-                ) : paged.map(m => (
+                ) : paged.map(m => {
+                  const dietaryLabel = (m.dietaryRequirements && m.dietaryRequirements.length)
+                    ? m.dietaryRequirements.map(v => v === 'Other' ? `Other${m.dietaryOtherSpecify ? `: ${m.dietaryOtherSpecify}` : ''}` : v).join(', ')
+                    : '';
+                  return (
                   <tr
                     key={m.id}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer group"
@@ -321,15 +331,17 @@ export default function EmergencyDetails({
                         : '-'}
                     </td>
                     <td className={TD}>{dash(m.emergencyContactRelationship)}</td>
-                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[200px] truncate">
-                      {m.medicalInfoDeclared ? (m.medicalInfoDetails || 'Declared') : '-'}
-                    </td>
-                    <td className={TD}>{dash(m.epiPen)}</td>
+                    <td className={TD}>{dash(m.medicalInfoDeclared)}</td>
+                    <td className={TD}>{m.medicalInfoDeclared ? dash(m.epiPen) : '-'}</td>
                     <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[160px] truncate">
-                      {dash(m.allergies)}
+                      {m.medicalInfoDeclared ? dash(m.allergies) : '-'}
+                    </td>
+                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 max-w-[220px] truncate" title={m.medicalInfoDeclared && dietaryLabel ? dietaryLabel : undefined}>
+                      {m.medicalInfoDeclared ? dash(dietaryLabel) : '-'}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

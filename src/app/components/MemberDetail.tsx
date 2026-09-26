@@ -517,6 +517,9 @@ interface MemberDetailProps {
    *  and also hides the Compliance Details and Responsibilities and Roles tabs — used only by
    *  the Pending Karyawaha Approvals and Pending Parent/Guardian Approvals detail views. */
   mode?: 'approval';
+  /** Pending Karyawaha Approvals shows the full Compliance Details tab (same as a regular
+   *  member profile) even in approval mode; Pending Parent/Guardian Approvals still hides it. */
+  showComplianceTab?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
   initialTab?: Tab;
@@ -633,7 +636,7 @@ function buildMockHistory(member: { id: string; registrationDate: string; status
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, onApprove, onReject, initialTab, backLabel }: MemberDetailProps) {
+export default function MemberDetail({ member, onBack, onEdit, onStatusChange, onDelete, mode, showComplianceTab, onApprove, onReject, initialTab, backLabel }: MemberDetailProps) {
   const { selectedRole } = useRoleScope();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'personal');
 
@@ -800,7 +803,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
     { id: 'personal',      label: 'Personal Info'          },
     ...(showGuardian ? [{ id: 'guardian' as Tab, label: 'Parent / Guardian' }] : []),
     { id: 'organisation',  label: 'Organisation'           },
-    ...(mode !== 'approval' ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
+    ...(mode !== 'approval' || showComplianceTab ? [{ id: 'compliance' as Tab, label: 'Compliance Details', badge: complianceAlerts }] : []),
     ...(mode !== 'approval' ? [{ id: 'roles' as Tab, label: 'Responsibilities and Roles' }] : []),
     { id: 'other',         label: 'Other Information'      },
     { id: 'activity' as Tab, label: 'Activity' },
@@ -1255,9 +1258,9 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
                   </div>
                 </InfoSection>
 
-                {/* The Compliance tab is hidden in approval mode, so surface the
-                    First Aid answer given at registration here for the approver. */}
-                {mode === 'approval' && member.memberType !== 'child' && (
+                {/* The Compliance tab is hidden in approval mode (except Pending Karyawaha
+                    Approvals), so surface the First Aid answer here for other approval flows. */}
+                {mode === 'approval' && !showComplianceTab && member.memberType !== 'child' && (
                   <InfoSection title="First Aid" cols={4}>
                     <InfoItem label="Are you a qualified First Aider?">{member.isFirstAider ? 'Yes' : 'No'}</InfoItem>
                     {member.isFirstAider && (

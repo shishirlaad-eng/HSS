@@ -321,6 +321,7 @@ export default function App() {
     return (
       <NonMemberDashboard
         profile={nonMemberProfile}
+        onUpdateProfile={(updates) => setNonMemberProfile(prev => prev ? { ...prev, ...updates } : prev)}
         childAccounts={nonMemberChildren}
         onAddChild={(child) => {
           setNonMemberChildren(prev => [...prev, { id: child.id, firstName: child.firstName, lastName: child.lastName }]);

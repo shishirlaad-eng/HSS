@@ -280,7 +280,7 @@ export default function PendingGuardianApprovals() {
 
   const [members, setMembers] = useState<Member[]>(mockMembers);
 
-  const [viewMode, setViewMode]   = useState<ViewMode>(() => selectedRole === 'Super Admin' ? 'table' : 'grid');
+  const [viewMode, setViewMode]   = useState<ViewMode>('grid');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();

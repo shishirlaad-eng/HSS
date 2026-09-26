@@ -1267,16 +1267,18 @@ function ShakhaAdminDashboard({
       });
     });
 
-    // â”€â”€ Panel 5: Compliance â€” DBS / First Aid â”€â”€
+    // â”€â”€ Panel 5: Compliance â€” DBS / First Aid / Safeguarding â”€â”€
     const dbsApproved    = scopedMembers.filter(m => m.compliance.dbs === 'Approved').length;
     const dbsPending     = scopedMembers.filter(m => m.compliance.dbs === 'Pending').length;
     const faCertified    = scopedMembers.filter(m => m.compliance.firstAid === 'Certified').length;
     const faExpired      = scopedMembers.filter(m => m.compliance.firstAid === 'Expired').length;
+    const sgCertified    = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Certified').length;
+    const sgExpired      = scopedMembers.filter(m => m.compliance.safeguardingTraining === 'Expired').length;
 
     return {
       sankhyaTrendData, ageGroupAvgData,
       pendingMemberApprovals, pendingEventApprovals,
-      dbsApproved, dbsPending, faCertified, faExpired,
+      dbsApproved, dbsPending, faCertified, faExpired, sgCertified, sgExpired,
     };
   }, [scope]);
 
@@ -1359,7 +1361,7 @@ function ShakhaAdminDashboard({
               <ShieldCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5">DBS</p>
               <div className="flex items-center gap-2 text-xs">
@@ -1379,6 +1381,17 @@ function ShakhaAdminDashboard({
               </div>
               <div className="flex items-center gap-2 text-xs mt-1">
                 <span className="font-bold text-red-600 dark:text-red-400">{kpis.faExpired}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Expired</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5">Safeguarding</p>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{kpis.sgCertified}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">Certified</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <span className="font-bold text-red-600 dark:text-red-400">{kpis.sgExpired}</span>
                 <span className="text-neutral-500 dark:text-neutral-400">Expired</span>
               </div>
             </div>

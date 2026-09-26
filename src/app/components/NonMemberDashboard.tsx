@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
-import { UserPlus, User, Check, ChevronDown, ChevronRight, Users, Building2, MapPin, ArrowLeft, Key, LogOut, Clock } from "lucide-react";
+import { UserPlus, User, Check, ChevronDown, ChevronRight, Users, Building2, MapPin, ArrowLeft, Key, LogOut, Clock, Pencil, X } from "lucide-react";
 import { LanguageProvider } from "../../i18n/LanguageContext";
 import { PageHeader, SecondaryButton, PrimaryButton } from "./hb/listing";
 import { FormField, FormLabel, FormInput, FormSelect, ErrorText, FormModal, FormSection, FormFooter } from "./hb/common";
@@ -193,10 +193,29 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function NonMemberMyProfile({ profile }: { profile: NonMemberProfile }) {
+function NonMemberMyProfile({ profile, onUpdateProfile }: { profile: NonMemberProfile; onUpdateProfile?: (updates: { firstName: string; lastName: string }) => void }) {
   const [activeTab, setActiveTab] = useState<"personal" | "history">("personal");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(profile.firstName);
+  const [editLastName, setEditLastName] = useState(profile.lastName);
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Non-Member";
   const registeredDate = profile.registeredAt ? sharedFormatDateTime(profile.registeredAt) : "—";
+
+  const startEditing = () => {
+    setEditFirstName(profile.firstName);
+    setEditLastName(profile.lastName);
+    setIsEditing(true);
+  };
+  const cancelEditing = () => setIsEditing(false);
+  const saveEditing = () => {
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      toast.error("First name and last name are required.");
+      return;
+    }
+    onUpdateProfile?.({ firstName: editFirstName.trim(), lastName: editLastName.trim() });
+    setIsEditing(false);
+    toast.success("Profile updated successfully.");
+  };
 
   return (
     <div className="px-6 py-6">
@@ -211,6 +230,17 @@ function NonMemberMyProfile({ profile }: { profile: NonMemberProfile }) {
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">Manage your Non-Member account details.</p>
         </div>
+        {activeTab === "personal" && !isEditing && (
+          <button
+            type="button"
+            onClick={startEditing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors flex-shrink-0"
+            style={{ borderColor: HSS_BLUE, color: HSS_BLUE }}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit Profile
+          </button>
+        )}
       </div>
 
       <div className="border-b border-neutral-200 dark:border-neutral-800 mb-5">
@@ -244,12 +274,50 @@ function NonMemberMyProfile({ profile }: { profile: NonMemberProfile }) {
         <section className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 shadow-sm">
           <h2 className="text-[19px] font-semibold text-neutral-900 dark:text-white mb-4">Personal Info</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <InfoItem label="First Name">{profile.firstName}</InfoItem>
-            <InfoItem label="Last Name">{profile.lastName}</InfoItem>
-            <InfoItem label="Email Address">{profile.email}</InfoItem>
+            {isEditing ? (
+              <>
+                <FormField>
+                  <FormLabel required>First Name</FormLabel>
+                  <FormInput value={editFirstName} onChange={e => setEditFirstName(e.target.value)} />
+                </FormField>
+                <FormField>
+                  <FormLabel required>Last Name</FormLabel>
+                  <FormInput value={editLastName} onChange={e => setEditLastName(e.target.value)} />
+                </FormField>
+                <FormField>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormInput value={profile.email} readOnly disabled title="Email address cannot be changed" />
+                </FormField>
+              </>
+            ) : (
+              <>
+                <InfoItem label="First Name">{profile.firstName}</InfoItem>
+                <InfoItem label="Last Name">{profile.lastName}</InfoItem>
+                <InfoItem label="Email Address">{profile.email}</InfoItem>
+              </>
+            )}
             <InfoItem label="Account Type">Non-Member</InfoItem>
             <InfoItem label="Registered On">{registeredDate}</InfoItem>
           </div>
+          {isEditing && (
+            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-neutral-200 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={cancelEditing}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEditing}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors bg-[#172E4D] hover:bg-[#0f2138] active:bg-[#0a1830]"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
         </section>
       ) : (
         <section className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm overflow-hidden">
@@ -551,6 +619,7 @@ function UpgradeToTeenScreen({
 
 export default function NonMemberDashboard({
   profile,
+  onUpdateProfile,
   childAccounts,
   onAddChild,
   onUpgrade,
@@ -558,6 +627,7 @@ export default function NonMemberDashboard({
   onLogout,
 }: {
   profile: NonMemberProfile;
+  onUpdateProfile?: (updates: { firstName: string; lastName: string }) => void;
   childAccounts: NonMemberChild[];
   onAddChild: (child: { id: string; firstName: string; lastName: string; email: string }) => void;
   onUpgrade?: () => void;
@@ -650,7 +720,7 @@ export default function NonMemberDashboard({
             onChangePassword={() => setShowChangePassword(true)}
             onLogout={onLogout}
           />
-          <NonMemberMyProfile profile={profile} />
+          <NonMemberMyProfile profile={profile} onUpdateProfile={onUpdateProfile} />
         </div>
         <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
         <Toaster position="top-right" expand richColors closeButton />
