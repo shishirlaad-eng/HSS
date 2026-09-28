@@ -20,7 +20,8 @@ export interface Announcement {
 
   // Content
   contentType: AnnouncementContent;
-  mediaUrl?: string;          // URL for image/video
+  mediaUrl?: string;          // Banner Image (Web) — URL for image/video
+  mediaUrlApp?: string;       // Banner Image (App) — URL for image
   cooldownHours: number;      // 0 = no cooldown
 
   // Priority & Status

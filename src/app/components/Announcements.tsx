@@ -207,6 +207,7 @@ interface CreateForm {
   body: string;
   contentType: AnnouncementContent;
   mediaUrl: string;
+  mediaUrlApp: string;
   cooldownHours: number;
   priority: 'high' | 'medium' | 'low';
   targetRegions: string[];   // empty = All
@@ -233,6 +234,7 @@ const blankForm = (): CreateForm => ({
   body: '',
   contentType: 'text',
   mediaUrl: '',
+  mediaUrlApp: '',
   cooldownHours: 5 / 60,   // fixed at 5 minutes
   priority: 'high',
   targetRegions: [],
@@ -673,6 +675,7 @@ export default function Announcements({
           body:        form.body.trim(),
           contentType: form.contentType,
           mediaUrl:    form.mediaUrl.trim() || undefined,
+          mediaUrlApp: form.mediaUrlApp.trim() || undefined,
           cooldownHours: form.cooldownHours,
           priority:    form.priority,
           status:      newStatus,
@@ -716,6 +719,7 @@ export default function Announcements({
         body:        form.body.trim(),
         contentType: form.contentType,
         mediaUrl:    form.mediaUrl.trim() || undefined,
+        mediaUrlApp: form.mediaUrlApp.trim() || undefined,
         cooldownHours: form.cooldownHours,
         priority:    form.priority,
         status:      newStatus,
@@ -799,6 +803,7 @@ export default function Announcements({
       body:                ann.body,
       contentType:         ann.contentType,
       mediaUrl:            ann.mediaUrl ?? '',
+      mediaUrlApp:         ann.mediaUrlApp ?? '',
       cooldownHours:       ann.cooldownHours,
       priority:            ann.priority,
       targetRegions:       ann.targetRegions ?? (ann.targetRegion ? [ann.targetRegion] : []),
@@ -938,9 +943,9 @@ export default function Announcements({
                     {formErrors.body && <p className="text-xs text-red-600 mt-1">{formErrors.body}</p>}
                   </FormField>
 
-                  {/* Attachment */}
+                  {/* Attachment — Web */}
                   <FormField>
-                    <FormLabel>Banner Image</FormLabel>
+                    <FormLabel>Banner Image (Web)</FormLabel>
                     <div className="flex items-center gap-2">
                       <label className={`${btnGhost} cursor-pointer`}>
                         <Image className="w-4 h-4" />
@@ -977,13 +982,53 @@ export default function Announcements({
                     </p>
 
                     {form.mediaUrl && form.contentType === 'image' && (
-                      <img src={form.mediaUrl} alt="Attachment preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
+                      <img src={form.mediaUrl} alt="Web banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
                     )}
                     {form.mediaUrl && form.contentType === 'video' && (
                       <video src={form.mediaUrl} controls className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700" />
                     )}
 
                     {formErrors.mediaUrl && <p className="text-xs text-red-600 mt-1">{formErrors.mediaUrl}</p>}
+                  </FormField>
+
+                  {/* Attachment — App */}
+                  <FormField>
+                    <FormLabel>Banner Image (App)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <label className={`${btnGhost} cursor-pointer`}>
+                        <Image className="w-4 h-4" />
+                        Upload Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => setField('mediaUrlApp', String(reader.result));
+                            reader.readAsDataURL(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {form.mediaUrlApp && (
+                        <button
+                          type="button"
+                          onClick={() => setField('mediaUrlApp', '')}
+                          className={btnDanger}
+                        >
+                          <X className="w-4 h-4" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-1.5">
+                      Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
+                    </p>
+
+                    {form.mediaUrlApp && (
+                      <img src={form.mediaUrlApp} alt="App banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
+                    )}
                   </FormField>
 
                   {/* Cooldown — fixed at 5 minutes */}
@@ -1012,21 +1057,21 @@ export default function Announcements({
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <MultiSelectField
-                      label="Region"
+                      label="Vibhag"
                       options={regionOptions}
                       selected={form.targetRegions}
                       disabled={!scope.showRegionFilter}
                       onChange={v => { setField('targetRegions', v); setField('targetTowns', []); setField('targetCentres', []); }}
                     />
                     <MultiSelectField
-                      label="Town"
+                      label="Nagar"
                       options={townOptions}
                       selected={form.targetTowns}
                       disabled={!scope.showTownFilter}
                       onChange={v => { setField('targetTowns', v); setField('targetCentres', []); }}
                     />
                     <MultiSelectField
-                      label="Activity Centre"
+                      label="Shakha"
                       options={centreOptions}
                       selected={form.targetCentres}
                       disabled={!scope.showCentreFilter}
