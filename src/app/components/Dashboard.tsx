@@ -1043,15 +1043,6 @@ function HierarchyKpiSection({
       });
     })();
 
-    // â”€â”€ Chart: this Shakha's own recent Sankhya history (Held vs Present) â”€â”€
-    // Kept scoped to the admin's own Shakha rather than comparing other centres —
-    // a Shakha Admin has no visibility into other centres anywhere else in the app.
-    const recentSessionsData = last8Sessions.map(s => ({
-      date: sharedFormatDate(s.date),
-      held: 1,
-      present: s.attendanceRecords.filter(r => r.status === 'present').length,
-    }));
-
     // â”€â”€ Chart: Compliance â€” DBS / First Aid / Safeguarding â”€â”€
     const dbsData = [
       { name: 'Approved', value: scopedMembers.filter(m => m.compliance.dbs === 'Approved').length },
@@ -1076,7 +1067,7 @@ function HierarchyKpiSection({
       firstAiders, dbsApproved, safeguarding,
       gbp,
       statusData, attendanceTrendData,
-      recentSessionsData, dbsData, firstAidData, safeguardingData,
+      dbsData, firstAidData, safeguardingData,
       loginTrendData,
     };
   }, [scope]);
@@ -1156,27 +1147,12 @@ function HierarchyKpiSection({
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Recent Sankhya history + Compliance box */}
+          {/* Compliance box */}
           <ChartCard
-            title="Recent Shakhas"
-            subtitle="Held vs present, last 8 Shakhas at this centre"
+            title="Compliance"
+            subtitle="Certified vs Expired/Pending"
             onClick={() => onNavigate?.('compliance')}
           >
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={kpis.recentSessionsData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="held" name="Shakha" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-
-            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-4 mb-2">
-              Compliance — Certified vs Expired/Pending
-            </p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'DBS', data: kpis.dbsData },

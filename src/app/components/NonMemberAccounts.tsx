@@ -10,19 +10,21 @@
 // rows, navy-accent InfoSection cards, tab bar, change-history table)
 // so admins get the same look and feel as a registered member's profile.
 // ─────────────────────────────────────────────────────────────
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
-  Download, Users, X, MoreVertical, Eye, Power, Trash2,
+  Users, X, MoreVertical, Eye, Power, Trash2,
   ArrowLeft, User, Clock, UserPlus, AlertTriangle, Mail,
   ToggleLeft, ToggleRight, History as HistoryIcon,
+  CalendarDays, BarChart3, FileSpreadsheet,
+  ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react';
-import { PageHeader, PrimaryButton, IconButton, SecondaryButton } from './hb/listing';
+import { PageHeader, IconButton, SecondaryButton, DateRangeFilter, SummaryWidgets } from './hb/listing';
 import {
   mockNonMemberAccounts,
   NonMemberAccount,
   NonMemberAccountType,
 } from '../../mockAPI/nonMembersData';
-import { formatDate, formatDateTime as sharedFormatDateTime } from '../../utils/formatDate';
+import { formatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 
 type PageState = 'list' | 'detail';
 type DetailTab = 'profile' | 'history';
@@ -119,6 +121,14 @@ export default function NonMemberAccounts() {
   const [accounts, setAccounts] = useState<NonMemberAccount[]>(mockNonMemberAccounts);
   const [extraHistory, setExtraHistory] = useState<Record<string, HistoryEvent[]>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [regDateStart, setRegDateStart] = useState('');
+  const [regDateEnd, setRegDateEnd] = useState('');
+  const [regDateLabel, setRegDateLabel] = useState('');
+  const [showRegDateFilter, setShowRegDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [sortField, setSortField] = useState<'firstName' | 'lastName' | 'email' | 'accountType' | 'registeredAt' | 'children'>('registeredAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
@@ -126,13 +136,39 @@ export default function NonMemberAccounts() {
 
   const selected = accounts.find(a => a.id === selectedId) ?? null;
 
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDirection(p => p === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const renderSortArrow = (field: typeof sortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 hover:opacity-100 text-neutral-400 transition-opacity" />;
+    return sortDirection === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary-600 dark:text-primary-400" />;
+  };
+
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return accounts.filter(a => {
+    const rows = accounts.filter(a => {
       const name = `${a.firstName} ${a.lastName}`.toLowerCase();
-      return !q || name.includes(q) || a.email.toLowerCase().includes(q);
-    }).sort((a, b) => b.registeredAt.localeCompare(a.registeredAt));
-  }, [accounts, searchQuery]);
+      const matchesSearch = !q || name.includes(q) || a.email.toLowerCase().includes(q);
+      const regDate = a.registeredAt.slice(0, 10);
+      const matchesRegDate = (!regDateStart || regDate >= regDateStart) && (!regDateEnd || regDate <= regDateEnd);
+      return matchesSearch && matchesRegDate;
+    });
+    rows.sort((a, b) => {
+      const av = sortField === 'children' ? a.children.length : a[sortField];
+      const bv = sortField === 'children' ? b.children.length : b[sortField];
+      if (av < bv) return sortDirection === 'asc' ? -1 : 1;
+      if (av > bv) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }, [accounts, searchQuery, regDateStart, regDateEnd, sortField, sortDirection]);
+
+  const memberRouteCount = accounts.filter(a => a.accountType === 'Member').length;
+  const nonMemberRouteCount = accounts.filter(a => a.accountType === 'Non-Member').length;
 
   const openDetail = (account: NonMemberAccount) => {
     setSelectedId(account.id);
@@ -411,8 +447,26 @@ export default function NonMemberAccounts() {
           title="Non-Member Accounts"
           subtitle="Accounts that haven't become a full HSS member yet — either registered via Create Non-Member Account, or started Create Member Account and never completed registration."
         >
-          <PrimaryButton icon={Download} onClick={handleExport}>Export CSV</PrimaryButton>
+          <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+          <IconButton
+            icon={MoreVertical}
+            title="More options"
+            menuItems={[
+              { icon: FileSpreadsheet, label: 'Export as CSV', onClick: handleExport },
+            ]}
+          />
         </PageHeader>
+
+        {showSummary && (
+          <SummaryWidgets
+            title="Account Summary"
+            widgets={[
+              { label: 'Total Accounts', value: accounts.length, icon: 'Users' },
+              { label: 'Non-Member', value: nonMemberRouteCount, icon: 'Users' },
+              { label: 'Member', value: memberRouteCount, icon: 'Building2' },
+            ]}
+          />
+        )}
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <input
@@ -422,6 +476,37 @@ export default function NonMemberAccounts() {
             placeholder="Search by name or email…"
             className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[240px]"
           />
+          <div className="relative" ref={dateFilterRef}>
+            <button
+              onClick={() => setShowRegDateFilter(p => !p)}
+              title="Filter by Registration Date"
+              className={`h-9 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                regDateStart
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              {regDateStart ? (regDateLabel || formatDateRange(regDateStart, regDateEnd)) : 'Reg. Date'}
+              {regDateStart && (
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); setRegDateStart(''); setRegDateEnd(''); setRegDateLabel(''); }}
+                  className="ml-0.5 text-primary-400 hover:text-primary-700 dark:hover:text-primary-200"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
+            </button>
+            <DateRangeFilter
+              isOpen={showRegDateFilter}
+              onClose={() => setShowRegDateFilter(false)}
+              startDate={regDateStart}
+              endDate={regDateEnd}
+              onApply={(start, end, label) => { setRegDateStart(start); setRegDateEnd(end); setRegDateLabel(label || ''); }}
+              title="Registration Date Range"
+            />
+          </div>
           {searchQuery && (
             <button onClick={() => setSearchQuery('')} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
               <X className="w-3.5 h-3.5" /> Clear
@@ -434,8 +519,21 @@ export default function NonMemberAccounts() {
             <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                  {['First Name', 'Last Name', 'Email', 'Type', 'Registered On', 'Children'].map(h => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{h}</th>
+                  {([
+                    { key: 'firstName', label: 'First Name' },
+                    { key: 'lastName', label: 'Last Name' },
+                    { key: 'email', label: 'Email' },
+                    { key: 'accountType', label: 'Type' },
+                    { key: 'registeredAt', label: 'Registered On' },
+                    { key: 'children', label: 'Children' },
+                  ] as { key: typeof sortField; label: string }[]).map(col => (
+                    <th
+                      key={col.key}
+                      onClick={() => handleSort(col.key)}
+                      className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      {col.label}{renderSortArrow(col.key)}
+                    </th>
                   ))}
                   <th className="px-4 py-3 w-10" />
                 </tr>

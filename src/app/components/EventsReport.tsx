@@ -50,17 +50,6 @@ const PAYMENT_COLORS = {
   paid: '#f59e0b',
 };
 
-const CHART_PALETTE = [
-  '#f59e0b',
-  '#3b82f6',
-  '#22c55e',
-  '#8b5cf6',
-  '#06b6d4',
-  '#ef4444',
-  '#84cc16',
-  '#f97316',
-];
-
 function fmt(n: number) {
   return Number.isFinite(n) ? n.toLocaleString() : '0';
 }
@@ -327,11 +316,6 @@ export default function EventsReport() {
       .sort((a, b) => masterRegionOptions.indexOf(a.fullRegion) - masterRegionOptions.indexOf(b.fullRegion));
   }, [filtered, masterRegionOptions]);
 
-  const capacityByRegion = useMemo(
-    () => [...byRegion],
-    [byRegion],
-  );
-
   const handleExport = () => {
     const rows: string[][] = [
       ['Karyakram Report - HSS'],
@@ -553,7 +537,7 @@ export default function EventsReport() {
           </ChartCard>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="mt-6 grid grid-cols-1 gap-6">
           <ChartCard title="Karyakram Status by Region" subtitle="Karyakram lifecycle status mix per Vibhag, including regions with no matching Karyakrams">
             <ResponsiveContainer width="100%" height={Math.max(240, statusByRegion.length * 42 + 60)}>
               <BarChart data={statusByRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
@@ -565,20 +549,6 @@ export default function EventsReport() {
                 {(Object.keys(STATUS_LABELS) as Event['status'][]).map(status => (
                   <Bar key={status} dataKey={status} name={STATUS_LABELS[status]} stackId="status" fill={STATUS_COLORS[status]} barSize={18} />
                 ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Capacity Utilisation by Region" subtitle="All configured regions, with zero shown where capacity is not configured">
-            <ResponsiveContainer width="100%" height={Math.max(240, capacityByRegion.length * 42 + 60)}>
-              <BarChart data={capacityByRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="fillRate" name="Fill Rate %" radius={[0, 4, 4, 0]} barSize={22}>
-                  {capacityByRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
