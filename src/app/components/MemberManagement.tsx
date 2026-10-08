@@ -562,6 +562,8 @@ export default function MemberManagement({
     { key: 'registrationDate',    label: 'Since'               },
     { key: 'hssRoles',            label: 'My HSS Role'         },
     { key: 'status',              label: 'Member Status'       },
+    { key: 'dbsStatus',           label: 'DBS Status'          },
+    { key: 'safeguardingStatus',  label: 'Safeguarding Status' },
   ] : [
     { key: 'id',         label: 'Member ID'      },
     { key: 'firstName',  label: 'First Name'     },
@@ -594,7 +596,7 @@ export default function MemberManagement({
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     karyakartasOnly
-      ? { id: true, firstName: true, lastName: true, shakha: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true }
+      ? { id: true, firstName: true, lastName: true, shakha: true, memberType: true, sanghResponsibility: true, registrationDate: true, hssRoles: true, status: true, dbsStatus: true, safeguardingStatus: true }
       : {
           id: true, firstName: true, lastName: true, shakha: true, memberType: true, accountType: true, email: true, phone: true, status: true,
           regDate: true,

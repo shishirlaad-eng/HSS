@@ -209,7 +209,7 @@ export const getNavigationData = (
       id: "attendance-group",
       label: "Shakha",
       icon: ClipboardCheck,
-      active: ['sessions', 'karyakartas', 'compliance', 'first-aid-incidents', 'guru-puja-report'].includes(currentPage),
+      active: ['sessions', 'karyakartas', 'compliance', 'first-aid-incidents', 'guru-puja-report', 'shakha-dakshina'].includes(currentPage),
       subItems: [
         {
           id: "sessions",
@@ -241,6 +241,12 @@ export const getNavigationData = (
           onClick: () => onNavigate("guru-puja-report"),
           active: currentPage === "guru-puja-report",
         }] : []),
+        ...(hasPermission(selectedRole, "shakha-dakshina", "view") ? [{
+          id: "shakha-dakshina",
+          label: "Shakha Dakshina",
+          onClick: () => onNavigate("shakha-dakshina"),
+          active: currentPage === "shakha-dakshina",
+        }] : []),
       ],
     }]),
 
@@ -249,14 +255,8 @@ export const getNavigationData = (
       id: "my-donations",
       label: "Dakshina",
       icon: ReceiptText,
-      active: ['shakha-dakshina', 'utsav-income'].includes(currentPage),
+      active: ['utsav-income'].includes(currentPage),
       subItems: [
-        ...(hasPermission(selectedRole, "shakha-dakshina", "view") ? [{
-          id: "shakha-dakshina",
-          label: "Shakha Dakshina",
-          onClick: () => onNavigate("shakha-dakshina"),
-          active: currentPage === "shakha-dakshina",
-        }] : []),
         ...(['Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin', 'Reporting User'].includes(selectedRole) ? [{
           id: "utsav-income",
           label: "Guru Purnima Cash Income",

@@ -1017,13 +1017,13 @@ function HierarchyKpiSection({
 
     // â”€â”€ Chart: Monthly Attendance Trend â”€â”€ last 8 Shakhas held, oldest to newest
     const last8Sessions = [...sortedSessions].slice(0, 8).reverse();
-    const last8AvgRate = last8Sessions.length
-      ? Math.round(last8Sessions.reduce((sum, s) => sum + rateOf(s), 0) / last8Sessions.length) : 0;
+    const presentCountOf = (s: typeof last8Sessions[number]) => s.attendanceRecords.filter(r => r.status === 'present').length;
+    const last8AvgPresent = last8Sessions.length
+      ? Math.round(last8Sessions.reduce((sum, s) => sum + presentCountOf(s), 0) / last8Sessions.length) : 0;
     const attendanceTrendData = last8Sessions.map(s => ({
       date: sharedFormatDate(s.date),
-      rate: Math.round(rateOf(s)),
-      average: last8AvgRate,
-      present: s.attendanceRecords.filter(r => r.status === 'present').length,
+      present: presentCountOf(s),
+      average: last8AvgPresent,
     }));
 
     // â”€â”€ Chart: MyHSS Login Trend â”€â”€ last 7 days, Total / Web / App
@@ -1130,19 +1130,19 @@ function HierarchyKpiSection({
           {/* Monthly Attendance Trend */}
           <ChartCard
             title="Monthly Attendance Trend"
-            subtitle="Shakhas and attendance rate over time"
-            hint="Shows the last 8 Shakhas held. The line is the attendance rate for each Shakha; the flat reference line is the average across those 8. Hover a point to see the exact rate."
+            subtitle="Shakhas and members present over time"
+            hint="Shows the last 8 Shakhas held. The line is the total number of members present at each Shakha; the flat reference line is the average across those 8. Hover a point to see the exact count."
             onClick={() => onNavigate?.('attendance-log')}
           >
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={kpis.attendanceTrendData} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} unit="%" />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="rate" name="Attendance Rate %" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="average" name="Average %" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+                <Line type="monotone" dataKey="present" name="Present" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="average" name="Average" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
