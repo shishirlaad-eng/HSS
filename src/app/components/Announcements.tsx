@@ -2,7 +2,7 @@
 // HSS UK Membership Management System — Announcements Module
 // ─────────────────────────────────────────────────────────────
 // Features: Create · Read · Delete
-// Content types: Text | Image | Video | Cooldown delay
+// Content types: Text | Image | Video
 // Audience: National / Region / Town / Centre + demographic filters
 // Notifications: Push (Instant / Scheduled) | Email (Instant / Scheduled)
 // Bell icon: In-app notification receipt
@@ -100,17 +100,9 @@ const SCOPE_CFG: Record<AnnouncementScope, { icon: typeof Globe2; label: string;
 
 // ── Helpers ───────────────────────────────────────────────────
 
-const COOLDOWN_MS = 5 * 60 * 1000; // 5-minute cooldown window
-
-/** Announcement may only be deleted when Draft, Scheduled, OR within the 5-min cooldown after being sent. */
+/** Announcement may only be deleted while it is Draft or Scheduled — once sent it cannot be deleted. */
 function canDeleteAnnouncement(ann: Announcement): boolean {
-  if (ann.status === 'draft')     return true;
-  if (ann.status === 'scheduled') return true;
-  if (ann.status === 'sent' && ann.sentAt) {
-    const elapsed = Date.now() - new Date(ann.sentAt).getTime();
-    return elapsed <= COOLDOWN_MS;
-  }
-  return false;
+  return ann.status === 'draft' || ann.status === 'scheduled';
 }
 
 /** Only Draft and Scheduled announcements can be edited. */
@@ -843,7 +835,7 @@ export default function Announcements({
   if (showCreate) {
     const CREATE_TABS: { id: 'content' | 'audience' | 'notifications'; label: string }[] = [
       { id: 'content',       label: 'Content'                },
-      { id: 'audience',      label: 'Audience and Targeting'  },
+      { id: 'audience',      label: 'Target Audience'  },
       { id: 'notifications', label: 'Notifications'           },
     ];
 
@@ -1029,16 +1021,6 @@ export default function Announcements({
                     {form.mediaUrlApp && (
                       <img src={form.mediaUrlApp} alt="App banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
                     )}
-                  </FormField>
-
-                  {/* Cooldown — fixed at 5 minutes */}
-                  <FormField>
-                    <FormLabel>How long before Member sees this Suchana</FormLabel>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
-                      <span className="text-sm text-neutral-900 dark:text-white font-medium">5 minutes</span>
-                      <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">Fixed</span>
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-1">How long before the same member sees this Suchana again.</p>
                   </FormField>
                 </div>
               </Card>
@@ -1319,7 +1301,7 @@ export default function Announcements({
                   </button>
                 ) : (
                   <span
-                    title="Cannot delete — the 5-minute cooldown window has passed"
+                    title="Cannot delete — this Suchana has already been sent"
                     className={`${btnBase} border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-600 bg-neutral-50 dark:bg-neutral-900 cursor-not-allowed opacity-60`}
                   >
                     <Trash2 className="w-4 h-4" /> Delete
@@ -1489,10 +1471,6 @@ export default function Announcements({
                   <cc.icon className="w-3.5 h-3.5" />
                   {cc.label}
                 </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">Cooldown</span>
-                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">5 min</span>
               </div>
               <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
                 <div className="flex items-center justify-between">
@@ -1702,9 +1680,7 @@ export default function Announcements({
                     <span
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-300 dark:text-neutral-700 cursor-not-allowed"
                       title={
-                        ann.status === 'scheduled'
-                          ? 'Scheduled Suchanas cannot be deleted'
-                          : 'Cannot delete — the 5-minute cooldown window has passed'
+                        'Cannot delete — this Suchana has already been sent'
                       }
                     >
                       <Trash2 className="w-4 h-4" />

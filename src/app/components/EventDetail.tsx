@@ -42,6 +42,7 @@ import {
   Megaphone,
   Bell,
   QrCode,
+  LogOut,
   MoreVertical,
   Loader2,
   ArrowUpDown,
@@ -160,6 +161,8 @@ function ParticipantStatusBadge({ p }: { p: EventParticipant }) {
     ? { label: 'Cancelled', text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' }
     : p.checkedIn
     ? { label: 'Checked In', text: 'text-success-700 dark:text-success-400', bg: 'bg-success-50 dark:bg-success-950/20', border: 'border-success-200 dark:border-success-800' }
+    : p.checkedOutAt
+    ? { label: 'Checked Out', text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' }
     : p.rsvp === 'requested' && p.waitlisted
     ? { label: 'Waiting List', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800' }
     : p.rsvp === 'requested'
@@ -244,6 +247,7 @@ export default function EventDetail({
     p.rsvp === 'denied' ? 'Rejected'
     : p.rsvp === 'cancelled' ? 'Cancelled'
     : p.checkedIn ? 'Checked In'
+    : p.checkedOutAt ? 'Checked Out'
     : p.rsvp === 'requested' && p.waitlisted ? 'Waiting List'
     : p.rsvp === 'requested' ? 'Waiting for Approval'
     : 'Approved';
@@ -339,8 +343,13 @@ export default function EventDetail({
   };
 
   // ── Resend the Event Confirmation email to a participant ─────────────────────
-  const handleResendConfirmation = (email: string) => {
-    toast.success(`Confirmation email resent to ${email}.`);
+  // Opens a confirmation dialog first — the email is only sent once the admin confirms.
+  const [resendTarget, setResendTarget] = useState<{ name: string; email: string } | null>(null);
+  const handleResendConfirmation = (target: { name: string; email: string }) => setResendTarget(target);
+  const handleConfirmResend = () => {
+    if (!resendTarget) return;
+    toast.success(`Confirmation email resent to ${resendTarget.email}.`);
+    setResendTarget(null);
   };
 
   // ── Refund (full or partial) — covers both a member's own refund request and
@@ -397,7 +406,7 @@ export default function EventDetail({
   const getParticipantMenuItems = (p: EventParticipant): MenuItem[] => {
     const items: MenuItem[] = [
       { icon: Eye, label: 'View Registration Details', onClick: () => setViewingParticipantId(p.memberId) },
-      { icon: Mail, label: 'Resend Confirmation Email', onClick: () => handleResendConfirmation(p.email) },
+      { icon: Mail, label: 'Resend Confirmation Email', onClick: () => handleResendConfirmation({ name: p.name, email: p.email }) },
     ];
     if (refundableAmountFor(p) > 0) {
       items.push({ divider: true }, { icon: Undo2, label: 'Trigger Refund', onClick: () => openRefundModal(p.memberId, refundableAmountFor(p), amountPaidFor(p), p.refundRequestedAmount) });
@@ -430,8 +439,20 @@ export default function EventDetail({
       toast.warning('Already checked in.');
       return;
     }
-    setParticipants(prev => prev.map(pp => pp.memberId === memberId ? { ...pp, checkedIn: true, checkedInAt: new Date().toISOString() } : pp));
+    setParticipants(prev => prev.map(pp => pp.memberId === memberId ? { ...pp, checkedIn: true, checkedInAt: new Date().toISOString(), checkedOutAt: undefined } : pp));
     toast.success('Participant checked in.');
+  };
+
+  // Check-out reverses a check-in: only a checked-in participant can be checked
+  // out; the check-in time is kept and the check-out time is recorded.
+  const handleAdminCheckOut = (memberId: string) => {
+    const p = allParticipants.find(pp => pp.memberId === memberId);
+    if (!p?.checkedIn) {
+      toast.warning('Participant is not checked in.');
+      return;
+    }
+    setParticipants(prev => prev.map(pp => pp.memberId === memberId ? { ...pp, checkedIn: false, checkedOutAt: new Date().toISOString() } : pp));
+    toast.success('Participant checked out.');
   };
 
   const [showAttendQuestions, setShowAttendQuestions] = useState(false);
@@ -1718,7 +1739,7 @@ export default function EventDetail({
                       ) : (
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
-                            onClick={() => handleResendConfirmation(vp.email)}
+                            onClick={() => handleResendConfirmation({ name: vp.name, email: vp.email })}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                           >
                             <Mail className="w-3.5 h-3.5" /> Resend Confirmation Email
@@ -2251,17 +2272,16 @@ export default function EventDetail({
                                       </>
                                     ) : p.rsvp === 'going' && !p.waitlisted ? (
                                       <button
-                                        onClick={() => handleAdminCheckIn(p.memberId)}
-                                        disabled={p.checkedIn}
-                                        title={p.checkedIn ? 'Already checked in' : 'Check In'}
-                                        aria-label={p.checkedIn ? 'Already checked in' : 'Check In'}
+                                        onClick={() => (p.checkedIn ? handleAdminCheckOut(p.memberId) : handleAdminCheckIn(p.memberId))}
+                                        title={p.checkedIn ? 'Check Out' : 'Check In'}
+                                        aria-label={p.checkedIn ? 'Check Out' : 'Check In'}
                                         className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors flex-shrink-0 ${
                                           p.checkedIn
-                                            ? 'bg-success-50 dark:bg-success-950/20 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-800 cursor-default'
+                                            ? 'bg-success-50 dark:bg-success-950/20 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-800 hover:bg-success-100 dark:hover:bg-success-950/40'
                                             : 'border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                                         }`}
                                       >
-                                        <QrCode className="w-4 h-4" />
+                                        {p.checkedIn ? <LogOut className="w-4 h-4" /> : <QrCode className="w-4 h-4" />}
                                       </button>
                                     ) : null}
                                     <IconButton icon={MoreVertical} borderless title="Actions" menuItems={getParticipantMenuItems(p)} />
@@ -2741,15 +2761,6 @@ export default function EventDetail({
                         {announcementMediaUrl && announcementContentType === 'video' && (
                           <video src={announcementMediaUrl} controls className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700" />
                         )}
-                      </div>
-
-                      {/* Cooldown — fixed, informational */}
-                      <div>
-                        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">How long before a member sees this again</label>
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/50">
-                          <span className="text-sm text-neutral-900 dark:text-white font-medium">5 minutes</span>
-                          <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">Fixed</span>
-                        </div>
                       </div>
 
                       {/* Demographic Filters */}
@@ -3775,6 +3786,42 @@ export default function EventDetail({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-error-600 hover:bg-error-700 text-white transition-colors"
             >
               <Ban className="w-3.5 h-3.5" /> Cancel Registration
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {resendTarget && (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={() => setResendTarget(null)}
+      >
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mb-3">
+              <Mail className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Resend Confirmation Email</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+              This will send the Karyakram confirmation email again to <strong className="text-neutral-900 dark:text-white">{resendTarget.name}</strong> ({resendTarget.email}). Do you want to continue?
+            </p>
+          </div>
+          <div className="px-6 pt-6 pb-6 flex items-center justify-end gap-2">
+            <button
+              onClick={() => setResendTarget(null)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmResend}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5" /> Resend Email
             </button>
           </div>
         </div>

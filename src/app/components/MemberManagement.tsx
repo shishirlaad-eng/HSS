@@ -18,12 +18,9 @@ import {
   Mail,
   Ban,
   Trash2,
-  Upload,
-  CheckCircle2,
   ShieldCheck,
   ShieldAlert,
   X,
-  FileUp,
   CalendarDays,
   Award,
   FileSpreadsheet,
@@ -269,215 +266,6 @@ function DeleteConfirmModal({
   );
 }
 
-// â"€â"€ Bulk Upload Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-
-type BulkUploadStep = 'upload' | 'results';
-
-interface BulkUploadError {
-  row: number;
-  field: string;
-  message: string;
-}
-
-function BulkUploadModal({
-  isOpen,
-  onClose,
-  onConfirm,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (count: number) => void;
-}) {
-  const [step, setStep] = useState<BulkUploadStep>('upload');
-  const [isDragging, setIsDragging] = useState(false);
-  const [fileName, setFileName] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [totalRows, setTotalRows] = useState(0);
-  const [validRows, setValidRows] = useState(0);
-  const [errors, setErrors] = useState<BulkUploadError[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const REQUIRED_COLUMNS = ['First name', 'Last name', 'DOB', 'Email id', 'Phone number'];
-
-  const simulateValidation = (name: string) => {
-    setFileName(name);
-    setIsProcessing(true);
-    setTimeout(() => {
-      const total = Math.floor(Math.random() * 8) + 3;
-      const mockErrors: BulkUploadError[] = [
-        { row: 2, field: 'Email id',     message: 'Invalid email format.' },
-        { row: 5, field: 'DOB',          message: 'Date of Birth is required.' },
-        { row: 7, field: 'Phone number', message: 'Phone number is required.' },
-      ].slice(0, Math.min(3, Math.floor(total * 0.3)));
-      setTotalRows(total);
-      setValidRows(total - mockErrors.length);
-      setErrors(mockErrors);
-      setIsProcessing(false);
-      setStep('results');
-    }, 1200);
-  };
-
-  const handleFile = (file: File | null | undefined) => {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      toast.error('Please upload a CSV file.');
-      return;
-    }
-    simulateValidation(file.name);
-  };
-
-  const handleConfirm = async () => {
-    if (validRows === 0) { toast.error('No valid rows to upload.'); return; }
-    setIsConfirming(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setIsConfirming(false);
-    onConfirm(validRows);
-    handleClose();
-  };
-
-  const handleClose = () => {
-    if (!isProcessing && !isConfirming) {
-      setStep('upload');
-      setFileName('');
-      setTotalRows(0);
-      setValidRows(0);
-      setErrors([]);
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <FormModal isOpen={isOpen} onClose={handleClose} title="Bulk Upload Members" maxWidth="max-w-2xl">
-      <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto slim-scroll">
-
-        {/* Required Columns */}
-        <div className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-          <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2 uppercase tracking-wider">Required Columns</p>
-          <div className="flex flex-wrap gap-2">
-            {REQUIRED_COLUMNS.map(col => (
-              <span key={col} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-600 dark:text-neutral-400">
-                <CheckCircle2 className="w-3 h-3 text-[#4EAE33]" />
-                {col}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {step === 'upload' && (
-          <>
-            {/* Drop Zone */}
-            <div
-              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={e => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files[0]); }}
-              onClick={() => fileRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all ${
-                isDragging
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/20'
-                  : 'border-neutral-300 dark:border-neutral-700 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-neutral-50 dark:hover:bg-neutral-900/30'
-              }`}
-            >
-              <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={e => handleFile(e.target.files?.[0])} />
-              <FileUp className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                {isProcessing ? 'Processing file...' : 'Drop your CSV file here, or click to browse'}
-              </p>
-              <p className="text-xs text-neutral-400">CSV files only. Max 500 rows per upload.</p>
-            </div>
-          </>
-        )}
-
-        {step === 'results' && (
-          <>
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Total Rows',    value: totalRows, cls: 'text-neutral-900 dark:text-white' },
-                { label: 'Valid Rows',    value: validRows, cls: 'text-[#3d8928]' },
-                { label: 'Error Rows',   value: errors.length, cls: errors.length > 0 ? 'text-error-600' : 'text-neutral-900 dark:text-white' },
-              ].map(({ label, value, cls }) => (
-                <div key={label} className="bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-center">
-                  <p className={`text-2xl font-bold ${cls}`}>{value}</p>
-                  <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-xs text-neutral-500">
-              File: <span className="font-medium text-neutral-700 dark:text-neutral-300">{fileName}</span>
-            </p>
-
-            {/* Row-level errors */}
-            {errors.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-error-600 uppercase tracking-wider mb-2">Row-level errors</p>
-                <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                        <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Row</th>
-                        <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Field</th>
-                        <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Error</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                      {errors.map((err, i) => (
-                        <tr key={i} className="bg-white dark:bg-neutral-950">
-                          <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300">{err.row}</td>
-                          <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300">{err.field}</td>
-                          <td className="px-3 py-2 text-error-600 dark:text-[#f87171]">{err.message}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {validRows === 0 && (
-              <div className="flex items-center gap-2 p-3 bg-[#fff0f0] border border-[#ffaaab] rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-error-600 flex-shrink-0" />
-                <p className="text-xs text-[#9a0c17]">No valid rows found. Please correct the errors and re-upload.</p>
-              </div>
-            )}
-
-            <button
-              onClick={() => { setStep('upload'); setFileName(''); }}
-              className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
-            >
-              â† Upload a different file
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30">
-        <button
-          onClick={handleClose}
-          disabled={isProcessing || isConfirming}
-          className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        {step === 'upload' && (
-          <PrimaryButton icon={Upload} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
-            Upload CSV
-          </PrimaryButton>
-        )}
-        {step === 'results' && (
-          <PrimaryButton onClick={handleConfirm} disabled={isConfirming || validRows === 0} isLoading={isConfirming}>
-            {isConfirming ? 'Uploading...' : 'Confirm Bulk Upload'}
-          </PrimaryButton>
-        )}
-      </div>
-    </FormModal>
-  );
-}
-
 // â"€â"€ Main component â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function MemberManagement({
@@ -548,7 +336,6 @@ export default function MemberManagement({
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; member: Member | null; isLoading: boolean }>({
     isOpen: false, member: null, isLoading: false,
   });
-  const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignMemberId, setAssignMemberId] = useState<string | null>(null);
 
@@ -1019,7 +806,6 @@ export default function MemberManagement({
               Assign Responsibility
             </PrimaryButton>
           )}
-          {mp.canAdd && <IconButton icon={Upload} onClick={() => setShowBulkModal(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton
             icon={MoreVertical}
@@ -1457,14 +1243,6 @@ export default function MemberManagement({
         isLoading={deleteModal.isLoading}
         onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
         onConfirm={confirmDelete}
-      />
-      <BulkUploadModal
-        isOpen={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        onConfirm={(count) => {
-          toast.success(`Bulk upload completed successfully. ${count} member${count > 1 ? 's' : ''} created.`);
-          setShowBulkModal(false);
-        }}
       />
       <AssignResponsibilityModal
         isOpen={showAssignModal}

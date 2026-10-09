@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertical } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, FileSpreadsheet, MoreVertical, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
@@ -17,6 +17,7 @@ import {
 } from '../../mockAPI/membersData';
 import { PageHeader, SearchBar, Pagination, AdvancedSearchPanel, SummaryWidgets, ViewModeSwitcher, IconButton, useStickyListingHeader } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
+import ComplianceBulkUploadModal from './ComplianceBulkUploadModal';
 
 type ComplianceTab = 'dbs' | 'firstAid' | 'safeguarding';
 
@@ -92,6 +93,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
+  const canBulkUpload = ['Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin'].includes(selectedRole);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('table');
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
@@ -100,7 +104,9 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
     else { setSortCol(col); setSortDir('asc'); }
   };
 
-  const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope]);
+  // dataVersion bumps after a bulk upload mutates mockMembers in place.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const members = useMemo<Member[]>(() => filterByScope(mockMembers, scope), [scope, dataVersion]);
   const scopedFilterOptions = useMemo(() => getScopedFilterOptions(scope), [scope]);
 
   const alertCounts = useMemo(() => ({
@@ -219,6 +225,7 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
               title="Filter Compliance"
             />
           </div>
+          {canBulkUpload && <IconButton icon={Upload} onClick={() => setShowBulkUpload(true)} title="Bulk Upload" />}
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton
             icon={MoreVertical}
@@ -481,6 +488,13 @@ export default function ComplianceManagement({ onNavigateToMember }: { onNavigat
         </div>
       </div>
       )}
+
+      <ComplianceBulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        members={members}
+        onApplied={() => setDataVersion(v => v + 1)}
+      />
     </div>
   );
 }

@@ -218,6 +218,7 @@ export interface Member {
   isFirstAider?: boolean;
   firstAidQualificationLevel?: FirstAidQualification;
   firstAidQualificationExpiryDate?: string;
+  firstAidCertificateFile?: string;
   dietaryRequirements?: DietaryRequirement[];
   dietaryOtherSpecify?: string;
   epiPen?: string;

@@ -345,6 +345,8 @@ export interface EventParticipant {
   // Set when the member has checked in at the venue.
   checkedIn?: boolean;
   checkedInAt?: string;
+  // Set when an admin checks the participant out; cleared on re-check-in.
+  checkedOutAt?: string;
 }
 
 // ─── Event Guest Registration (non-member) ────────────────────────────────────
