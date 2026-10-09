@@ -250,22 +250,6 @@ export const getNavigationData = (
       ],
     }]),
 
-    // ── 6b. Dakshina (My Donations + Guru Purnima Cash Income) ────
-    {
-      id: "my-donations",
-      label: "Dakshina",
-      icon: ReceiptText,
-      active: ['utsav-income'].includes(currentPage),
-      subItems: [
-        ...(['Super Admin', 'Kendriya Admin', 'Vibhag Admin', 'Nagar Admin', 'Shakha Admin', 'Reporting User'].includes(selectedRole) ? [{
-          id: "utsav-income",
-          label: "Guru Purnima Cash Income",
-          onClick: () => onNavigate("utsav-income"),
-          active: currentPage === "utsav-income",
-        }] : []),
-      ],
-    },
-
     // ── 7. Reports ─────────────────────────────────────────────── each
     // report is gated by its own "reports" module action (see reportSubItems
     // above), so the group itself only appears when at least one report is

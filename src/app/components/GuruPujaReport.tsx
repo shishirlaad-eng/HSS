@@ -45,6 +45,23 @@ const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; range: string }
   jyestha: { name: 'Jyestha(a)', range: '60 years and older' },
 };
 
+// Attendee-count columns on the listing. `recordKey` is the age category stored on
+// each attendance record (membersData naming: 'bal' = 0-5 yrs, 'shishu' = 6-11 yrs),
+// so the Guru Puja display names below are mapped by age range, not by key name.
+const ATTENDEE_AGE_COLUMNS: { label: string; range: string; recordKey: ShakhaSession['attendanceRecords'][number]['ageCategory'] }[] = [
+  { label: 'Shishu',    range: '0-5 yrs',      recordKey: 'bal'     },
+  { label: 'Bal(ika)',  range: 'Sch yr 1-6',   recordKey: 'shishu'  },
+  { label: 'Kishor(i)', range: 'Sch yr 7-12',  recordKey: 'kishor'  },
+  { label: 'Tarun(i)',  range: '16-30 yrs',    recordKey: 'tarun'   },
+  { label: 'Yuva(ti)',  range: '30-60 yrs',    recordKey: 'yuva'    },
+  { label: 'Jyestha(a)', range: '60+ yrs',     recordKey: 'jyestha' },
+];
+
+function presentCountsByAge(s: ShakhaSession): number[] {
+  const present = s.attendanceRecords.filter(r => r.status === 'present');
+  return ATTENDEE_AGE_COLUMNS.map(c => present.filter(r => r.ageCategory === c.recordKey).length);
+}
+
 function fmtMoney(n: number) {
   return `£${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -375,7 +392,9 @@ export default function GuruPujaReport() {
   const handleExportCSV = () => {
     if (!sorted.length) { toast.error('No data to export.'); return; }
     const headers = [
-      'Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status', 'Attendance', 'Report Status',
+      'Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status',
+      ...ATTENDEE_AGE_COLUMNS.map(c => `${c.label} (${c.range})`), 'Total',
+      'Attendance', 'Report Status',
       ...AGE_GROUP_ORDER.flatMap(g => [`${GURU_PUJA_AGE_GROUP_INFO[g].name} Cash`, `${GURU_PUJA_AGE_GROUP_INFO[g].name} Cheque`]),
       'Total Cash', 'Total Cheque', 'Total Income',
       'Date Banked', 'Banked By', 'Paying In Ref No',
@@ -385,6 +404,7 @@ export default function GuruPujaReport() {
       const shakhaStatus = shakhaStatusPill(s.status);
       const reportStatus = reportStatusPill(entry?.isComplete ?? false);
       const present = s.attendanceRecords.filter(r => r.status === 'present').length;
+      const ageCounts = presentCountsByAge(s);
       const amounts = entry?.amounts;
       const totalCash = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cash ?? 0), 0) : 0;
       const totalCheque = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cheque ?? 0), 0) : 0;
@@ -394,6 +414,8 @@ export default function GuruPujaReport() {
         `"${s.town}"`,
         `"${s.region}"`,
         shakhaStatus.label,
+        ...ageCounts,
+        ageCounts.reduce((a, b) => a + b, 0),
         `${present}/${s.totalExpected}`,
         reportStatus.label,
         ...AGE_GROUP_ORDER.flatMap(g => [
@@ -469,7 +491,18 @@ export default function GuruPujaReport() {
             <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                  {['Date', 'Shakha', 'Shakha Status', 'Attendance', 'Report Status'].map(h => (
+                  {['Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status'].map(h => (
+                    <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
+                  {ATTENDEE_AGE_COLUMNS.map(c => (
+                    <th key={c.label} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                      {c.label}
+                      <span className="block text-[10px] font-normal text-neutral-400 dark:text-neutral-500">{c.range}</span>
+                    </th>
+                  ))}
+                  {['Total', 'Attendance', 'Report Status'].map(h => (
                     <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
                       {h}
                     </th>
@@ -482,6 +515,7 @@ export default function GuruPujaReport() {
                   const shakhaStatus = shakhaStatusPill(s.status);
                   const reportStatus = reportStatusPill(entry?.isComplete ?? false);
                   const present = s.attendanceRecords.filter(r => r.status === 'present').length;
+                  const ageCounts = presentCountsByAge(s);
                   return (
                     <tr
                       key={s.id}
@@ -490,11 +524,17 @@ export default function GuruPujaReport() {
                     >
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{fmtDate(s.date)}</td>
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{s.activityCentre}</td>
+                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.town}</td>
+                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{s.region}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${shakhaStatus.cls} whitespace-nowrap`}>
                           {shakhaStatus.label}
                         </span>
                       </td>
+                      {ageCounts.map((n, i) => (
+                        <td key={ATTENDEE_AGE_COLUMNS[i].label} className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{n}</td>
+                      ))}
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{ageCounts.reduce((a, b) => a + b, 0)}</td>
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{present}/{s.totalExpected}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${reportStatus.cls} whitespace-nowrap`}>
@@ -505,7 +545,7 @@ export default function GuruPujaReport() {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
+                    <td colSpan={14} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <ClipboardList className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">
