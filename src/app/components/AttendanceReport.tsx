@@ -569,7 +569,7 @@ export default function AttendanceReport() {
         </div>
 
         <div className="mt-6">
-          <ChartCard title="Shakha with No Present" subtitle="Shakhas held in the selected period with zero Present marks recorded">
+          <ChartCard title="The shakha with no sankhya recorded" subtitle="Shakhas held in the selected period with zero Present marks recorded">
             {noPresentSessions.length === 0 ? (
               <p className="text-sm text-neutral-500 dark:text-neutral-400 py-6 text-center">
                 Every Shakha in the selected period has at least one Present mark.
