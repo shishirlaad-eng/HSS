@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
@@ -154,10 +155,12 @@ export default function EventsReport() {
   } = useReportLocationFilters();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
 
-  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterPayment || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterPayment || dateStart);
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -165,32 +168,20 @@ export default function EventsReport() {
     setFilterCentre('');
     setFilterStatus('');
     setFilterPayment('');
-    setFilterPeriod('all');
+    setDateStart(''); setDateEnd(''); setDateLabel('');
   };
 
   const filtered = useMemo(() => {
-    const now = new Date();
-    const start30 = new Date(now.getTime() - 30 * 86400000);
-    const start90 = new Date(now.getTime() - 90 * 86400000);
-    const next90 = new Date(now.getTime() + 90 * 86400000);
-
     return filterByScope(mockEvents, scope).filter(event => {
-      const start = new Date(event.startDate);
-      const end = new Date(event.endDate);
-
       if (filterRegion && event.region !== filterRegion) return false;
       if (filterTown && event.town !== filterTown) return false;
       if (filterCentre && event.activityCentre !== filterCentre) return false;
       if (filterStatus && event.status !== filterStatus) return false;
       if (filterPayment && event.paymentType !== filterPayment) return false;
-      if (filterPeriod === 'upcoming' && start < now) return false;
-      if (filterPeriod === 'past' && end >= now && event.status !== 'completed' && event.status !== 'cancelled') return false;
-      if (filterPeriod === '30d' && start < start30) return false;
-      if (filterPeriod === '90d' && start < start90) return false;
-      if (filterPeriod === 'next90' && (start < now || start > next90)) return false;
+      if (!inDateRange(event.startDate, dateStart, dateEnd)) return false;
       return true;
     });
-  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterPayment, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterPayment, dateStart, dateEnd]);
 
   const totalEvents = filtered.length;
   const activePipeline = filtered.filter(e => e.status === 'published' || e.status === 'active').length;
@@ -419,18 +410,15 @@ export default function EventsReport() {
             <option value="paid">Paid</option>
           </select>
 
-          <select
-            value={filterPeriod}
-            onChange={e => setFilterPeriod(e.target.value)}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[140px]"
-          >
-            <option value="all">All Dates</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="past">Past / Closed</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="next90">Next 90 Days</option>
-          </select>
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Karyakram Date Range"
+            emptyLabel="Karyakram Date"
+            includeFuture
+          />
 
           {hasFilter && (
             <button

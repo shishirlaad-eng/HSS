@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
@@ -155,12 +156,12 @@ export default function AttendanceReport() {
   } = useReportLocationFilters();
   const [filterShakhaType, setFilterShakhaType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('all');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
 
-  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterShakhaType || filterStatus || filterPeriod !== 'all' || customStart || customEnd);
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterShakhaType || filterStatus || dateStart);
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -174,13 +175,7 @@ export default function AttendanceReport() {
   };
 
   const filtered = useMemo(() => {
-    const now = new Date();
-    const start30 = new Date(now.getTime() - 30 * 86400000);
-    const start90 = new Date(now.getTime() - 90 * 86400000);
-    const startYear = new Date(now.getFullYear(), 0, 1);
-
     return filterByScope(mockSessions, scope).filter(session => {
-      const date = new Date(`${session.date}T12:00:00`);
       const shakhaType = getSessionShakhaType(session);
 
       if (filterRegion && session.region !== filterRegion) return false;
@@ -188,18 +183,10 @@ export default function AttendanceReport() {
       if (filterCentre && session.activityCentre !== filterCentre) return false;
       if (filterShakhaType && shakhaType !== filterShakhaType) return false;
       if (filterStatus && session.status !== filterStatus) return false;
-      if (filterPeriod === '30d' && date < start30) return false;
-      if (filterPeriod === '90d' && date < start90) return false;
-      if (filterPeriod === 'ytd' && date < startYear) return false;
-      if (filterPeriod === 'scheduled' && session.status !== 'scheduled') return false;
-      if (filterPeriod === 'completed' && session.status !== 'completed') return false;
-      if (filterPeriod === 'custom') {
-        if (customStart && session.date < customStart) return false;
-        if (customEnd && session.date > customEnd) return false;
-      }
+      if (!inDateRange(session.date, dateStart, dateEnd)) return false;
       return true;
     });
-  }, [scope, filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, filterPeriod, customStart, customEnd]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, dateStart, dateEnd]);
 
   const totalSessions = filtered.length;
   const completedSessions = filtered.filter(s => s.status === 'completed').length;
@@ -474,35 +461,14 @@ export default function AttendanceReport() {
             {Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
 
-          <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[140px]">
-            <option value="all">All Dates</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="ytd">Year to Date</option>
-            <option value="completed">Completed Only</option>
-            <option value="scheduled">Scheduled Only</option>
-            <option value="custom">Custom Range</option>
-          </select>
-
-          {filterPeriod === 'custom' && (
-            <>
-              <input
-                type="date"
-                value={customStart}
-                onChange={e => setCustomStart(e.target.value)}
-                max={customEnd || undefined}
-                className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              <span className="text-xs text-neutral-400">to</span>
-              <input
-                type="date"
-                value={customEnd}
-                onChange={e => setCustomEnd(e.target.value)}
-                min={customStart || undefined}
-                className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </>
-          )}
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Shakha Date Range"
+            emptyLabel="Shakha Date"
+          />
 
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">

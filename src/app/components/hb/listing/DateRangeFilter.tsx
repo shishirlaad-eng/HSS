@@ -36,10 +36,12 @@ interface DateRangeFilterProps {
   endDate?: string;
   onApply: (startDate: string, endDate: string, label?: string) => void;
   title?: string;
+  // Adds Next 7 / 30 / 90 Days presets (for date fields that look forward, e.g. Karyakram dates).
+  includeFuture?: boolean;
 }
 
 // Preset date ranges
-const getPresetRanges = (): DateRange[] => {
+const getPresetRanges = (includeFuture = false): DateRange[] => {
   const today = new Date();
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
@@ -94,13 +96,20 @@ const getPresetRanges = (): DateRange[] => {
     label: 'Last Month'
   };
 
+  const future = (days: number): DateRange => {
+    const end = new Date(today);
+    end.setDate(end.getDate() + days);
+    return { startDate: formatDate(today), endDate: formatDate(end), label: `Next ${days} Days` };
+  };
+
   return [
     todayRange,
     yesterdayRange,
     last7DaysRange,
     last30DaysRange,
     thisMonthRange,
-    lastMonthRange
+    lastMonthRange,
+    ...(includeFuture ? [future(7), future(30), future(90)] : []),
   ];
 };
 
@@ -110,13 +119,14 @@ export function DateRangeFilter({
   startDate = '',
   endDate = '',
   onApply,
-  title = 'Select Date Range'
+  title = 'Select Date Range',
+  includeFuture = false,
 }: DateRangeFilterProps) {
   const [localStartDate, setLocalStartDate] = useState(startDate);
   const [localEndDate, setLocalEndDate] = useState(endDate);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const presetRanges = getPresetRanges();
+  const presetRanges = getPresetRanges(includeFuture);
 
   useEffect(() => {
     setLocalStartDate(startDate);

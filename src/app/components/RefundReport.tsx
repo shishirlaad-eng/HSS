@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
@@ -153,11 +154,13 @@ export default function RefundReport() {
   } = useReportLocationFilters();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterReason, setFilterReason] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
   const countryOptions = useMemo(() => Array.from(new Set(mockRefunds.map(r => r.country))).sort(), []);
 
-  const hasFilter = !!(filterCountry || (filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterReason || filterPeriod !== 'all');
+  const hasFilter = !!(filterCountry || (filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterReason || dateStart);
 
   const clearFilters = () => {
     setFilterCountry('');
@@ -166,29 +169,21 @@ export default function RefundReport() {
     setFilterCentre('');
     setFilterStatus('');
     setFilterReason('');
-    setFilterPeriod('all');
+    setDateStart(''); setDateEnd(''); setDateLabel('');
   };
 
   const filtered = useMemo(() => {
-    const now = new Date();
-    const start30 = new Date(now.getTime() - 30 * 86400000);
-    const start90 = new Date(now.getTime() - 90 * 86400000);
-    const startYear = new Date(now.getFullYear(), 0, 1);
-
     return filterByScope(mockRefunds, scope).filter(refund => {
-      const requested = new Date(refund.requestedDate);
       if (filterCountry && refund.country !== filterCountry) return false;
       if (filterRegion && refund.region !== filterRegion) return false;
       if (filterTown && refund.town !== filterTown) return false;
       if (filterCentre && refund.activityCentre !== filterCentre) return false;
       if (filterStatus && refund.status !== filterStatus) return false;
       if (filterReason && refund.reason !== filterReason) return false;
-      if (filterPeriod === '30d' && requested < start30) return false;
-      if (filterPeriod === '90d' && requested < start90) return false;
-      if (filterPeriod === 'ytd' && requested < startYear) return false;
+      if (!inDateRange(refund.requestedDate, dateStart, dateEnd)) return false;
       return true;
     });
-  }, [scope, filterCountry, filterRegion, filterTown, filterCentre, filterStatus, filterReason, filterPeriod]);
+  }, [scope, filterCountry, filterRegion, filterTown, filterCentre, filterStatus, filterReason, dateStart, dateEnd]);
 
   const totalRequests = filtered.length;
   const requestedAmount = filtered.reduce((sum, r) => sum + r.amount, 0);
@@ -365,12 +360,14 @@ export default function RefundReport() {
             <option value="">All Reasons</option>
             {Object.entries(REASON_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
-          <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
-            <option value="all">All Dates</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="ytd">Year to Date</option>
-          </select>
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Requested Date Range"
+            emptyLabel="Requested Date"
+          />
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
               <X className="w-3.5 h-3.5" /> Clear

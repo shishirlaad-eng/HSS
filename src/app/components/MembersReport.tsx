@@ -2,6 +2,7 @@
 // HSS UK â€” Members Report (aggregated statistics, no member PII)
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import { useState, useMemo } from 'react';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
@@ -116,34 +117,30 @@ export default function MembersReport() {
   } = useReportLocationFilters();
   const [filterStatus,  setFilterStatus]  = useState('');
   const [filterGender,  setFilterGender]  = useState('');
-  const [filterPeriod,  setFilterPeriod]  = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
 
-  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterGender || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterGender || dateStart);
 
   const clearFilters = () => {
     setFilterRegion(''); setFilterTown(''); setFilterCentre('');
-    setFilterStatus(''); setFilterGender(''); setFilterPeriod('all');
+    setFilterStatus(''); setFilterGender(''); setDateStart(''); setDateEnd(''); setDateLabel('');
   };
 
   // â”€â”€ Filtered members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const filtered = useMemo(() => {
-    const now = new Date();
-    const cutoff = filterPeriod === '30d'  ? new Date(now.getTime() - 30  * 86400000)
-                 : filterPeriod === '90d'  ? new Date(now.getTime() - 90  * 86400000)
-                 : filterPeriod === '1y'   ? new Date(now.getTime() - 365 * 86400000)
-                 : null;
-
     return filterByScope(mockMembers, scope).filter(m => {
       if (filterRegion  && m.region         !== filterRegion)  return false;
       if (filterTown    && m.town           !== filterTown)    return false;
       if (filterCentre  && m.activityCentre !== filterCentre)  return false;
       if (filterStatus  && m.status         !== filterStatus)  return false;
       if (filterGender  && m.gender         !== filterGender)  return false;
-      if (cutoff && new Date(m.registrationDate) < cutoff)     return false;
+      if (!inDateRange(m.registrationDate, dateStart, dateEnd)) return false;
       return true;
     });
-  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterGender, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterGender, dateStart, dateEnd]);
 
   // â”€â”€ Aggregations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -232,7 +229,7 @@ export default function MembersReport() {
     if (filterCentre) filters.push(`Shakha: ${filterCentre}`);
     if (filterStatus) filters.push(`Status: ${filterStatus}`);
     if (filterGender) filters.push(`Gender: ${filterGender}`);
-    if (filterPeriod !== 'all') filters.push(`Period: ${filterPeriod}`);
+    if (dateStart) filters.push(`Registration date: ${dateStart} to ${dateEnd}`);
 
     const rows: string[][] = [
       ['Members Report â€” HSS UK'],
@@ -352,17 +349,15 @@ export default function MembersReport() {
             <option value="female">Female</option>
           </select>
 
-          {/* Registration Period */}
-          <select
-            value={filterPeriod}
-            onChange={e => setFilterPeriod(e.target.value)}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
-          >
-            <option value="all">All Time</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="1y">Last 12 Months</option>
-          </select>
+          {/* Registration date */}
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Registration Date Range"
+            emptyLabel="Reg. Date"
+          />
 
           {hasFilter && (
             <button

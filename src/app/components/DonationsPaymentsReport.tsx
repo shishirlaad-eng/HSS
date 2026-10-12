@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
@@ -133,28 +134,17 @@ export default function DonationsPaymentsReport() {
     regionLocked, townLocked, centreLocked,
     regionDisabled, townDisabled, centreDisabled,
   } = useReportLocationFilters();
-  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
-  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || dateStart);
 
   const clearFilters = () => {
     setFilterRegion('');
     setFilterTown('');
     setFilterCentre('');
-    setFilterPeriod('all');
-  };
-
-  const dateInPeriod = (date: string) => {
-    if (filterPeriod === 'all') return true;
-    const now = new Date();
-    const value = new Date(date);
-    const start30 = new Date(now.getTime() - 30 * 86400000);
-    const start90 = new Date(now.getTime() - 90 * 86400000);
-    const startYear = new Date(now.getFullYear(), 0, 1);
-    if (filterPeriod === '30d') return value >= start30;
-    if (filterPeriod === '90d') return value >= start90;
-    if (filterPeriod === 'ytd') return value >= startYear;
-    return true;
+    setDateStart(''); setDateEnd(''); setDateLabel('');
   };
 
   const filteredDonations = useMemo(() => {
@@ -162,10 +152,10 @@ export default function DonationsPaymentsReport() {
       if (filterRegion && donation.region !== filterRegion) return false;
       if (filterTown && donation.town !== filterTown) return false;
       if (filterCentre && donation.activityCentre !== filterCentre) return false;
-      if (!dateInPeriod(donation.date)) return false;
+      if (!inDateRange(donation.date, dateStart, dateEnd)) return false;
       return true;
     });
-  }, [scope, filterRegion, filterTown, filterCentre, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
 
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
   const onlineDonations = receivedDonations
@@ -291,12 +281,14 @@ export default function DonationsPaymentsReport() {
             <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
-          <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
-            <option value="all">All Dates</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="ytd">Year to Date</option>
-          </select>
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Donation Date Range"
+            emptyLabel="Donation Date"
+          />
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
               <X className="w-3.5 h-3.5" /> Clear
