@@ -277,7 +277,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     registeredArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     attendedArr.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     return {
-      counts: { attended: attendedArr.length, notRegistered: notRegisteredArr.filter(e => e.status !== 'cancelled').length, registered: registeredArr.length },
+      counts: { attended: attendedArr.filter(e => recordByEventId[e.id]?.checkedIn).length, notRegistered: notRegisteredArr.filter(e => e.status !== 'cancelled').length, registered: registeredArr.length },
       notRegistered: notRegisteredArr,
       registered:    registrationPanelArr,
       attended:      attendedArr,
@@ -886,7 +886,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             colorCards={true}
             centered={true}
             widgets={[
-              { label: 'Total Karyakrams Attended',               value: memberData.counts.attended,      icon: 'CheckCircle', color: 'emerald' },
+              { label: 'Total Karyakrams Attended (Checked In)',            value: memberData.counts.attended,      icon: 'CheckCircle', color: 'emerald' },
               { label: 'Upcoming Karyakrams (Not Yet Registered)', value: memberData.counts.notRegistered, icon: 'Clock',       color: 'amber'   },
               { label: 'Upcoming Karyakrams (Registered)',         value: memberData.counts.registered,    icon: 'Activity',    color: 'sky'     },
             ]}

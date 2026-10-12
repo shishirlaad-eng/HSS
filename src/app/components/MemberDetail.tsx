@@ -1744,7 +1744,7 @@ export default function MemberDetail({ member, onBack, onEdit, onStatusChange, o
             {activeTab === 'activity' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <StatMini label="Karyakrams Attended"  value={member.eventsAttended}         icon={CalendarDays} />
+                  <StatMini label="Karyakrams Attended (Checked In)"  value={member.eventsAttended}         icon={CalendarDays} />
                   <StatMini label="Shakhas Attended" value={member.shakhaSessionsAttended} icon={UserCheck} />
                 </div>
 
