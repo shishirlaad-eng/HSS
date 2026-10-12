@@ -242,7 +242,7 @@ export default function EventDetail({
   const { selectedRole, scope } = useRoleScope();
   const isMember = selectedRole === 'Adult Member' || selectedRole === 'Teen Member';
 
-  // ── Participants (stateful so Approve/Deny + Attend can mutate) ──────────────
+  // ── Participants (stateful so Approve/Reject + Attend can mutate) ──────────────
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
   const [participantFilters, setParticipantFilters] = useState<FilterCondition[]>([]);
   const [showParticipantFilters, setShowParticipantFilters] = useState(false);
@@ -341,7 +341,7 @@ export default function EventDetail({
   );
   useEffect(() => { setParticipantsPage(1); }, [rsvpFilter, participantFilters, participantSearch, participantSortField, participantSortDirection]);
 
-  // ── Approve / Deny a registration request (admins) ──────────────────────────
+  // ── Approve / Reject a registration request (admins) ──────────────────────────
   const handleApprove = (memberId: string) => {
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'going' } : p));
     toast.success('Registration approved — marked as Going.');
@@ -350,19 +350,22 @@ export default function EventDetail({
   // stored on the registration and shown to the member in the detail page header.
   const [reasonTarget, setReasonTarget] = useState<{ memberId: string; kind: 'reject' | 'cancel' } | null>(null);
   const [reasonText, setReasonText] = useState('');
-  const [reasonError, setReasonError] = useState(false);
+  const [reasonTouched, setReasonTouched] = useState(false);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
   const openReasonModal = (memberId: string, kind: 'reject' | 'cancel') => {
     setReasonTarget({ memberId, kind });
     setReasonText('');
-    setReasonError(false);
+    setReasonTouched(false);
   };
   const closeReasonModal = () => setReasonTarget(null);
   const handleConfirmReason = () => {
     if (!reasonTarget) return;
     const reason = reasonText.trim();
     if (!reason) {
-      setReasonError(true);
-      toast.error('Please enter a reason.');
+      setReasonTouched(true);
+      toast.error(reasonTarget.kind === 'reject' ? 'Rejection reason is required.' : 'Cancellation reason is required.');
+      reasonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      reasonRef.current?.focus();
       return;
     }
     const { memberId, kind } = reasonTarget;
@@ -810,7 +813,7 @@ export default function EventDetail({
     ];
 
     const rsvpLabel = (r: EventParticipant['rsvp']) =>
-      r === 'going' ? 'Approved' : r === 'requested' ? 'Requested' : r === 'cancelled' ? 'Cancelled' : 'Denied';
+      r === 'going' ? 'Approved' : r === 'requested' ? 'Requested' : r === 'cancelled' ? 'Cancelled' : 'Rejected';
 
     const escape = (v: string | undefined | null) =>
       `"${(v ?? '').toString().replace(/"/g, '""')}"`;
@@ -2203,7 +2206,7 @@ export default function EventDetail({
                         { id: 'all',        label: 'All',          count: allParticipants.length },
                         { id: 'requested',  label: 'Requested',    count: requestedList.length   },
                         { id: 'going',      label: 'Approved',     count: goingList.length       },
-                        { id: 'denied',     label: 'Denied',       count: deniedList.length      },
+                        { id: 'denied',     label: 'Rejected',     count: deniedList.length      },
                         { id: 'cancelled',  label: 'Cancelled',    count: cancelledList.length   },
                         { id: 'waitlisted', label: 'Waiting List', count: waitlistedList.length  },
                       ] as { id: RsvpFilter; label: string; count: number }[]).map(f => (
@@ -3839,60 +3842,85 @@ export default function EventDetail({
       );
     })()}
 
-    {reasonTarget && (
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={closeReasonModal}
-      >
-        <div
-          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center mb-3">
-              <Ban className="w-7 h-7 text-error-600 dark:text-error-400" />
+    {reasonTarget && (() => {
+      const isReject = reasonTarget.kind === 'reject';
+      const target = allParticipants.find(p => p.memberId === reasonTarget.memberId);
+      const showError = reasonTouched && reasonText.trim().length === 0;
+      const noun = isReject ? 'Rejection' : 'Cancellation';
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-xl w-full max-w-md p-6">
+            {/* Header */}
+            <div className="flex items-start gap-4 mb-5">
+              <div className="w-10 h-10 rounded-full bg-[#fff0f0] flex items-center justify-center flex-shrink-0">
+                <Ban className="w-5 h-5 text-[#BC0F1C]" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-semibold text-neutral-900 dark:text-white mb-1">
+                  {isReject ? 'Reject Registration' : 'Cancel Registration'}
+                </h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Please provide a reason for {isReject ? 'rejection' : 'cancellation'}. This will be recorded against the member's registration and shown to the member.
+                </p>
+                {target && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1.5">
+                    Member: <span className="font-medium text-neutral-700 dark:text-neutral-300">{target.name}</span>
+                    <span className="ml-2 font-mono text-neutral-400">{target.memberId}</span>
+                  </p>
+                )}
+              </div>
             </div>
-            <h4 className="text-base font-bold text-neutral-900 dark:text-white">
-              {reasonTarget.kind === 'reject' ? 'Reject Registration' : 'Cancel Registration'}
-            </h4>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
-              {reasonTarget.kind === 'reject'
-                ? 'Enter the reason for rejecting this registration. The member will see it on the Karyakram page.'
-                : 'Enter the reason for cancelling this registration. The member will see it on the Karyakram page.'}
-            </p>
-          </div>
-          <div className="px-6 pt-4">
-            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
-              {reasonTarget.kind === 'reject' ? 'Rejection Reason' : 'Cancellation Reason'} <span className="text-[#BC0F1C]">*</span>
-            </label>
-            <textarea
-              value={reasonText}
-              onChange={e => { setReasonText(e.target.value); if (e.target.value.trim()) setReasonError(false); }}
-              rows={3}
-              placeholder="Enter reason..."
-              className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                reasonError ? 'border-[#BC0F1C]' : 'border-neutral-300 dark:border-neutral-700'
-              }`}
-            />
-            {reasonError && <p className="text-xs text-[#BC0F1C] mt-1">Reason is required.</p>}
-          </div>
-          <div className="px-6 pt-6 pb-6 flex items-center justify-end gap-2">
-            <button
-              onClick={closeReasonModal}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={handleConfirmReason}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-error-600 hover:bg-error-700 text-white transition-colors"
-            >
-              <Ban className="w-3.5 h-3.5" /> {reasonTarget.kind === 'reject' ? 'Reject Registration' : 'Cancel Registration'}
-            </button>
+
+            {/* Reason field */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                {noun} Reason <span className="text-[#BC0F1C]">*</span>
+              </label>
+              <textarea
+                ref={reasonRef}
+                value={reasonText}
+                onChange={e => setReasonText(e.target.value)}
+                onBlur={() => setReasonTouched(true)}
+                rows={4}
+                placeholder={`Enter the reason for ${isReject ? 'rejecting' : 'cancelling'} this registration…`}
+                className={`w-full text-sm rounded-lg border px-3 py-2.5 resize-none bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 transition-colors ${
+                  showError
+                    ? 'border-red-400 dark:border-red-600 focus:ring-red-400/30'
+                    : 'border-neutral-200 dark:border-neutral-700 focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-400'
+                }`}
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                {showError ? (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {noun} reason is required.
+                  </p>
+                ) : (
+                  <p className="text-xs text-neutral-400">Briefly describe why the registration is being {isReject ? 'rejected' : 'cancelled'}.</p>
+                )}
+                <span className="text-xs text-neutral-400 flex-shrink-0 ml-2">{reasonText.length} chars</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closeReasonModal}
+                className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReason}
+                className="px-4 py-2 text-sm rounded-lg font-medium bg-[#BC0F1C] hover:bg-[#9a0c17] text-white transition-colors"
+              >
+                Confirm {noun}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      );
+    })()}
 
     {resendTarget && (
       <div

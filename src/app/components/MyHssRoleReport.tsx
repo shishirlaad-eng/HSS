@@ -7,11 +7,11 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  Users, UserCheck, ShieldCheck,
+  Users, UserX, ShieldCheck,
   Download, SlidersHorizontal, X,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton, useStickyListingHeader } from './hb/listing';
-import { mockMembers, MASTERS_CASCADE } from '../../mockAPI/membersData';
+import { mockMembers, MASTERS_CASCADE, hasResponsibility } from '../../mockAPI/membersData';
 import { ADMIN_ROLE_OPTIONS } from '../../mockAPI/rolesData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope } from '../../mockAPI/roleScope';
@@ -36,8 +36,13 @@ const NOT_SET = 'Not Set';
 
 function fmt(n: number) { return n.toLocaleString(); }
 
+// Only active MyHSS Roles count — ADMIN_ROLE_OPTIONS lists active roles only, so a member's
+// roles that have since been made inactive are ignored throughout this report.
+const ACTIVE_ROLES = new Set(ADMIN_ROLE_OPTIONS);
+
 function rolesFor(m: { adminRole?: string; adminRoles?: string[] }): string[] {
-  return m.adminRoles && m.adminRoles.length > 0 ? m.adminRoles : (m.adminRole ? [m.adminRole] : []);
+  const all = m.adminRoles && m.adminRoles.length > 0 ? m.adminRoles : (m.adminRole ? [m.adminRole] : []);
+  return all.filter(r => ACTIVE_ROLES.has(r));
 }
 
 function ChartTooltip({ active, payload, label }: any) {
@@ -75,8 +80,9 @@ function ChartCard({ title, subtitle, children, className = '' }: {
 
 // ── KPI card ──────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, icon: Icon, color }: {
+function KpiCard({ label, value, sub, breakdown, icon: Icon, color }: {
   label: string; value: string | number; sub?: string;
+  breakdown?: { label: string; value: number; dot: string }[];
   icon: React.ElementType; color: string;
 }) {
   return (
@@ -88,6 +94,16 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
         <p className="text-2xl font-bold text-neutral-900 dark:text-white leading-none">{fmt(Number(value))}</p>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{label}</p>
         {sub && <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{sub}</p>}
+        {breakdown && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {breakdown.map(b => (
+              <span key={b.label} className="inline-flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                <span className={`w-2 h-2 rounded-full ${b.dot}`} />
+                {b.label}: <strong className="text-neutral-900 dark:text-white">{fmt(b.value)}</strong>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -149,6 +165,12 @@ export default function MyHssRoleReport() {
   const femaleCount = filtered.filter(m => m.gender === 'female').length;
   const multiRoleCount = filtered.filter(m => rolesFor(m).length > 1).length;
 
+  // Members who hold a MyHSS Role but have no Sangh responsibility assigned
+  const roleNoResponsibility = useMemo(
+    () => filtered.filter(m => !hasResponsibility(m)).sort((a, b) => a.id.localeCompare(b.id)),
+    [filtered],
+  );
+
   // Gender donut
   const genderData = useMemo(() => ([
     { name: 'Male',   value: maleCount,   key: 'male' },
@@ -197,6 +219,7 @@ export default function MyHssRoleReport() {
       ['Male',                           String(maleCount)],
       ['Female',                         String(femaleCount)],
       ['Holding More Than One Role',     String(multiRoleCount)],
+      ['Members with a Role but No Responsibility', String(roleNoResponsibility.length)],
       [],
       ['MEMBERS'],
       ['Member', 'Shakha', 'Nagar', 'Vibhag', 'Sangh Responsibility', 'MyHSS Role(s)'],
@@ -310,11 +333,19 @@ export default function MyHssRoleReport() {
         </div>
 
         {/* ── KPI Cards ────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Total with a MyHSS Role" value={total}            icon={ShieldCheck} color="bg-primary-500" />
-          <KpiCard label="Male"                    value={maleCount}       icon={UserCheck}   color="bg-info-500" sub={total > 0 ? `${Math.round(maleCount/total*100)}% of total` : undefined} />
-          <KpiCard label="Female"                  value={femaleCount}     icon={UserCheck}   color="bg-pink-500" sub={total > 0 ? `${Math.round(femaleCount/total*100)}% of total` : undefined} />
-          <KpiCard label="Holding Multiple Roles"  value={multiRoleCount}  icon={Users}       color="bg-success-500" />
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard
+            label="Total with a MyHSS Role"
+            value={total}
+            icon={ShieldCheck}
+            color="bg-primary-500"
+            breakdown={[
+              { label: 'Male',   value: maleCount,   dot: 'bg-info-500' },
+              { label: 'Female', value: femaleCount, dot: 'bg-pink-500' },
+            ]}
+          />
+          <KpiCard label="Holding Multiple Roles" value={multiRoleCount} icon={Users} color="bg-success-500" />
+          <KpiCard label="Members with a Role but No Responsibility" value={roleNoResponsibility.length} icon={UserX} color="bg-amber-500" />
         </div>
 
         {/* ── Row 1: MyHSS Role + Vibhag ────────────────────── */}
@@ -384,6 +415,33 @@ export default function MyHssRoleReport() {
                 ))}
               </div>
             </div>
+          </ChartCard>
+
+          <ChartCard title="Role but No Responsibility" subtitle="Members with a MyHSS Role and no Sangh responsibility assigned">
+            {roleNoResponsibility.length === 0 ? (
+              <p className="py-10 text-center text-sm text-neutral-400">Every member with a MyHSS Role has a responsibility assigned.</p>
+            ) : (
+              <div className="max-h-[260px] overflow-y-auto slim-scroll border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-neutral-50 dark:bg-neutral-900">
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                      <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400" style={{ position: 'static' }}>Member ID</th>
+                      <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400" style={{ position: 'static' }}>First Name</th>
+                      <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400" style={{ position: 'static' }}>Last Name</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {roleNoResponsibility.map(m => (
+                      <tr key={m.id} className="bg-white dark:bg-neutral-950">
+                        <td className="px-3 py-2 font-mono text-primary-600 dark:text-primary-400 whitespace-nowrap">{m.id}</td>
+                        <td className="px-3 py-2 text-neutral-900 dark:text-white">{m.firstName ?? m.name.split(' ')[0]}</td>
+                        <td className="px-3 py-2 text-neutral-900 dark:text-white">{m.surname ?? m.name.split(' ').slice(1).join(' ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </ChartCard>
         </div>
 
