@@ -22,6 +22,15 @@ const AGE_GROUP_ROLE_LABELS = new Set([
   'Bal(ika)', 'Shishu', 'Kishor(i)', 'Tarun(i)', 'Yuva(ti)', 'Jyestha(a)',
 ]);
 
+// A responsibility counts as Active when it has no end date or the end date has not passed
+// (ended ones live in previousResponsibilities). Members with only the single
+// responsibilityType/Level fields (no assignment list) are treated as Active.
+function hasActiveResponsibility(m: { responsibilities?: { endDate?: string }[] }): boolean {
+  if (!m.responsibilities || m.responsibilities.length === 0) return true;
+  const today = new Date().toISOString().slice(0, 10);
+  return m.responsibilities.some(r => !r.endDate || r.endDate.slice(0, 10) >= today);
+}
+
 // ── Colour palette ────────────────────────────────────────────
 
 const PRIMARY = '#f59e0b';
@@ -107,11 +116,13 @@ export default function KaryakartaReport() {
 
   // ── Base dataset: members holding a Sangh Responsibility ────
   // Excludes anyone with no Sangh Responsibility assigned — responsibilityLevel
-  // and responsibilityType must both be set, not "Not Set".
+  // and responsibilityType must both be set, not "Not Set" — and anyone whose
+  // responsibility is no longer Active (ended/inactive responsibilities are not reported).
   const karyakartas = useMemo(
     () => mockMembers.filter(m =>
       m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle)
       && !!m.responsibilityLevel && !!m.responsibilityType
+      && hasActiveResponsibility(m)
     ),
     [],
   );
@@ -166,7 +177,7 @@ export default function KaryakartaReport() {
   const total = filtered.length;
   const maleCount   = filtered.filter(m => m.gender === 'male').length;
   const femaleCount = filtered.filter(m => m.gender === 'female').length;
-  const withFormalResponsibility = filtered.filter(m => m.responsibilityType && m.responsibilityLevel).length;
+  const withKendriyaResponsibility = filtered.filter(m => m.responsibilityLevel === 'Kendriya / National').length;
 
   // Gender donut
   const genderData = useMemo(() => ([
@@ -174,14 +185,19 @@ export default function KaryakartaReport() {
     { name: 'Female', value: femaleCount, key: 'female' },
   ]), [maleCount, femaleCount]);
 
-  // By Vibhag (region)
+  // Location chart drills down with the filters: all Vibhags → Nagars in the selected
+  // Vibhag → Shakhas in the selected Nagar (a selected Shakha shows just that Shakha).
+  const locationLevel = filterTown ? 'Shakha' : filterRegion ? 'Nagar' : 'Vibhag';
   const byRegion = useMemo(() => {
     const map: Record<string, number> = {};
-    filtered.forEach(m => { map[m.region] = (map[m.region] ?? 0) + 1; });
+    filtered.forEach(m => {
+      const key = filterTown ? m.activityCentre : filterRegion ? m.town : m.region;
+      map[key] = (map[key] ?? 0) + 1;
+    });
     return Object.entries(map)
       .map(([region, count]) => ({ region, count }))
       .sort((a, b) => b.count - a.count);
-  }, [filtered]);
+  }, [filtered, filterRegion, filterTown]);
 
   // Age group distribution
   const byAgeGroup = useMemo(() => {
@@ -350,19 +366,22 @@ export default function KaryakartaReport() {
           <KpiCard label="Total Karyakartas"          value={total}        icon={Users}    color="bg-primary-500" />
           <KpiCard label="Male"                       value={maleCount}    icon={Award}    color="bg-info-500" sub={total > 0 ? `${Math.round(maleCount/total*100)}% of total` : undefined} />
           <KpiCard label="Female"                     value={femaleCount}  icon={Award}    color="bg-pink-500"  sub={total > 0 ? `${Math.round(femaleCount/total*100)}% of total` : undefined} />
-          <KpiCard label="With Formal Responsibility" value={withFormalResponsibility} icon={Briefcase} color="bg-success-500" sub="Responsibility type & level set" />
+          <KpiCard label="With Kendriya Responsibility" value={withKendriyaResponsibility} icon={Briefcase} color="bg-success-500" sub="Kendriya / National level" />
         </div>
 
         {/* ── Row 1: Vibhag + Gender ──────────────────────── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* By Vibhag */}
-          <ChartCard title="Karyakartas by Vibhag" subtitle="Distribution across regions">
+          <ChartCard
+            title={`Karyakartas by ${locationLevel}`}
+            subtitle={locationLevel === 'Vibhag' ? 'Distribution across regions' : locationLevel === 'Nagar' ? `Distribution across Nagars in ${filterRegion}` : `Distribution across Shakhas in ${filterTown}`}
+          >
             <ResponsiveContainer width="100%" height={Math.max(180, byRegion.length * 36 + 40)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={120} />
+                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={locationLevel === 'Shakha' ? 170 : 120} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" name="Karyakartas" radius={[0, 4, 4, 0]}>
                   {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}

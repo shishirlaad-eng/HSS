@@ -156,20 +156,6 @@ export default function MembersReport() {
       .sort((a, b) => b.value - a.value);
   }, [filtered]);
 
-  // Members by Activity Centre with gender breakdown (top 12)
-  const byCentre = useMemo(() => {
-    const map: Record<string, { male: number; female: number }> = {};
-    filtered.forEach(m => {
-      const key = m.activityCentre.replace(' Activity Centre', '');
-      if (!map[key]) map[key] = { male: 0, female: 0 };
-      map[key][m.gender]++;
-    });
-    return Object.entries(map)
-      .map(([centre, v]) => ({ centre, ...v, total: v.male + v.female }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 12);
-  }, [filtered]);
-
   // Age group distribution, split by gender
   const byAgeGroup = useMemo(() => {
     const map: Record<AgeGroup, { male: number; female: number }> = {
@@ -181,17 +167,21 @@ export default function MembersReport() {
       .map(([key, v]) => ({ group: AGE_GROUP_LABELS[key], key, ...v, count: v.male + v.female }));
   }, [filtered]);
 
-  // Members by Vibhag (region), split by gender
-  const byRegion = useMemo(() => {
+  // One location chart that drills down with the Vibhag / Nagar / Shakha filters:
+  // all Vibhags → Nagars in the selected Vibhag → Shakhas in the selected Nagar
+  // (a selected Shakha shows just that Shakha), each split by gender.
+  const locationLevel = filterTown ? 'Shakha' : filterRegion ? 'Nagar' : 'Vibhag';
+  const byLocation = useMemo(() => {
     const map: Record<string, { male: number; female: number }> = {};
     filtered.forEach(m => {
-      if (!map[m.region]) map[m.region] = { male: 0, female: 0 };
-      map[m.region][m.gender]++;
+      const key = filterTown ? m.activityCentre.replace(' Activity Centre', '') : filterRegion ? m.town : m.region;
+      if (!map[key]) map[key] = { male: 0, female: 0 };
+      map[key][m.gender]++;
     });
     return Object.entries(map)
-      .map(([region, v]) => ({ region, ...v, total: v.male + v.female }))
+      .map(([name, v]) => ({ name, ...v, total: v.male + v.female }))
       .sort((a, b) => b.total - a.total);
-  }, [filtered]);
+  }, [filtered, filterRegion, filterTown]);
 
   // Gender breakdown
   const genderData = useMemo(() => {
@@ -262,15 +252,9 @@ export default function MembersReport() {
       ['Gender', 'Count'],
       ...genderData.map(r => [r.name, String(r.value)]),
       [],
-      ['MEMBERS BY VIBHAG (MALE / FEMALE)'],
-      ['Vibhag', 'Male', 'Female', 'Total'],
-      ...byRegion.map(r => [r.region, String(r.male), String(r.female), String(r.total)]),
-      ...(filterRegion ? [
-        [],
-        [`MEMBERS BY SHAKHA (${filterRegion})`],
-        ['Shakha', 'Male', 'Female', 'Total'],
-        ...byCentre.map(r => [r.centre, String(r.male), String(r.female), String(r.total)]),
-      ] : []),
+      [`MEMBERS BY ${locationLevel.toUpperCase()} (MALE / FEMALE)`],
+      [locationLevel, 'Male', 'Female', 'Total'],
+      ...byLocation.map(r => [r.name, String(r.male), String(r.female), String(r.total)]),
     ];
 
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -486,14 +470,21 @@ export default function MembersReport() {
           </ChartCard>
         </div>
 
-        {/* â”€â”€ Row 3: By Vibhag (male/female split) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Row 3: By Vibhag / Nagar / Shakha (dynamic with the location filters) ── */}
         <div className="mt-6">
-          <ChartCard title="Members by Vibhag" subtitle="Total members per Vibhag, split by gender">
-            <ResponsiveContainer width="100%" height={Math.max(220, byRegion.length * 40 + 60)}>
-              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+          <ChartCard
+            title={`Members by ${locationLevel}`}
+            subtitle={
+              locationLevel === 'Vibhag' ? 'Total members per Vibhag, split by gender'
+              : locationLevel === 'Nagar' ? `Total members per Nagar in ${filterRegion}, split by gender`
+              : `Total members per Shakha in ${filterTown}, split by gender`
+            }
+          >
+            <ResponsiveContainer width="100%" height={Math.max(220, byLocation.length * 40 + 60)}>
+              <BarChart data={byLocation} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={140} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} width={140} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                 <Bar dataKey="male"   name="Male"   stackId="a" fill={COLORS.male}   radius={[0, 0, 0, 0]} barSize={22} />
@@ -502,28 +493,6 @@ export default function MembersReport() {
             </ResponsiveContainer>
           </ChartCard>
         </div>
-
-        {/* â”€â”€ Row 3b: By Activity Centre (only when a region is selected) â”€â”€ */}
-        {filterRegion && (
-          <div className="mt-6">
-            <ChartCard
-              title="Members by Activity Centre"
-              subtitle={`Gender distribution per activity centre â€” ${filterRegion}`}
-            >
-              <ResponsiveContainer width="100%" height={Math.max(220, byCentre.length * 40 + 60)}>
-                <BarChart data={byCentre} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                  <YAxis type="category" dataKey="centre" tick={{ fontSize: 10, fill: '#6b7280' }} width={140} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                  <Bar dataKey="male"   name="Male"   stackId="a" fill={COLORS.male}   radius={[0, 0, 0, 0]} barSize={22} />
-                  <Bar dataKey="female" name="Female" stackId="a" fill={COLORS.female} radius={[0, 4, 4, 0]} barSize={22} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
-        )}
 
         {/* â”€â”€ Row 6: Registrations Over Time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6">
