@@ -181,7 +181,7 @@ function ComplianceBadge({ status }: { status?: string }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab         = 'overview' | 'participants' | 'media' | 'announcements';
-type RsvpFilter  = 'all' | 'requested' | 'going' | 'denied' | 'cancelled' | 'waitlisted';
+type RsvpFilter  = 'all' | 'requested' | 'going' | 'checkedIn' | 'denied' | 'cancelled' | 'waitlisted';
 type MediaFilter = 'all' | 'image' | 'video';
 
 interface LightboxState {
@@ -279,6 +279,7 @@ export default function EventDetail({
   const allParticipants = participants;
   const requestedList   = allParticipants.filter(p => p.rsvp === 'requested');
   const goingList       = allParticipants.filter(p => p.rsvp === 'going');
+  const checkedInList   = allParticipants.filter(p => p.checkedIn && p.rsvp === 'going');
   const deniedList      = allParticipants.filter(p => p.rsvp === 'denied');
   const cancelledList   = allParticipants.filter(p => p.rsvp === 'cancelled');
   const waitlistedList  = allParticipants.filter(p => p.waitlisted && p.rsvp === 'requested');
@@ -291,6 +292,7 @@ export default function EventDetail({
     rsvpFilter === 'all'        ? allParticipants :
     rsvpFilter === 'requested'  ? requestedList :
     rsvpFilter === 'going'      ? goingList :
+    rsvpFilter === 'checkedIn'  ? checkedInList :
     rsvpFilter === 'denied'     ? deniedList :
     rsvpFilter === 'cancelled'  ? cancelledList :
                                   waitlistedList;
@@ -2206,6 +2208,7 @@ export default function EventDetail({
                         { id: 'all',        label: 'All',          count: allParticipants.length },
                         { id: 'requested',  label: 'Requested',    count: requestedList.length   },
                         { id: 'going',      label: 'Approved',     count: goingList.length       },
+                        { id: 'checkedIn',  label: 'Checked In',   count: checkedInList.length    },
                         { id: 'denied',     label: 'Rejected',     count: deniedList.length      },
                         { id: 'cancelled',  label: 'Cancelled',    count: cancelledList.length   },
                         { id: 'waitlisted', label: 'Waiting List', count: waitlistedList.length  },
