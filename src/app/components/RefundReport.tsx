@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   Bar,
   BarChart,
@@ -141,28 +143,21 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 
 export default function RefundReport() {
   const [filterCountry, setFilterCountry] = useState('');
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown, setFilterTown] = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterReason, setFilterReason] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
 
   const countryOptions = useMemo(() => Array.from(new Set(mockRefunds.map(r => r.country))).sort(), []);
-  const regionOptions = useMemo(() => {
-    const countries = filterCountry ? [filterCountry] : countryOptions;
-    return Array.from(new Set(countries.flatMap(country => MASTERS_CASCADE.regions[country] ?? [])));
-  }, [countryOptions, filterCountry]);
-  const townOptions = useMemo(() => {
-    const regions = filterRegion ? [filterRegion] : regionOptions;
-    return Array.from(new Set(regions.flatMap(region => MASTERS_CASCADE.towns[region] ?? [])));
-  }, [filterRegion, regionOptions]);
-  const centreOptions = useMemo(() => {
-    const towns = filterTown ? [filterTown] : townOptions;
-    return Array.from(new Set(towns.flatMap(town => MASTERS_CASCADE.centres[town] ?? [])));
-  }, [filterTown, townOptions]);
 
-  const hasFilter = !!(filterCountry || filterRegion || filterTown || filterCentre || filterStatus || filterReason || filterPeriod !== 'all');
+  const hasFilter = !!(filterCountry || (filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterReason || filterPeriod !== 'all');
 
   const clearFilters = () => {
     setFilterCountry('');
@@ -180,7 +175,7 @@ export default function RefundReport() {
     const start90 = new Date(now.getTime() - 90 * 86400000);
     const startYear = new Date(now.getFullYear(), 0, 1);
 
-    return mockRefunds.filter(refund => {
+    return filterByScope(mockRefunds, scope).filter(refund => {
       const requested = new Date(refund.requestedDate);
       if (filterCountry && refund.country !== filterCountry) return false;
       if (filterRegion && refund.region !== filterRegion) return false;
@@ -193,7 +188,7 @@ export default function RefundReport() {
       if (filterPeriod === 'ytd' && requested < startYear) return false;
       return true;
     });
-  }, [filterCountry, filterRegion, filterTown, filterCentre, filterStatus, filterReason, filterPeriod]);
+  }, [scope, filterCountry, filterRegion, filterTown, filterCentre, filterStatus, filterReason, filterPeriod]);
 
   const totalRequests = filtered.length;
   const requestedAmount = filtered.reduce((sum, r) => sum + r.amount, 0);
@@ -350,15 +345,15 @@ export default function RefundReport() {
             <option value="">All Countries</option>
             {countryOptions.map(country => <option key={country} value={country}>{country}</option>)}
           </select>
-          <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
+          <select disabled={regionDisabled} value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
             <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
-          <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
+          <select disabled={townDisabled} value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
             <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
-          <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
+          <select disabled={centreDisabled} value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
             <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   Bar,
   BarChart,
@@ -142,32 +144,20 @@ function KpiCard({
 }
 
 export default function EventsReport() {
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown, setFilterTown] = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
 
-  const countryOptions = useMemo(() => Array.from(new Set(mockEvents.map(e => e.country))).sort(), []);
-  const masterRegionOptions = useMemo(
-    () => Array.from(new Set(countryOptions.flatMap(country => MASTERS_CASCADE.regions[country] ?? []))),
-    [countryOptions],
-  );
-  const regionOptions = useMemo(
-    () => masterRegionOptions,
-    [masterRegionOptions],
-  );
-  const townOptions = useMemo(
-    () => Array.from(new Set(mockEvents.filter(e => (!filterRegion || e.region === filterRegion)).map(e => e.town))).sort(),
-    [filterRegion],
-  );
-  const centreOptions = useMemo(
-    () => Array.from(new Set(mockEvents.filter(e => (!filterRegion || e.region === filterRegion) && (!filterTown || e.town === filterTown)).map(e => e.activityCentre))).sort(),
-    [filterRegion, filterTown],
-  );
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterStatus || filterPayment || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterPayment || filterPeriod !== 'all');
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -184,7 +174,7 @@ export default function EventsReport() {
     const start90 = new Date(now.getTime() - 90 * 86400000);
     const next90 = new Date(now.getTime() + 90 * 86400000);
 
-    return mockEvents.filter(event => {
+    return filterByScope(mockEvents, scope).filter(event => {
       const start = new Date(event.startDate);
       const end = new Date(event.endDate);
 
@@ -200,7 +190,7 @@ export default function EventsReport() {
       if (filterPeriod === 'next90' && (start < now || start > next90)) return false;
       return true;
     });
-  }, [filterRegion, filterTown, filterCentre, filterStatus, filterPayment, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterPayment, filterPeriod]);
 
   const totalEvents = filtered.length;
   const activePipeline = filtered.filter(e => e.status === 'published' || e.status === 'active').length;
@@ -245,7 +235,7 @@ export default function EventsReport() {
 
   const byRegion = useMemo(() => {
     const map: Record<string, { events: number; responses: number; going: number; goingWithCapacity: number; capacity: number; media: number }> = {};
-    masterRegionOptions.forEach(region => {
+    regionOptions.forEach(region => {
       map[region] = { events: 0, responses: 0, going: 0, goingWithCapacity: 0, capacity: 0, media: 0 };
     });
     filtered.forEach(e => {
@@ -264,8 +254,8 @@ export default function EventsReport() {
         fillRate: values.capacity > 0 ? Math.round((values.goingWithCapacity / values.capacity) * 100) : 0,
         ...values,
       }))
-      .sort((a, b) => masterRegionOptions.indexOf(a.fullRegion) - masterRegionOptions.indexOf(b.fullRegion));
-  }, [filtered, masterRegionOptions]);
+      .sort((a, b) => regionOptions.indexOf(a.fullRegion) - regionOptions.indexOf(b.fullRegion));
+  }, [filtered, regionOptions]);
 
   const monthlyTrend = useMemo(() => {
     if (!filtered.length) return [];
@@ -297,7 +287,7 @@ export default function EventsReport() {
 
   const statusByRegion = useMemo(() => {
     const map: Record<string, Record<Event['status'], number>> = {};
-    masterRegionOptions.forEach(region => {
+    regionOptions.forEach(region => {
       map[region] = { draft: 0, published: 0, active: 0, cancelled: 0, completed: 0 };
     });
     filtered.forEach(e => {
@@ -310,8 +300,8 @@ export default function EventsReport() {
         fullRegion: region,
         ...values,
       }))
-      .sort((a, b) => masterRegionOptions.indexOf(a.fullRegion) - masterRegionOptions.indexOf(b.fullRegion));
-  }, [filtered, masterRegionOptions]);
+      .sort((a, b) => regionOptions.indexOf(a.fullRegion) - regionOptions.indexOf(b.fullRegion));
+  }, [filtered, regionOptions]);
 
   const handleExport = () => {
     const rows: string[][] = [
@@ -376,37 +366,35 @@ export default function EventsReport() {
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
-          <select
+          <select disabled={regionDisabled}
             value={filterRegion}
             onChange={e => {
               setFilterRegion(e.target.value);
               setFilterTown('');
               setFilterCentre('');
             }}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+            className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
           >
             <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
 
-          <select
+          <select disabled={townDisabled}
             value={filterTown}
             onChange={e => {
               setFilterTown(e.target.value);
               setFilterCentre('');
             }}
-            disabled={!filterRegion}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]"
+            className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]"
           >
             <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
 
-          <select
+          <select disabled={centreDisabled}
             value={filterCentre}
             onChange={e => setFilterCentre(e.target.value)}
-            disabled={!filterTown}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]"
+            className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]"
           >
             <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}

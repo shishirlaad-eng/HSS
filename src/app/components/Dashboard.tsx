@@ -1469,10 +1469,10 @@ export default function Dashboard({ onNavigate, onNavigateToEvent, onNavigateToA
       {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PageHeader
         title={
-          effectiveScope.centre  ? `${effectiveScope.centre} - Dashboard`  :
-          effectiveScope.town    ? `${effectiveScope.town} - Dashboard`    :
-          effectiveScope.region  ? `${effectiveScope.region} - Dashboard`  :
-          effectiveScope.country ? `${effectiveScope.country} - Dashboard` :
+          effectiveScope.centre  ? effectiveScope.centre  :
+          effectiveScope.town    ? effectiveScope.town    :
+          effectiveScope.region  ? effectiveScope.region  :
+          effectiveScope.country ? effectiveScope.country :
           "Dashboard"
         }
         subtitle={

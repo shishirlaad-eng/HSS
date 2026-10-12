@@ -2,6 +2,7 @@
 // HSS UK — Ayu Shreni Directory (all members by Age Group)
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from 'recharts';
@@ -119,22 +120,19 @@ export default function AyuShreniReport() {
 
   // ── Filters ────────────────────────────────────────────────
   const [filterAgeGroup, setFilterAgeGroup] = useState('');
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown,   setFilterTown]   = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterGender, setFilterGender] = useState('');
 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
-  const regionOptions = scope.showRegionFilter ? (MASTERS_CASCADE.regions['HSS UK'] ?? []) : (scope.region ? [scope.region] : []);
-  const townOptions    = scope.showTownFilter
-    ? (filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [])
-    : (scope.town ? [scope.town] : []);
-  const centreOptions  = scope.showCentreFilter
-    ? (filterTown ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [])
-    : (scope.centre ? [scope.centre] : []);
 
-  const hasFilter = !!(filterAgeGroup || filterRegion || filterTown || filterCentre || filterGender);
+  const hasFilter = !!(filterAgeGroup || (filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterGender);
 
   const clearFilters = () => {
     setFilterAgeGroup('');
@@ -300,10 +298,9 @@ export default function AyuShreniReport() {
           </select>
 
           {/* Vibhag */}
-          <select
+          <select disabled={regionDisabled}
             value={filterRegion}
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
-            disabled={!scope.showRegionFilter && regionOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Vibhags</option>
@@ -311,10 +308,9 @@ export default function AyuShreniReport() {
           </select>
 
           {/* Nagar */}
-          <select
+          <select disabled={townDisabled}
             value={filterTown}
             onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }}
-            disabled={scope.showTownFilter ? !filterRegion : townOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Nagars</option>
@@ -322,10 +318,9 @@ export default function AyuShreniReport() {
           </select>
 
           {/* Shakha */}
-          <select
+          <select disabled={centreDisabled}
             value={filterCentre}
             onChange={e => setFilterCentre(e.target.value)}
-            disabled={scope.showCentreFilter ? !filterTown : centreOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Shakhas</option>

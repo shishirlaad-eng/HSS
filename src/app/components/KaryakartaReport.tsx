@@ -2,6 +2,9 @@
 // HSS UK — Karyakarta Report (members holding a Sangh Responsibility)
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
+import { useRoleScope } from '../contexts/RoleScopeContext';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -118,13 +121,14 @@ export default function KaryakartaReport() {
   // Excludes anyone with no Sangh Responsibility assigned — responsibilityLevel
   // and responsibilityType must both be set, not "Not Set" — and anyone whose
   // responsibility is no longer Active (ended/inactive responsibilities are not reported).
+  const { scope: roleScope } = useRoleScope();
   const karyakartas = useMemo(
-    () => mockMembers.filter(m =>
+    () => filterByScope(mockMembers, roleScope).filter(m =>
       m.status === 'active' && !AGE_GROUP_ROLE_LABELS.has(m.jobTitle)
       && !!m.responsibilityLevel && !!m.responsibilityType
       && hasActiveResponsibility(m)
     ),
-    [],
+    [roleScope],
   );
 
   const responsibilityOptions = useMemo(
@@ -133,9 +137,14 @@ export default function KaryakartaReport() {
   );
 
   // ── Filters ────────────────────────────────────────────────
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown,   setFilterTown]   = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterGender, setFilterGender] = useState('');
   const [filterAgeGroup, setFilterAgeGroup] = useState('');
   const [filterRespLevel, setFilterRespLevel] = useState('');
@@ -144,11 +153,8 @@ export default function KaryakartaReport() {
 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
-  const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
-  const townOptions   = filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [];
-  const centreOptions = filterTown   ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [];
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterGender || filterAgeGroup
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterGender || filterAgeGroup
     || filterRespLevel || filterResponsibility || filterRespType);
 
   const clearFilters = () => {
@@ -263,20 +269,19 @@ export default function KaryakartaReport() {
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
           {/* Vibhag */}
-          <select
+          <select disabled={regionDisabled}
             value={filterRegion}
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+            className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
           >
             <option value="">All Vibhags</option>
             {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
           {/* Nagar */}
-          <select
+          <select disabled={townDisabled}
             value={filterTown}
             onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }}
-            disabled={!filterRegion}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Nagars</option>
@@ -284,10 +289,9 @@ export default function KaryakartaReport() {
           </select>
 
           {/* Shakha */}
-          <select
+          <select disabled={centreDisabled}
             value={filterCentre}
             onChange={e => setFilterCentre(e.target.value)}
-            disabled={!filterTown}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Shakhas</option>

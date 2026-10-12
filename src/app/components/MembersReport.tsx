@@ -2,6 +2,8 @@
 // HSS UK â€” Members Report (aggregated statistics, no member PII)
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import { useState, useMemo } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -104,18 +106,20 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 export default function MembersReport() {
 
   // â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const [filterRegion,  setFilterRegion]  = useState('');
-  const [filterTown,    setFilterTown]    = useState('');
-  const [filterCentre,  setFilterCentre]  = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterStatus,  setFilterStatus]  = useState('');
   const [filterGender,  setFilterGender]  = useState('');
   const [filterPeriod,  setFilterPeriod]  = useState('all');
 
-  const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
-  const townOptions   = filterRegion ? (MASTERS_CASCADE.towns[filterRegion]   ?? []) : [];
-  const centreOptions = filterTown   ? (MASTERS_CASCADE.centres[filterTown]   ?? []) : [];
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterStatus || filterGender || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterStatus || filterGender || filterPeriod !== 'all');
 
   const clearFilters = () => {
     setFilterRegion(''); setFilterTown(''); setFilterCentre('');
@@ -130,7 +134,7 @@ export default function MembersReport() {
                  : filterPeriod === '1y'   ? new Date(now.getTime() - 365 * 86400000)
                  : null;
 
-    return mockMembers.filter(m => {
+    return filterByScope(mockMembers, scope).filter(m => {
       if (filterRegion  && m.region         !== filterRegion)  return false;
       if (filterTown    && m.town           !== filterTown)    return false;
       if (filterCentre  && m.activityCentre !== filterCentre)  return false;
@@ -139,7 +143,7 @@ export default function MembersReport() {
       if (cutoff && new Date(m.registrationDate) < cutoff)     return false;
       return true;
     });
-  }, [filterRegion, filterTown, filterCentre, filterStatus, filterGender, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterStatus, filterGender, filterPeriod]);
 
   // â”€â”€ Aggregations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -294,20 +298,19 @@ export default function MembersReport() {
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
           {/* Region */}
-          <select
+          <select disabled={regionDisabled}
             value={filterRegion}
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
-            className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+            className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
           >
             <option value="">All Vibhags</option>
             {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
           {/* Town */}
-          <select
+          <select disabled={townDisabled}
             value={filterTown}
             onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }}
-            disabled={!filterRegion}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Nagars</option>
@@ -315,10 +318,9 @@ export default function MembersReport() {
           </select>
 
           {/* Activity Centre */}
-          <select
+          <select disabled={centreDisabled}
             value={filterCentre}
             onChange={e => setFilterCentre(e.target.value)}
-            disabled={!filterTown}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Shakhas</option>

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   Bar,
   BarChart,
@@ -143,20 +145,22 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 }
 
 export default function AttendanceReport() {
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown, setFilterTown] = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterShakhaType, setFilterShakhaType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  const regionOptions = MASTERS_CASCADE.regions['HSS UK'] ?? [];
-  const townOptions = filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [];
-  const centreOptions = filterTown ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [];
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterShakhaType || filterStatus || filterPeriod !== 'all' || customStart || customEnd);
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterShakhaType || filterStatus || filterPeriod !== 'all' || customStart || customEnd);
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -175,7 +179,7 @@ export default function AttendanceReport() {
     const start90 = new Date(now.getTime() - 90 * 86400000);
     const startYear = new Date(now.getFullYear(), 0, 1);
 
-    return mockSessions.filter(session => {
+    return filterByScope(mockSessions, scope).filter(session => {
       const date = new Date(`${session.date}T12:00:00`);
       const shakhaType = getSessionShakhaType(session);
 
@@ -195,7 +199,7 @@ export default function AttendanceReport() {
       }
       return true;
     });
-  }, [filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, filterPeriod, customStart, customEnd]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterShakhaType, filterStatus, filterPeriod, customStart, customEnd]);
 
   const totalSessions = filtered.length;
   const completedSessions = filtered.filter(s => s.status === 'completed').length;
@@ -445,17 +449,17 @@ export default function AttendanceReport() {
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
-          <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
+          <select disabled={regionDisabled} value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
             <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
 
-          <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} disabled={!filterRegion} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed">
+          <select disabled={townDisabled} value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed">
             <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
 
-          <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} disabled={!filterTown} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed">
+          <select disabled={centreDisabled} value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed">
             <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>

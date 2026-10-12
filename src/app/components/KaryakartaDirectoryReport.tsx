@@ -9,6 +9,7 @@
 // existing mock data still sorts into the right position.
 // ─────────────────────────────────────────────────────────────
 import { useState, useMemo, Fragment } from 'react';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import { Download, SlidersHorizontal, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { PageHeader, PrimaryButton, SearchBar, useStickyListingHeader } from './hb/listing';
 import {
@@ -174,29 +175,26 @@ export default function KaryakartaDirectoryReport() {
 
   // ── Search + Filters ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown,   setFilterTown]   = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterGender, setFilterGender] = useState('');
   const [filterRespLevel, setFilterRespLevel] = useState('');
   const [filterResponsibility, setFilterResponsibility] = useState('');
 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
 
-  const regionOptions = scope.showRegionFilter ? (MASTERS_CASCADE.regions['HSS UK'] ?? []) : (scope.region ? [scope.region] : []);
-  const townOptions    = scope.showTownFilter
-    ? (filterRegion ? (MASTERS_CASCADE.towns[filterRegion] ?? []) : [])
-    : (scope.town ? [scope.town] : []);
-  const centreOptions  = scope.showCentreFilter
-    ? (filterTown ? (MASTERS_CASCADE.centres[filterTown] ?? []) : [])
-    : (scope.centre ? [scope.centre] : []);
 
   const responsibilityOptions = useMemo(
     () => Array.from(new Set(karyakartas.map(m => m.jobTitle))).sort((a, b) => responsibilityRank(a) - responsibilityRank(b)),
     [karyakartas],
   );
 
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterGender || filterRespLevel || filterResponsibility);
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterGender || filterRespLevel || filterResponsibility);
 
   const clearFilters = () => {
     setFilterRegion(''); setFilterTown(''); setFilterCentre('');
@@ -403,30 +401,27 @@ export default function KaryakartaDirectoryReport() {
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
-          <select
+          <select disabled={regionDisabled}
             value={filterRegion}
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
-            disabled={!scope.showRegionFilter && regionOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Vibhags</option>
             {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          <select
+          <select disabled={townDisabled}
             value={filterTown}
             onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }}
-            disabled={scope.showTownFilter ? !filterRegion : townOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Nagars</option>
             {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
 
-          <select
+          <select disabled={centreDisabled}
             value={filterCentre}
             onChange={e => setFilterCentre(e.target.value)}
-            disabled={scope.showCentreFilter ? !filterTown : centreOptions.length <= 1}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Shakhas</option>

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { filterByScope } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import {
   Bar,
   BarChart,
@@ -123,27 +125,17 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 }
 
 export default function DonationsPaymentsReport() {
-  const [filterRegion, setFilterRegion] = useState('');
-  const [filterTown, setFilterTown] = useState('');
-  const [filterCentre, setFilterCentre] = useState('');
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const [filterPeriod, setFilterPeriod] = useState('all');
 
-  const countryOptions = useMemo(() => {
-    return Array.from(new Set(mockDonations.map(d => d.country))).sort();
-  }, []);
-  const regionOptions = useMemo(
-    () => Array.from(new Set(countryOptions.flatMap(country => MASTERS_CASCADE.regions[country] ?? []))),
-    [countryOptions],
-  );
-  const townOptions = useMemo(() => {
-    const regions = filterRegion ? [filterRegion] : regionOptions;
-    return Array.from(new Set(regions.flatMap(region => MASTERS_CASCADE.towns[region] ?? [])));
-  }, [filterRegion, regionOptions]);
-  const centreOptions = useMemo(() => {
-    const towns = filterTown ? [filterTown] : townOptions;
-    return Array.from(new Set(towns.flatMap(town => MASTERS_CASCADE.centres[town] ?? [])));
-  }, [filterTown, townOptions]);
-  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterPeriod !== 'all');
+  const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || filterPeriod !== 'all');
 
   const clearFilters = () => {
     setFilterRegion('');
@@ -166,14 +158,14 @@ export default function DonationsPaymentsReport() {
   };
 
   const filteredDonations = useMemo(() => {
-    return mockDonations.filter(donation => {
+    return filterByScope(mockDonations, scope).filter(donation => {
       if (filterRegion && donation.region !== filterRegion) return false;
       if (filterTown && donation.town !== filterTown) return false;
       if (filterCentre && donation.activityCentre !== filterCentre) return false;
       if (!dateInPeriod(donation.date)) return false;
       return true;
     });
-  }, [filterRegion, filterTown, filterCentre, filterPeriod]);
+  }, [scope, filterRegion, filterTown, filterCentre, filterPeriod]);
 
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
   const onlineDonations = receivedDonations
@@ -287,15 +279,15 @@ export default function DonationsPaymentsReport() {
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-          <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
+          <select disabled={regionDisabled} value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
             <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
-          <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} disabled={!filterRegion} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
+          <select disabled={townDisabled} value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
             <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
-          <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} disabled={!filterTown} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
+          <select disabled={centreDisabled} value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
             <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
