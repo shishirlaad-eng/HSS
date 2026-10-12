@@ -488,21 +488,6 @@ export default function AttendanceReport() {
           <KpiCard label="Avg Present / Shakha" value={avgPresentPerSession} icon={Users} color="bg-violet-500" />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Strongest Vibhag</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{strongestRegion?.attendanceRate ? `${strongestRegion.fullRegion} (${strongestRegion.attendanceRate}%)` : 'No attendance data'}</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Busiest Shakha</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{busiestCentre ? `${busiestCentre.centre} (${fmt(busiestCentre.sessions)} Shakhas)` : 'No Shakha data'}</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Unmarked Records</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{fmt(totalUnmarked)}</p>
-          </div>
-        </div>
-
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard
             title={`Average Sankhya by ${locationLevel}`}

@@ -22,7 +22,6 @@ import {
   CreditCard,
   Download,
   PoundSterling,
-  ReceiptText,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -227,7 +226,6 @@ export default function DonationsPaymentsReport() {
       ['Total Income', money(totalIncome)],
       ['Total Online Donations', money(onlineDonations)],
       ['Total Cash Income', money(cashIncome)],
-      ['Total Regular Standing Order Payments', money(standingOrderPayments)],
       [],
       ['VIBHAG BREAKDOWN'],
       ['Vibhag', 'Online Donations', 'Cash Income', 'Standing Order Payments', 'Total Income'],
@@ -300,10 +298,9 @@ export default function DonationsPaymentsReport() {
           <KpiCard label="Total Income" value={money(totalIncome)} icon={PoundSterling} color="bg-blue-500" sub="Online donations + cash income + standing orders" />
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <KpiCard label="Total Online Donations" value={money(onlineDonations)} icon={CreditCard} color="bg-blue-500" />
           <KpiCard label="Total Cash Income" value={money(cashIncome)} icon={Banknote} color="bg-success-500" />
-          <KpiCard label="Total Regular Standing Order Payments" value={money(standingOrderPayments)} icon={ReceiptText} color="bg-primary-500" />
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-6">
