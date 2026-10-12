@@ -223,9 +223,9 @@ export default function MembersReport() {
     }
 
     const filters: string[] = [];
-    if (filterRegion) filters.push(`Region: ${filterRegion}`);
-    if (filterTown)   filters.push(`Town: ${filterTown}`);
-    if (filterCentre) filters.push(`Centre: ${filterCentre}`);
+    if (filterRegion) filters.push(`Vibhag: ${filterRegion}`);
+    if (filterTown)   filters.push(`Nagar: ${filterTown}`);
+    if (filterCentre) filters.push(`Shakha: ${filterCentre}`);
     if (filterStatus) filters.push(`Status: ${filterStatus}`);
     if (filterGender) filters.push(`Gender: ${filterGender}`);
     if (filterPeriod !== 'all') filters.push(`Period: ${filterPeriod}`);
@@ -299,7 +299,7 @@ export default function MembersReport() {
             onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
           >
-            <option value="">All Regions</option>
+            <option value="">All Vibhags</option>
             {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
@@ -310,7 +310,7 @@ export default function MembersReport() {
             disabled={!filterRegion}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <option value="">All Towns</option>
+            <option value="">All Nagars</option>
             {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
 
@@ -321,7 +321,7 @@ export default function MembersReport() {
             disabled={!filterTown}
             className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <option value="">All Centres</option>
+            <option value="">All Shakhas</option>
             {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 

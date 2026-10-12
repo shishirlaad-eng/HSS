@@ -351,15 +351,15 @@ export default function RefundReport() {
             {countryOptions.map(country => <option key={country} value={country}>{country}</option>)}
           </select>
           <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
-            <option value="">All Regions</option>
+            <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
           <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
-            <option value="">All Towns</option>
+            <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
           <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
-            <option value="">All Centres</option>
+            <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
@@ -480,7 +480,7 @@ export default function RefundReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Refunds by Region" subtitle="All configured regions for the selected country scope">
+          <ChartCard title="Refunds by Vibhag" subtitle="All configured Vibhags for the selected country scope">
             <ResponsiveContainer width="100%" height={Math.max(260, byRegion.length * 42 + 60)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />

@@ -238,6 +238,28 @@ export default function AttendanceReport() {
     }));
   }, [filtered, regionOptions]);
 
+  // Average Sankhya chart drills down with the filters: all Vibhags -> Nagars in the
+  // selected Vibhag -> Shakhas in the selected Nagar (a selected Shakha shows just that Shakha).
+  const locationLevel = filterTown ? 'Shakha' : filterRegion ? 'Nagar' : 'Vibhag';
+  const byLocation = useMemo(() => {
+    const map: Record<string, { sessions: number; present: number }> = {};
+    const keys = filterTown
+      ? (filterCentre ? [filterCentre] : centreOptions)
+      : filterRegion ? townOptions : regionOptions;
+    keys.forEach(k => { map[k] = { sessions: 0, present: 0 }; });
+    filtered.forEach(session => {
+      const key = filterTown ? session.activityCentre : filterRegion ? session.town : session.region;
+      if (!map[key]) map[key] = { sessions: 0, present: 0 };
+      map[key].sessions += 1;
+      map[key].present += sessionAttendance(session).present;
+    });
+    return Object.entries(map).map(([name, v]) => ({
+      region: shortName(name, 22),
+      fullRegion: name,
+      avgPresent: v.sessions > 0 ? Math.round((v.present / v.sessions) * 10) / 10 : 0,
+    }));
+  }, [filtered, filterRegion, filterTown, filterCentre, regionOptions, townOptions, centreOptions]);
+
   const byCentre = useMemo(() => {
     const map: Record<string, { sessions: number; present: number; absent: number }> = {};
     filtered.forEach(session => {
@@ -424,17 +446,17 @@ export default function AttendanceReport() {
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
 
           <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
-            <option value="">All Regions</option>
+            <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
 
           <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} disabled={!filterRegion} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed">
-            <option value="">All Towns</option>
+            <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
 
           <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} disabled={!filterTown} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed">
-            <option value="">All Centres</option>
+            <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
 
@@ -498,11 +520,11 @@ export default function AttendanceReport() {
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Strongest Region</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Strongest Vibhag</p>
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{strongestRegion?.attendanceRate ? `${strongestRegion.fullRegion} (${strongestRegion.attendanceRate}%)` : 'No attendance data'}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Busiest Centre</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Busiest Shakha</p>
             <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">{busiestCentre ? `${busiestCentre.centre} (${fmt(busiestCentre.sessions)} Shakhas)` : 'No Shakha data'}</p>
           </div>
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
@@ -512,15 +534,22 @@ export default function AttendanceReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Average Sankhya by Vibhag" subtitle="Average Present count per Vibhag, including Vibhags with no attendance data">
-            <ResponsiveContainer width="100%" height={Math.max(260, byRegion.length * 42 + 60)}>
-              <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
+          <ChartCard
+            title={`Average Sankhya by ${locationLevel}`}
+            subtitle={
+              locationLevel === 'Vibhag' ? 'Average Present count per Vibhag, including Vibhags with no attendance data'
+              : locationLevel === 'Nagar' ? `Average Present count per Nagar in ${filterRegion}, including Nagars with no attendance data`
+              : `Average Present count per Shakha in ${filterTown}, including Shakhas with no attendance data`
+            }
+          >
+            <ResponsiveContainer width="100%" height={Math.max(260, byLocation.length * 42 + 60)}>
+              <BarChart data={byLocation} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="avgPresent" name="Average Present" radius={[0, 4, 4, 0]} barSize={22}>
-                  {byRegion.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
+                  {byLocation.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

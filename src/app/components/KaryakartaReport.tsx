@@ -375,7 +375,7 @@ export default function KaryakartaReport() {
           {/* By Vibhag */}
           <ChartCard
             title={`Karyakartas by ${locationLevel}`}
-            subtitle={locationLevel === 'Vibhag' ? 'Distribution across regions' : locationLevel === 'Nagar' ? `Distribution across Nagars in ${filterRegion}` : `Distribution across Shakhas in ${filterTown}`}
+            subtitle={locationLevel === 'Vibhag' ? 'Distribution across Vibhags' : locationLevel === 'Nagar' ? `Distribution across Nagars in ${filterRegion}` : `Distribution across Shakhas in ${filterTown}`}
           >
             <ResponsiveContainer width="100%" height={Math.max(180, byRegion.length * 36 + 40)}>
               <BarChart data={byRegion} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>

@@ -123,7 +123,6 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
 }
 
 export default function DonationsPaymentsReport() {
-  const [filterCountry, setFilterCountry] = useState('');
   const [filterRegion, setFilterRegion] = useState('');
   const [filterTown, setFilterTown] = useState('');
   const [filterCentre, setFilterCentre] = useState('');
@@ -132,10 +131,10 @@ export default function DonationsPaymentsReport() {
   const countryOptions = useMemo(() => {
     return Array.from(new Set(mockDonations.map(d => d.country))).sort();
   }, []);
-  const regionOptions = useMemo(() => {
-    const countries = filterCountry ? [filterCountry] : countryOptions;
-    return Array.from(new Set(countries.flatMap(country => MASTERS_CASCADE.regions[country] ?? [])));
-  }, [countryOptions, filterCountry]);
+  const regionOptions = useMemo(
+    () => Array.from(new Set(countryOptions.flatMap(country => MASTERS_CASCADE.regions[country] ?? []))),
+    [countryOptions],
+  );
   const townOptions = useMemo(() => {
     const regions = filterRegion ? [filterRegion] : regionOptions;
     return Array.from(new Set(regions.flatMap(region => MASTERS_CASCADE.towns[region] ?? [])));
@@ -144,10 +143,9 @@ export default function DonationsPaymentsReport() {
     const towns = filterTown ? [filterTown] : townOptions;
     return Array.from(new Set(towns.flatMap(town => MASTERS_CASCADE.centres[town] ?? [])));
   }, [filterTown, townOptions]);
-  const hasFilter = !!(filterCountry || filterRegion || filterTown || filterCentre || filterPeriod !== 'all');
+  const hasFilter = !!(filterRegion || filterTown || filterCentre || filterPeriod !== 'all');
 
   const clearFilters = () => {
-    setFilterCountry('');
     setFilterRegion('');
     setFilterTown('');
     setFilterCentre('');
@@ -169,14 +167,13 @@ export default function DonationsPaymentsReport() {
 
   const filteredDonations = useMemo(() => {
     return mockDonations.filter(donation => {
-      if (filterCountry && donation.country !== filterCountry) return false;
       if (filterRegion && donation.region !== filterRegion) return false;
       if (filterTown && donation.town !== filterTown) return false;
       if (filterCentre && donation.activityCentre !== filterCentre) return false;
       if (!dateInPeriod(donation.date)) return false;
       return true;
     });
-  }, [filterCountry, filterRegion, filterTown, filterCentre, filterPeriod]);
+  }, [filterRegion, filterTown, filterCentre, filterPeriod]);
 
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
   const onlineDonations = receivedDonations
@@ -290,20 +287,16 @@ export default function DonationsPaymentsReport() {
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-          <select value={filterCountry} onChange={e => { setFilterCountry(e.target.value); setFilterRegion(''); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
-            <option value="">All Countries</option>
-            {countryOptions.map(country => <option key={country} value={country}>{country}</option>)}
-          </select>
           <select value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
-            <option value="">All Regions</option>
+            <option value="">All Vibhags</option>
             {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
           </select>
-          <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
-            <option value="">All Towns</option>
+          <select value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} disabled={!filterRegion} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
+            <option value="">All Nagars</option>
             {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
           </select>
-          <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
-            <option value="">All Centres</option>
+          <select value={filterCentre} onChange={e => setFilterCentre(e.target.value)} disabled={!filterTown} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
+            <option value="">All Shakhas</option>
             {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
           <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
@@ -356,7 +349,7 @@ export default function DonationsPaymentsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Financials by Region" subtitle="Income streams by Vibhag">
+          <ChartCard title="Financials by Vibhag" subtitle="Income streams by Vibhag">
             <ResponsiveContainer width="100%" height={Math.max(260, regionData.length * 42 + 60)}>
               <BarChart data={regionData} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
