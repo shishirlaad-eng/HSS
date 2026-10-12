@@ -3,7 +3,6 @@ import {
   FileText,
   Edit,
   Clock,
-  ShieldCheck,
   MoreVertical,
   Download,
   Plus,
@@ -46,7 +45,8 @@ export default function StaticPages() {
   const filteredPages = useMemo(() => {
     return pages.filter(page =>
       page.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      page.id.toLowerCase().includes(searchQuery.toLowerCase())
+      page.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      page.slug.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [pages, searchQuery]);
 
@@ -127,7 +127,7 @@ export default function StaticPages() {
 
         {/* SYSTEM NOTICE BANNER */}
         <ReadOnlyBanner
-          message="Static pages are predefined system pages. Pages cannot be created, deleted, or renamed here."
+          message="Add and manage static pages and policies here. Only pages set to Visible appear on the member-facing Policies page."
           className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 mb-4"
         />
 
@@ -158,8 +158,8 @@ export default function StaticPages() {
                   {page.name}
                 </h4>
                 <div className="flex items-center gap-2 mb-4">
-                  <p className="text-xs text-neutral-400 font-mono">
-                    {page.id}
+                  <p className="text-xs text-neutral-400 font-mono truncate">
+                    /policies/{page.slug}
                   </p>
                   <VisibilityBadge visible={page.visible !== false} />
                 </div>
@@ -167,7 +167,7 @@ export default function StaticPages() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                     <Clock className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                    <span className="truncate">Last Updated {formatDate(page.lastUpdated)}</span>
+                    <span className="truncate">Last Reviewed {formatDate(page.lastReviewedDate)}</span>
                   </div>
                 </div>
               </div>
@@ -175,11 +175,6 @@ export default function StaticPages() {
           ))}
         </div>
 
-        {/* FOOTER INFO */}
-        <div className="mt-6 flex items-center gap-2 text-xs text-neutral-400 dark:text-neutral-600 italic">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Predefined system pages are essential for app operations and cannot be modified at structural level.
-        </div>
       </div>
     </div>
   );

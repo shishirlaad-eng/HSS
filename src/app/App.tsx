@@ -12,7 +12,7 @@ import StaticPages from "./components/StaticPages";
 import SystemSettings from "./components/SystemSettings";
 import SuperAdminMasters from "./components/SuperAdminMasters";
 import EmailTemplates from "./components/EmailTemplates";
-import RoleManagement from "./components/RoleManagement";
+import RolesPermissions from "./components/RolesPermissions";
 import LogsManagement from "./components/LogsManagement";
 import LogsPage from "./components/LogsPage";
 import PendingApprovals from "./components/PendingApprovals";
@@ -35,6 +35,7 @@ import KaryakartaDirectoryReport from "./components/KaryakartaDirectoryReport";
 import { SiteMap } from "./components/SiteMap";
 import { GlobalFooter } from "./components/GlobalFooter";
 import Policies from "./components/Policies";
+import PublicPolicies, { parsePolicyPath } from "./components/PublicPolicies";
 import PolicyView from "./components/PolicyView";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import SuperAdminAuth from "./components/SuperAdminAuth";
@@ -289,6 +290,12 @@ export default function App() {
     setCurrentPage("my-profile");
   };
 
+  // Policy pages are public — /policies and /policies/<url-extension> open without logging in.
+  const publicPolicyRef = !isAuthenticated ? parsePolicyPath(window.location.pathname) : undefined;
+  if (!isAuthenticated && publicPolicyRef !== undefined) {
+    return <PublicPolicies initialRef={publicPolicyRef} />;
+  }
+
   if (!isAuthenticated) {
     return (
       <SuperAdminAuth
@@ -456,7 +463,7 @@ export default function App() {
         ) : currentPage === "pending-guardian-approvals" ? (
           <PendingGuardianApprovals />
         ) : currentPage === "role-management" ? (
-          <RoleManagement />
+          <RolesPermissions />
         ) : currentPage === "event-management" ? (
           <EventManagement
             onNavigateToMember={(id) => {

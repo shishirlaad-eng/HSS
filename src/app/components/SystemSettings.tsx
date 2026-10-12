@@ -54,7 +54,7 @@ export default function SystemSettings() {
     senderName: 'HSS Admin',
     senderEmail: 'noreply@hssuk.org',
 
-    // Organization
+    // Organisation
     address: 'Hindu Swayamsevak Sangh UK,\nBritannia House, 960 High Road,\nLondon, N12 9RY',
     adminEmail: 'admin@hssuk.org',
     contactNumber: '+44 (0) 20 8446 0756',
@@ -351,9 +351,9 @@ export default function SystemSettings() {
                 </FormSection>
               </FormCard>
 
-              {/* ORGANIZATION INFORMATION SECTION */}
+              {/* ORGANISATION INFORMATION SECTION */}
               <FormCard 
-                title="Organization Information" 
+                title="Organisation Information" 
                 description="Corporate and contact details for legal compliance"
                 icon={Building}
               >

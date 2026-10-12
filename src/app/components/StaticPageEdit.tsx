@@ -3,7 +3,7 @@ import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { PageHeader, SecondaryButton, PrimaryButton } from './hb/listing';
 import { FormField, FormLabel, FormInput, ErrorText } from './hb/common/Form';
 import { RichTextEditor, StatusSlider } from './hb/common';
-import { StaticPage, nextStaticPageId } from '../../mockAPI/staticPagesData';
+import { StaticPage, nextStaticPageId, isSlugTaken, slugify } from '../../mockAPI/staticPagesData';
 import { toast } from 'sonner';
 
 interface StaticPageEditProps {
@@ -30,6 +30,24 @@ function toEditableHtml(content: string): string {
     .join('');
 }
 
+// <input type="datetime-local"> works in local time with no timezone suffix.
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function isValidExternalUrl(value: string): boolean {
+  try {
+    const u = new URL(value);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -39,6 +57,12 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
   const [name, setName] = useState(page?.name ?? '');
   const [content, setContent] = useState(() => toEditableHtml(page?.content ?? ''));
   const [visible, setVisible] = useState(page?.visible ?? true);
+  const [slug, setSlug] = useState(page?.slug ?? '');
+  const [slugEdited, setSlugEdited] = useState(!!page);
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [reviewed, setReviewed] = useState(() => toLocalInput(page?.lastReviewedDate ?? new Date().toISOString()));
+  const [externalUrl, setExternalUrl] = useState(page?.externalUrl ?? '');
+  const [urlTouched, setUrlTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nameTouched, setNameTouched] = useState(false);
@@ -48,12 +72,19 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
     if (isCreate) {
       setHasChanges(name.trim() !== '' || stripHtml(content) !== '');
     } else {
-      setHasChanges(name !== page!.name || content !== toEditableHtml(page!.content) || visible !== (page!.visible ?? true));
+      setHasChanges(
+        name !== page!.name || content !== toEditableHtml(page!.content) || visible !== (page!.visible ?? true)
+        || slug !== page!.slug || reviewed !== toLocalInput(page!.lastReviewedDate) || externalUrl.trim() !== (page!.externalUrl ?? ''),
+      );
     }
-  }, [name, content, visible]);
+  }, [name, content, visible, slug, reviewed, externalUrl]);
+
+  const hasExternal = externalUrl.trim() !== '';
 
   const validateContent = (html: string) => {
     const text = stripHtml(html);
+    // Content is optional when the policy links to an external URL / PDF.
+    if (!text && hasExternal) return null;
     if (!text) return 'Content is required.';
     if (text.length < 20) return 'Content must be at least 20 characters.';
     if (text.length > 20000) return 'Content must not exceed 20,000 characters.';
@@ -62,14 +93,22 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
   };
 
   const nameError = !name.trim() ? 'Title is required.' : null;
+  const slugError = !slug.trim() ? 'URL extension is required.'
+    : !SLUG_RE.test(slug) ? 'Use lowercase letters, numbers and single hyphens only (e.g. privacy-policy).'
+    : isSlugTaken(slug, page?.id) ? 'This URL extension is already used by another policy.'
+    : null;
+  const reviewedError = !reviewed || isNaN(new Date(reviewed).getTime()) ? 'Last Reviewed Date is required.' : null;
+  const urlError = hasExternal && !isValidExternalUrl(externalUrl.trim()) ? 'Enter a valid link starting with http:// or https://.' : null;
 
   const handleSave = async () => {
     setNameTouched(true);
+    setSlugTouched(true);
+    setUrlTouched(true);
     const validationError = validateContent(content);
-    if (nameError || validationError) {
+    const firstError = nameError || slugError || reviewedError || urlError || validationError;
+    if (firstError) {
       setError(validationError);
-      if (validationError) toast.error(validationError);
-      else if (nameError) toast.error(nameError);
+      toast.error(firstError);
       return;
     }
 
@@ -82,10 +121,12 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
         const created: StaticPage = {
           id: nextStaticPageId(),
           name: name.trim(),
-          slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          slug,
           content,
           lastUpdated: new Date().toISOString(),
           updatedBy: 'Admin',
+          lastReviewedDate: new Date(reviewed).toISOString(),
+          externalUrl: externalUrl.trim() || undefined,
           visible,
         };
         onCreate?.(created);
@@ -94,9 +135,12 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
         const updated: StaticPage = {
           ...page!,
           name: name.trim(),
+          slug,
           content,
           visible,
           lastUpdated: new Date().toISOString(),
+          lastReviewedDate: new Date(reviewed).toISOString(),
+          externalUrl: externalUrl.trim() || undefined,
         };
         onSave?.(updated);
         toast.success('Page updated successfully.');
@@ -160,12 +204,59 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
               <FormLabel required>Title</FormLabel>
               <FormInput
                 value={name}
-                onChange={e => { setName(e.target.value); }}
+                onChange={e => { setName(e.target.value); if (!slugEdited) setSlug(slugify(e.target.value)); }}
                 onBlur={() => setNameTouched(true)}
                 placeholder="e.g. Refund Policy"
                 className={nameTouched && nameError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
               />
               <ErrorText>{nameTouched ? nameError ?? undefined : undefined}</ErrorText>
+            </FormField>
+
+            <FormField>
+              <FormLabel required>URL Extension</FormLabel>
+              <div className="flex items-stretch max-w-xl">
+                <span className="inline-flex items-center px-3 text-sm text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900 border border-r-0 border-neutral-200 dark:border-neutral-700 rounded-l-lg whitespace-nowrap">/policies/</span>
+                <FormInput
+                  value={slug}
+                  onChange={e => { setSlugEdited(true); setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-')); }}
+                  onBlur={() => setSlugTouched(true)}
+                  placeholder="privacy-policy"
+                  className={`rounded-l-none ${slugTouched && slugError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}`}
+                />
+              </div>
+              <ErrorText>{slugTouched ? slugError ?? undefined : undefined}</ErrorText>
+              <p className="text-xs text-neutral-400 mt-1.5">
+                A meaningful name for the page address, e.g. /policies/{slug || 'privacy-policy'}. Suggested from the title; you can change it.
+              </p>
+            </FormField>
+
+            <FormField>
+              <FormLabel required>Last Reviewed Date</FormLabel>
+              <FormInput
+                type="datetime-local"
+                value={reviewed}
+                onChange={e => setReviewed(e.target.value)}
+                className="max-w-xs"
+              />
+              <ErrorText>{reviewedError ?? undefined}</ErrorText>
+              <p className="text-xs text-neutral-400 mt-1.5">
+                Shown to members as the date and time the policy was last reviewed. Update it every time the policy is reviewed, even if the content has not changed.
+              </p>
+            </FormField>
+
+            <FormField>
+              <FormLabel>External URL / PDF Link</FormLabel>
+              <FormInput
+                value={externalUrl}
+                onChange={e => setExternalUrl(e.target.value)}
+                onBlur={() => setUrlTouched(true)}
+                placeholder="https://drive.example.com/privacy-policy.pdf"
+                className={urlTouched && urlError ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
+              />
+              <ErrorText>{urlTouched ? urlError ?? undefined : undefined}</ErrorText>
+              <p className="text-xs text-neutral-400 mt-1.5">
+                Optional. If set, the policy title on the member-facing Policies page opens this link instead of the page content, and Content becomes optional.
+              </p>
             </FormField>
 
             <FormField>
@@ -182,7 +273,7 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
             </FormField>
 
             <FormField>
-              <FormLabel required>Content</FormLabel>
+              <FormLabel required={!hasExternal}>Content</FormLabel>
               <RichTextEditor
                 value={content}
                 onChange={html => { setContent(html); setError(null); }}
@@ -195,7 +286,7 @@ export default function StaticPageEdit({ page, onBack, onCreate, onSave }: Stati
             </FormField>
 
             <div className="flex justify-between items-center text-xs text-neutral-400">
-              <span>Minimum 20 characters required</span>
+              <span>{hasExternal ? 'Optional when an external link is set' : 'Minimum 20 characters required'}</span>
               <span className={stripHtml(content).length > 20000 ? 'text-error-500' : ''}>
                 {stripHtml(content).length.toLocaleString()} / 20,000 characters
               </span>

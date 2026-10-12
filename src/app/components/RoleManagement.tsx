@@ -58,7 +58,7 @@ import { useModulePermissions, useRoleScope } from '../contexts/RoleScopeContext
 
 type ViewMode = 'grid' | 'table';
 
-export default function RoleManagement() {
+export default function RoleManagement({ onEditingChange }: { onEditingChange?: (editing: boolean) => void } = {}) {
   const rp = useModulePermissions('rbac');
   const { selectedRole: currentSystemRole } = useRoleScope();
   const isSuperAdmin = currentSystemRole === 'Super Admin';
@@ -139,6 +139,13 @@ export default function RoleManagement() {
       setActiveModuleId(availableModules[0].id);
     }
   }, [selectedRole, isEditing]);
+
+  // Let a parent (the Roles & Permissions tabs) know when the detail/edit page is open.
+  useEffect(() => {
+    onEditingChange?.(isEditing);
+    return () => onEditingChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
 
   // Handlers
   const handleSort = (field: string) => {
@@ -621,9 +628,6 @@ export default function RoleManagement() {
 
   // ========== FORM VIEW (SPLIT LAYOUT) ==========
   const renderForm = () => {
-    const activeModule = availableModules.find(m => m.id === activeModuleId);
-    const activePerms = rolePermissions[activeModuleId] || [];
-
     return (
       <div className="space-y-6">
         <PageHeader
@@ -639,7 +643,7 @@ export default function RoleManagement() {
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Panel - Role Information */}
-          <div className="w-full lg:w-[35%] space-y-6">
+          <div className="w-full max-w-xl space-y-6">
             <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
               <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white mb-6">Role Information</h3>
               
@@ -694,109 +698,6 @@ export default function RoleManagement() {
             </div>
           </div>
 
-          {/* Right Panel - Permission Management */}
-          <div className="w-full lg:w-[65%] space-y-6">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-sm flex flex-col h-[700px]">
-              {/* Right Panel Header */}
-              <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-900/50">
-                <div>
-                  <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Role Privileges</h3>
-                  <p className="text-xs text-neutral-500">Configure module-level access and action permissions</p>
-                </div>
-                <PrimaryButton size="sm" onClick={handleSave}>Save Privileges</PrimaryButton>
-              </div>
-
-              <div className="flex flex-1 overflow-hidden">
-                {/* Module List (Left Sidebar) */}
-                <div className="w-1/3 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto slim-scroll bg-neutral-50/30 dark:bg-neutral-900/30">
-                  {availableModules.map((module) => {
-                    const selectedCount = (rolePermissions[module.id] || []).length;
-                    const totalCount = module.actions.length;
-                    const isActive = activeModuleId === module.id;
-
-                    return (
-                      <button
-                        key={module.id}
-                        onClick={() => setActiveModuleId(module.id)}
-                        className={`w-full flex items-center justify-between px-4 py-4 border-b border-neutral-100 dark:border-neutral-800 transition-all text-left group ${
-                          isActive 
-                            ? 'bg-primary-50 dark:bg-primary-950/50 border-r-2 border-r-primary-500' 
-                            : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
-                        }`}
-                      >
-                        <span className={`text-sm font-medium ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
-                          {module.name}
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                          selectedCount === totalCount
-                            ? 'bg-success-100 text-success-600 dark:bg-success-950 dark:text-success-400'
-                            : selectedCount > 0
-                            ? 'bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400'
-                            : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-500'
-                        }`}>
-                          {selectedCount}/{totalCount}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Permissions Grid (Right Content) */}
-                <div className="w-2/3 p-6 overflow-y-auto slim-scroll">
-                  {activeModule && (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
-                          {activeModule.name} Permissions
-                        </h4>
-                        <button
-                          onClick={() => toggleSelectAllModule(activeModule.id)}
-                          className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline"
-                        >
-                          {(rolePermissions[activeModule.id] || []).length === activeModule.actions.length
-                            ? 'Unselect All'
-                            : 'Select All'}
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {activeModule.actions.map((action) => {
-                          const isSelected = activePerms.includes(action.id);
-                          return (
-                            <div
-                              key={action.id}
-                              onClick={() => togglePermission(activeModule.id, action.id)}
-                              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 group ${
-                                isSelected
-                                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
-                                  : 'border-neutral-200 dark:border-neutral-800 hover:border-primary-300 dark:hover:border-primary-700'
-                              }`}
-                            >
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                                isSelected
-                                  ? 'bg-primary-500 border-primary-500 text-white'
-                                  : 'bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700'
-                              }`}>
-                                {isSelected && <Check className="w-3.5 h-3.5" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                                  {action.name}
-                                </div>
-                                <div className="text-[10px] text-neutral-500 font-mono">
-                                  {action.code}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
