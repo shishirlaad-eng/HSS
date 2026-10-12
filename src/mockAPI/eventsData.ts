@@ -558,7 +558,7 @@ export const mockParticipants: Record<string, EventParticipant[]> = {
     { memberId: 'MBR-001', name: 'Arjun Sharma', email: 'arjun.sharma@example.com', phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going' },
   ],
   'EVT-132': [
-    { memberId: 'MBR-001', name: 'Arjun Sharma', email: 'arjun.sharma@example.com', phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going' },
+    { memberId: 'MBR-001', name: 'Arjun Sharma', email: 'arjun.sharma@example.com', phone: '+44 7711 234567', memberType: 'adult', rsvp: 'going', checkedIn: true, checkedInAt: '2026-08-15T09:20:00Z' },
     { memberId: 'MBR-004', name: 'Sneha Gupta', email: 'sneha.gupta@example.com', phone: '+44 7744 567890', memberType: 'teen', rsvp: 'going' },
   ],
   'EVT-133': [

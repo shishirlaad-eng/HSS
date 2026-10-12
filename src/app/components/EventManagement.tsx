@@ -1033,7 +1033,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Start Date/Time</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>End Date/Time</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Ticket / Donation</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300" style={{ position: 'static' }}>Karyakram / Participant Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1071,7 +1071,18 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                                     {!!rec?.donationAmount && <div className="flex items-center gap-1"><Heart size={10} />£{rec.donationAmount} donated</div>}
                                     {!rec?.ticketTypeLabel && !rec?.donationAmount && '—'}
                                   </td>
-                                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <StatusBadge status={ev.status} />
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${
+                                        rec?.checkedIn
+                                          ? 'bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border-success-200 dark:border-success-800'
+                                          : 'bg-primary-50 dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 border-primary-200 dark:border-primary-800'
+                                      }`}>
+                                        {rec?.checkedIn ? 'Checked In' : 'Registered'}
+                                      </span>
+                                    </div>
+                                  </td>
                                 </tr>
                                 );
                               }),
