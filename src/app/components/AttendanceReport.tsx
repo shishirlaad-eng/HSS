@@ -290,18 +290,23 @@ export default function AttendanceReport() {
   }, [filtered]);
 
   const byAgeGroup = useMemo(() => {
-    const map: Record<AgeGroup, number> = { bal: 0, shishu: 0, kishor: 0, tarun: 0, yuva: 0, jyestha: 0 };
+    const empty = () => ({ male: 0, female: 0 });
+    const map: Record<AgeGroup, { male: number; female: number }> = {
+      bal: empty(), shishu: empty(), kishor: empty(), tarun: empty(), yuva: empty(), jyestha: empty(),
+    };
     filtered.forEach(session => {
       session.attendanceRecords.forEach(record => {
-        if (record.status === 'present') map[record.ageCategory] += 1;
+        if (record.status === 'present') map[record.ageCategory][record.gender] += 1;
       });
     });
     const denom = completedSessions > 0 ? completedSessions : 1;
-    return (Object.entries(map) as [AgeGroup, number][]).map(([key, count]) => ({
+    const avg = (n: number) => Math.round((n / denom) * 10) / 10;
+    return (Object.entries(map) as [AgeGroup, { male: number; female: number }][]).map(([key, v]) => ({
       group: AGE_GROUP_LABELS[key],
       key,
-      count,
-      average: Math.round((count / denom) * 10) / 10,
+      count: v.male + v.female,
+      male: avg(v.male),
+      female: avg(v.female),
     }));
   }, [filtered, completedSessions]);
 
@@ -553,16 +558,16 @@ export default function AttendanceReport() {
             </div>
           </ChartCard>
 
-          <ChartCard title="Present by Age Group" subtitle="Average Present count per Shakha, across HSS age groups">
+          <ChartCard title="Present by Age Group" subtitle="Average Present count per Shakha across HSS age groups, split by Male and Female">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byAgeGroup} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                 <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="average" name="Average Present" radius={[4, 4, 0, 0]}>
-                  {byAgeGroup.map(entry => <Cell key={entry.key} fill={AGE_COLORS[entry.key]} />)}
-                </Bar>
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                <Bar dataKey="male"   name="Male"   fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="female" name="Female" fill="#ec4899" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
