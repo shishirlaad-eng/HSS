@@ -233,23 +233,26 @@ export default function AttendanceReport() {
   // selected Vibhag -> Shakhas in the selected Nagar (a selected Shakha shows just that Shakha).
   const locationLevel = filterTown ? 'Shakha' : filterRegion ? 'Nagar' : 'Vibhag';
   const byLocation = useMemo(() => {
-    const map: Record<string, { sessions: number; present: number }> = {};
-    const keys = filterTown
-      ? (filterCentre ? [filterCentre] : centreOptions)
-      : filterRegion ? townOptions : regionOptions;
-    keys.forEach(k => { map[k] = { sessions: 0, present: 0 }; });
+    // Only locations with recorded attendance are shown — a Vibhag/Nagar/Shakha whose sessions
+    // have no Present/Absent marks yet (e.g. only scheduled sessions) is left out.
+    const map: Record<string, { sessions: number; present: number; marked: number }> = {};
     filtered.forEach(session => {
       const key = filterTown ? session.activityCentre : filterRegion ? session.town : session.region;
-      if (!map[key]) map[key] = { sessions: 0, present: 0 };
+      if (!map[key]) map[key] = { sessions: 0, present: 0, marked: 0 };
+      const summary = sessionAttendance(session);
       map[key].sessions += 1;
-      map[key].present += sessionAttendance(session).present;
+      map[key].present += summary.present;
+      map[key].marked += summary.present + summary.absent;
     });
-    return Object.entries(map).map(([name, v]) => ({
-      region: shortName(name, 22),
-      fullRegion: name,
-      avgPresent: v.sessions > 0 ? Math.round((v.present / v.sessions) * 10) / 10 : 0,
-    }));
-  }, [filtered, filterRegion, filterTown, filterCentre, regionOptions, townOptions, centreOptions]);
+    return Object.entries(map)
+      .filter(([, v]) => v.marked > 0)
+      .map(([name, v]) => ({
+        region: shortName(name, 22),
+        fullRegion: name,
+        avgPresent: Math.round((v.present / v.sessions) * 10) / 10,
+      }))
+      .sort((x, y) => y.avgPresent - x.avgPresent);
+  }, [filtered, filterRegion, filterTown]);
 
   const byCentre = useMemo(() => {
     const map: Record<string, { sessions: number; present: number; absent: number }> = {};
@@ -497,22 +500,26 @@ export default function AttendanceReport() {
           <ChartCard
             title={`Average Sankhya by ${locationLevel}`}
             subtitle={
-              locationLevel === 'Vibhag' ? 'Average Present count per Vibhag, including Vibhags with no attendance data'
-              : locationLevel === 'Nagar' ? `Average Present count per Nagar in ${filterRegion}, including Nagars with no attendance data`
-              : `Average Present count per Shakha in ${filterTown}, including Shakhas with no attendance data`
+              locationLevel === 'Vibhag' ? 'Average Present count per Vibhag — Vibhags with no attendance data are not shown'
+              : locationLevel === 'Nagar' ? `Average Present count per Nagar in ${filterRegion} — Nagars with no attendance data are not shown`
+              : `Average Present count per Shakha in ${filterTown} — Shakhas with no attendance data are not shown`
             }
           >
-            <ResponsiveContainer width="100%" height={Math.max(260, byLocation.length * 42 + 60)}>
-              <BarChart data={byLocation} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="avgPresent" name="Average Present" radius={[0, 4, 4, 0]} barSize={22}>
-                  {byLocation.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {byLocation.length === 0 ? (
+              <p className="py-16 text-center text-sm text-neutral-400">No attendance data for the selected filters.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(260, byLocation.length * 42 + 60)}>
+                <BarChart data={byLocation} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="avgPresent" name="Average Present" radius={[0, 4, 4, 0]} barSize={22}>
+                    {byLocation.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </ChartCard>
 
           <ChartCard title="Shakhas by Shakha Type" subtitle="Average Present count across the 5 Shakha types">

@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Roles & Permissions (Settings)
-// Two separate screens: Roles (definitions + permission matrix) and Permission Lookup (read-only).
+// Two separate screens: Permissions (per-role lookup and editing) and Roles (the role list).
 // ─────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import RoleManagement from './RoleManagement';
@@ -9,12 +9,12 @@ import PermissionLookup from './PermissionLookup';
 type RolesTab = 'roles' | 'lookup';
 
 const TABS: { id: RolesTab; label: string }[] = [
-  { id: 'roles',      label: 'Roles'             },
-  { id: 'lookup',     label: 'Permission Lookup' },
+  { id: 'lookup', label: 'Permissions' },
+  { id: 'roles',  label: 'Roles'       },
 ];
 
 export default function RolesPermissions() {
-  const [tab, setTab] = useState<RolesTab>('roles');
+  const [tab, setTab] = useState<RolesTab>('lookup');
   // The role detail / edit page is its own screen — the tabs only show on the listing screens.
   const [roleDetailOpen, setRoleDetailOpen] = useState(false);
 

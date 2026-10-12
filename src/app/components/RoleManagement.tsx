@@ -63,7 +63,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   const { selectedRole: currentSystemRole } = useRoleScope();
   const isSuperAdmin = currentSystemRole === 'Super Admin';
 
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,14 +86,12 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   const { stickyHeaderRef, stickyTableStyle } = useStickyListingHeader();
   const roleColumns: ColumnConfig[] = [
     { key: 'name', label: 'Role Name' },
-    { key: 'code', label: 'Role Code' },
     { key: 'description', label: 'Description' },
     { key: 'status', label: 'Status' },
     { key: 'lastUpdated', label: 'Updated Date' },
   ];
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     name: true,
-    code: true,
     description: true,
     status: true,
     lastUpdated: true,
@@ -198,17 +196,15 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
 
   const [roleErrors, setRoleErrors] = useState<Record<string, boolean>>({});
   const roleNameRef = useRef<HTMLInputElement>(null);
-  const roleCodeRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     const errs = {
       name: !formData.name.trim(),
-      code: !formData.code.trim(),
     };
-    if (errs.name || errs.code) {
+    if (errs.name) {
       setRoleErrors(errs);
       toast.error('Please fill in all required fields.');
-      const el = errs.name ? roleNameRef.current : roleCodeRef.current;
+      const el = roleNameRef.current;
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el?.focus();
       return;
@@ -256,7 +252,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
       if (role.code === 'super_admin') return false; // Super Admin always has full access — not editable here
       const matchesSearch =
         role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        role.code.toLowerCase().includes(searchQuery.toLowerCase());
+        role.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     });
   }, [searchQuery]);
@@ -479,9 +475,6 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
                 <h4 className="text-base font-semibold text-neutral-900 dark:text-white truncate mb-0.5">
                   {role.name}
                 </h4>
-                <p className="text-xs text-neutral-500 dark:text-neutral-500 font-mono mb-3">
-                  {role.code}
-                </p>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 mb-4 h-10">
                   {role.description}
                 </p>
@@ -531,11 +524,6 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
                       Role Name {renderSortArrow('name')}
                     </th>
                   )}
-                  {visibleColumns.code && (
-                    <th onClick={() => handleSort('code')} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
-                      Role Code {renderSortArrow('code')}
-                    </th>
-                  )}
                   {visibleColumns.description && (
                     <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                       Description
@@ -572,11 +560,6 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
                     {visibleColumns.name && (
                       <td className="px-6 py-4 text-sm font-medium text-neutral-900 dark:text-white">
                         {role.name}
-                      </td>
-                    )}
-                    {visibleColumns.code && (
-                      <td className="px-6 py-4 text-sm text-neutral-500 font-mono">
-                        {role.code}
                       </td>
                     )}
                     {visibleColumns.description && (
@@ -658,18 +641,6 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
                     className={roleErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
                   />
                   <ErrorText>{roleErrors.name && 'Role name is required.'}</ErrorText>
-                </FormField>
-
-                <FormField>
-                  <FormLabel required>Role Code</FormLabel>
-                  <FormInput
-                    ref={roleCodeRef}
-                    placeholder="e.g. manager_level_1"
-                    value={formData.code}
-                    onChange={e => { setFormData({ ...formData, code: e.target.value }); setRoleErrors(prev => ({ ...prev, code: false })); }}
-                    className={roleErrors.code ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
-                  />
-                  <ErrorText>{roleErrors.code && 'Role code is required.'}</ErrorText>
                 </FormField>
 
                 <FormField>

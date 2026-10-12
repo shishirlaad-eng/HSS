@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  FileText,
   Edit,
   Clock,
   MoreVertical,
@@ -139,10 +138,7 @@ export default function StaticPages() {
               className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 hover:border-primary-200 dark:hover:border-primary-800 rounded-lg p-5 hover:shadow-md transition-all cursor-pointer relative group shadow-sm flex flex-col"
               onClick={() => handleEditPage(page)}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-10 h-10 rounded bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-                  <FileText className="w-5 h-5" />
-                </div>
+              <div className="flex justify-end items-start mb-2">
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                   <IconButton
                     icon={Edit}
