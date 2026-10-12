@@ -37,6 +37,7 @@ import {
   Search,
   Check,
   Heart,
+  CalendarCheck,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -235,6 +236,9 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   // never the full scope list every other admin role gets.
   const isCoordinatorRole = selectedRole === 'Karyakram Coordinator';
 
+  // Re-register opens the registration pop-up right on this listing (no navigation to the detail page).
+  const [reregisterEvent, setReregisterEvent] = useState<Event | null>(null);
+  const [memberDataVersion, setMemberDataVersion] = useState(0);
   // Member data — counts + event arrays for panels and completed table
   const MEMBER_ID_BY_ROLE: Record<string, string> = { 'Adult Member': 'MBR-001', 'Teen Member': 'MBR-004' };
   const memberData = useMemo(() => {
@@ -243,30 +247,43 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
     const now = new Date();
     const notRegisteredArr: Event[] = [];
     const registeredArr: Event[] = [];
+    // Upcoming events the member has a registration record on, in any status
+    // (awaiting approval / approved / rejected / cancelled) — drives the "Registered" panel.
+    const registrationPanelArr: Event[] = [];
     const attendedArr: Event[] = [];
     const recordByEventId: Record<string, EventParticipant> = {};
     for (const ev of mockEvents) {
       const isFuture = new Date(ev.startDate) > now;
       const myRecord = (mockParticipants[ev.id] ?? []).find(p => p.memberId === memberId);
       if (myRecord) recordByEventId[ev.id] = myRecord;
-      if (isFuture && ev.status !== 'cancelled') {
+      // Where each Karyakram status appears for a member:
+      //  Draft                -> nowhere
+      //  Published / Cancelled -> top panels (Not Yet Registered / Registered), only until the start date
+      //                          (a cancelled event vanishes once it starts)
+      //  In Progress / Completed -> bottom "Completed Karyakrams – Attended" table (members who were approved)
+      if (ev.status === 'draft') continue;
+      if (isFuture) {
         if (!myRecord) notRegisteredArr.push(ev);
-        else if (myRecord.rsvp === 'going' || myRecord.rsvp === 'requested') registeredArr.push(ev);
-      } else if (!isFuture && myRecord?.rsvp === 'going') {
+        else {
+          registrationPanelArr.push(ev);
+          if ((myRecord.rsvp === 'going' || myRecord.rsvp === 'requested') && ev.status !== 'cancelled') registeredArr.push(ev);
+        }
+      } else if (myRecord?.rsvp === 'going' && (ev.status === 'active' || ev.status === 'completed')) {
         attendedArr.push(ev);
       }
     }
     notRegisteredArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    registrationPanelArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     registeredArr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     attendedArr.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     return {
-      counts: { attended: attendedArr.length, notRegistered: notRegisteredArr.length, registered: registeredArr.length },
-      notRegistered: notRegisteredArr.slice(0, 3),
-      registered:    registeredArr.slice(0, 3),
+      counts: { attended: attendedArr.length, notRegistered: notRegisteredArr.filter(e => e.status !== 'cancelled').length, registered: registeredArr.length },
+      notRegistered: notRegisteredArr,
+      registered:    registrationPanelArr,
       attended:      attendedArr,
       recordByEventId,
     };
-  }, [isMemberRole, selectedRole]);
+  }, [isMemberRole, selectedRole, memberDataVersion]);
 
   const scopedEvents = useMemo(
     () => isMemberRole
@@ -446,10 +463,11 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
   const formatDate = (iso: string) => sharedFormatDate(iso);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  const openDetail = (event: Event) => { setSelectedEvent(event); setPageState('detail'); scrollToTop(); };
+  const [autoRegisterEventId, setAutoRegisterEventId] = useState<string | null>(null);
+  const openDetail = (event: Event, opts?: { register?: boolean }) => { setAutoRegisterEventId(opts?.register ? event.id : null); setSelectedEvent(event); setPageState('detail'); scrollToTop(); };
   const openEdit   = (event: Event) => { setSelectedEvent(event); setPageState('edit'); scrollToTop();   };
   const openClone  = (event: Event) => { setSelectedEvent(event); setPageState('create'); scrollToTop(); };
-  const backToList = ()              => { setPageState('list'); setSelectedEvent(null); scrollToTop();   };
+  const backToList = ()              => { setPageState('list'); setSelectedEvent(null); setAutoRegisterEventId(null); scrollToTop();   };
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
   const openModal = (type: Exclude<ModalType, null | 'create'>, event: Event) =>
@@ -618,6 +636,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
           onDelete={() => openModal('delete', live)}
           onClone={ep.canAdd ? () => openClone(live) : undefined}
           onViewMember={onNavigateToMember}
+          autoRegister={autoRegisterEventId === live.id}
         />
         {/* Modals can still show above detail */}
         <ConfirmModal
@@ -881,6 +900,20 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
             {/* Two upcoming panels */}
             <div className="flex flex-col lg:flex-row gap-4">
 
+              {reregisterEvent && (
+                <EventDetail
+                  key={reregisterEvent.id}
+                  event={reregisterEvent}
+                  autoRegister
+                  modalOnly
+                  onModalClose={() => { setReregisterEvent(null); setMemberDataVersion(v => v + 1); }}
+                  onBack={() => {}}
+                  onModify={() => {}}
+                  onCancel={() => {}}
+                  onDelete={() => {}}
+                />
+              )}
+
               {/* Not Yet Registered */}
               <div className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden" style={{ borderTop: '3px solid #172E4D' }}>
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
@@ -926,7 +959,7 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                 </div>
                 <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {memberData.registered.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-neutral-400">You have not registered for any upcoming Karyakrams.</p>
+                    <p className="py-8 text-center text-sm text-neutral-400">You have no registrations for upcoming Karyakrams.</p>
                   ) : memberData.registered.map(ev => {
                     const { day, mon, year } = utcDMY(ev.startDate);
                     const rec = memberData.recordByEventId[ev.id];
@@ -943,7 +976,14 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                               <span className="text-[16px] font-semibold text-neutral-900 dark:text-white truncate" style={{ fontFamily: '"TT Ramillas", "Open Sauce One", serif' }}>{ev.name}</span>
                               <StatusBadge status={ev.status} />
                             </div>
-                            <span className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border border-success-200 dark:border-success-800 whitespace-nowrap">Registered</span>
+                            <span className={`flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border whitespace-nowrap ${
+                              rec?.rsvp === 'requested' ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                              : rec?.rsvp === 'denied' ? 'bg-error-50 dark:bg-error-950/20 text-error-700 dark:text-error-400 border-error-200 dark:border-error-800'
+                              : rec?.rsvp === 'cancelled' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
+                              : 'bg-success-50 dark:bg-success-950/20 text-success-700 dark:text-success-400 border-success-200 dark:border-success-800'
+                            }`}>
+                              {rec?.rsvp === 'requested' ? 'Awaiting Approval' : rec?.rsvp === 'denied' ? 'Rejected' : rec?.rsvp === 'cancelled' ? 'Registration Cancelled' : 'Registered'}
+                            </span>
                           </div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span className="flex items-center gap-1"><Clock size={10} />{timeRangeLabel(ev)}</span>
@@ -952,6 +992,15 @@ export default function EventManagement({ onNavigateToMember, initialEventId, on
                               <span className="flex items-center gap-1"><Heart size={10} />£{rec.donationAmount} donated</span>
                             )}
                           </div>
+                          {rec?.rsvp === 'cancelled' && ev.status !== 'cancelled' && (
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); setReregisterEvent(ev); }}
+                              className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                            >
+                              <CalendarCheck size={12} /> Re-register
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

@@ -198,6 +198,12 @@ interface EventDetailProps {
   onDelete: () => void;
   onClone?: () => void;
   onViewMember?: (memberId: string) => void;
+  // Opens the registration form straight away (used by the member's "Re-register" button).
+  autoRegister?: boolean;
+  // Renders only the registration pop-ups (no page) so the Karyakram listing can open the
+  // registration flow in place; `onModalClose` fires once the pop-up flow has been closed.
+  modalOnly?: boolean;
+  onModalClose?: () => void;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -209,6 +215,9 @@ export default function EventDetail({
   onDelete,
   onClone,
   onViewMember,
+  autoRegister,
+  modalOnly,
+  onModalClose,
 }: EventDetailProps) {
 
   const formatDateTime = (iso: string) => sharedFormatDateTime(iso);
@@ -337,9 +346,33 @@ export default function EventDetail({
     setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'going' } : p));
     toast.success('Registration approved — marked as Going.');
   };
-  const handleDeny = (memberId: string) => {
-    setParticipants(prev => prev.map(p => p.memberId === memberId ? { ...p, rsvp: 'denied' } : p));
-    toast('Registration denied.');
+  // Rejecting or cancelling a registration needs a reason from the admin — it is
+  // stored on the registration and shown to the member in the detail page header.
+  const [reasonTarget, setReasonTarget] = useState<{ memberId: string; kind: 'reject' | 'cancel' } | null>(null);
+  const [reasonText, setReasonText] = useState('');
+  const [reasonError, setReasonError] = useState(false);
+  const openReasonModal = (memberId: string, kind: 'reject' | 'cancel') => {
+    setReasonTarget({ memberId, kind });
+    setReasonText('');
+    setReasonError(false);
+  };
+  const closeReasonModal = () => setReasonTarget(null);
+  const handleConfirmReason = () => {
+    if (!reasonTarget) return;
+    const reason = reasonText.trim();
+    if (!reason) {
+      setReasonError(true);
+      toast.error('Please enter a reason.');
+      return;
+    }
+    const { memberId, kind } = reasonTarget;
+    setParticipants(prev => prev.map(p => p.memberId === memberId
+      ? kind === 'reject'
+        ? { ...p, rsvp: 'denied', rejectionReason: reason }
+        : { ...p, rsvp: 'cancelled', cancellationReason: reason }
+      : p));
+    toast.success(kind === 'reject' ? 'Registration rejected.' : 'Registration cancelled.');
+    setReasonTarget(null);
   };
 
   // ── Resend the Event Confirmation email to a participant ─────────────────────
@@ -423,7 +456,11 @@ export default function EventDetail({
   };
 
   // ── Member self-registration ("Request to Attend") ──────────────────────────
-  const myMemberId = scope.selfMemberId;
+  // Must match the member the Karyakram list/dashboard panels use (MEMBER_ID_BY_ROLE in
+  // EventManagement.tsx) so a Karyakram's status there matches its detail page buttons.
+  const myMemberId = selectedRole === 'Adult Member' ? 'MBR-001'
+    : selectedRole === 'Teen Member' ? 'MBR-004'
+    : scope.selfMemberId;
   const myParticipation = myMemberId ? allParticipants.find(p => p.memberId === myMemberId) : undefined;
   // A denied or cancelled registration isn't a dead end — the member can
   // register again, same as if they'd never registered at all.
@@ -565,9 +602,12 @@ export default function EventDetail({
     // place rather than appending a duplicate row — no special re-registration
     // history is needed (confirmed out of scope per MoM), so this fresh record
     // simply overwrites whatever was there before for this member.
-    setParticipants(prev => prev.some(p => p.memberId === myMemberId)
-      ? prev.map(p => p.memberId === myMemberId ? freshRecord : p)
-      : [...prev, freshRecord]);
+    const nextParticipants = participants.some(p => p.memberId === myMemberId)
+      ? participants.map(p => p.memberId === myMemberId ? freshRecord : p)
+      : [...participants, freshRecord];
+    setParticipants(nextParticipants);
+    // Persist so the Karyakram listing (a separate screen) reflects the new registration.
+    mockParticipants[event.id] = nextParticipants;
     setConfirmationNote(
       willWaitlist
         ? 'This Karyakram is full — you have been added to the waiting list. We will email you if a spot opens up.'
@@ -632,6 +672,23 @@ export default function EventDetail({
     setTermsError('');
     setShowAttendQuestions(true);
   };
+
+  // modalOnly mode: tell the listing when the whole pop-up flow (form → payment → confirmation) has closed.
+  const popupSeen = useRef(false);
+  useEffect(() => {
+    if (!modalOnly) return;
+    if (showAttendQuestions || showPaymentDetails || showConfirmation) popupSeen.current = true;
+    else if (popupSeen.current) onModalClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAttendQuestions, showPaymentDetails, showConfirmation]);
+
+  // "Re-register" from the member's Karyakram list lands here with the form already open,
+  // but only when a fresh registration is actually allowed for this member.
+  useEffect(() => {
+    if (autoRegister && isMember && canRegisterFresh && !isCancelledOrCompleted) handleRequestToAttendClick();
+    else if (modalOnly) onModalClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmitAttendQuestions = () => {
     if (hasTicketTypes && !selectedTicketId) {
@@ -1026,13 +1083,14 @@ export default function EventDetail({
     ...(isMember ? [] : [{ id: 'participants' as Tab, label: `Participants (${allParticipants.length})` }]),
     // Members only see Media once the Karyakram has happened — nothing to post beforehand.
     ...((!isMember || past) ? [{ id: 'media' as Tab, label: `Media (${mediaPosts.length})` }] : []),
-    { id: 'announcements', label: `Karyakram Suchana (${eventAnnouncements.length})` },
+    // Members with no registration on this Karyakram only see the Overview — Suchana is for registered members.
+    ...((isMember && !myParticipation) ? [] : [{ id: 'announcements' as Tab, label: `Karyakram Suchana (${eventAnnouncements.length})` }]),
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
-    <div className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
+    <div hidden={modalOnly} className="p-5 md:p-6 bg-transparent dark:bg-neutral-950 px-[8px] py-[8px]">
       <div className="max-w-[100%] mx-auto">
 
         {/* HEADER */}
@@ -1065,6 +1123,22 @@ export default function EventDetail({
                   </div>
                 </div>
               )}
+
+              {/* Rejected / cancelled registration — reason entered by the admin */}
+              {isMember && (myParticipation?.rsvp === 'denied' || myParticipation?.rsvp === 'cancelled') && (
+                <div className="flex items-start gap-2 p-3 mb-3 bg-[#fff0f0] border border-[#ffaaab] rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-error-600 flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#9a0c17]">
+                      {myParticipation.rsvp === 'denied' ? 'Your registration was rejected' : 'Your registration was cancelled'}
+                    </p>
+                    <p className="text-xs text-[#9a0c17] mt-0.5">
+                      <span className="font-medium">Reason:</span>{' '}
+                      {(myParticipation.rsvp === 'denied' ? myParticipation.rejectionReason : myParticipation.cancellationReason) || 'No reason was provided.'}
+                    </p>
+                  </div>
+                </div>
+              )}
               {!isMember && (
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge status={event.status} />
@@ -1087,6 +1161,13 @@ export default function EventDetail({
 
             <div className="flex flex-wrap items-center gap-2">
               <SecondaryButton icon={ArrowLeft} onClick={onBack}>Back to Karyakrams</SecondaryButton>
+
+              {/* Cancelled Karyakram — an approved member sees a disabled "Going" button */}
+              {isMember && event.status === 'cancelled' && myParticipation?.rsvp === 'going' && (
+                <button type="button" disabled className={btnDisabled}>
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Going
+                </button>
+              )}
 
               {/* Member self-registration */}
               {isMember && !isCancelledOrCompleted && (
@@ -1113,12 +1194,12 @@ export default function EventDetail({
                       className={`${btnBase} bg-primary-600 hover:bg-primary-700 text-white`}
                       onClick={handleRequestToAttendClick}
                     >
-                      <CalendarCheck className="w-3.5 h-3.5" /> {isFull ? 'Join Waiting List' : 'Register for Karyakram'}
+                      <CalendarCheck className="w-3.5 h-3.5" /> {isFull ? 'Join Waiting List' : myParticipation ? 'Re-register' : 'Register for Karyakram'}
                     </button>
                   )
                 ) : myParticipation.rsvp === 'requested' ? (
                   <span className={`${btnBase} border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20`}>
-                    <ClockIcon className="w-3.5 h-3.5" /> {myParticipation.waitlisted ? 'Waitlisted — awaiting a spot' : 'Requested — awaiting approval'}
+                    <ClockIcon className="w-3.5 h-3.5" /> {myParticipation.waitlisted ? 'Waitlisted — awaiting a spot' : 'Awaiting Approval'}
                   </span>
                 ) : myParticipation.rsvp === 'going' ? (
                   <>
@@ -1765,7 +1846,7 @@ export default function EventDetail({
                           )}
                           {vp.rsvp !== 'denied' && vp.rsvp !== 'cancelled' && (
                             <button
-                              onClick={() => setCancelTarget(vp.memberId)}
+                              onClick={() => openReasonModal(vp.memberId, 'cancel')}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
                             >
                               <Ban className="w-3.5 h-3.5" /> Cancel Registration
@@ -2262,9 +2343,9 @@ export default function EventDetail({
                                           <Check className="w-4 h-4" />
                                         </button>
                                         <button
-                                          onClick={() => handleDeny(p.memberId)}
-                                          title="Deny"
-                                          aria-label="Deny"
+                                          onClick={() => openReasonModal(p.memberId, 'reject')}
+                                          title="Reject"
+                                          aria-label="Reject"
                                           className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-error-300 dark:border-error-700 text-error-700 dark:text-error-400 bg-white dark:bg-neutral-900 hover:bg-error-50 dark:hover:bg-error-950/20 transition-colors"
                                         >
                                           <Ban className="w-4 h-4" />
@@ -3758,34 +3839,55 @@ export default function EventDetail({
       );
     })()}
 
-    {cancelTarget && (
+    {reasonTarget && (
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={() => setCancelTarget(null)}
+        onClick={closeReasonModal}
       >
         <div
-          className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
           onClick={e => e.stopPropagation()}
         >
           <div className="px-6 pt-8 pb-2 flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-error-50 dark:bg-error-950/30 flex items-center justify-center mb-3">
               <Ban className="w-7 h-7 text-error-600 dark:text-error-400" />
             </div>
-            <h4 className="text-base font-bold text-neutral-900 dark:text-white">Cancel Registration</h4>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Cancel this registration? This can be undone by re-registering.</p>
+            <h4 className="text-base font-bold text-neutral-900 dark:text-white">
+              {reasonTarget.kind === 'reject' ? 'Reject Registration' : 'Cancel Registration'}
+            </h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+              {reasonTarget.kind === 'reject'
+                ? 'Enter the reason for rejecting this registration. The member will see it on the Karyakram page.'
+                : 'Enter the reason for cancelling this registration. The member will see it on the Karyakram page.'}
+            </p>
+          </div>
+          <div className="px-6 pt-4">
+            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+              {reasonTarget.kind === 'reject' ? 'Rejection Reason' : 'Cancellation Reason'} <span className="text-[#BC0F1C]">*</span>
+            </label>
+            <textarea
+              value={reasonText}
+              onChange={e => { setReasonText(e.target.value); if (e.target.value.trim()) setReasonError(false); }}
+              rows={3}
+              placeholder="Enter reason..."
+              className={`w-full text-sm px-3 py-2 rounded-lg border bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                reasonError ? 'border-[#BC0F1C]' : 'border-neutral-300 dark:border-neutral-700'
+              }`}
+            />
+            {reasonError && <p className="text-xs text-[#BC0F1C] mt-1">Reason is required.</p>}
           </div>
           <div className="px-6 pt-6 pb-6 flex items-center justify-end gap-2">
             <button
-              onClick={() => setCancelTarget(null)}
+              onClick={closeReasonModal}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
-              Keep Registration
+              Close
             </button>
             <button
-              onClick={() => { handleCancelRegistration(cancelTarget); setCancelTarget(null); }}
+              onClick={handleConfirmReason}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-error-600 hover:bg-error-700 text-white transition-colors"
             >
-              <Ban className="w-3.5 h-3.5" /> Cancel Registration
+              <Ban className="w-3.5 h-3.5" /> {reasonTarget.kind === 'reject' ? 'Reject Registration' : 'Cancel Registration'}
             </button>
           </div>
         </div>
