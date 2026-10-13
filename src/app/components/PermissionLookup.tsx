@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
 import { Check, Minus, Search, Edit2 } from 'lucide-react';
-import { availableModules, mockRoles } from '../../mockAPI/rolesData';
+import { availableModules, mockRoles, getRoleModulePermissions } from '../../mockAPI/rolesData';
 import { useModulePermissions } from '../contexts/RoleScopeContext';
 import { PrimaryButton } from './hb/listing';
 import RolePrivilegesModal from './RolePrivilegesModal';
@@ -24,12 +24,12 @@ export default function PermissionLookup() {
     if (!role) return [];
     const q = query.trim().toLowerCase();
     return availableModules
-      .filter(mod => !q || mod.name.toLowerCase().includes(q))
+      .filter(mod => !q || mod.name.toLowerCase().includes(q) || (mod.category && mod.category.toLowerCase().includes(q)))
       .map(mod => {
-        const allowedIds = new Set(role.permissions?.[mod.id] ?? []);
+        const allowedIds = new Set(getRoleModulePermissions(role, mod.id));
         const actions = mod.actions.map(a => ({ ...a, allowed: allowedIds.has(a.id) }));
         return { mod, actions, allowedCount: actions.filter(a => a.allowed).length };
-      })
+      });
   }, [role, query, version]);
 
   return (
@@ -67,7 +67,16 @@ export default function PermissionLookup() {
               <tr><td colSpan={3} className="px-6 py-14 text-center text-sm text-neutral-400">No modules match.</td></tr>
             ) : rows.map(({ mod, actions, allowedCount }) => (
               <tr key={mod.id}>
-                <td className="px-4 py-3 text-sm font-medium text-neutral-900 dark:text-white align-top">{mod.name}</td>
+                <td className="px-4 py-3 align-top">
+                  {mod.category && mod.category !== mod.name && (
+                    <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider block">
+                      {mod.category}
+                    </span>
+                  )}
+                  <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                    {mod.name}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1.5">
                     {actions.map(a => (

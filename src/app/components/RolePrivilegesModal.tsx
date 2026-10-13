@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// HSS UK — Role Privileges (pop-up)
+// HSS UK — Role Permissions (pop-up)
 // Opened from Roles & Permissions › Permission Lookup via "Edit Permissions".
 // Module list on the left, action checkboxes on the right; Save writes the
 // role's permissions.
@@ -7,24 +7,32 @@
 import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { availableModules, Role } from '../../mockAPI/rolesData';
+import { availableModules, Role, getRoleModulePermissions, REPORT_ACTION_MAP } from '../../mockAPI/rolesData';
 import { PrimaryButton, SecondaryButton } from './hb/listing';
 
 export default function RolePrivilegesModal({
   role,
+  initialModuleId,
   onClose,
   onSaved,
 }: {
   role: Role;
+  initialModuleId?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [perms, setPerms] = useState<Record<string, string[]>>(() => {
     const copy: Record<string, string[]> = {};
-    Object.entries(role.permissions ?? {}).forEach(([k, v]) => { copy[k] = [...v]; });
+    availableModules.forEach(m => {
+      copy[m.id] = [...getRoleModulePermissions(role, m.id)];
+    });
     return copy;
   });
-  const [activeModuleId, setActiveModuleId] = useState(availableModules[0]?.id ?? '');
+  const [activeModuleId, setActiveModuleId] = useState(
+    initialModuleId && availableModules.some(m => m.id === initialModuleId)
+      ? initialModuleId
+      : (availableModules[0]?.id ?? '')
+  );
 
   const activeModule = availableModules.find(m => m.id === activeModuleId);
   const activePerms = perms[activeModuleId] ?? [];
@@ -44,9 +52,21 @@ export default function RolePrivilegesModal({
   };
 
   const handleSave = () => {
-    role.permissions = perms;
+    // Build reports permissions array from sub-modules to preserve backwards compatibility
+    const updatedReports: string[] = [];
+    Object.entries(REPORT_ACTION_MAP).forEach(([subId, map]) => {
+      const subPerms = perms[subId] ?? [];
+      if (subPerms.includes('view')) updatedReports.push(map.view);
+      if (map.export && subPerms.includes('export')) updatedReports.push(map.export);
+    });
+
+    role.permissions = {
+      ...role.permissions,
+      ...perms,
+      reports: updatedReports,
+    };
     role.lastUpdated = new Date().toISOString();
-    toast.success(`Privileges updated for ${role.name}.`);
+    toast.success(`Permissions updated for ${role.name}.`);
     onSaved();
     onClose();
   };
@@ -60,12 +80,12 @@ export default function RolePrivilegesModal({
         {/* Header */}
         <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3 bg-neutral-50/50 dark:bg-neutral-900/50">
           <div>
-            <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Role Privileges — {role.name}</h3>
+            <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">Role Permissions — {role.name}</h3>
             <p className="text-xs text-neutral-500">Configure module-level access and action permissions</p>
           </div>
           <div className="flex items-center gap-2">
             <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-            <PrimaryButton size="sm" onClick={handleSave}>Save Privileges</PrimaryButton>
+            <PrimaryButton size="sm" onClick={handleSave}>Save Permissions</PrimaryButton>
             <button onClick={onClose} aria-label="Close" className="ml-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
               <X className="w-5 h-5" />
             </button>
@@ -83,16 +103,23 @@ export default function RolePrivilegesModal({
                 <button
                   key={module.id}
                   onClick={() => setActiveModuleId(module.id)}
-                  className={`w-full flex items-center justify-between px-4 py-4 border-b border-neutral-100 dark:border-neutral-800 transition-all text-left group ${
+                  className={`w-full flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 transition-all text-left group ${
                     isActive
                       ? 'bg-primary-50 dark:bg-primary-950/50 border-r-2 border-r-primary-500'
                       : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
                   }`}
                 >
-                  <span className={`text-sm font-medium ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
-                    {module.name}
-                  </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  <div className="flex flex-col min-w-0 pr-2">
+                    {module.category && module.category !== module.name && (
+                      <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        {module.category}
+                      </span>
+                    )}
+                    <span className={`text-sm font-medium truncate ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white'}`}>
+                      {module.name}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
                     selectedCount === totalCount
                       ? 'bg-success-100 text-success-600 dark:bg-success-950 dark:text-success-400'
                       : selectedCount > 0

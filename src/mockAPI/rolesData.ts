@@ -12,6 +12,7 @@ export interface ActionPermission {
 export interface ModulePermission {
   id: string;
   name: string;
+  category?: string;
   actions: ActionPermission[];
 }
 
@@ -27,21 +28,24 @@ export interface Role {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODULE LIST — aligned with left navigation structure
+// MODULE LIST — aligned with left navigation structure and all sub-menus
 // ─────────────────────────────────────────────────────────────
 export const availableModules: ModulePermission[] = [
-  // 1. Dashboard
+  // ── 1. Dashboard ─────────────────────────────────────────────
   {
     id: "dashboard",
     name: "Dashboard",
+    category: "Dashboard",
     actions: [
       { id: "view", name: "View Dashboard", code: "dashboard_view" },
     ],
   },
-  // 2. Masters
+
+  // ── 2. HSS (UK) Setup ────────────────────────────────────────
   {
     id: "masters",
     name: "HSS (UK) Setup",
+    category: "HSS (UK) Setup",
     actions: [
       { id: "view",   name: "View / List",             code: "masters_view" },
       { id: "add",    name: "Add",                     code: "masters_add" },
@@ -50,10 +54,12 @@ export const availableModules: ModulePermission[] = [
       { id: "status", name: "Active / Inactive",       code: "masters_status" },
     ],
   },
-  // 3. Members Management
+
+  // ── 3. Members ───────────────────────────────────────────────
   {
     id: "members",
-    name: "Members Management",
+    name: "All Members",
+    category: "Members",
     actions: [
       { id: "view",             name: "View / List",                         code: "members_view" },
       { id: "add",              name: "Add Member",                          code: "members_add" },
@@ -64,23 +70,63 @@ export const availableModules: ModulePermission[] = [
       { id: "export",           name: "Export CSV",                          code: "members_export" },
     ],
   },
-  // 4. Karyakrams (Events Management)
+  {
+    id: "emergency-details",
+    name: "Emergency Details",
+    category: "Members",
+    actions: [
+      { id: "view", name: "View / List", code: "emergency_details_view" },
+    ],
+  },
+  {
+    id: "non-member-accounts",
+    name: "Non-Member Accounts",
+    category: "Members",
+    actions: [
+      { id: "view", name: "View / List", code: "non_member_accounts_view" },
+    ],
+  },
+  {
+    id: "pending-approvals",
+    name: "Pending Karyawaha Approvals",
+    category: "Members",
+    actions: [
+      { id: "view",    name: "View / List", code: "pending_approvals_view" },
+      { id: "approve", name: "Approve",     code: "pending_approvals_approve" },
+      { id: "reject",  name: "Reject",      code: "pending_approvals_reject" },
+    ],
+  },
+  {
+    id: "pending-guardian-approvals",
+    name: "Pending Parent/Guardian Approvals",
+    category: "Members",
+    actions: [
+      { id: "view",    name: "View / List", code: "pending_guardian_approvals_view" },
+      { id: "approve", name: "Approve",     code: "pending_guardian_approvals_approve" },
+      { id: "reject",  name: "Reject",      code: "pending_guardian_approvals_reject" },
+    ],
+  },
+
+  // ── 4. Karyakrams ────────────────────────────────────────────
   {
     id: "events",
     name: "Karyakrams",
+    category: "Karyakrams",
     actions: [
       { id: "view",    name: "View / List",            code: "events_view" },
-      { id: "add",     name: "Create Karyakram",           code: "events_add" },
-      { id: "edit",    name: "Edit Karyakram",             code: "events_edit" },
-      { id: "delete",  name: "Delete Karyakram",           code: "events_delete" },
-      { id: "cancel",  name: "Cancel Karyakram",           code: "events_cancel" },
+      { id: "add",     name: "Create Karyakram",       code: "events_add" },
+      { id: "edit",    name: "Edit Karyakram",         code: "events_edit" },
+      { id: "delete",  name: "Delete Karyakram",       code: "events_delete" },
+      { id: "cancel",  name: "Cancel Karyakram",       code: "events_cancel" },
       { id: "export",  name: "Export CSV",             code: "events_export" },
     ],
   },
-  // 5. Suchana (Announcements)
+
+  // ── 5. Suchana ───────────────────────────────────────────────
   {
     id: "announcements",
     name: "Suchana",
+    category: "Suchana",
     actions: [
       { id: "view",   name: "View / List",             code: "announcements_view" },
       { id: "add",    name: "Create Suchana",          code: "announcements_add" },
@@ -88,10 +134,12 @@ export const availableModules: ModulePermission[] = [
       { id: "delete", name: "Delete Suchana",          code: "announcements_delete" },
     ],
   },
-  // 6. Attendance
+
+  // ── 6. Shakha ────────────────────────────────────────────────
   {
     id: "attendance",
-    name: "Attendance",
+    name: "Sankhya",
+    category: "Shakha",
     actions: [
       { id: "view",     name: "View / List",           code: "attendance_view" },
       { id: "view_log", name: "View Attendance Log",   code: "attendance_view_log" },
@@ -100,92 +148,187 @@ export const availableModules: ModulePermission[] = [
       { id: "delete",   name: "Delete Shakha",         code: "attendance_delete" },
     ],
   },
-  // 7. Pending Karyawaha Approvals
   {
-    id: "pending-approvals",
-    name: "Pending Karyawaha Approvals",
+    id: "karyakartas",
+    name: "Responsibilities & Roles",
+    category: "Shakha",
     actions: [
-      { id: "view",    name: "View / List", code: "pending_approvals_view" },
-      { id: "approve", name: "Approve",     code: "pending_approvals_approve" },
-      { id: "reject",  name: "Reject",      code: "pending_approvals_reject" },
+      { id: "view",   name: "View / List",            code: "karyakartas_view" },
+      { id: "assign", name: "Assign Responsibility",  code: "karyakartas_assign" },
     ],
   },
-  // 7b. Pending Parent/Guardian Approvals
   {
-    id: "pending-guardian-approvals",
-    name: "Pending Parent/Guardian Approvals",
+    id: "compliance",
+    name: "Compliance",
+    category: "Shakha",
     actions: [
-      { id: "view",    name: "View / List", code: "pending_guardian_approvals_view" },
-      { id: "approve", name: "Approve",     code: "pending_guardian_approvals_approve" },
-      { id: "reject",  name: "Reject",      code: "pending_guardian_approvals_reject" },
+      { id: "view", name: "View / List", code: "compliance_view" },
     ],
   },
-  // 7c. Guru Puja Report
-  {
-    id: "guru-puja-report",
-    name: "Guru Puja Report",
-    actions: [
-      { id: "view",   name: "View / List", code: "guru_puja_report_view" },
-      { id: "export", name: "Export CSV",  code: "guru_puja_report_export" },
-    ],
-  },
-  // 7d. First Aid Incidents
   {
     id: "first-aid-incidents",
     name: "First Aid Incidents",
+    category: "Shakha",
     actions: [
       { id: "view", name: "View / List",       code: "first_aid_incidents_view" },
       { id: "add",  name: "Record Incident",   code: "first_aid_incidents_add" },
       { id: "edit", name: "Edit Incident",     code: "first_aid_incidents_edit" },
     ],
   },
-  // 7e. Compliance
   {
-    id: "compliance",
-    name: "Compliance",
+    id: "guru-puja-report",
+    name: "Guru Puja Report",
+    category: "Shakha",
     actions: [
-      { id: "view", name: "View / List", code: "compliance_view" },
+      { id: "view",   name: "View / List", code: "guru_puja_report_view" },
+      { id: "export", name: "Export CSV",  code: "guru_puja_report_export" },
     ],
   },
-  // 7f. Responsibilities & Roles (Karyakartas)
   {
-    id: "karyakartas",
-    name: "Responsibilities & Roles",
+    id: "shakha-dakshina",
+    name: "Shakha Dakshina",
+    category: "Shakha",
     actions: [
-      { id: "view",   name: "View / List",            code: "karyakartas_view" },
-      { id: "assign", name: "Assign Responsibility",  code: "karyakartas_assign" },
+      { id: "view",   name: "View / List", code: "shakha_dakshina_view" },
+      { id: "export", name: "Export CSV",  code: "shakha_dakshina_export" },
     ],
   },
-  // 9. Reports
+
+  // ── 7. Dakshina ──────────────────────────────────────────────
   {
-    id: "reports",
-    name: "Reports",
+    id: "my-donations",
+    name: "My Dakshina",
+    category: "Dakshina",
     actions: [
-      { id: "members_view",      name: "View Members Report",                code: "reports_members_view" },
-      { id: "members_export",    name: "Export Members Report",              code: "reports_members_export" },
-      { id: "events_view",       name: "View Karyakram Report",              code: "reports_events_view" },
-      { id: "events_export",     name: "Export Karyakram Report",            code: "reports_events_export" },
-      { id: "attendance_view",   name: "View Attendance Report",             code: "reports_attendance_view" },
-      { id: "attendance_export", name: "Export Attendance Report",           code: "reports_attendance_export" },
-      { id: "donations_view",    name: "View Nidhi Report",                  code: "reports_donations_view" },
-      { id: "donations_export",  name: "Export Nidhi Report",                code: "reports_donations_export" },
-      { id: "refunds_view",      name: "View Refunds Report",                code: "reports_refunds_view" },
-      { id: "refunds_export",    name: "Export Refunds Report",              code: "reports_refunds_export" },
-      { id: "karyakarta_view",   name: "View Karyakarta Report",             code: "reports_karyakarta_view" },
-      { id: "ayu_shreni_view",   name: "View Ayu Shreni Directory",          code: "reports_ayu_shreni_view" },
-      { id: "ayu_shreni_export", name: "Export Ayu Shreni Directory",        code: "reports_ayu_shreni_export" },
-      { id: "myhss_role_view",   name: "View MyHSS Role Report",             code: "reports_myhss_role_view" },
-      { id: "myhss_role_export", name: "Export MyHSS Role Report",           code: "reports_myhss_role_export" },
-      { id: "shakha_directory_view",   name: "View Shakha Directory",        code: "reports_shakha_directory_view" },
-      { id: "shakha_directory_export", name: "Export Shakha Directory",      code: "reports_shakha_directory_export" },
-      { id: "karyakarta_directory_view",   name: "View Karyakarta Directory",   code: "reports_karyakarta_directory_view" },
-      { id: "karyakarta_directory_export", name: "Export Karyakarta Directory", code: "reports_karyakarta_directory_export" },
+      { id: "view", name: "View My Donations", code: "my_donations_view" },
     ],
   },
-  // 10. Roles & Permissions (under Settings in nav)
+
+  // ── 8. Reports ───────────────────────────────────────────────
+  {
+    id: "report-members",
+    name: "Members Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_members_view" },
+      { id: "export", name: "Export CSV",    code: "reports_members_export" },
+    ],
+  },
+  {
+    id: "report-events",
+    name: "Karyakram Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_events_view" },
+      { id: "export", name: "Export CSV",    code: "reports_events_export" },
+    ],
+  },
+  {
+    id: "report-donations",
+    name: "Nidhi Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_donations_view" },
+      { id: "export", name: "Export CSV",    code: "reports_donations_export" },
+    ],
+  },
+  {
+    id: "report-attendance",
+    name: "Sankhya Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_attendance_view" },
+      { id: "export", name: "Export CSV",    code: "reports_attendance_export" },
+    ],
+  },
+  {
+    id: "report-refunds",
+    name: "Refund Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_refunds_view" },
+      { id: "export", name: "Export CSV",    code: "reports_refunds_export" },
+    ],
+  },
+  {
+    id: "report-karyakarta",
+    name: "Karyakarta Report",
+    category: "Reports",
+    actions: [
+      { id: "view", name: "View Report", code: "reports_karyakarta_view" },
+    ],
+  },
+  {
+    id: "report-myhss-role",
+    name: "MyHSS Role Report",
+    category: "Reports",
+    actions: [
+      { id: "view",   name: "View Report",   code: "reports_myhss_role_view" },
+      { id: "export", name: "Export CSV",    code: "reports_myhss_role_export" },
+    ],
+  },
+
+  // ── 9. Directory ─────────────────────────────────────────────
+  {
+    id: "report-shakha-directory",
+    name: "Shakha Directory",
+    category: "Directory",
+    actions: [
+      { id: "view",   name: "View Directory",   code: "reports_shakha_directory_view" },
+      { id: "export", name: "Export CSV",       code: "reports_shakha_directory_export" },
+    ],
+  },
+  {
+    id: "report-karyakarta-directory",
+    name: "Karyakarta Directory",
+    category: "Directory",
+    actions: [
+      { id: "view",   name: "View Directory",   code: "reports_karyakarta_directory_view" },
+      { id: "export", name: "Export CSV",       code: "reports_karyakarta_directory_export" },
+    ],
+  },
+  {
+    id: "report-ayu-shreni",
+    name: "Ayu Shreni Directory",
+    category: "Directory",
+    actions: [
+      { id: "view",   name: "View Directory",   code: "reports_ayu_shreni_view" },
+      { id: "export", name: "Export CSV",       code: "reports_ayu_shreni_export" },
+    ],
+  },
+
+  // ── 10. Settings ─────────────────────────────────────────────
+  {
+    id: "settings",
+    name: "System Settings",
+    category: "Settings",
+    actions: [
+      { id: "view",   name: "View Settings",           code: "settings_view" },
+      { id: "edit",   name: "Edit Settings",           code: "settings_edit" },
+    ],
+  },
+  {
+    id: "static-pages",
+    name: "Static Pages",
+    category: "Settings",
+    actions: [
+      { id: "view",   name: "View Static Pages",       code: "static_pages_view" },
+      { id: "edit",   name: "Edit Static Pages",       code: "static_pages_edit" },
+    ],
+  },
+  {
+    id: "email-templates",
+    name: "Email Templates",
+    category: "Settings",
+    actions: [
+      { id: "view",   name: "View Email Templates",    code: "email_templates_view" },
+      { id: "edit",   name: "Edit Email Templates",    code: "email_templates_edit" },
+    ],
+  },
   {
     id: "rbac",
-    name: "Roles & Permissions (RBAC)",
+    name: "Roles & Permissions",
+    category: "Settings",
     actions: [
       { id: "view",   name: "View Roles",              code: "rbac_view" },
       { id: "edit",   name: "Edit Permissions",        code: "rbac_edit" },
@@ -193,49 +336,16 @@ export const availableModules: ModulePermission[] = [
       { id: "delete", name: "Active / De-active Role", code: "rbac_delete" },
     ],
   },
-  // 11. Settings
-  {
-    id: "settings",
-    name: "Settings",
-    actions: [
-      { id: "view",   name: "View Settings",           code: "settings_view" },
-      { id: "edit",   name: "Edit Settings",           code: "settings_edit" },
-    ],
-  },
-  // 12. Audit Logging — one action per log tab, so e.g. Login Logs (IPs/devices)
-  // can be granted without also exposing Email Logs content, or vice versa.
+
+  // ── 11. Audit Logging ────────────────────────────────────────
   {
     id: "audit-logs",
     name: "Audit Logging",
+    category: "Audit Logging",
     actions: [
       { id: "login_view", name: "View Login Logs", code: "audit_login_view" },
       { id: "audit_view", name: "View Audit Logs",  code: "audit_audit_view" },
       { id: "email_view", name: "View Email Logs",  code: "audit_email_view" },
-    ],
-  },
-  // 13. My Donations (member-facing)
-  {
-    id: "my-donations",
-    name: "My Donations",
-    actions: [
-      { id: "view", name: "View My Donations", code: "my_donations_view" },
-    ],
-  },
-  // 14. Shakha Dakshina (admin-facing — Shakha Admin and above)
-  {
-    id: "shakha-dakshina",
-    name: "Shakha Dakshina",
-    actions: [
-      { id: "view",   name: "View / List", code: "shakha_dakshina_view" },
-      { id: "export", name: "Export CSV",  code: "shakha_dakshina_export" },
-    ],
-  },
-  // 15. Non-Member Accounts (Super Admin only)
-  {
-    id: "non-member-accounts",
-    name: "Non-Member Accounts",
-    actions: [
-      { id: "view", name: "View / List", code: "non_member_accounts_view" },
     ],
   },
 ];
@@ -523,33 +633,110 @@ export const ROLE_DISPLAY_LABELS: Record<string, string> = {
 // Maps role permission keys → sidebar nav group IDs
 const PERMISSION_TO_NAV_IDS: Record<string, string[]> = {
   dashboard:     ['dashboard'],
+  masters:       ['masters-group'],
   members:       ['members-management-group'],
+  'emergency-details': ['members-management-group'],
+  'non-member-accounts': ['members-management-group'],
+  'pending-approvals': ['members-management-group'],
+  'pending-guardian-approvals': ['members-management-group'],
   events:        ['event-management'],
   announcements: ['announcements'],
   attendance:    ['attendance-group'],
-  reports:       ['reports-group', 'directory-group'],
-  masters:       ['masters-group'],
-  rbac:          ['role-management'],
-  settings:      ['settings-group'],
-  'audit-logs':  ['audit-logging'],
+  karyakartas:   ['attendance-group'],
+  compliance:    ['attendance-group'],
+  'first-aid-incidents': ['attendance-group'],
+  'guru-puja-report': ['attendance-group'],
+  'shakha-dakshina': ['attendance-group'],
   'my-donations': ['my-donations'],
-  'shakha-dakshina': ['my-donations'],
+  reports:       ['reports-group', 'directory-group'],
+  'report-members': ['reports-group'],
+  'report-events': ['reports-group'],
+  'report-donations': ['reports-group'],
+  'report-attendance': ['reports-group'],
+  'report-refunds': ['reports-group'],
+  'report-karyakarta': ['reports-group'],
+  'report-myhss-role': ['reports-group'],
+  'report-shakha-directory': ['directory-group'],
+  'report-karyakarta-directory': ['directory-group'],
+  'report-ayu-shreni': ['directory-group'],
+  settings:      ['settings-group'],
+  'static-pages': ['settings-group'],
+  'email-templates': ['settings-group'],
+  rbac:          ['role-management'],
+  'audit-logs':  ['audit-logging'],
 };
+
+export const REPORT_ACTION_MAP: Record<string, { view: string; export?: string }> = {
+  'report-members':              { view: 'members_view', export: 'members_export' },
+  'report-events':               { view: 'events_view', export: 'events_export' },
+  'report-donations':            { view: 'donations_view', export: 'donations_export' },
+  'report-attendance':           { view: 'attendance_view', export: 'attendance_export' },
+  'report-refunds':              { view: 'refunds_view', export: 'refunds_export' },
+  'report-karyakarta':           { view: 'karyakarta_view' },
+  'report-myhss-role':           { view: 'myhss_role_view', export: 'myhss_role_export' },
+  'report-shakha-directory':     { view: 'shakha_directory_view', export: 'shakha_directory_export' },
+  'report-karyakarta-directory': { view: 'karyakarta_directory_view', export: 'karyakarta_directory_export' },
+  'report-ayu-shreni':           { view: 'ayu_shreni_view', export: 'ayu_shreni_export' },
+};
+
+/**
+ * Resolves permissions for any module, seamlessly bridging sub-modules
+ * (e.g. report-members, emergency-details, static-pages) with role permissions.
+ */
+export function getRoleModulePermissions(role: Role, moduleId: string): string[] {
+  if (role.permissions?.[moduleId]?.length) {
+    return role.permissions[moduleId];
+  }
+  // 1. Check reports sub-modules
+  const rMap = REPORT_ACTION_MAP[moduleId];
+  if (rMap) {
+    const list: string[] = [];
+    const repPerms = role.permissions?.['reports'] ?? [];
+    if (repPerms.includes(rMap.view)) list.push('view');
+    if (rMap.export && repPerms.includes(rMap.export)) list.push('export');
+    return list;
+  }
+  // 2. Emergency details fallback to members view
+  if (moduleId === 'emergency-details') {
+    return (role.permissions?.['members'] ?? []).includes('view') ? ['view'] : [];
+  }
+  // 3. Static pages fallback to settings
+  if (moduleId === 'static-pages') {
+    const s = role.permissions?.['settings'] ?? [];
+    const list: string[] = [];
+    if (s.includes('view')) list.push('view');
+    if (s.includes('edit')) list.push('edit');
+    return list;
+  }
+  // 4. Email templates fallback to settings
+  if (moduleId === 'email-templates') {
+    const s = role.permissions?.['settings'] ?? [];
+    const list: string[] = [];
+    if (s.includes('view')) list.push('view');
+    if (s.includes('edit')) list.push('edit');
+    return list;
+  }
+  return role.permissions?.[moduleId] ?? [];
+}
 
 /**
  * Returns the set of top-level nav group IDs visible for a given role name.
  * A module is visible if the role has at least one permission action for it.
  */
-/**
- * Generic action-level permission check — e.g. hasPermission('Reporting User',
- * 'reports', 'members_view') for the "Members Report" nav item / page. Reports
- * each have their own view/export action in the "reports" module (see above),
- * so this is how each report gets its own independent RBAC control rather than
- * the whole Reports section being shown or hidden as one block.
- */
 export function hasPermission(roleName: string, moduleId: string, actionId: string): boolean {
   const role = mockRoles.find(r => r.name === roleName);
-  return (role?.permissions?.[moduleId] ?? []).includes(actionId);
+  if (!role) return false;
+  if ((role?.permissions?.[moduleId] ?? []).includes(actionId)) return true;
+  const mapped = getRoleModulePermissions(role, moduleId);
+  if (mapped.includes(actionId)) return true;
+  // Fallback for checking parent "reports" module with specific actionId
+  if (moduleId === 'reports') {
+    for (const [subId, map] of Object.entries(REPORT_ACTION_MAP)) {
+      if (actionId === map.view && (role.permissions?.[subId] ?? []).includes('view')) return true;
+      if (map.export && actionId === map.export && (role.permissions?.[subId] ?? []).includes('export')) return true;
+    }
+  }
+  return false;
 }
 
 export function getPermittedNavIds(roleName: string): Set<string> {

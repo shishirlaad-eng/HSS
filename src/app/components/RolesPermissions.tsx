@@ -5,12 +5,14 @@
 import { useState } from 'react';
 import RoleManagement from './RoleManagement';
 import PermissionLookup from './PermissionLookup';
+import ModulePermissionLookup from './ModulePermissionLookup';
 
-type RolesTab = 'roles' | 'lookup';
+type RolesTab = 'roles' | 'lookup' | 'module-lookup';
 
 const TABS: { id: RolesTab; label: string }[] = [
-  { id: 'lookup', label: 'Permissions' },
-  { id: 'roles',  label: 'Roles'       },
+  { id: 'lookup',        label: 'Permissions' },
+  { id: 'module-lookup', label: 'Module Permissions' },
+  { id: 'roles',         label: 'Roles' },
 ];
 
 export default function RolesPermissions() {
@@ -43,6 +45,7 @@ export default function RolesPermissions() {
 
       {tab === 'roles' && <RoleManagement onEditingChange={setRoleDetailOpen} />}
       {tab === 'lookup' && <PermissionLookup />}
+      {tab === 'module-lookup' && <ModulePermissionLookup />}
     </div>
   );
 }
