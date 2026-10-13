@@ -14,10 +14,8 @@ export default function RolePrivilegesModal({
   role,
   onClose,
   onSaved,
-  initialModuleId,
 }: {
   role: Role;
-  initialModuleId?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -26,7 +24,7 @@ export default function RolePrivilegesModal({
     Object.entries(role.permissions ?? {}).forEach(([k, v]) => { copy[k] = [...v]; });
     return copy;
   });
-  const [activeModuleId, setActiveModuleId] = useState(initialModuleId ?? availableModules[0]?.id ?? '');
+  const [activeModuleId, setActiveModuleId] = useState(availableModules[0]?.id ?? '');
 
   const activeModule = availableModules.find(m => m.id === activeModuleId);
   const activePerms = perms[activeModuleId] ?? [];
