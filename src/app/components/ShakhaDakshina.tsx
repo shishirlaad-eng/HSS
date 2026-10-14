@@ -6,6 +6,7 @@
 import { useMemo, useState } from 'react';
 import { Download, HandCoins, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { mockMemberDonations, mockRecurringDakshina } from '../../mockAPI/donationsData';
 import { mockMembers } from '../../mockAPI/membersData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -29,6 +30,9 @@ export default function ShakhaDakshina() {
   const [tab, setTab] = useState<Tab>('one-off');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCentre, setFilterCentre] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
 
   // Join each donation record to its member's full location, since
   // MemberDonationRecord / RecurringDakshinaRecord only carry activityCentre —
@@ -60,9 +64,11 @@ export default function ShakhaDakshina() {
         d.memberId.toLowerCase().includes(q) ||
         d.activityCentre.toLowerCase().includes(q);
       const matchesCentre = !filterCentre || d.activityCentre === filterCentre;
-      return matchesSearch && matchesCentre;
+      const dateStr = d.datetime.split('T')[0]; // extract YYYY-MM-DD from datetime
+      const matchesDate = inDateRange(dateStr, dateStart, dateEnd);
+      return matchesSearch && matchesCentre && matchesDate;
     }).sort((a, b) => b.datetime.localeCompare(a.datetime));
-  }, [scopedOneOff, searchQuery, filterCentre]);
+  }, [scopedOneOff, searchQuery, filterCentre, dateStart, dateEnd]);
 
   const filteredRecurring = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -73,15 +79,16 @@ export default function ShakhaDakshina() {
         d.memberId.toLowerCase().includes(q) ||
         d.activityCentre.toLowerCase().includes(q);
       const matchesCentre = !filterCentre || d.activityCentre === filterCentre;
-      return matchesSearch && matchesCentre;
+      const matchesDate = inDateRange(d.firstPaymentDate, dateStart, dateEnd);
+      return matchesSearch && matchesCentre && matchesDate;
     }).sort((a, b) => b.firstPaymentDate.localeCompare(a.firstPaymentDate));
-  }, [scopedRecurring, searchQuery, filterCentre]);
+  }, [scopedRecurring, searchQuery, filterCentre, dateStart, dateEnd]);
 
   const oneOffTotal = filteredOneOff.reduce((sum, d) => sum + d.amount, 0);
   const recurringActiveTotal = filteredRecurring.filter(d => d.status === 'active').reduce((sum, d) => sum + d.amount, 0);
 
-  const hasFilter = searchQuery.length > 0 || filterCentre.length > 0;
-  const clearFilters = () => { setSearchQuery(''); setFilterCentre(''); };
+  const hasFilter = searchQuery.length > 0 || filterCentre.length > 0 || !!dateStart;
+  const clearFilters = () => { setSearchQuery(''); setFilterCentre(''); setDateStart(''); setDateEnd(''); setDateLabel(''); };
 
   const handleExport = () => {
     const rows: string[][] = tab === 'one-off'
@@ -174,6 +181,14 @@ export default function ShakhaDakshina() {
               {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
+          <ReportDateFilter
+            start={dateStart}
+            end={dateEnd}
+            label={dateLabel}
+            onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+            title="Payment Date Range"
+            emptyLabel="Payment Date"
+          />
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
               <X className="w-3.5 h-3.5" /> Clear

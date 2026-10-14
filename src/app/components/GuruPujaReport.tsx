@@ -28,21 +28,20 @@ import {
 } from '../../mockAPI/guruPujaReportData';
 import { useRoleScope } from '../contexts/RoleScopeContext';
 import { filterByScope, getScopedFilterOptions } from '../../mockAPI/roleScope';
+import { useReportLocationFilters } from './useReportLocationFilters';
 import { formatDate as fmtDate } from '../../utils/formatDate';
 import { toast } from 'sonner';
 
 const AGE_GROUP_ORDER: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
 
-// Age-category definitions specific to the Guru Puja Report — deliberately local
-// to this popup rather than the app-wide AGE_GROUP_LABELS, since these ranges
-// (with the 31 Aug / 1 Sept cut-off) are Guru Puja-specific reference data.
-const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; range: string }> = {
-  shishu:  { name: 'Shishu',    range: '0 years old to 5 years old' },
-  bal:     { name: 'Bal(ika)',  range: '6 years to 12 years old (by 31st August of that year)' },
-  kishor:  { name: 'Kishor(i)', range: '12 years old (from 1st Sept of that year) to 16 years old (by 31st August of that year)' },
-  tarun:   { name: 'Tarun(i)',  range: '16 years old (from 1st Sept of that year) to 29 years old' },
-  yuva:    { name: 'Yuva(ti)',  range: '30 years old to 59 years old' },
-  jyestha: { name: 'Jyestha(a)', range: '60 years and older' },
+// Age-category definitions specific to the Guru Puja Report — single-line labels with bracketed years
+const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; fullLabel: string }> = {
+  shishu:  { name: 'Shishu',     fullLabel: 'Shishu (0 - 5 years)' },
+  bal:     { name: 'Bal(ika)',   fullLabel: 'Bal(ika) (6 - 12 years)' },
+  kishor:  { name: 'Kishor(i)',  fullLabel: 'Kishor(i) (12 - 16 years)' },
+  tarun:   { name: 'Tarun(i)',   fullLabel: 'Tarun(i) (16 - 29 years)' },
+  yuva:    { name: 'Yuva(ti)',   fullLabel: 'Yuva(ti) (30 - 59 years)' },
+  jyestha: { name: 'Jyestha(a)', fullLabel: 'Jyestha(a) (60 years and older)' },
 };
 
 // Attendee-count columns on the listing. `recordKey` is the age category stored on
@@ -195,8 +194,7 @@ function GuruPujaReportModal({
                 return (
                   <div key={g} className="grid grid-cols-3 gap-3 px-3 py-3 items-start">
                     <div className="pt-2">
-                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{GURU_PUJA_AGE_GROUP_INFO[g].name}</p>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{GURU_PUJA_AGE_GROUP_INFO[g].range}</p>
+                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{GURU_PUJA_AGE_GROUP_INFO[g].fullLabel}</p>
                     </div>
                     {isEditing ? (
                       <>
@@ -316,7 +314,14 @@ function GuruPujaReportModal({
 // ── Main component ────────────────────────────────────────────
 
 export default function GuruPujaReport() {
-  const { scope } = useRoleScope();
+  const {
+    scope,
+    region: filterRegion, town: filterTown, centre: filterCentre,
+    setRegion: setFilterRegion, setTown: setFilterTown, setCentre: setFilterCentre,
+    regionOptions, townOptions, centreOptions,
+    regionLocked, townLocked, centreLocked,
+    regionDisabled, townDisabled, centreDisabled,
+  } = useReportLocationFilters();
   const scopedFilterOptions = getScopedFilterOptions(scope);
 
   const [entries, setEntries] = useState<GuruPujaReportEntry[]>(mockGuruPujaReportEntries);
@@ -329,7 +334,21 @@ export default function GuruPujaReport() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters]);
+  // Sort state — first 5 cols + last col (Report Status) sortable
+  type SortField = 'date' | 'activityCentre' | 'town' | 'region' | 'status' | 'reportStatus';
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, filterRegion, filterTown, filterCentre]);
 
   const scopedSessions = useMemo(
     () => filterByScope(mockSessions, scope).filter(s =>
@@ -348,6 +367,11 @@ export default function GuruPujaReport() {
         s.town.toLowerCase().includes(q) ||
         s.region.toLowerCase().includes(q);
 
+      // Quick location filters
+      if (filterRegion && s.region !== filterRegion) return false;
+      if (filterTown   && s.town   !== filterTown)   return false;
+      if (filterCentre && s.activityCentre !== filterCentre) return false;
+
       const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Vibhag': return f.values.includes(s.region);
@@ -365,9 +389,29 @@ export default function GuruPujaReport() {
           }, true);
       return matchSearch && matchFilters;
     });
-  }, [scopedSessions, searchQuery, filters]);
+  }, [scopedSessions, searchQuery, filters, filterRegion, filterTown, filterCentre]);
 
-  const sorted = useMemo(() => [...filtered].sort((a, b) => b.date.localeCompare(a.date)), [filtered]);
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      let aVal = '';
+      let bVal = '';
+      const entryA = entries.find(e => e.sessionId === a.id);
+      const entryB = entries.find(e => e.sessionId === b.id);
+      switch (sortField) {
+        case 'date':           aVal = a.date;           bVal = b.date;           break;
+        case 'activityCentre': aVal = a.activityCentre; bVal = b.activityCentre; break;
+        case 'town':           aVal = a.town;           bVal = b.town;           break;
+        case 'region':         aVal = a.region;         bVal = b.region;         break;
+        case 'status':         aVal = a.status;         bVal = b.status;         break;
+        case 'reportStatus':
+          aVal = (entryA?.isComplete ? '1' : '0');
+          bVal = (entryB?.isComplete ? '1' : '0');
+          break;
+      }
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filtered, sortField, sortDir, entries]);
 
   const paginated = useMemo(() => {
     if (itemsPerPage === 0) return sorted;
@@ -447,7 +491,14 @@ export default function GuruPujaReport() {
     ...(scope.showCentreFilter ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
   };
 
-  const hasFilters = searchQuery.length > 0 || filters.some(f => f.values.length > 0);
+  const hasFilters = searchQuery.length > 0 || filters.some(f => f.values.length > 0) || !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked));
+  const clearQuickFilters = () => { setFilterRegion(''); setFilterTown(''); setFilterCentre(''); };
+
+  // Sort arrow helper
+  const sortArrow = (field: SortField) => {
+    if (sortField !== field) return <span className="ml-1 text-neutral-300 dark:text-neutral-600">↕</span>;
+    return <span className="ml-1 text-primary-600 dark:text-primary-400">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   return (
     <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950" style={stickyTableStyle}>
@@ -484,6 +535,48 @@ export default function GuruPujaReport() {
               ]}
             />
           </PageHeader>
+
+          {/* Quick location filters */}
+          <div className="flex flex-wrap items-center gap-2 pb-3">
+            <select
+              disabled={regionDisabled}
+              value={filterRegion}
+              onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }}
+              className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]"
+            >
+              <option value="">All Vibhags</option>
+              {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+
+            <select
+              disabled={townDisabled}
+              value={filterTown}
+              onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }}
+              className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]"
+            >
+              <option value="">All Nagars</option>
+              {townOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+
+            <select
+              disabled={centreDisabled}
+              value={filterCentre}
+              onChange={e => setFilterCentre(e.target.value)}
+              className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]"
+            >
+              <option value="">All Shakhas</option>
+              {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            {((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked)) && (
+              <button
+                onClick={clearQuickFilters}
+                className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              >
+                ✕ Clear
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="mt-6 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
@@ -491,9 +584,19 @@ export default function GuruPujaReport() {
             <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                  {['Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status'].map(h => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                      {h}
+                  {([
+                    { label: 'Date',         field: 'date'          },
+                    { label: 'Shakha',       field: 'activityCentre'},
+                    { label: 'Nagar',        field: 'town'          },
+                    { label: 'Vibhag',       field: 'region'        },
+                    { label: 'Shakha Status',field: 'status'        },
+                  ] as { label: string; field: SortField }[]).map(({ label, field }) => (
+                    <th
+                      key={label}
+                      onClick={() => handleSort(field)}
+                      className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      {label}{sortArrow(field)}
                     </th>
                   ))}
                   {ATTENDEE_AGE_COLUMNS.map(c => (
@@ -502,11 +605,14 @@ export default function GuruPujaReport() {
                       <span className="block text-[10px] font-normal text-neutral-400 dark:text-neutral-500">{c.range}</span>
                     </th>
                   ))}
-                  {['Total', 'Attendance', 'Report Status'].map(h => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+                  <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Total</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Attendance</th>
+                  <th
+                    onClick={() => handleSort('reportStatus')}
+                    className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    Report Status{sortArrow('reportStatus')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

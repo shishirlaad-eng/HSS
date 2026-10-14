@@ -34,11 +34,6 @@ export default function PermissionLookup() {
 
   return (
     <div className="p-6">
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Permissions</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">See what a role can do in each module. This view is read-only.</p>
-      </div>
-
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Role</label>
         <select value={roleId} onChange={e => setRoleId(e.target.value)} className={`${selectCls} min-w-[240px]`}>

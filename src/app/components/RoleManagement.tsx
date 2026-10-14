@@ -27,10 +27,10 @@ import {
   Clock,
   FileSpreadsheet,
   FileText,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import {
-  PageHeader,
   SearchBar,
   IconButton,
   ViewModeSwitcher,
@@ -66,6 +66,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [version, setVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filters, setFilters] = useState<any[]>([]);
@@ -110,6 +111,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
     code: '',
     description: '',
     status: 'active' as 'active' | 'inactive',
+    level: '' as string,
   });
   const [activeModuleId, setActiveModuleId] = useState<string>(availableModules?.[0]?.id || '');
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
@@ -122,6 +124,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
         code: selectedRole.code,
         description: selectedRole.description,
         status: selectedRole.status,
+        level: (selectedRole as any).level ?? '',
       });
       setRolePermissions(selectedRole.permissions);
     } else {
@@ -130,6 +133,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
         code: '',
         description: '',
         status: 'active',
+        level: '',
       });
       setRolePermissions({});
     }
@@ -190,6 +194,11 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
 
   const handleDelete = (role: Role) => {
     if (confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
+      const idx = mockRoles.findIndex(r => r.id === role.id);
+      if (idx !== -1) {
+        mockRoles.splice(idx, 1);
+      }
+      setVersion(v => v + 1);
       toast.success(`Role "${role.name}" deleted successfully.`);
     }
   };
@@ -198,8 +207,9 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   const roleNameRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
+    const trimmedName = formData.name.trim();
     const errs = {
-      name: !formData.name.trim(),
+      name: !trimmedName,
     };
     if (errs.name) {
       setRoleErrors(errs);
@@ -210,6 +220,29 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
       return;
     }
     setRoleErrors({});
+
+    if (selectedRole?.id) {
+      const existing = mockRoles.find(r => r.id === selectedRole.id);
+      if (existing) {
+        existing.name = trimmedName;
+        existing.description = formData.description;
+        existing.status = formData.status;
+        existing.lastUpdated = new Date().toISOString();
+      }
+    } else {
+      const newRole: Role = {
+        id: `role_${Date.now()}`,
+        name: trimmedName,
+        code: trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+        description: formData.description,
+        status: formData.status,
+        permissions: {},
+        lastUpdated: new Date().toISOString(),
+      };
+      mockRoles.unshift(newRole);
+    }
+
+    setVersion(v => v + 1);
     toast.success(`Role ${selectedRole?.id ? 'updated' : 'created'} successfully.`);
     setIsEditing(false);
   };
@@ -255,7 +288,7 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
         role.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     });
-  }, [searchQuery]);
+  }, [searchQuery, version]);
 
   const sortedRoles = useMemo(() => {
     return [...filteredRoles].sort((a, b) => {
@@ -371,52 +404,52 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   // ========== LISTING VIEW ==========
   const renderListing = () => (
     <div className="space-y-6">
-      {/* Header */}
-      <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-1">
-      <PageHeader
-        title="Roles and Responsibility"
-      >
-        <div className="relative" ref={columnAnchorRef}>
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onAdvancedSearch={() => setShowAdvancedSearch(true)}
-            onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
-            placeholder="Search roles..."
-          />
-          <ColumnVisibilityPanel
-            isOpen={showColumnPanel}
-            onClose={() => setShowColumnPanel(false)}
-            columns={roleColumns}
-            visibleColumns={visibleColumns}
-            onToggleColumn={toggleColumn}
-            anchorRef={columnAnchorRef}
-          />
+      {/* Header Toolbar */}
+      <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-neutral-50 dark:bg-neutral-950 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative" ref={columnAnchorRef}>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onAdvancedSearch={() => setShowAdvancedSearch(true)}
+              onToggleColumns={viewMode === 'table' ? () => setShowColumnPanel(!showColumnPanel) : undefined}
+              placeholder="Search roles..."
+            />
+            <ColumnVisibilityPanel
+              isOpen={showColumnPanel}
+              onClose={() => setShowColumnPanel(false)}
+              columns={roleColumns}
+              visibleColumns={visibleColumns}
+              onToggleColumn={toggleColumn}
+              anchorRef={columnAnchorRef}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {rp.canAdd && (
+              <PrimaryButton icon={Plus} onClick={handleCreate}>
+                Add Role
+              </PrimaryButton>
+            )}
+
+            <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
+            <IconButton icon={RefreshCw} onClick={() => setVersion(v => v + 1)} title="Refresh" />
+
+            <IconButton
+              icon={MoreVertical}
+              title="More options"
+              menuItems={[
+                { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
+                { icon: FileText, label: 'Export as PDF', onClick: () => handleExport('pdf') },
+              ]}
+            />
+            
+            <ViewModeSwitcher
+              currentMode={viewMode}
+              onChange={setViewMode}
+            />
+          </div>
         </div>
-
-        {rp.canAdd && (
-          <PrimaryButton icon={Plus} onClick={handleCreate}>
-            Add Role
-          </PrimaryButton>
-        )}
-
-        <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
-        <IconButton icon={RefreshCw} onClick={() => {}} title="Refresh" />
-
-        <IconButton
-          icon={MoreVertical}
-          title="More options"
-          menuItems={[
-            { icon: FileSpreadsheet, label: 'Export as Excel', onClick: () => handleExport('excel') },
-            { icon: FileText, label: 'Export as PDF', onClick: () => handleExport('pdf') },
-          ]}
-        />
-        
-        <ViewModeSwitcher
-          currentMode={viewMode}
-          onChange={setViewMode}
-        />
-      </PageHeader>
       </div>
 
       {/* SUMMARY WIDGETS */}
@@ -609,66 +642,95 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
     </div>
   );
 
-  // ========== FORM VIEW (SPLIT LAYOUT) ==========
-  const renderForm = () => {
+  // ========== ROLE MODAL (ADD / EDIT POP-UP) ==========
+  const renderRoleModal = () => {
+    const isNew = !selectedRole?.id;
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title={selectedRole?.id ? 'Edit Role' : 'Create Role'}
-          breadcrumbs={[
-            { label: 'Role Management', href: '#', onClick: handleCancel },
-            { label: selectedRole?.id ? 'Edit Role' : 'Create Role', current: true },
-          ]}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={handleCancel}>
+        <div
+          className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]"
+          onClick={e => e.stopPropagation()}
         >
-          <SecondaryButton onClick={handleCancel}>Cancel</SecondaryButton>
-          <PrimaryButton onClick={handleSave}>Save Role</PrimaryButton>
-        </PageHeader>
-
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Panel - Role Information */}
-          <div className="w-full max-w-xl space-y-6">
-            <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
-              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white mb-6">Role Information</h3>
-              
-              <div className="space-y-4">
-                <FormField>
-                  <FormLabel required>Role Name</FormLabel>
-                  <FormInput
-                    ref={roleNameRef}
-                    placeholder="Enter role name"
-                    value={formData.name}
-                    onChange={e => { setFormData({ ...formData, name: e.target.value }); setRoleErrors(prev => ({ ...prev, name: false })); }}
-                    className={roleErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
-                  />
-                  <ErrorText>{roleErrors.name && 'Role name is required.'}</ErrorText>
-                </FormField>
-
-                <FormField>
-                  <FormLabel>Description</FormLabel>
-                  <textarea
-                    className="w-full px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all min-h-[100px]"
-                    placeholder="Describe the responsibilities of this role"
-                    value={formData.description}
-                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </FormField>
-
-                <FormField>
-                  <FormLabel>Status</FormLabel>
-                  <StatusSlider
-                    value={formData.status}
-                    onChange={val => setFormData({ ...formData, status: val })}
-                  />
-                </FormField>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-800 flex gap-3">
-                <PrimaryButton className="flex-1" onClick={handleSave}>Save Changes</PrimaryButton>
-                <SecondaryButton className="flex-1" onClick={handleCancel}>Cancel</SecondaryButton>
-              </div>
+          {/* Header */}
+          <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+            <div>
+              <h3 className="text-[19px] font-bold text-neutral-900 dark:text-white">
+                {isNew ? 'Add Role' : `Edit Role — ${selectedRole.name}`}
+              </h3>
+              <p className="text-xs text-neutral-500">
+                {isNew ? 'Create a new role for MyHSS' : 'Update role details and status'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCancel}
+                aria-label="Close"
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
+          {/* Form Content */}
+          <div className="p-6 overflow-y-auto space-y-4">
+            <FormField>
+              <FormLabel required>Role Name</FormLabel>
+              <FormInput
+                ref={roleNameRef}
+                placeholder="Enter role name"
+                value={formData.name}
+                onChange={e => {
+                  setFormData({ ...formData, name: e.target.value });
+                  setRoleErrors(prev => ({ ...prev, name: false }));
+                }}
+                className={roleErrors.name ? 'border-error-400 dark:border-error-600 focus:ring-error-400/30' : ''}
+              />
+              <ErrorText>{roleErrors.name && 'Role name is required.'}</ErrorText>
+            </FormField>
+
+            <FormField>
+              <FormLabel>Level</FormLabel>
+              <select
+                value={formData.level}
+                onChange={e => setFormData({ ...formData, level: e.target.value })}
+                className="w-full h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none"
+              >
+                <option value="">Select level…</option>
+                <option value="Shakha">Shakha</option>
+                <option value="Nagar">Nagar</option>
+                <option value="Vibhag">Vibhag</option>
+                <option value="National">National</option>
+                <option value="Super Admin">Super Admin</option>
+              </select>
+            </FormField>
+
+            <FormField>
+              <FormLabel>Description</FormLabel>
+              <textarea
+                className="w-full px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all min-h-[100px]"
+                placeholder="Describe the responsibilities of this role"
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+              />
+            </FormField>
+
+            <FormField>
+              <FormLabel>Status</FormLabel>
+              <StatusSlider
+                value={formData.status}
+                onChange={val => setFormData({ ...formData, status: val })}
+              />
+            </FormField>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 flex justify-end gap-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+            <SecondaryButton onClick={handleCancel}>Cancel</SecondaryButton>
+            <PrimaryButton onClick={handleSave}>
+              {isNew ? 'Create Role' : 'Save Changes'}
+            </PrimaryButton>
+          </div>
         </div>
       </div>
     );
@@ -677,7 +739,8 @@ export default function RoleManagement({ onEditingChange }: { onEditingChange?: 
   return (
     <div className="sticky-listing-table p-6 bg-transparent dark:bg-neutral-950 min-h-screen" style={stickyTableStyle}>
       <div className="max-w-full mx-auto">
-        {isEditing ? renderForm() : renderListing()}
+        {renderListing()}
+        {isEditing && renderRoleModal()}
       </div>
     </div>
   );

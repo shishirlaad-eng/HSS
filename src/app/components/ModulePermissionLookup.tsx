@@ -55,14 +55,6 @@ export default function ModulePermissionLookup() {
 
   return (
     <div className="p-6">
-      {/* Title & Description */}
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Module Permissions</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          Select a module to view permissions assigned to each role.
-        </p>
-      </div>
-
       {/* Filter and selector toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="flex items-center gap-2">
