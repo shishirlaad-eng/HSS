@@ -197,26 +197,36 @@ export default function ShakhaDakshina() {
         </div>
 
         {tab === 'one-off' ? (
-          <div className="mt-4 bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-            <div className="grid grid-cols-5 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Member</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Member ID</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Shakha</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Date &amp; Time</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right">Amount</span>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {filteredOneOff.length > 0 ? filteredOneOff.map(d => (
-                <div key={d.id} className="grid grid-cols-5 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors items-center">
-                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{memberFor(d.memberId)?.name ?? d.memberId}</span>
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{d.memberId}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{d.activityCentre}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{sharedFormatDateTime(d.datetime)}</span>
-                  <span className="text-sm font-semibold text-success-600 dark:text-success-400 text-right">{money(d.amount)}</span>
-                </div>
-              )) : (
-                <div className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No one-off Dakshina records found.</div>
-              )}
+          <div className="mt-4 bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-max">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Member</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Member ID</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Shakha</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Date &amp; Time</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {filteredOneOff.length > 0 ? filteredOneOff.map(d => (
+                    <tr key={d.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                      <td className="px-5 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{memberFor(d.memberId)?.name ?? d.memberId}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap font-mono">{d.memberId}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{d.activityCentre}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{sharedFormatDateTime(d.datetime)}</td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-success-600 dark:text-success-400 text-right whitespace-nowrap">{money(d.amount)}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                        No one-off Dakshina records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
             <div className="flex items-center justify-between px-5 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
               <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{filteredOneOff.length} Dakshina</span>
@@ -224,38 +234,52 @@ export default function ShakhaDakshina() {
             </div>
           </div>
         ) : (
-          <div className="mt-4 bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-            <div className="grid grid-cols-7 px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Member</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Shakha</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Frequency</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">First Payment</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Gift Aid</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Status</span>
-              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right">Amount</span>
-            </div>
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {filteredRecurring.length > 0 ? filteredRecurring.map(d => (
-                <div key={d.id} className="grid grid-cols-7 px-5 py-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors items-center">
-                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{memberFor(d.memberId)?.name ?? d.memberId}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{d.activityCentre}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{d.frequency}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{formatDate(d.firstPaymentDate)}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{d.giftAid ? 'Yes' : 'No'}</span>
-                  <span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${
-                      d.status === 'active'
-                        ? 'bg-success-50 text-success-700 dark:bg-success-950/20 dark:text-success-400 border-success-200 dark:border-success-800'
-                        : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
-                    }`}>
-                      {d.status === 'active' ? 'Active' : 'Cancelled'}
-                    </span>
-                  </span>
-                  <span className="text-sm font-semibold text-success-600 dark:text-success-400 text-right">{money(d.amount)} / {d.frequency.toLowerCase()}</span>
-                </div>
-              )) : (
-                <div className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No recurring Dakshina records found.</div>
-              )}
+          <div className="mt-4 bg-white dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-max">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Member</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Member ID</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Shakha</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Frequency</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">First Payment</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Gift Aid</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Status</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {filteredRecurring.length > 0 ? filteredRecurring.map(d => (
+                    <tr key={d.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                      <td className="px-5 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{memberFor(d.memberId)?.name ?? d.memberId}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap font-mono">{d.memberId}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{d.activityCentre}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{d.frequency}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{formatDate(d.firstPaymentDate)}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{d.giftAid ? 'Yes' : 'No'}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${
+                          d.status === 'active'
+                            ? 'bg-success-50 text-success-700 dark:bg-success-950/20 dark:text-success-400 border-success-200 dark:border-success-800'
+                            : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
+                        }`}>
+                          {d.status === 'active' ? 'Active' : 'Cancelled'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-success-600 dark:text-success-400 text-right whitespace-nowrap">
+                        {money(d.amount)} / {d.frequency.toLowerCase()}
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={8} className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                        No recurring Dakshina records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
             <div className="flex items-center justify-between px-5 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
               <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{filteredRecurring.length} Recurring Dakshina</span>
