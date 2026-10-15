@@ -42,6 +42,12 @@ import {
 import { getNavigationData } from "../../mockAPI/navigationData";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { ADMIN_ROLE_OPTIONS, ROLE_DISPLAY_LABELS, getPermittedNavIds } from "../../mockAPI/rolesData";
+import {
+  FAQItem,
+  getFAQItems,
+  getSubmoduleForPage,
+  FAQ_UPDATE_EVENT,
+} from "../../mockAPI/faqData";
 import myHssLogo from "../../assets/brand/hss/logos/my-hss-logo1.png";
 import {
   FormModal,
@@ -207,116 +213,30 @@ export function GlobalHeader({
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const itemWidthsRef = useRef<number[]>([]);
 
-  // FAQ data keyed by page/module
-  const pageFaqData: Record<string, { id: string; q: string; a: string }[]> = {
-    dashboard: [
-      {
-        id: "d1",
-        q: "How do I read the dashboard summary cards?",
-        a: "Each card displays a key metric for the current period. The percentage indicator shows the change compared to the previous period. Green means improvement, red means decline.",
-      },
-      {
-        id: "d2",
-        q: "How often is the dashboard data refreshed?",
-        a: "Dashboard data is refreshed every time you load or navigate to the dashboard. You can force a refresh by reloading the page.",
-      },
-      {
-        id: "d3",
-        q: "Can I customise which widgets appear on the dashboard?",
-        a: "Widget customisation is planned for a future release. Currently the dashboard shows the default set of operational metrics relevant to your role.",
-      },
-    ],
-    users: [
-      {
-        id: "u1",
-        q: "How do I create a new user?",
-        a: "Click the 'Add User' button in the top-right of the Users page. Fill in the required fields — name, email, role — then click Save. An invitation email is sent automatically.",
-      },
-      {
-        id: "u2",
-        q: "How do I change a user's status?",
-        a: "Open the user's row actions (⋯ menu) and select 'Activate' or 'Deactivate'. Deactivated users cannot log in but their data is preserved.",
-      },
-      {
-        id: "u3",
-        q: "How do I assign or change permissions?",
-        a: "Edit the user and change the Role field. Roles control module access. Custom permission overrides can be set from the user's detail page under the Permissions tab.",
-      },
-      {
-        id: "u4",
-        q: "Can I bulk-import users?",
-        a: "Yes. Use the 'Import' option from the Users page header. Download the CSV template, fill it in, and re-upload. Errors are highlighted before committing the import.",
-      },
-    ],
-    events: [
-      {
-        id: "e1",
-        q: "How do I create a Karyakram?",
-        a: "Click 'New Karyakram', provide a title, dates, location, and capacity, then publish. Attendee registration opens immediately after publishing.",
-      },
-      {
-        id: "e2",
-        q: "What does 'Karyakram expiry' mean?",
-        a: "An expired Karyakram has passed its end date. Expired Karyakrams are read-only; you can duplicate them to reuse the setup for a future date.",
-      },
-      {
-        id: "e3",
-        q: "How does attendee tracking work?",
-        a: "Attendees check in via QR code or manual entry. The Attendees tab on each Karyakram shows real-time check-in status, timestamps, and attendance rate.",
-      },
-    ],
-    attendance: [
-      {
-        id: "a1",
-        q: "How do I correct a missing clock-out?",
-        a: "Navigate to the employee's attendance record, click 'Correction Request', enter the correct time and reason, then submit. The request routes to the manager for approval.",
-      },
-      {
-        id: "a2",
-        q: "How are late arrivals calculated?",
-        a: "Late arrivals are determined by comparing the clock-in time against the shift start time defined in the employee's schedule. A grace period can be configured in System Settings.",
-      },
-      {
-        id: "a3",
-        q: "Can I export attendance reports?",
-        a: "Yes. Go to Reports and filter by date range and department, then use the Export button to download CSV or PDF.",
-      },
-    ],
-    "leave-requests": [
-      {
-        id: "l1",
-        q: "How does the leave approval workflow work?",
-        a: "An employee submits a request. The direct manager receives a notification to approve or reject. HR is notified once a decision is made. The employee sees the status update in real time.",
-      },
-      {
-        id: "l2",
-        q: "Can managers approve on behalf of someone else?",
-        a: "Only the assigned approver for a leave request can action it. Admins can re-assign approvers from the request's detail view.",
-      },
-      {
-        id: "l3",
-        q: "How is leave balance calculated?",
-        a: "Leave balances are tracked per leave type. Accrual rules (monthly, annually, etc.) are configured in System Settings under Leave Policies.",
-      },
-    ],
-    settings: [
-      {
-        id: "s1",
-        q: "How do I update the platform logo or branding?",
-        a: "Go to System Settings → Branding. Upload a new logo (PNG/SVG, max 1 MB). The logo updates across the header and login page immediately after saving.",
-      },
-      {
-        id: "s2",
-        q: "How do I configure the session timeout?",
-        a: "In System Settings → Security, set the 'Session Timeout' duration in minutes. Users will be automatically logged out after the specified period of inactivity.",
-      },
-      {
-        id: "s3",
-        q: "How do I manage mobile app versions?",
-        a: "Navigate to System Settings → Mobile App. Enter the minimum required version and the latest available version. Users on older versions will be prompted to update.",
-      },
-    ],
-  };
+  // Dynamic FAQ data loaded and synchronized with localStorage/events
+  const [allFaqItems, setAllFaqItems] = useState<FAQItem[]>(() => getFAQItems());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAllFaqItems(getFAQItems());
+    };
+    window.addEventListener(FAQ_UPDATE_EVENT, handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener(FAQ_UPDATE_EVENT, handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
+  const currentSubmodule = useMemo(() => getSubmoduleForPage(currentPage), [currentPage]);
+
+  // Display only Active FAQs relevant to the current module/submodule
+  const currentFaqs = useMemo(() => {
+    if (!currentSubmodule) return [];
+    return allFaqItems.filter(
+      (item) => item.moduleSubmoduleId === currentSubmodule.id && item.status === "active"
+    );
+  }, [allFaqItems, currentSubmodule]);
 
   const toggleFaq = (id: string) => {
     setExpandedFaqs((prev) => {
@@ -329,12 +249,6 @@ export function GlobalHeader({
       return next;
     });
   };
-
-  // Derive FAQ list for the current page, fall back to dashboard FAQs
-  const currentFaqs =
-    pageFaqData[currentPage] ??
-    pageFaqData["dashboard"] ??
-    [];
 
 
   const themes = [
@@ -1287,8 +1201,11 @@ export function GlobalHeader({
                   {currentFaqs.length === 0 ? (
                     <div className="p-6 text-center">
                       <HelpCircle className="w-8 h-8 text-neutral-300 dark:text-neutral-700 mx-auto mb-2" />
-                      <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                      <div className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
                         No FAQs available for this page.
+                      </div>
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                        Active FAQs configured in System Settings will appear here.
                       </div>
                     </div>
                   ) : (
@@ -1310,13 +1227,13 @@ export function GlobalHeader({
                               }`}
                             />
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200 leading-snug flex-1">
-                              {faq.q}
+                              {faq.question || (faq as any).q}
                             </span>
                           </button>
                           {isOpen && (
                             <div className="px-3 pb-3 ml-5">
-                              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                                {faq.a}
+                              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed whitespace-pre-wrap">
+                                {faq.answer || (faq as any).a}
                               </p>
                             </div>
                           )}
@@ -1330,8 +1247,10 @@ export function GlobalHeader({
                 <div className="px-3 py-2 border-t border-neutral-200 dark:border-neutral-800">
                   <div className="text-[10px] text-neutral-400 dark:text-neutral-500">
                     Showing help for:{" "}
-                    <span className="font-medium text-neutral-600 dark:text-neutral-300 capitalize">
-                      {currentPage.replace(/-/g, " ")}
+                    <span className="font-medium text-neutral-600 dark:text-neutral-300">
+                      {currentSubmodule
+                        ? `${currentSubmodule.moduleName} — ${currentSubmodule.submoduleName}`
+                        : currentPage.replace(/-/g, " ")}
                     </span>
                   </div>
                 </div>

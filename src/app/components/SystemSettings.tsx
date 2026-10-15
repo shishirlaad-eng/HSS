@@ -35,9 +35,10 @@ import {
   ErrorText,
 } from './hb/common/Form';
 import { toast } from 'sonner';
+import SupportFaqManagement from './SupportFaqManagement';
 
 export default function SystemSettings() {
-  const [activeTab, setActiveTab] = useState<'general' | 'mobile'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'mobile' | 'support-faq'>('general');
   const [isSaving, setIsSaving] = useState(false);
   
   const [settings, setSettings] = useState({
@@ -191,6 +192,19 @@ export default function SystemSettings() {
           >
             Mobile Related
             {activeTab === 'mobile' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('support-faq')}
+            className={`px-6 py-3 text-sm font-medium transition-all relative ${
+              activeTab === 'support-faq'
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+            }`}
+          >
+            FAQs
+            {activeTab === 'support-faq' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400" />
             )}
           </button>
@@ -530,7 +544,7 @@ export default function SystemSettings() {
                 </FormSection>
               </FormCard>
             </div>
-          ) : (
+          ) : activeTab === 'mobile' ? (
             <div className="space-y-6">
               {/* MOBILE APP VERSIONS SECTION */}
               <FormCard 
@@ -621,25 +635,29 @@ export default function SystemSettings() {
                 </FormSection>
               </FormCard>
             </div>
+          ) : (
+            <SupportFaqManagement />
           )}
         </div>
 
-        {/* STICKY FOOTER ACTIONS */}
-        <div className="fixed bottom-0 right-0 left-0 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-t border-neutral-200 dark:border-neutral-800 p-4 z-30 ml-[260px]">
-          <div className="max-w-7xl mx-auto flex items-center justify-end gap-3">
-            <SecondaryButton icon={X} onClick={handleReset}>
-              Cancel
-            </SecondaryButton>
-            <PrimaryButton 
-              icon={Save} 
-              onClick={handleSave}
-              isLoading={isSaving}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving Changes...' : 'Save Changes'}
-            </PrimaryButton>
+        {/* STICKY FOOTER ACTIONS (for General & Mobile settings) */}
+        {activeTab !== 'support-faq' && (
+          <div className="fixed bottom-0 right-0 left-0 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-t border-neutral-200 dark:border-neutral-800 p-4 z-30 ml-[260px]">
+            <div className="max-w-7xl mx-auto flex items-center justify-end gap-3">
+              <SecondaryButton icon={X} onClick={handleReset}>
+                Cancel
+              </SecondaryButton>
+              <PrimaryButton 
+                icon={Save} 
+                onClick={handleSave}
+                isLoading={isSaving}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving Changes...' : 'Save Changes'}
+              </PrimaryButton>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
