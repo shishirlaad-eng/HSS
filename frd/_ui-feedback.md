@@ -33,4 +33,4 @@ classification and the module file they affected.
 
 | Date | Raw feedback (short) | Classification | Action taken | Module file |
 |------|----------------------|----------------|--------------|-------------|
-| | | | | |
+| 2026-10-15 | Guru Puja Report: Age categories show total dakshina; add date search; change Attendance to Sankhya (present count only); replace Income with Dakshina; record locked when completed (Super Admin unlock only) | Business-logic / Functional | Added Guru Puja Report section in frd/08-reports.md, updated GuruPujaReport.tsx with date filter, dakshina totals, sankhya column, complete advisory text, and Super Admin unlock governance | 08-reports.md |

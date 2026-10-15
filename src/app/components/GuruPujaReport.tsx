@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // HSS UK — Guru Puja Report
-// Reconciliation report for Guru Purnima utsav Shakhas: Cash + Cheque income
+// Reconciliation report for Guru Purnima utsav Shakhas: Cash + Cheque Dakshina
 // per age category, banking details, and whether the paperwork is complete.
 // Distinct from the separate "Guru Purnima Cash Income" feature.
 // ─────────────────────────────────────────────────────────────
@@ -17,6 +17,7 @@ import {
 } from './hb/listing';
 import type { FilterCondition } from './hb/listing';
 import { FormModal, FormField, FormLabel, FormInput, ErrorText } from './hb/common';
+import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { mockSessions, ShakhaSession } from '../../mockAPI/attendanceData';
 import { AgeGroup } from '../../mockAPI/membersData';
 import {
@@ -34,32 +35,17 @@ import { toast } from 'sonner';
 
 const AGE_GROUP_ORDER: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
 
-// Age-category definitions specific to the Guru Puja Report — single-line labels with bracketed years
-const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; fullLabel: string }> = {
-  shishu:  { name: 'Shishu',     fullLabel: 'Shishu (0 - 5 years)' },
-  bal:     { name: 'Bal(ika)',   fullLabel: 'Bal(ika) (6 - 12 years)' },
-  kishor:  { name: 'Kishor(i)',  fullLabel: 'Kishor(i) (12 - 16 years)' },
-  tarun:   { name: 'Tarun(i)',   fullLabel: 'Tarun(i) (16 - 29 years)' },
-  yuva:    { name: 'Yuva(ti)',   fullLabel: 'Yuva(ti) (30 - 59 years)' },
-  jyestha: { name: 'Jyestha(a)', fullLabel: 'Jyestha(a) (60 years and older)' },
+// Age-category definitions specific to the Guru Puja Report — labels with bracketed years
+const GURU_PUJA_AGE_GROUP_INFO: Record<AgeGroup, { name: string; fullLabel: string; range: string }> = {
+  shishu:  { name: 'Shishu',     fullLabel: 'Shishu (0 - 5 years)',            range: '0 - 5 yrs' },
+  bal:     { name: 'Bal(ika)',   fullLabel: 'Bal(ika) (6 - 12 years)',          range: '6 - 12 yrs' },
+  kishor:  { name: 'Kishor(i)',  fullLabel: 'Kishor(i) (12 - 16 years)',        range: '12 - 16 yrs' },
+  tarun:   { name: 'Tarun(i)',   fullLabel: 'Tarun(i) (16 - 29 years)',         range: '16 - 29 yrs' },
+  yuva:    { name: 'Yuva(ti)',   fullLabel: 'Yuva(ti) (30 - 59 years)',         range: '30 - 59 yrs' },
+  jyestha: { name: 'Jyestha(a)', fullLabel: 'Jyestha(a) (60 years and older)',  range: '60+ yrs' },
 };
 
-// Attendee-count columns on the listing. `recordKey` is the age category stored on
-// each attendance record (membersData naming: 'bal' = 0-5 yrs, 'shishu' = 6-11 yrs),
-// so the Guru Puja display names below are mapped by age range, not by key name.
-const ATTENDEE_AGE_COLUMNS: { label: string; range: string; recordKey: ShakhaSession['attendanceRecords'][number]['ageCategory'] }[] = [
-  { label: 'Shishu',    range: '0-5 yrs',      recordKey: 'bal'     },
-  { label: 'Bal(ika)',  range: 'Sch yr 1-6',   recordKey: 'shishu'  },
-  { label: 'Kishor(i)', range: 'Sch yr 7-12',  recordKey: 'kishor'  },
-  { label: 'Tarun(i)',  range: '16-30 yrs',    recordKey: 'tarun'   },
-  { label: 'Yuva(ti)',  range: '30-60 yrs',    recordKey: 'yuva'    },
-  { label: 'Jyestha(a)', range: '60+ yrs',     recordKey: 'jyestha' },
-];
 
-function presentCountsByAge(s: ShakhaSession): number[] {
-  const present = s.attendanceRecords.filter(r => r.status === 'present');
-  return ATTENDEE_AGE_COLUMNS.map(c => present.filter(r => r.ageCategory === c.recordKey).length);
-}
 
 function fmtMoney(n: number) {
   return `£${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -95,6 +81,9 @@ function GuruPujaReportModal({
   onClose: () => void;
   onSave: (data: Omit<GuruPujaReportEntry, 'id' | 'recordedAt'>) => void;
 }) {
+  const { selectedRole } = useRoleScope();
+  const isSuperAdmin = selectedRole === 'Super Admin';
+
   const [amounts, setAmounts] = useState<AmountForm>(
     entry
       ? AGE_GROUP_ORDER.reduce((acc, g) => ({
@@ -115,9 +104,9 @@ function GuruPujaReportModal({
 
   const num = (v: string) => parseFloat(v) || 0;
 
-  const totalCash   = useMemo(() => AGE_GROUP_ORDER.reduce((sum, g) => sum + num(amounts[g].cash), 0), [amounts]);
-  const totalCheque = useMemo(() => AGE_GROUP_ORDER.reduce((sum, g) => sum + num(amounts[g].cheque), 0), [amounts]);
-  const totalIncome = totalCash + totalCheque;
+  const totalCash     = useMemo(() => AGE_GROUP_ORDER.reduce((sum, g) => sum + num(amounts[g].cash), 0), [amounts]);
+  const totalCheque   = useMemo(() => AGE_GROUP_ORDER.reduce((sum, g) => sum + num(amounts[g].cheque), 0), [amounts]);
+  const totalDakshina = totalCash + totalCheque;
 
   const amountErrors = AGE_GROUP_ORDER.some(g =>
     (amounts[g].cash !== '' && (isNaN(Number(amounts[g].cash)) || Number(amounts[g].cash) < 0)) ||
@@ -166,21 +155,21 @@ function GuruPujaReportModal({
       <div className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900">
-            <p className="text-xs text-primary-700 dark:text-primary-300">Total Cash Income</p>
+            <p className="text-xs text-primary-700 dark:text-primary-300">Total Cash Dakshina</p>
             <p className="text-lg font-bold text-primary-900 dark:text-primary-100">{fmtMoney(totalCash)}</p>
           </div>
           <div className="px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900">
-            <p className="text-xs text-primary-700 dark:text-primary-300">Total Cheque Income</p>
+            <p className="text-xs text-primary-700 dark:text-primary-300">Total Cheque Dakshina</p>
             <p className="text-lg font-bold text-primary-900 dark:text-primary-100">{fmtMoney(totalCheque)}</p>
           </div>
           <div className="px-4 py-3 rounded-lg bg-neutral-900 dark:bg-white">
-            <p className="text-xs text-neutral-300 dark:text-neutral-600 flex items-center gap-1"><Calculator className="w-3 h-3" /> Total Income</p>
-            <p className="text-lg font-bold text-white dark:text-neutral-900">{fmtMoney(totalIncome)}</p>
+            <p className="text-xs text-neutral-300 dark:text-neutral-600 flex items-center gap-1"><Calculator className="w-3 h-3" /> Total Dakshina</p>
+            <p className="text-lg font-bold text-white dark:text-neutral-900">{fmtMoney(totalDakshina)}</p>
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">Income by Age Category</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">Dakshina by Age Category</h3>
           <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
             <div className="grid grid-cols-3 gap-3 px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
               <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Age Category</span>
@@ -269,19 +258,43 @@ function GuruPujaReportModal({
         )}
 
         {isEditing ? (
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isComplete}
-              onChange={e => setIsComplete(e.target.checked)}
-              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500/30"
-            />
-            Guru Puja Report is all complete
-          </label>
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+            <label className="flex items-start gap-2.5 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isComplete}
+                onChange={e => setIsComplete(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-neutral-300 dark:border-neutral-700 text-primary-600 focus:ring-primary-500/30"
+              />
+              <div>
+                <span className="font-medium text-neutral-900 dark:text-white">Guru Puja Report is all complete</span>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  Once this is checked and marked as complete the report will be locked and will no longer be editable.
+                </p>
+              </div>
+            </label>
+          </div>
         ) : (
-          <p className="text-sm text-neutral-700 dark:text-neutral-300">
-            Guru Puja Report is all complete: <span className="font-medium text-neutral-900 dark:text-white">{isComplete ? 'Yes' : 'No'}</span>
-          </p>
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">Guru Puja Report is all complete:</span>
+              <span className={`font-semibold ${isComplete ? 'text-success-700 dark:text-success-400' : 'text-neutral-900 dark:text-white'}`}>
+                {isComplete ? 'Yes' : 'No'}
+              </span>
+              {isComplete && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  Locked
+                </span>
+              )}
+            </div>
+            {isComplete && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                {isSuperAdmin
+                  ? 'This report is completed and locked. As Super Admin, you can unlock and edit it.'
+                  : 'Once this is checked and marked as complete the report will be locked and will no longer be editable. Only Super Admin can unlock and edit completed reports.'}
+              </p>
+            )}
+          </div>
         )}
 
         <div className="flex justify-end gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
@@ -302,7 +315,11 @@ function GuruPujaReportModal({
               <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
                 Close
               </button>
-              <PrimaryButton icon={Pencil} onClick={() => setIsEditing(true)}>Edit</PrimaryButton>
+              {(!entry?.isComplete || isSuperAdmin) && (
+                <PrimaryButton icon={Pencil} onClick={() => setIsEditing(true)}>
+                  {entry?.isComplete ? 'Unlock & Edit' : 'Edit'}
+                </PrimaryButton>
+              )}
             </>
           )}
         </div>
@@ -331,6 +348,9 @@ export default function GuruPujaReport() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [dateLabel, setDateLabel] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
@@ -348,7 +368,7 @@ export default function GuruPujaReport() {
     }
   };
 
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, filterRegion, filterTown, filterCentre]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filters, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
 
   const scopedSessions = useMemo(
     () => filterByScope(mockSessions, scope).filter(s =>
@@ -372,6 +392,9 @@ export default function GuruPujaReport() {
       if (filterTown   && s.town   !== filterTown)   return false;
       if (filterCentre && s.activityCentre !== filterCentre) return false;
 
+      // Date range filter
+      if (!inDateRange(s.date, dateStart, dateEnd)) return false;
+
       const evalFilter = (f: FilterCondition): boolean => {
         switch (f.field) {
           case 'Vibhag': return f.values.includes(s.region);
@@ -389,7 +412,7 @@ export default function GuruPujaReport() {
           }, true);
       return matchSearch && matchFilters;
     });
-  }, [scopedSessions, searchQuery, filters, filterRegion, filterTown, filterCentre]);
+  }, [scopedSessions, searchQuery, filters, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -429,7 +452,7 @@ export default function GuruPujaReport() {
       next[idx] = saved;
       return next;
     });
-    toast.success('Guru Puja Report saved.');
+    toast.success(data.isComplete ? 'Guru Puja Report saved and locked.' : 'Guru Puja Report saved.');
     setEditingSession(null);
   };
 
@@ -437,10 +460,12 @@ export default function GuruPujaReport() {
     if (!sorted.length) { toast.error('No data to export.'); return; }
     const headers = [
       'Date', 'Shakha', 'Nagar', 'Vibhag', 'Shakha Status',
-      ...ATTENDEE_AGE_COLUMNS.map(c => `${c.label} (${c.range})`), 'Total',
-      'Attendance', 'Report Status',
+      ...AGE_GROUP_ORDER.map(g => `${GURU_PUJA_AGE_GROUP_INFO[g].name} Dakshina`),
+      'Total Dakshina',
+      'Sankhya',
+      'Report Status',
       ...AGE_GROUP_ORDER.flatMap(g => [`${GURU_PUJA_AGE_GROUP_INFO[g].name} Cash`, `${GURU_PUJA_AGE_GROUP_INFO[g].name} Cheque`]),
-      'Total Cash', 'Total Cheque', 'Total Income',
+      'Total Cash', 'Total Cheque', 'Total Dakshina',
       'Date Banked', 'Banked By', 'Paying In Ref No',
     ];
     const rows = sorted.map(s => {
@@ -448,8 +473,9 @@ export default function GuruPujaReport() {
       const shakhaStatus = shakhaStatusPill(s.status);
       const reportStatus = reportStatusPill(entry?.isComplete ?? false);
       const present = s.attendanceRecords.filter(r => r.status === 'present').length;
-      const ageCounts = presentCountsByAge(s);
       const amounts = entry?.amounts;
+      const ageDakshina = AGE_GROUP_ORDER.map(g => (amounts?.[g]?.cash ?? 0) + (amounts?.[g]?.cheque ?? 0));
+      const totalDakshina = ageDakshina.reduce((a, b) => a + b, 0);
       const totalCash = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cash ?? 0), 0) : 0;
       const totalCheque = amounts ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (amounts[g]?.cheque ?? 0), 0) : 0;
       return [
@@ -458,9 +484,9 @@ export default function GuruPujaReport() {
         `"${s.town}"`,
         `"${s.region}"`,
         shakhaStatus.label,
-        ...ageCounts,
-        ageCounts.reduce((a, b) => a + b, 0),
-        `${present}/${s.totalExpected}`,
+        ...ageDakshina.map(v => v.toFixed(2)),
+        totalDakshina.toFixed(2),
+        present,
         reportStatus.label,
         ...AGE_GROUP_ORDER.flatMap(g => [
           (amounts?.[g]?.cash ?? 0).toFixed(2),
@@ -468,7 +494,7 @@ export default function GuruPujaReport() {
         ]),
         totalCash.toFixed(2),
         totalCheque.toFixed(2),
-        (totalCash + totalCheque).toFixed(2),
+        totalDakshina.toFixed(2),
         entry?.dateBanked ? fmtDate(entry.dateBanked) : '',
         entry?.bankedBy ? `"${entry.bankedBy}"` : '',
         entry?.payingInRefNo ? `"${entry.payingInRefNo}"` : '',
@@ -491,8 +517,19 @@ export default function GuruPujaReport() {
     ...(scope.showCentreFilter ? { 'Shakha':  scopedFilterOptions.centreOptions } : {}),
   };
 
-  const hasFilters = searchQuery.length > 0 || filters.some(f => f.values.length > 0) || !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked));
-  const clearQuickFilters = () => { setFilterRegion(''); setFilterTown(''); setFilterCentre(''); };
+  const hasFilters =
+    searchQuery.length > 0 ||
+    filters.some(f => f.values.length > 0) ||
+    !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked)) ||
+    !!dateStart;
+  const clearQuickFilters = () => {
+    setFilterRegion('');
+    setFilterTown('');
+    setFilterCentre('');
+    setDateStart('');
+    setDateEnd('');
+    setDateLabel('');
+  };
 
   // Sort arrow helper
   const sortArrow = (field: SortField) => {
@@ -507,7 +544,7 @@ export default function GuruPujaReport() {
         <div ref={stickyHeaderRef} className="sticky top-[53px] z-30 bg-white dark:bg-neutral-950 pb-1">
           <PageHeader
             title="Guru Puja Report"
-            subtitle="Reconcile Cash and Cheque income collected at Guru Purnima Shakhas."
+            subtitle="Reconcile Cash and Cheque Dakshina collected at Guru Purnima Shakhas."
           >
             <div className="relative">
               <SearchBar
@@ -536,8 +573,18 @@ export default function GuruPujaReport() {
             />
           </PageHeader>
 
-          {/* Quick location filters */}
+          {/* Quick location filters + Date range */}
           <div className="flex flex-wrap items-center gap-2 pb-3">
+            <ReportDateFilter
+              start={dateStart}
+              end={dateEnd}
+              label={dateLabel}
+              onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
+              title="Filter by Guru Puja Date"
+              emptyLabel="Date"
+              includeFuture={true}
+            />
+
             <select
               disabled={regionDisabled}
               value={filterRegion}
@@ -568,7 +615,7 @@ export default function GuruPujaReport() {
               {centreOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
-            {((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked)) && (
+            {(((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked)) || !!dateStart) && (
               <button
                 onClick={clearQuickFilters}
                 className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
@@ -599,14 +646,14 @@ export default function GuruPujaReport() {
                       {label}{sortArrow(field)}
                     </th>
                   ))}
-                  {ATTENDEE_AGE_COLUMNS.map(c => (
-                    <th key={c.label} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
-                      {c.label}
-                      <span className="block text-[10px] font-normal text-neutral-400 dark:text-neutral-500">{c.range}</span>
+                  {AGE_GROUP_ORDER.map(g => (
+                    <th key={g} className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                      {GURU_PUJA_AGE_GROUP_INFO[g].name}
+                      <span className="block text-[10px] font-normal text-neutral-400 dark:text-neutral-500">{GURU_PUJA_AGE_GROUP_INFO[g].range}</span>
                     </th>
                   ))}
                   <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Total</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Attendance</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Sankhya</th>
                   <th
                     onClick={() => handleSort('reportStatus')}
                     className="px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
@@ -621,7 +668,9 @@ export default function GuruPujaReport() {
                   const shakhaStatus = shakhaStatusPill(s.status);
                   const reportStatus = reportStatusPill(entry?.isComplete ?? false);
                   const present = s.attendanceRecords.filter(r => r.status === 'present').length;
-                  const ageCounts = presentCountsByAge(s);
+                  const totalDakshina = entry
+                    ? AGE_GROUP_ORDER.reduce((sum, g) => sum + (entry.amounts[g]?.cash ?? 0) + (entry.amounts[g]?.cheque ?? 0), 0)
+                    : 0;
                   return (
                     <tr
                       key={s.id}
@@ -637,11 +686,20 @@ export default function GuruPujaReport() {
                           {shakhaStatus.label}
                         </span>
                       </td>
-                      {ageCounts.map((n, i) => (
-                        <td key={ATTENDEE_AGE_COLUMNS[i].label} className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{n}</td>
-                      ))}
-                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{ageCounts.reduce((a, b) => a + b, 0)}</td>
-                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{present}/{s.totalExpected}</td>
+                      {AGE_GROUP_ORDER.map(g => {
+                        const dakshina = entry ? (entry.amounts[g]?.cash ?? 0) + (entry.amounts[g]?.cheque ?? 0) : 0;
+                        return (
+                          <td key={g} className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                            {entry ? fmtMoney(dakshina) : '—'}
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-3.5 text-sm font-semibold text-neutral-900 dark:text-white whitespace-nowrap">
+                        {entry ? fmtMoney(totalDakshina) : '—'}
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                        {present}
+                      </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${reportStatus.cls} whitespace-nowrap`}>
                           {reportStatus.label}

@@ -6,6 +6,7 @@ changed since the last Google Doc sync.
 Columns: Date · Module file · Type (UI / Functional / Business-logic / Navigation /
 Structural) · What changed · Synced to Doc?
 
+| 2026-10-15 | 08-reports.md | Functional / Business-logic | Added Guru Puja Report specification: listing columns with Dakshina totals (cash + cheque) per age category, Sankhya (total present count), terminology standardized to Dakshina (eliminating "Income"), date search filter, and record completion governance (record is locked upon completion, helper text added, only Super Admin can unlock and edit once set to complete). | No |
 | 2026-06-23 | 09-settings.md | updated | Resolved 4 blocking TBDs: maxLoginAttempts (1–10, 5-min lockout), sessionTimeout (60 min default, configurable), audit logging confirmed, SMTP Password GET masked + secure copy endpoint | No |
 | 2026-06-23 | 09-settings.md | authored | Full Gate 4 rewrite — 2 screens US-901–US-902 from frontend analysis of SystemSettings.tsx | No |
 | 2026-06-22 | 06-events.md | updated | Resolved 8 blocking TBDs: publishDate retired, inactive masters hard-block, no publish notification, all CSV fields permitted, 1-year retention, self-cancel=denied, capacity-waitlist rule added, Azure Blob Storage confirmed | No |

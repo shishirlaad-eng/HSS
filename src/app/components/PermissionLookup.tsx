@@ -3,7 +3,7 @@
 // Read-only: pick a role and see which actions it can perform in every module.
 // ─────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
-import { Check, Minus, Search, Edit2 } from 'lucide-react';
+import { Check, X, Search, Edit2 } from 'lucide-react';
 import { availableModules, mockRoles, getRoleModulePermissions } from '../../mockAPI/rolesData';
 import { useModulePermissions } from '../contexts/RoleScopeContext';
 import { PrimaryButton } from './hb/listing';
@@ -83,7 +83,7 @@ export default function PermissionLookup() {
                             : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-500 border-neutral-200 dark:border-neutral-700'
                         }`}
                       >
-                        {a.allowed ? <Check className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                        {a.allowed ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                         {a.name}
                       </span>
                     ))}

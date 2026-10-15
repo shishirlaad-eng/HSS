@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useReportLocationFilters } from './useReportLocationFilters';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
   Users, UserCheck,
@@ -191,12 +191,30 @@ export default function AyuShreniReport() {
   const maleCount   = filtered.filter(m => m.gender === 'male').length;
   const femaleCount = filtered.filter(m => m.gender === 'female').length;
 
-  // Age group distribution
+  // Age group distribution, split by gender
   const byAgeGroup = useMemo(() => {
-    const map: Record<AgeGroup, number> = { bal: 0, shishu: 0, kishor: 0, tarun: 0, yuva: 0, jyestha: 0 };
-    filtered.forEach(m => { map[getAgeGroup(m.dateOfBirth)]++; });
-    return (Object.entries(map) as [AgeGroup, number][])
-      .map(([key, count]) => ({ group: AGE_GROUP_LABELS[key], key, count }));
+    const map: Record<AgeGroup, { male: number; female: number }> = {
+      bal:     { male: 0, female: 0 },
+      shishu:  { male: 0, female: 0 },
+      kishor:  { male: 0, female: 0 },
+      tarun:   { male: 0, female: 0 },
+      yuva:    { male: 0, female: 0 },
+      jyestha: { male: 0, female: 0 },
+    };
+    filtered.forEach(m => {
+      const g = getAgeGroup(m.dateOfBirth);
+      if (map[g]) {
+        map[g][m.gender]++;
+      }
+    });
+    return (Object.entries(map) as [AgeGroup, { male: number; female: number }][])
+      .map(([key, v]) => ({
+        group: AGE_GROUP_LABELS[key],
+        key,
+        male: v.male,
+        female: v.female,
+        count: v.male + v.female,
+      }));
   }, [filtered]);
 
   // By Vibhag (region), split by gender
@@ -234,6 +252,10 @@ export default function AyuShreniReport() {
       ['Total Members', String(total)],
       ['Male',          String(maleCount)],
       ['Female',        String(femaleCount)],
+      [],
+      ['AGE GROUP DISTRIBUTION (MALE / FEMALE)'],
+      ['Age Group', 'Male', 'Female', 'Total'],
+      ...byAgeGroup.map(r => [r.group, String(r.male), String(r.female), String(r.count)]),
       [],
       ['MEMBERS'],
       ['First Name', 'Last Name', 'Age Group', 'Age', 'Nagar', 'Vibhag', 'Email', 'Contact Number', 'Sangh Responsibility'],
@@ -362,18 +384,16 @@ export default function AyuShreniReport() {
         {/* ── Row: Age Group + Vibhag ────────────────────── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <ChartCard title="Age Group Distribution" subtitle="Members across HSS Ayu Shreni (age groups)">
+          <ChartCard title="Age Group Distribution" subtitle="Members across HSS Ayu Shreni (age groups), split by gender">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={byAgeGroup} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                 <XAxis dataKey="group" tick={{ fontSize: 10, fill: '#6b7280' }} interval={0} />
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
-                  {byAgeGroup.map((entry, i) => (
-                    <Cell key={i} fill={AGE_COLORS[entry.key as AgeGroup]} />
-                  ))}
-                </Bar>
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+                <Bar dataKey="male"   name="Male"   fill={COLORS.male}   radius={[4, 4, 0, 0]} />
+                <Bar dataKey="female" name="Female" fill={COLORS.female} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>

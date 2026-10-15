@@ -3,7 +3,7 @@
 // Pick a module from dropdown and see what permissions each role has for it.
 // ─────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
-import { Check, Minus, Search, Layers } from 'lucide-react';
+import { Check, X, Search, Layers } from 'lucide-react';
 import { availableModules, mockRoles, getRoleModulePermissions } from '../../mockAPI/rolesData';
 
 const selectCls = 'h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500';
@@ -158,7 +158,7 @@ export default function ModulePermissionLookup() {
                           {a.allowed ? (
                             <Check className="w-3 h-3 text-success-600 dark:text-success-400" />
                           ) : (
-                            <Minus className="w-3 h-3 text-neutral-400 dark:text-neutral-500" />
+                            <X className="w-3 h-3 text-neutral-400 dark:text-neutral-500" />
                           )}
                           {a.name}
                         </span>
