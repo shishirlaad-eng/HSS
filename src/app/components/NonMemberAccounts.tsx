@@ -29,14 +29,21 @@ import { formatDate, formatDateTime as sharedFormatDateTime, formatDateRange } f
 type PageState = 'list' | 'detail';
 type DetailTab = 'profile' | 'history';
 
+function getDaysSinceRegistration(dateStr: string): number {
+  const regDate = new Date(dateStr);
+  const diffTime = Date.now() - regDate.getTime();
+  return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+}
+
 function TypeBadge({ type }: { type: NonMemberAccountType }) {
+  const displayLabel = type === 'Member' ? 'Registered' : type;
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${
       type === 'Non-Member'
         ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400 border-primary-200 dark:border-primary-800'
         : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
     }`}>
-      {type}
+      {displayLabel}
     </span>
   );
 }
@@ -127,7 +134,8 @@ export default function NonMemberAccounts() {
   const [showRegDateFilter, setShowRegDateFilter] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showSummary, setShowSummary] = useState(false);
-  const [sortField, setSortField] = useState<'firstName' | 'lastName' | 'email' | 'accountType' | 'registeredAt' | 'children'>('registeredAt');
+  const [daysFilter, setDaysFilter] = useState('all');
+  const [sortField, setSortField] = useState<'firstName' | 'lastName' | 'email' | 'accountType' | 'registeredAt' | 'daysSinceRegistration' | 'children'>('registeredAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -155,17 +163,37 @@ export default function NonMemberAccounts() {
       const matchesSearch = !q || name.includes(q) || a.email.toLowerCase().includes(q);
       const regDate = a.registeredAt.slice(0, 10);
       const matchesRegDate = (!regDateStart || regDate >= regDateStart) && (!regDateEnd || regDate <= regDateEnd);
-      return matchesSearch && matchesRegDate;
+
+      const days = getDaysSinceRegistration(a.registeredAt);
+      let matchesDays = true;
+      if (daysFilter === 'under-7') matchesDays = days < 7;
+      else if (daysFilter === '7-14') matchesDays = days >= 7 && days <= 14;
+      else if (daysFilter === '15-30') matchesDays = days >= 15 && days <= 30;
+      else if (daysFilter === '31-60') matchesDays = days >= 31 && days <= 60;
+      else if (daysFilter === '61-90') matchesDays = days >= 61 && days <= 90;
+      else if (daysFilter === 'over-90') matchesDays = days > 90;
+
+      return matchesSearch && matchesRegDate && matchesDays;
     });
     rows.sort((a, b) => {
-      const av = sortField === 'children' ? a.children.length : a[sortField];
-      const bv = sortField === 'children' ? b.children.length : b[sortField];
+      let av: any = a[sortField as keyof NonMemberAccount];
+      let bv: any = b[sortField as keyof NonMemberAccount];
+      if (sortField === 'children') {
+        av = a.children.length;
+        bv = b.children.length;
+      } else if (sortField === 'daysSinceRegistration') {
+        av = getDaysSinceRegistration(a.registeredAt);
+        bv = getDaysSinceRegistration(b.registeredAt);
+      } else if (sortField === 'accountType') {
+        av = a.accountType === 'Member' ? 'Registered' : a.accountType;
+        bv = b.accountType === 'Member' ? 'Registered' : b.accountType;
+      }
       if (av < bv) return sortDirection === 'asc' ? -1 : 1;
       if (av > bv) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
     return rows;
-  }, [accounts, searchQuery, regDateStart, regDateEnd, sortField, sortDirection]);
+  }, [accounts, searchQuery, regDateStart, regDateEnd, daysFilter, sortField, sortDirection]);
 
   const memberRouteCount = accounts.filter(a => a.accountType === 'Member').length;
   const nonMemberRouteCount = accounts.filter(a => a.accountType === 'Non-Member').length;
@@ -204,10 +232,11 @@ export default function NonMemberAccounts() {
       ['Non-Member / Registered Accounts - HSS'],
       [`Generated: ${formatDate(new Date())}`],
       [],
-      ['ID', 'First Name', 'Last Name', 'Email', 'Type', 'Status', 'Registered On', 'Children Linked'],
+      ['ID', 'First Name', 'Last Name', 'Email', 'Type', 'Status', 'Registered On', 'Days Since Registration', 'Children Linked'],
       ...filtered.map(a => [
-        a.id, a.firstName, a.lastName, a.email, a.accountType, a.status === 'active' ? 'Active' : 'Inactive',
+        a.id, a.firstName, a.lastName, a.email, a.accountType === 'Member' ? 'Registered' : a.accountType, a.status === 'active' ? 'Active' : 'Inactive',
         sharedFormatDateTime(a.registeredAt),
+        String(getDaysSinceRegistration(a.registeredAt)),
         String(a.children.length),
       ]),
     ];
@@ -224,7 +253,7 @@ export default function NonMemberAccounts() {
   // ── Detail view — mirrors MemberDetail.tsx's layout ─────────────
   if (pageState === 'detail' && selected) {
     const history: HistoryEvent[] = [
-      { label: 'Account created', detail: `via ${selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Member Account (incomplete)'}`, timestamp: selected.registeredAt },
+      { label: 'Account created', detail: `via ${selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Registered Account (incomplete)'}`, timestamp: selected.registeredAt },
       ...selected.children.map(c => ({ label: 'Child profile created', detail: `${c.firstName} ${c.lastName}`, timestamp: c.createdAt })),
       ...(extraHistory[selected.id] ?? []),
     ].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
@@ -390,7 +419,7 @@ export default function NonMemberAccounts() {
                         <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Route</span>
                       </div>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                        {selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Member Account (incomplete)'}
+                        {selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Registered Account (incomplete)'}
                       </p>
                     </div>
                   </div>
@@ -463,7 +492,7 @@ export default function NonMemberAccounts() {
             widgets={[
               { label: 'Total Accounts', value: accounts.length, icon: 'Users' },
               { label: 'Non-Member', value: nonMemberRouteCount, icon: 'Users' },
-              { label: 'Member', value: memberRouteCount, icon: 'Building2' },
+              { label: 'Registered', value: memberRouteCount, icon: 'Building2' },
             ]}
           />
         )}
@@ -507,8 +536,37 @@ export default function NonMemberAccounts() {
               title="Registration Date Range"
             />
           </div>
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
+
+          {/* Days Since Registration Filter */}
+          <select
+            value={daysFilter}
+            onChange={e => setDaysFilter(e.target.value)}
+            className={`h-9 px-3 text-xs font-medium rounded-lg border transition-colors bg-white dark:bg-neutral-950 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              daysFilter !== 'all'
+                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
+                : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400'
+            }`}
+          >
+            <option value="all">Days Since Reg: All</option>
+            <option value="under-7">&lt; 7 days</option>
+            <option value="7-14">7 – 14 days</option>
+            <option value="15-30">15 – 30 days</option>
+            <option value="31-60">31 – 60 days</option>
+            <option value="61-90">61 – 90 days</option>
+            <option value="over-90">&gt; 90 days</option>
+          </select>
+
+          {(searchQuery || daysFilter !== 'all' || regDateStart) && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setDaysFilter('all');
+                setRegDateStart('');
+                setRegDateEnd('');
+                setRegDateLabel('');
+              }}
+              className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
               <X className="w-3.5 h-3.5" /> Clear
             </button>
           )}
@@ -525,6 +583,7 @@ export default function NonMemberAccounts() {
                     { key: 'email', label: 'Email' },
                     { key: 'accountType', label: 'Type' },
                     { key: 'registeredAt', label: 'Registered On' },
+                    { key: 'daysSinceRegistration', label: 'Days Since Registration' },
                     { key: 'children', label: 'Children' },
                   ] as { key: typeof sortField; label: string }[]).map(col => (
                     <th
@@ -539,44 +598,53 @@ export default function NonMemberAccounts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {filtered.length > 0 ? filtered.map(a => (
-                  <tr
-                    key={a.id}
-                    onClick={() => openDetail(a)}
-                    className={`hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer ${a.status === 'inactive' ? 'opacity-60' : ''}`}
-                  >
-                    <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{a.firstName}</td>
-                    <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{a.lastName}</td>
-                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{a.email}</td>
-                    <td className="px-4 py-3.5 whitespace-nowrap"><TypeBadge type={a.accountType} /></td>
-                    <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{sharedFormatDateTime(a.registeredAt)}</td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      {a.accountType === 'Non-Member' ? (
-                        a.children.length > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium bg-neutral-50 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700" title={a.children.map(c => `${c.firstName} ${c.lastName}`).join(', ')}>
-                            <Users className="w-3 h-3" /> {a.children.length}
-                          </span>
-                        ) : <span className="text-sm text-neutral-400">0</span>
-                      ) : (
-                        <span className="text-sm text-neutral-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                      <IconButton
-                        icon={MoreVertical}
-                        borderless
-                        title="Actions"
-                        menuItems={[
-                          { icon: Eye, label: 'View', onClick: () => openDetail(a) },
-                          { icon: Power, label: a.status === 'active' ? 'Mark Inactive' : 'Reactivate', onClick: () => toggleStatus(a) },
-                          { icon: Trash2, label: 'Delete', onClick: () => setDeleteTarget(a) },
-                        ]}
-                      />
-                    </td>
-                  </tr>
-                )) : (
+                {filtered.length > 0 ? filtered.map(a => {
+                  const days = getDaysSinceRegistration(a.registeredAt);
+                  return (
+                    <tr
+                      key={a.id}
+                      onClick={() => openDetail(a)}
+                      className={`hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors cursor-pointer ${a.status === 'inactive' ? 'opacity-60' : ''}`}
+                    >
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{a.firstName}</td>
+                      <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{a.lastName}</td>
+                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{a.email}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap"><TypeBadge type={a.accountType} /></td>
+                      <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{sharedFormatDateTime(a.registeredAt)}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
+                          <Clock className="w-3 h-3 text-neutral-400" />
+                          {days} {days === 1 ? 'day' : 'days'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        {a.accountType === 'Non-Member' ? (
+                          a.children.length > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium bg-neutral-50 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700" title={a.children.map(c => `${c.firstName} ${c.lastName}`).join(', ')}>
+                              <Users className="w-3 h-3" /> {a.children.length}
+                            </span>
+                          ) : <span className="text-sm text-neutral-400">0</span>
+                        ) : (
+                          <span className="text-sm text-neutral-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
+                        <IconButton
+                          icon={MoreVertical}
+                          borderless
+                          title="Actions"
+                          menuItems={[
+                            { icon: Eye, label: 'View', onClick: () => openDetail(a) },
+                            { icon: Power, label: a.status === 'active' ? 'Mark Inactive' : 'Reactivate', onClick: () => toggleStatus(a) },
+                            { icon: Trash2, label: 'Delete', onClick: () => setDeleteTarget(a) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                }) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No accounts found.</td>
+                    <td colSpan={8} className="px-6 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No accounts found.</td>
                   </tr>
                 )}
               </tbody>

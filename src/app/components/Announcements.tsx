@@ -1,4 +1,4 @@
-﻿// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // HSS UK Membership Management System — Announcements Module
 // ─────────────────────────────────────────────────────────────
 // Features: Create · Read · Delete
@@ -194,6 +194,20 @@ function ConfirmModal({
 
 // ── Create form blank state ───────────────────────────────────
 
+export interface ResponsibilityRow {
+  id: string;
+  level: string;
+  jobTitle: string;
+  type: string;
+}
+
+export const createBlankResponsibilityRow = (): ResponsibilityRow => ({
+  id: Math.random().toString(36).substring(2, 9),
+  level: '',
+  jobTitle: '',
+  type: '',
+});
+
 interface CreateForm {
   title: string;
   body: string;
@@ -213,12 +227,16 @@ interface CreateForm {
   filterResponsibilityLevels: string[];
   filterJobTitles: string[];
   filterResponsibilityTypes: string[];
+  responsibilityRows: ResponsibilityRow[];
   pushEnabled: boolean;
   pushSchedule: 'instant' | 'scheduled';
   pushScheduledAt: string;
   emailEnabled: boolean;
   emailSchedule: 'instant' | 'scheduled';
   emailScheduledAt: string;
+  scheduleEnabled: boolean;
+  scheduleDate: string;
+  scheduleTime: string;
 }
 
 const blankForm = (): CreateForm => ({
@@ -240,12 +258,16 @@ const blankForm = (): CreateForm => ({
   filterResponsibilityLevels: [],
   filterJobTitles: [],
   filterResponsibilityTypes: [],
+  responsibilityRows: [createBlankResponsibilityRow()],
   pushEnabled: true,
   pushSchedule: 'instant',
   pushScheduledAt: '',
   emailEnabled: true,
   emailSchedule: 'instant',
   emailScheduledAt: '',
+  scheduleEnabled: false,
+  scheduleDate: '',
+  scheduleTime: '',
 });
 
 // ── Sub-components ────────────────────────────────────────────
@@ -526,7 +548,30 @@ export default function Announcements({
   // Create form
   const [form, setForm] = useState<CreateForm>(blankForm());
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateForm, string>>>({});
-  const [createTab, setCreateTab] = useState<'content' | 'audience' | 'notifications'>('content');
+  const [createTab, setCreateTab] = useState<'content' | 'audience'>('content');
+
+  const addResponsibilityRow = () => {
+    setForm(f => ({
+      ...f,
+      responsibilityRows: [...f.responsibilityRows, createBlankResponsibilityRow()],
+    }));
+  };
+
+  const removeResponsibilityRow = (rowId: string) => {
+    setForm(f => ({
+      ...f,
+      responsibilityRows: f.responsibilityRows.length > 1
+        ? f.responsibilityRows.filter(r => r.id !== rowId)
+        : f.responsibilityRows,
+    }));
+  };
+
+  const updateResponsibilityRow = (rowId: string, field: 'level' | 'jobTitle' | 'type', value: string) => {
+    setForm(f => ({
+      ...f,
+      responsibilityRows: f.responsibilityRows.map(r => r.id === rowId ? { ...r, [field]: value } : r),
+    }));
+  };
 
   useEffect(() => {
     if (!initialAnnouncementId) return;
@@ -561,16 +606,26 @@ export default function Announcements({
       return true;
     });
 
-    if (form.targetAllMembers !== false) return geoFiltered.length;
+    let demographicFiltered = geoFiltered;
+    if (form.targetAllMembers === false) {
+      const activeRows = form.responsibilityRows.filter(r => r.level || r.jobTitle || r.type);
+      demographicFiltered = geoFiltered.filter(m => {
+        if (form.filterAgeCategories.length > 0 && !form.filterAgeCategories.includes(getAgeCategory(m.dateOfBirth))) return false;
+        if (form.filterGenders.length > 0 && !form.filterGenders.includes(m.gender)) return false;
 
-    const demographicFiltered = geoFiltered.filter(m => {
-      if (form.filterAgeCategories.length > 0 && !form.filterAgeCategories.includes(getAgeCategory(m.dateOfBirth))) return false;
-      if (form.filterGenders.length > 0 && !form.filterGenders.includes(m.gender)) return false;
-      if (form.filterJobTitles.length > 0 && !form.filterJobTitles.includes(m.jobTitle)) return false;
-      if (form.filterResponsibilityLevels.length > 0 && !(m.responsibilityLevel && form.filterResponsibilityLevels.includes(m.responsibilityLevel))) return false;
-      if (form.filterResponsibilityTypes.length > 0 && !(m.responsibilityType && form.filterResponsibilityTypes.includes(m.responsibilityType))) return false;
-      return true;
-    });
+        if (activeRows.length > 0) {
+          const matchesAnyRow = activeRows.some(row => {
+            const matchesLevel = !row.level || m.responsibilityLevel === row.level;
+            const matchesJobTitle = !row.jobTitle || m.jobTitle === row.jobTitle;
+            const matchesType = !row.type || m.responsibilityType === row.type;
+            return matchesLevel && matchesJobTitle && matchesType;
+          });
+          if (!matchesAnyRow) return false;
+        }
+
+        return true;
+      });
+    }
 
     if (form.targetSpecificOnly && form.targetMemberIds.length > 0) {
       const ids = new Set(demographicFiltered.map(m => m.id));
@@ -582,8 +637,7 @@ export default function Announcements({
   }, [
     scopedMembersForReach, regionOptions, townOptions, centreOptions,
     form.targetRegions, form.targetTowns, form.targetCentres, form.targetAllMembers,
-    form.filterAgeCategories, form.filterGenders, form.filterJobTitles,
-    form.filterResponsibilityLevels, form.filterResponsibilityTypes,
+    form.filterAgeCategories, form.filterGenders, form.responsibilityRows,
     form.targetSpecificOnly, form.targetMemberIds,
   ]);
 
@@ -623,7 +677,7 @@ export default function Announcements({
   });
 
   const validateForm = (): boolean => {
-    const errs: Partial<Record<keyof CreateForm, string>> = {};
+    const errs: Partial<Record<keyof CreateForm | 'scheduleDate' | 'scheduleTime', string>> = {};
     if (!form.title.trim())  errs.title = 'Title is required.';
     if (!form.body.trim())   errs.body  = 'Message body is required.';
     else if (bodyIsOver) errs.body = 'Message must not exceed 150 words.';
@@ -631,11 +685,13 @@ export default function Announcements({
       errs.mediaUrl = 'Please upload an image or video attachment.';
     if (form.targetAllMembers === null)
       errs.targetAllMembers = 'Please answer this question.';
-    if (form.targetAllMembers === false && form.targetSpecificOnly && form.targetMemberIds.length === 0)
+    if (form.targetSpecificOnly && form.targetMemberIds.length === 0)
       errs.targetMemberIds = 'Please select at least one member.';
-    if (form.pushEnabled  && form.pushSchedule  === 'scheduled' && !form.pushScheduledAt)  errs.pushScheduledAt  = 'Schedule date/time required.';
-    if (form.emailEnabled && form.emailSchedule === 'scheduled' && !form.emailScheduledAt) errs.emailScheduledAt = 'Schedule date/time required.';
-    setFormErrors(errs);
+    if (form.scheduleEnabled) {
+      if (!form.scheduleDate) errs.scheduleDate = 'Schedule date is required.';
+      if (!form.scheduleTime) errs.scheduleTime = 'Schedule time is required.';
+    }
+    setFormErrors(errs as any);
     return Object.keys(errs).length === 0;
   };
 
@@ -650,12 +706,15 @@ export default function Announcements({
   const handleSave = (asDraft: boolean) => {
     if (!validateForm()) return;
 
-    const isScheduled = !asDraft && (
-      (form.pushEnabled  && form.pushSchedule  === 'scheduled') ||
-      (form.emailEnabled && form.emailSchedule === 'scheduled')
-    );
+    const isScheduled = !asDraft && form.scheduleEnabled && !!form.scheduleDate && !!form.scheduleTime;
+    const scheduledDateTime = isScheduled ? `${form.scheduleDate}T${form.scheduleTime}:00` : undefined;
 
     const newStatus: AnnouncementStatus = asDraft ? 'draft' : isScheduled ? 'scheduled' : 'sent';
+
+    const activeRows = form.responsibilityRows.filter(r => r.level || r.jobTitle || r.type);
+    const filterResponsibilityLevels = Array.from(new Set(activeRows.map(r => r.level).filter(Boolean)));
+    const filterJobTitles = Array.from(new Set(activeRows.map(r => r.jobTitle).filter(Boolean)));
+    const filterResponsibilityTypes = Array.from(new Set(activeRows.map(r => r.type).filter(Boolean)));
 
     if (editingId) {
       // ── Edit mode: update existing announcement ──────────────
@@ -676,21 +735,21 @@ export default function Announcements({
           targetTowns:   form.targetTowns,
           targetCentres: form.targetCentres,
           targetAllMembers: form.targetAllMembers ?? undefined,
-          targetMemberIds: form.targetAllMembers === false && form.targetSpecificOnly ? form.targetMemberIds : undefined,
+          targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
           filterAgeCategories: form.targetAllMembers === false ? form.filterAgeCategories : [],
           filterGenders:       form.targetAllMembers === false ? form.filterGenders       : [],
-          filterResponsibilityLevels: form.targetAllMembers === false ? form.filterResponsibilityLevels : [],
-          filterJobTitles:     form.targetAllMembers === false ? form.filterJobTitles     : [],
-          filterResponsibilityTypes:  form.targetAllMembers === false ? form.filterResponsibilityTypes  : [],
+          filterResponsibilityLevels: form.targetAllMembers === false ? filterResponsibilityLevels : [],
+          filterJobTitles:     form.targetAllMembers === false ? filterJobTitles     : [],
+          filterResponsibilityTypes:  form.targetAllMembers === false ? filterResponsibilityTypes  : [],
           push: {
             enabled:     form.pushEnabled,
-            schedule:    form.pushSchedule,
-            scheduledAt: form.pushEnabled && form.pushSchedule === 'scheduled' ? form.pushScheduledAt : undefined,
+            schedule:    isScheduled ? 'scheduled' : 'instant',
+            scheduledAt: isScheduled ? scheduledDateTime : undefined,
           },
           email: {
             enabled:     form.emailEnabled,
-            schedule:    form.emailSchedule,
-            scheduledAt: form.emailEnabled && form.emailSchedule === 'scheduled' ? form.emailScheduledAt : undefined,
+            schedule:    isScheduled ? 'scheduled' : 'instant',
+            scheduledAt: isScheduled ? scheduledDateTime : undefined,
           },
           sentAt: newStatus === 'sent' ? (a.sentAt ?? new Date().toISOString()) : undefined,
         };
@@ -720,21 +779,21 @@ export default function Announcements({
         targetTowns:   form.targetTowns,
         targetCentres: form.targetCentres,
         targetAllMembers: form.targetAllMembers ?? undefined,
-        targetMemberIds: form.targetAllMembers === false && form.targetSpecificOnly ? form.targetMemberIds : undefined,
+        targetMemberIds: form.targetSpecificOnly ? form.targetMemberIds : undefined,
         filterAgeCategories: form.targetAllMembers === false ? form.filterAgeCategories : [],
         filterGenders:       form.targetAllMembers === false ? form.filterGenders       : [],
-        filterResponsibilityLevels: form.targetAllMembers === false ? form.filterResponsibilityLevels : [],
-        filterJobTitles:     form.targetAllMembers === false ? form.filterJobTitles     : [],
-        filterResponsibilityTypes:  form.targetAllMembers === false ? form.filterResponsibilityTypes  : [],
+        filterResponsibilityLevels: form.targetAllMembers === false ? filterResponsibilityLevels : [],
+        filterJobTitles:     form.targetAllMembers === false ? filterJobTitles     : [],
+        filterResponsibilityTypes:  form.targetAllMembers === false ? filterResponsibilityTypes  : [],
         push: {
           enabled:     form.pushEnabled,
-          schedule:    form.pushSchedule,
-          scheduledAt: form.pushEnabled && form.pushSchedule === 'scheduled' ? form.pushScheduledAt : undefined,
+          schedule:    isScheduled ? 'scheduled' : 'instant',
+          scheduledAt: isScheduled ? scheduledDateTime : undefined,
         },
         email: {
           enabled:     form.emailEnabled,
-          schedule:    form.emailSchedule,
-          scheduledAt: form.emailEnabled && form.emailSchedule === 'scheduled' ? form.emailScheduledAt : undefined,
+          schedule:    isScheduled ? 'scheduled' : 'instant',
+          scheduledAt: isScheduled ? scheduledDateTime : undefined,
         },
         createdAt:      new Date().toISOString(),
         sentAt:         asDraft || isScheduled ? undefined : new Date().toISOString(),
@@ -790,6 +849,26 @@ export default function Announcements({
   const closeCreate = () => { setShowCreate(false); setEditingId(null); setForm(createBlankForm()); setFormErrors({}); setBodyWordCount(0); };
 
   const openEdit = (ann: Announcement) => {
+    const hasScheduledTime = (ann.push.schedule === 'scheduled' && !!ann.push.scheduledAt) || (ann.email.schedule === 'scheduled' && !!ann.email.scheduledAt);
+    const scheduledAtRaw = ann.push.scheduledAt || ann.email.scheduledAt || '';
+    const schedDate = scheduledAtRaw ? scheduledAtRaw.slice(0, 10) : '';
+    const schedTime = scheduledAtRaw ? scheduledAtRaw.slice(11, 16) : '';
+
+    const existingRows: ResponsibilityRow[] = [];
+    const maxLen = Math.max(
+      ann.filterResponsibilityLevels?.length ?? 0,
+      ann.filterJobTitles?.length ?? 0,
+      ann.filterResponsibilityTypes?.length ?? 0
+    );
+    for (let i = 0; i < maxLen; i++) {
+      existingRows.push({
+        id: Math.random().toString(36).substring(2, 9),
+        level: ann.filterResponsibilityLevels?.[i] || '',
+        jobTitle: ann.filterJobTitles?.[i] || '',
+        type: ann.filterResponsibilityTypes?.[i] || '',
+      });
+    }
+
     setForm({
       title:               ann.title,
       body:                ann.body,
@@ -801,10 +880,6 @@ export default function Announcements({
       targetRegions:       ann.targetRegions ?? (ann.targetRegion ? [ann.targetRegion] : []),
       targetTowns:         ann.targetTowns   ?? (ann.targetTown   ? [ann.targetTown]   : []),
       targetCentres:       ann.targetCentres ?? (ann.targetCentre ? [ann.targetCentre] : []),
-      // Pre-existing Suchanas predate this question — infer the answer so old
-      // data doesn't silently look unfiltered: if nothing was ever filtered or
-      // targeted specifically, that's a "Yes"; any real filter or specific-member
-      // list means it was effectively "No" (and reveals those filters as before).
       targetAllMembers: ann.targetAllMembers ?? (
         (ann.targetMemberIds?.length ?? 0) === 0 &&
         (ann.filterAgeCategories?.length ?? 0) === 0 && (ann.filterGenders?.length ?? 0) === 0 &&
@@ -818,12 +893,16 @@ export default function Announcements({
       filterResponsibilityLevels: ann.filterResponsibilityLevels ?? [],
       filterJobTitles:     ann.filterJobTitles ?? [],
       filterResponsibilityTypes:  ann.filterResponsibilityTypes  ?? [],
+      responsibilityRows:  existingRows.length > 0 ? existingRows : [createBlankResponsibilityRow()],
       pushEnabled:         ann.push.enabled,
       pushSchedule:        ann.push.schedule,
       pushScheduledAt:     ann.push.scheduledAt ?? '',
       emailEnabled:        ann.email.enabled,
       emailSchedule:       ann.email.schedule,
       emailScheduledAt:    ann.email.scheduledAt ?? '',
+      scheduleEnabled:     hasScheduledTime,
+      scheduleDate:        schedDate,
+      scheduleTime:        schedTime,
     });
     const annText = ann.body.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
     setBodyWordCount(annText === '' ? 0 : annText.split(/\s+/).filter(Boolean).length);
@@ -833,10 +912,9 @@ export default function Announcements({
 
   // ── Render: New / Edit Suchana page ───────────────────────────
   if (showCreate) {
-    const CREATE_TABS: { id: 'content' | 'audience' | 'notifications'; label: string }[] = [
-      { id: 'content',       label: 'Content'                },
-      { id: 'audience',      label: 'Target Audience'  },
-      { id: 'notifications', label: 'Notifications'           },
+    const CREATE_TABS: { id: 'content' | 'audience'; label: string }[] = [
+      { id: 'content',  label: 'Content'         },
+      { id: 'audience', label: 'Target Audience' },
     ];
 
     return (
@@ -854,7 +932,7 @@ export default function Announcements({
               <BookmarkCheck className="w-4 h-4" /> Save as Draft
             </button>
             <PrimaryButton icon={Send} onClick={() => handleSave(false)}>
-              {form.pushSchedule === 'scheduled' || form.emailSchedule === 'scheduled' ? 'Schedule' : 'Send Now'}
+              {form.scheduleEnabled ? 'Schedule' : 'Send Now'}
             </PrimaryButton>
           </div>
         </PageHeader>
@@ -884,146 +962,250 @@ export default function Announcements({
 
             {/* ── Content tab ── */}
             {createTab === 'content' && (
-              <Card title="Suchana Content">
-                <div className="space-y-4">
-                  {/* Title */}
-                  <FormField>
-                    <FormLabel required>Title</FormLabel>
-                    <FormInput
-                      placeholder="Enter Suchana title"
-                      value={form.title}
-                      onChange={e => setField('title', e.target.value)}
-                    />
-                    {formErrors.title && <p className="text-xs text-red-600 mt-1">{formErrors.title}</p>}
-                  </FormField>
+              <div className="space-y-5">
+                <Card title="Suchana Content">
+                  <div className="space-y-4">
+                    {/* Title */}
+                    <FormField>
+                      <FormLabel required>Title</FormLabel>
+                      <FormInput
+                        placeholder="Enter Suchana title"
+                        value={form.title}
+                        onChange={e => setField('title', e.target.value)}
+                      />
+                      {formErrors.title && <p className="text-xs text-red-600 mt-1">{formErrors.title}</p>}
+                    </FormField>
 
-                  {/* High priority */}
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                    <input
-                      type="checkbox"
-                      checked={form.priority === 'high'}
-                      onChange={e => setField('priority', e.target.checked ? 'high' : 'medium')}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-red-600"
-                    />
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                      Mark as High Priority
-                    </span>
-                  </label>
-
-                  {/* Body */}
-                  <FormField>
-                    <FormLabel required>Message</FormLabel>
-                    <RichTextEditor
-                      placeholder="Write your Suchana message…"
-                      value={form.body}
-                      onChange={html => {
-                        setField('body', html);
-                        const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
-                        setBodyWordCount(text === '' ? 0 : text.split(/\s+/).filter(Boolean).length);
-                      }}
-                    />
-                    <div className="flex items-center justify-end mt-1.5">
-                      <span className={`text-xs font-medium ${
-                        bodyIsOver               ? 'text-red-600 dark:text-red-400'
-                        : bodyWordCount >= 130   ? 'text-amber-600 dark:text-amber-400'
-                        :                          'text-neutral-400 dark:text-neutral-500'
-                      }`}>
-                        {bodyWordCount} / 150 words{bodyIsOver ? ' — limit exceeded' : ''}
+                    {/* High priority */}
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                      <input
+                        type="checkbox"
+                        checked={form.priority === 'high'}
+                        onChange={e => setField('priority', e.target.checked ? 'high' : 'medium')}
+                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-red-600"
+                      />
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        Mark as High Priority
                       </span>
-                    </div>
-                    {formErrors.body && <p className="text-xs text-red-600 mt-1">{formErrors.body}</p>}
-                  </FormField>
+                    </label>
 
-                  {/* Attachment — Web */}
-                  <FormField>
-                    <FormLabel>Banner Image (Web)</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <label className={`${btnGhost} cursor-pointer`}>
-                        <Image className="w-4 h-4" />
-                        Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setField('mediaUrl', String(reader.result));
-                              setField('contentType', 'image');
-                            };
-                            reader.readAsDataURL(file);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
-                      {form.mediaUrl && (
-                        <button
-                          type="button"
-                          onClick={() => { setField('mediaUrl', ''); setField('contentType', 'text'); }}
-                          className={btnDanger}
-                        >
-                          <X className="w-4 h-4" /> Remove
-                        </button>
+                    {/* Body */}
+                    <FormField>
+                      <FormLabel required>Message</FormLabel>
+                      <RichTextEditor
+                        placeholder="Write your Suchana message…"
+                        value={form.body}
+                        onChange={html => {
+                          setField('body', html);
+                          const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+                          setBodyWordCount(text === '' ? 0 : text.split(/\s+/).filter(Boolean).length);
+                        }}
+                      />
+                      <div className="flex items-center justify-end mt-1.5">
+                        <span className={`text-xs font-medium ${
+                          bodyIsOver               ? 'text-red-600 dark:text-red-400'
+                          : bodyWordCount >= 130   ? 'text-amber-600 dark:text-amber-400'
+                          :                          'text-neutral-400 dark:text-neutral-500'
+                        }`}>
+                          {bodyWordCount} / 150 words{bodyIsOver ? ' — limit exceeded' : ''}
+                        </span>
+                      </div>
+                      {formErrors.body && <p className="text-xs text-red-600 mt-1">{formErrors.body}</p>}
+                    </FormField>
+
+                    {/* Attachment — Web */}
+                    <FormField>
+                      <FormLabel>Banner Image (Web)</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <label className={`${btnGhost} cursor-pointer`}>
+                          <Image className="w-4 h-4" />
+                          Upload Image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setField('mediaUrl', String(reader.result));
+                                setField('contentType', 'image');
+                              };
+                              reader.readAsDataURL(file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {form.mediaUrl && (
+                          <button
+                            type="button"
+                            onClick={() => { setField('mediaUrl', ''); setField('contentType', 'text'); }}
+                            className={btnDanger}
+                          >
+                            <X className="w-4 h-4" /> Remove
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-1.5">
+                        Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
+                      </p>
+
+                      {form.mediaUrl && form.contentType === 'image' && (
+                        <img src={form.mediaUrl} alt="Web banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
                       )}
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-1.5">
-                      Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
-                    </p>
+                      {form.mediaUrl && form.contentType === 'video' && (
+                        <video src={form.mediaUrl} controls className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700" />
+                      )}
 
-                    {form.mediaUrl && form.contentType === 'image' && (
-                      <img src={form.mediaUrl} alt="Web banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
-                    )}
-                    {form.mediaUrl && form.contentType === 'video' && (
-                      <video src={form.mediaUrl} controls className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700" />
-                    )}
+                      {formErrors.mediaUrl && <p className="text-xs text-red-600 mt-1">{formErrors.mediaUrl}</p>}
+                    </FormField>
 
-                    {formErrors.mediaUrl && <p className="text-xs text-red-600 mt-1">{formErrors.mediaUrl}</p>}
-                  </FormField>
+                    {/* Attachment — App */}
+                    <FormField>
+                      <FormLabel>Banner Image (App)</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <label className={`${btnGhost} cursor-pointer`}>
+                          <Image className="w-4 h-4" />
+                          Upload Image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => setField('mediaUrlApp', String(reader.result));
+                              reader.readAsDataURL(file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {form.mediaUrlApp && (
+                          <button
+                            type="button"
+                            onClick={() => setField('mediaUrlApp', '')}
+                            className={btnDanger}
+                          >
+                            <X className="w-4 h-4" /> Remove
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-1.5">
+                        Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
+                      </p>
 
-                  {/* Attachment — App */}
-                  <FormField>
-                    <FormLabel>Banner Image (App)</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <label className={`${btnGhost} cursor-pointer`}>
-                        <Image className="w-4 h-4" />
-                        Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => setField('mediaUrlApp', String(reader.result));
-                            reader.readAsDataURL(file);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
                       {form.mediaUrlApp && (
-                        <button
-                          type="button"
-                          onClick={() => setField('mediaUrlApp', '')}
-                          className={btnDanger}
-                        >
-                          <X className="w-4 h-4" /> Remove
-                        </button>
+                        <img src={form.mediaUrlApp} alt="App banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
                       )}
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-1.5">
-                      Recommended banner dimensions: 1200 x 630 px (1.91:1 ratio). Max size: 20 MB.
-                    </p>
+                    </FormField>
+                  </div>
+                </Card>
 
-                    {form.mediaUrlApp && (
-                      <img src={form.mediaUrlApp} alt="App banner preview" className="mt-3 max-h-40 rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain" />
+                {/* Notifications Section */}
+                <Card title="Notifications">
+                  <div className="space-y-4">
+                    {/* Push notification */}
+                    <div className="flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center">
+                          <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white block">Push Notifications</span>
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">Send push alert directly to member mobile devices</span>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={form.pushEnabled}
+                          onChange={e => setField('pushEnabled', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
+                      </label>
+                    </div>
+
+                    {/* Email notification */}
+                    <div className="flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white block">Email Notifications</span>
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">Send an email announcement to registered member email addresses</span>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={form.emailEnabled}
+                          onChange={e => setField('emailEnabled', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
+                      </label>
+                    </div>
+
+                    {/* In-app bell notice */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg">
+                      <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-amber-800 dark:text-amber-300">In-App Bell Notification</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Members always receive this Suchana in their notification bell. This cannot be disabled.</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Schedule Suchana Section */}
+                <Card title="Schedule Suchana">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-semibold text-neutral-900 dark:text-white block">Schedule Suchana</span>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Specify a future date and time to publish this Suchana automatically</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={form.scheduleEnabled}
+                          onChange={e => setField('scheduleEnabled', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
+                      </label>
+                    </div>
+
+                    {form.scheduleEnabled && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                        <FormField>
+                          <FormLabel required>Schedule Date</FormLabel>
+                          <FormInput
+                            type="date"
+                            value={form.scheduleDate}
+                            onChange={e => setField('scheduleDate', e.target.value)}
+                          />
+                          {formErrors.scheduleDate && <p className="text-xs text-red-600 mt-1">{formErrors.scheduleDate}</p>}
+                        </FormField>
+                        <FormField>
+                          <FormLabel required>Schedule Time</FormLabel>
+                          <FormInput
+                            type="time"
+                            value={form.scheduleTime}
+                            onChange={e => setField('scheduleTime', e.target.value)}
+                          />
+                          {formErrors.scheduleTime && <p className="text-xs text-red-600 mt-1">{formErrors.scheduleTime}</p>}
+                        </FormField>
+                      </div>
                     )}
-                  </FormField>
-                </div>
-              </Card>
+                  </div>
+                </Card>
+              </div>
             )}
 
             {/* ── Audience and Targeting tab ── */}
@@ -1097,8 +1279,8 @@ export default function Announcements({
                       <p className="text-xs text-neutral-400 mb-4">
                         Please use the filters below to define who the Suchana is applicable to.
                       </p>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <MultiSelectField
                             label="Age Category"
                             options={['teen', 'adult']}
@@ -1111,156 +1293,123 @@ export default function Announcements({
                             selected={form.filterGenders}
                             onChange={v => setField('filterGenders', v as ('male' | 'female')[])}
                           />
-                          <MultiSelectField
-                            label="Responsibility Level"
-                            options={[...RESPONSIBILITY_LEVEL_OPTIONS]}
-                            selected={form.filterResponsibilityLevels}
-                            onChange={v => setField('filterResponsibilityLevels', v)}
-                          />
-                          <MultiSelectField
-                            label="Sangh Responsibility"
-                            options={JOB_TITLE_OPTIONS}
-                            selected={form.filterJobTitles}
-                            onChange={v => setField('filterJobTitles', v)}
-                          />
-                          <MultiSelectField
-                            label="Responsibility Type"
-                            options={[...RESPONSIBILITY_TYPE_OPTIONS]}
-                            selected={form.filterResponsibilityTypes}
-                            onChange={v => setField('filterResponsibilityTypes', v)}
-                          />
                         </div>
 
+                        {/* Responsibility Criteria rows */}
                         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                          <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit mt-4 mb-2">
-                            <input
-                              type="checkbox"
-                              checked={form.targetSpecificOnly}
-                              onChange={e => setField('targetSpecificOnly', e.target.checked)}
-                              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
-                            />
-                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                              Invite specific members (that would NOT be part of the filters above)
-                            </span>
-                          </label>
-                          {form.targetSpecificOnly && (
-                            <FormField>
-                              <FormLabel required>Select Members</FormLabel>
-                              <MemberMultiSelect
-                                selectedIds={form.targetMemberIds}
-                                onChange={ids => setField('targetMemberIds', ids)}
-                              />
-                              {formErrors.targetMemberIds && <p className="text-xs text-red-600 mt-1">{formErrors.targetMemberIds}</p>}
-                            </FormField>
-                          )}
+                          <div className="flex items-center justify-between mb-3">
+                            <FormLabel>Responsibility Criteria</FormLabel>
+                            <button
+                              type="button"
+                              onClick={addResponsibilityRow}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Add
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {form.responsibilityRows.map((row) => (
+                              <div
+                                key={row.id}
+                                className="flex flex-col md:flex-row items-end gap-3 p-3 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg"
+                              >
+                                <div className="flex-1 w-full md:w-auto">
+                                  <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+                                    Responsibility Level
+                                  </label>
+                                  <select
+                                    value={row.level}
+                                    onChange={e => updateResponsibilityRow(row.id, 'level', e.target.value)}
+                                    className="w-full h-10 px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                  >
+                                    <option value="">Please select</option>
+                                    {RESPONSIBILITY_LEVEL_OPTIONS.map(opt => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="flex-1 w-full md:w-auto">
+                                  <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+                                    Sangh Responsibility
+                                  </label>
+                                  <select
+                                    value={row.jobTitle}
+                                    onChange={e => updateResponsibilityRow(row.id, 'jobTitle', e.target.value)}
+                                    className="w-full h-10 px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                  >
+                                    <option value="">Please select</option>
+                                    {JOB_TITLE_OPTIONS.map(opt => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="flex-1 w-full md:w-auto">
+                                  <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+                                    Responsibility Type
+                                  </label>
+                                  <select
+                                    value={row.type}
+                                    onChange={e => updateResponsibilityRow(row.id, 'type', e.target.value)}
+                                    className="w-full h-10 px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                  >
+                                    <option value="">Please select</option>
+                                    {RESPONSIBILITY_TYPE_OPTIONS.map(opt => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {form.responsibilityRows.length > 1 && (
+                                  <div className="flex items-center flex-shrink-0 w-full md:w-auto justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => removeResponsibilityRow(row.id)}
+                                      className="p-2.5 text-neutral-400 hover:text-error-600 dark:hover:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/20 rounded-lg transition-colors h-10 border border-neutral-200 dark:border-neutral-700"
+                                      title="Remove this row"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </>
                   )}
                 </Card>
+
+                {/* Invite Specific Members — Outside Demographic Filter */}
+                <Card title="Invite Specific Members">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+                    <input
+                      type="checkbox"
+                      checked={form.targetSpecificOnly}
+                      onChange={e => setField('targetSpecificOnly', e.target.checked)}
+                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
+                    />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Invite specific members
+                    </span>
+                  </label>
+                  {form.targetSpecificOnly && (
+                    <div className="mt-4">
+                      <FormField>
+                        <FormLabel required>Select Members</FormLabel>
+                        <MemberMultiSelect
+                          selectedIds={form.targetMemberIds}
+                          onChange={ids => setField('targetMemberIds', ids)}
+                        />
+                        {formErrors.targetMemberIds && <p className="text-xs text-red-600 mt-1">{formErrors.targetMemberIds}</p>}
+                      </FormField>
+                    </div>
+                  )}
+                </Card>
               </div>
-            )}
-
-            {/* ── Notifications tab ── */}
-            {createTab === 'notifications' && (
-              canViewAdminSuchanaValues ? (
-                <Card title="Notification Channels">
-                  <div className="space-y-4">
-                    {/* Push notification */}
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                          <span className="text-sm font-medium text-neutral-900 dark:text-white">Push Notification</span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" checked={form.pushEnabled} onChange={e => setField('pushEnabled', e.target.checked)} />
-                          <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
-                        </label>
-                      </div>
-                      {form.pushEnabled && (
-                        <div className="space-y-3">
-                          <ToggleGroup
-                            value={form.pushSchedule}
-                            onChange={v => setField('pushSchedule', v as 'instant' | 'scheduled')}
-                            options={[
-                              { value: 'instant',   label: '⚡ Send Instantly' },
-                              { value: 'scheduled', label: '🕐 Schedule'       },
-                            ]}
-                          />
-                          {form.pushSchedule === 'scheduled' && (
-                            <FormField>
-                              <FormLabel required>Schedule Date &amp; Time</FormLabel>
-                              <FormInput
-                                type="datetime-local"
-                                value={form.pushScheduledAt}
-                                onChange={e => setField('pushScheduledAt', e.target.value)}
-                              />
-                              {formErrors.pushScheduledAt && <p className="text-xs text-red-600 mt-1">{formErrors.pushScheduledAt}</p>}
-                            </FormField>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Email notification */}
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                          <span className="text-sm font-medium text-neutral-900 dark:text-white">Email Notification</span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" checked={form.emailEnabled} onChange={e => setField('emailEnabled', e.target.checked)} />
-                          <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600" />
-                        </label>
-                      </div>
-                      {form.emailEnabled && (
-                        <div className="space-y-3">
-                          <ToggleGroup
-                            value={form.emailSchedule}
-                            onChange={v => setField('emailSchedule', v as 'instant' | 'scheduled')}
-                            options={[
-                              { value: 'instant',   label: '⚡ Send Instantly' },
-                              { value: 'scheduled', label: '🕐 Schedule'       },
-                            ]}
-                          />
-                          {form.emailSchedule === 'scheduled' && (
-                            <FormField>
-                              <FormLabel required>Schedule Date &amp; Time</FormLabel>
-                              <FormInput
-                                type="datetime-local"
-                                value={form.emailScheduledAt}
-                                onChange={e => setField('emailScheduledAt', e.target.value)}
-                              />
-                              {formErrors.emailScheduledAt && <p className="text-xs text-red-600 mt-1">{formErrors.emailScheduledAt}</p>}
-                            </FormField>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* In-app bell — always on, informational */}
-                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg">
-                      <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs font-medium text-amber-800 dark:text-amber-300">In-App Bell Notification</p>
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Members always receive this Suchana in their notification bell. This cannot be disabled.</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ) : (
-                <Card title="Notification Channels">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg">
-                    <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-medium text-amber-800 dark:text-amber-300">In-App Bell Notification</p>
-                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Members always receive this Suchana in their notification bell. This cannot be disabled.</p>
-                    </div>
-                  </div>
-                </Card>
-              )
             )}
           </div>
         </div>
