@@ -1,10 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// HSS UK — Non-Member / Registered Accounts (Super Admin only)
-// Lists accounts that never became a full HSS member: the "Non-Member"
-// registration route (guardian-only, can register children), and the
-// "Member" route where only login credentials were created and
-// registration was never completed. Distinct from Member records under
-// All Members either way.
+// HSS UK — Non-Member Accounts (Super Admin only)
+// Lists accounts that haven't become full HSS members:
+//  - "Non-Member": guardian-only account (can register children)
+//  - "Child Member" & "Adult Member": member registrations in Draft status
 //
 // Detail page deliberately mirrors MemberDetail.tsx's layout (header
 // rows, navy-accent InfoSection cards, tab bar, change-history table)
@@ -16,13 +14,14 @@ import {
   ArrowLeft, User, Clock, UserPlus, AlertTriangle, Mail,
   ToggleLeft, ToggleRight, History as HistoryIcon,
   CalendarDays, BarChart3, FileSpreadsheet,
-  ArrowUpDown, ArrowUp, ArrowDown,
+  ArrowUpDown, ArrowUp, ArrowDown, UserCheck, Building2,
 } from 'lucide-react';
 import { PageHeader, IconButton, SecondaryButton, DateRangeFilter, SummaryWidgets } from './hb/listing';
 import {
   mockNonMemberAccounts,
   NonMemberAccount,
   NonMemberAccountType,
+  NonMemberAccountStatus,
 } from '../../mockAPI/nonMembersData';
 import { formatDate, formatDateTime as sharedFormatDateTime, formatDateRange } from '../../utils/formatDate';
 
@@ -36,19 +35,30 @@ function getDaysSinceRegistration(dateStr: string): number {
 }
 
 function TypeBadge({ type }: { type: NonMemberAccountType }) {
-  const displayLabel = type === 'Member' ? 'Registered' : type;
+  let colorCls = 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700';
+  if (type === 'Child Member') {
+    colorCls = 'bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400 border-sky-200 dark:border-sky-800';
+  } else if (type === 'Adult Member') {
+    colorCls = 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400 border-primary-200 dark:border-primary-800';
+  } else if (type === 'Non-Member') {
+    colorCls = 'bg-purple-50 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+  }
+
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${
-      type === 'Non-Member'
-        ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400 border-primary-200 dark:border-primary-800'
-        : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
-    }`}>
-      {displayLabel}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${colorCls}`}>
+      {type}
     </span>
   );
 }
 
-function StatusBadge({ status }: { status: 'active' | 'inactive' }) {
+function StatusBadge({ status }: { status: NonMemberAccountStatus }) {
+  if (status === 'draft') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+        Draft
+      </span>
+    );
+  }
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${
       status === 'active'
@@ -135,7 +145,7 @@ export default function NonMemberAccounts() {
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [daysFilter, setDaysFilter] = useState('all');
-  const [sortField, setSortField] = useState<'firstName' | 'lastName' | 'email' | 'accountType' | 'registeredAt' | 'daysSinceRegistration' | 'children'>('registeredAt');
+  const [sortField, setSortField] = useState<'firstName' | 'lastName' | 'email' | 'accountType' | 'status' | 'registeredAt' | 'daysSinceRegistration' | 'children'>('registeredAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [pageState, setPageState] = useState<PageState>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -185,8 +195,11 @@ export default function NonMemberAccounts() {
         av = getDaysSinceRegistration(a.registeredAt);
         bv = getDaysSinceRegistration(b.registeredAt);
       } else if (sortField === 'accountType') {
-        av = a.accountType === 'Member' ? 'Registered' : a.accountType;
-        bv = b.accountType === 'Member' ? 'Registered' : b.accountType;
+        av = a.accountType;
+        bv = b.accountType;
+      } else if (sortField === 'status') {
+        av = a.status;
+        bv = b.status;
       }
       if (av < bv) return sortDirection === 'asc' ? -1 : 1;
       if (av > bv) return sortDirection === 'asc' ? 1 : -1;
@@ -195,8 +208,10 @@ export default function NonMemberAccounts() {
     return rows;
   }, [accounts, searchQuery, regDateStart, regDateEnd, daysFilter, sortField, sortDirection]);
 
-  const memberRouteCount = accounts.filter(a => a.accountType === 'Member').length;
-  const nonMemberRouteCount = accounts.filter(a => a.accountType === 'Non-Member').length;
+  const adultMemberCount = accounts.filter(a => a.accountType === 'Adult Member').length;
+  const childMemberCount = accounts.filter(a => a.accountType === 'Child Member').length;
+  const nonMemberCount = accounts.filter(a => a.accountType === 'Non-Member').length;
+  const draftCount = accounts.filter(a => a.status === 'draft').length;
 
   const openDetail = (account: NonMemberAccount) => {
     setSelectedId(account.id);
@@ -209,10 +224,10 @@ export default function NonMemberAccounts() {
   };
 
   const toggleStatus = (account: NonMemberAccount) => {
-    const nextStatus = account.status === 'active' ? 'inactive' : 'active';
+    const nextStatus: NonMemberAccountStatus = account.status === 'active' ? 'inactive' : 'active';
     setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, status: nextStatus } : a));
     logHistory(account.id, {
-      label: nextStatus === 'active' ? 'Account reactivated' : 'Account marked inactive',
+      label: nextStatus === 'active' ? (account.status === 'draft' ? 'Draft registration activated' : 'Account reactivated') : 'Account marked inactive',
       timestamp: new Date().toISOString(),
     });
   };
@@ -229,12 +244,17 @@ export default function NonMemberAccounts() {
 
   const handleExport = () => {
     const rows: string[][] = [
-      ['Non-Member / Registered Accounts - HSS'],
+      ['Non-Member Accounts - HSS'],
       [`Generated: ${formatDate(new Date())}`],
       [],
       ['ID', 'First Name', 'Last Name', 'Email', 'Type', 'Status', 'Registered On', 'Days Since Registration', 'Children Linked'],
       ...filtered.map(a => [
-        a.id, a.firstName, a.lastName, a.email, a.accountType === 'Member' ? 'Registered' : a.accountType, a.status === 'active' ? 'Active' : 'Inactive',
+        a.id,
+        a.firstName,
+        a.lastName,
+        a.email,
+        a.accountType,
+        a.status === 'draft' ? 'Draft' : a.status === 'active' ? 'Active' : 'Inactive',
         sharedFormatDateTime(a.registeredAt),
         String(getDaysSinceRegistration(a.registeredAt)),
         String(a.children.length),
@@ -253,7 +273,11 @@ export default function NonMemberAccounts() {
   // ── Detail view — mirrors MemberDetail.tsx's layout ─────────────
   if (pageState === 'detail' && selected) {
     const history: HistoryEvent[] = [
-      { label: 'Account created', detail: `via ${selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Registered Account (incomplete)'}`, timestamp: selected.registeredAt },
+      {
+        label: 'Account created',
+        detail: `via ${selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : `${selected.accountType} Registration (Draft)`}`,
+        timestamp: selected.registeredAt,
+      },
       ...selected.children.map(c => ({ label: 'Child profile created', detail: `${c.firstName} ${c.lastName}`, timestamp: c.createdAt })),
       ...(extraHistory[selected.id] ?? []),
     ].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
@@ -419,7 +443,7 @@ export default function NonMemberAccounts() {
                         <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Registration Route</span>
                       </div>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                        {selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : 'Create Registered Account (incomplete)'}
+                        {selected.accountType === 'Non-Member' ? 'Create Non-Member Account' : `${selected.accountType} Registration (Draft)`}
                       </p>
                     </div>
                   </div>
@@ -474,7 +498,7 @@ export default function NonMemberAccounts() {
       <div className="max-w-[100%] mx-auto">
         <PageHeader
           title="Non-Member Accounts"
-          subtitle="Accounts that haven't become a full HSS member yet — either registered via Create Non-Member Account, or started Create Member Account and never completed registration."
+          subtitle="Manage Non-Member accounts and draft member registrations (Child Member & Adult Member)."
         >
           <IconButton icon={BarChart3} onClick={() => setShowSummary(!showSummary)} title="Summary" />
           <IconButton
@@ -491,8 +515,10 @@ export default function NonMemberAccounts() {
             title="Account Summary"
             widgets={[
               { label: 'Total Accounts', value: accounts.length, icon: 'Users' },
-              { label: 'Non-Member', value: nonMemberRouteCount, icon: 'Users' },
-              { label: 'Registered', value: memberRouteCount, icon: 'Building2' },
+              { label: 'Child Member', value: childMemberCount, icon: 'UserCheck' },
+              { label: 'Adult Member', value: adultMemberCount, icon: 'Building2' },
+              { label: 'Non-Member', value: nonMemberCount, icon: 'Users' },
+              { label: 'Draft Status', value: draftCount, icon: 'Clock' },
             ]}
           />
         )}
@@ -582,6 +608,7 @@ export default function NonMemberAccounts() {
                     { key: 'lastName', label: 'Last Name' },
                     { key: 'email', label: 'Email' },
                     { key: 'accountType', label: 'Type' },
+                    { key: 'status', label: 'Status' },
                     { key: 'registeredAt', label: 'Registered On' },
                     { key: 'daysSinceRegistration', label: 'Days Since Registration' },
                     { key: 'children', label: 'Children' },
@@ -610,6 +637,7 @@ export default function NonMemberAccounts() {
                       <td className="px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap">{a.lastName}</td>
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{a.email}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap"><TypeBadge type={a.accountType} /></td>
+                      <td className="px-4 py-3.5 whitespace-nowrap"><StatusBadge status={a.status} /></td>
                       <td className="px-4 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{sharedFormatDateTime(a.registeredAt)}</td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium">
@@ -635,7 +663,7 @@ export default function NonMemberAccounts() {
                           title="Actions"
                           menuItems={[
                             { icon: Eye, label: 'View', onClick: () => openDetail(a) },
-                            { icon: Power, label: a.status === 'active' ? 'Mark Inactive' : 'Reactivate', onClick: () => toggleStatus(a) },
+                            { icon: Power, label: a.status === 'active' ? 'Mark Inactive' : a.status === 'inactive' ? 'Reactivate' : 'Activate', onClick: () => toggleStatus(a) },
                             { icon: Trash2, label: 'Delete', onClick: () => setDeleteTarget(a) },
                           ]}
                         />
@@ -644,7 +672,7 @@ export default function NonMemberAccounts() {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No accounts found.</td>
+                    <td colSpan={9} className="px-6 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">No accounts found.</td>
                   </tr>
                 )}
               </tbody>

@@ -1,18 +1,18 @@
 // ─────────────────────────────────────────────────────────────
-// HSS UK — Non-Member / Registered Accounts
-// Two account types land here (per HSS client review, 17 Sep 2026):
+// HSS UK — Non-Member Accounts
+// Records that land here:
 //  - "Non-Member": chose the "Create Non-Member Account" flow — a
 //    parent/guardian who isn't a member themselves, but can register
 //    children for membership.
-//  - "Member": chose "Create Member Account" but only ever created login
-//    credentials — never completed the actual member registration. Until
-//    that registration is completed they're not a real HSS member, so they
-//    land here too rather than in All Members.
+//  - "Adult Member" & "Child Member": member registration started
+//    but still in Draft status (never submitted/approved). Until
+//    registration is completed and approved, they're not a full HSS
+//    member, so they land here with Draft status rather than All Members.
 // Distinct from the Member records in membersData.ts either way.
 // ─────────────────────────────────────────────────────────────
 
-export type NonMemberAccountType = 'Non-Member' | 'Member';
-export type NonMemberAccountStatus = 'active' | 'inactive';
+export type NonMemberAccountType = 'Child Member' | 'Adult Member' | 'Non-Member';
+export type NonMemberAccountStatus = 'draft' | 'active' | 'inactive';
 
 export interface NonMemberChildAccount {
   id: string;
@@ -74,7 +74,7 @@ export const mockNonMemberAccounts: NonMemberAccount[] = [
     email: 'helen.osei@example.com',
     registeredAt: '2026-06-01T14:00:00Z',
     accountType: 'Non-Member',
-    status: 'active',
+    status: 'inactive',
     country: 'HSS UK',
     region: 'North West',
     town: 'Manchester',
@@ -84,15 +84,15 @@ export const mockNonMemberAccounts: NonMemberAccount[] = [
       { id: 'NMC-003', firstName: 'Kofi', lastName: 'Osei', createdAt: '2026-06-15T16:40:00Z' },
     ],
   },
-  // ── "Member" route, registration never completed ──────────────────────
+  // ── "Adult Member" route (registration in Draft status) ───────────────
   {
     id: 'NMB-004',
     firstName: 'James',
     lastName: 'Whitfield',
     email: 'james.whitfield@example.com',
     registeredAt: '2026-07-09T08:20:00Z',
-    accountType: 'Member',
-    status: 'active',
+    accountType: 'Adult Member',
+    status: 'draft',
     country: 'HSS UK',
     region: 'London & South East',
     town: 'Harrow',
@@ -105,12 +105,41 @@ export const mockNonMemberAccounts: NonMemberAccount[] = [
     lastName: 'Chandra',
     email: 'meera.chandra@example.com',
     registeredAt: '2026-03-14T17:05:00Z',
-    accountType: 'Member',
-    status: 'inactive',
+    accountType: 'Adult Member',
+    status: 'draft',
     country: 'HSS UK',
     region: 'Yorkshire & Humber',
     town: 'Leeds',
     activityCentre: 'Leeds North Activity Centre',
+    children: [],
+  },
+  // ── "Child Member" route (registration in Draft status) ───────────────
+  {
+    id: 'NMB-006',
+    firstName: 'Aarav',
+    lastName: 'Patel',
+    email: 'aarav.patel@example.com',
+    registeredAt: '2026-08-20T11:45:00Z',
+    accountType: 'Child Member',
+    status: 'draft',
+    country: 'HSS UK',
+    region: 'London & South East',
+    town: 'Brent',
+    activityCentre: 'Kingsbury Activity Centre',
+    children: [],
+  },
+  {
+    id: 'NMB-007',
+    firstName: 'Diya',
+    lastName: 'Shah',
+    email: 'diya.shah@example.com',
+    registeredAt: '2026-09-05T14:10:00Z',
+    accountType: 'Child Member',
+    status: 'draft',
+    country: 'HSS UK',
+    region: 'Midlands',
+    town: 'Leicester',
+    activityCentre: 'Leicester Central Activity Centre',
     children: [],
   },
 ];
