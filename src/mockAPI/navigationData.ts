@@ -307,7 +307,7 @@ export const getNavigationData = (
     // ── 10. Audit Logging ────────────────────────────────────────
     {
       id: "audit-logging",
-      label: "Audit Logging",
+      label: "System Logging",
       icon: History,
       onClick: () => onNavigate("logs"),
       active: currentPage === "logs",

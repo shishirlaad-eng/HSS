@@ -191,7 +191,7 @@ export function Sidebar({
     "email-templates":                t.nav.emailTemplates,
 
     // 10. Audit Logging
-    "audit-logging":                  "Audit Logging",
+    "audit-logging":                  "System Logging",
   };
   const getLabel = (id: string, fallback: string) =>
     navLabelMap[id] ?? fallback;

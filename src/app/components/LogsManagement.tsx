@@ -61,7 +61,8 @@ import {
   LoginLog,
   AuditLog,
   APILog,
-  EmailLog
+  EmailLog,
+  getTemplateId
 } from '../../mockAPI/logsData';
 import { toast } from 'sonner';
 import { useRoleScope } from '../contexts/RoleScopeContext';
@@ -250,6 +251,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
           data: mockEmailLogs,
           columns: [
             { key: 'recipientName', label: 'Recipient' },
+            { key: 'templateId', label: 'Template ID' },
             { key: 'templateName', label: 'Template' },
             { key: 'subject', label: 'Subject' },
             { key: 'sentAt', label: 'Sent Date & Time' },
@@ -257,7 +259,32 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             { key: 'triggeredBy', label: 'Triggered By' },
           ] as ColumnConfig[],
           filterOptions: {
-            'Status': ['Delivered', 'Sent', 'Failed', 'Bounced'],
+            'Delivery Status': ['Delivered', 'Sent', 'Failed', 'Bounced'],
+            'Template ID': ['TPL-001', 'TPL-002', 'TPL-003', 'TPL-005', 'TPL-006', 'TPL-007', 'TPL-008', 'TPL-009', 'TPL-010', 'TPL-011', 'TPL-012'],
+            'Template': [
+              'Member Registration Confirmation',
+              'OTP Verification',
+              'Parental Consent Request',
+              'Karyakram Invitation',
+              'Password Reset',
+              'Welcome Email',
+              'Shakha Reminder',
+              'Attendance Confirmation',
+              'Announcement Notification',
+              'Member Status Updated',
+              'Guardian Consent Confirmation'
+            ],
+            'Triggered By': [
+              'System — Member Registration',
+              'System — Admin Login',
+              'System — Karyakram Created',
+              'System — Shakha Reminder',
+              'System — Attendance Marked',
+              'System — Announcement Published',
+              'System — Status Change',
+              'System — Consent Granted',
+              'Self — Forgot Password'
+            ],
             'Date Range': ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month'],
           }
         };
@@ -277,6 +304,9 @@ export default function LogsManagement({ type }: LogsManagementProps) {
       config.columns.reduce((acc, col) => ({ ...acc, [col.key]: true }), {} as Record<string, boolean>)
     );
     setSortField(type === 'login' ? 'loginTime' : type === 'audit' ? 'timestamp' : type === 'api' ? 'requestTime' : 'sentAt');
+    setDateStart('');
+    setDateEnd('');
+    setDateLabel('');
   }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleColumn = (key: string) => {
@@ -316,20 +346,54 @@ export default function LogsManagement({ type }: LogsManagementProps) {
     );
   };
 
+  const auditReferenceTime = useMemo(() => {
+    if (mockAuditLogs.length === 0) return Date.now();
+    return Math.max(Date.now(), ...mockAuditLogs.map(l => new Date(l.timestamp).getTime()));
+  }, []);
+  const thirtyDaysAgo = auditReferenceTime - (30 * 24 * 60 * 60 * 1000);
+
   const filteredData = useMemo(() => {
     return config.data.filter((item: any) => {
       // 1. Search Query
-      const searchStr = searchQuery.toLowerCase();
-      const matchesSearch = Object.values(item).some(val => 
-        String(val).toLowerCase().includes(searchStr)
-      );
-      if (!matchesSearch) return false;
+      const searchStr = searchQuery.trim().toLowerCase();
+      if (searchStr) {
+        if (type === 'email') {
+          const email = item as EmailLog;
+          const templateId = (email.templateId || getTemplateId(email.templateName) || '').toLowerCase();
+          const matches =
+            (email.recipientName || '').toLowerCase().includes(searchStr) ||
+            (email.recipientEmail || '').toLowerCase().includes(searchStr) ||
+            templateId.includes(searchStr) ||
+            (email.templateName || '').toLowerCase().includes(searchStr) ||
+            (email.subject || '').toLowerCase().includes(searchStr) ||
+            (email.status || '').toLowerCase().includes(searchStr) ||
+            (email.triggeredBy || '').toLowerCase().includes(searchStr) ||
+            (email.sentAt || '').toLowerCase().includes(searchStr) ||
+            formatDateTime(email.sentAt).toLowerCase().includes(searchStr);
+          if (!matches) return false;
+        } else {
+          const matchesSearch = Object.values(item).some(val => 
+            String(val).toLowerCase().includes(searchStr)
+          );
+          if (!matchesSearch) return false;
+        }
+      }
+
+      // Audit Logs: Default to last 30 days unless an explicit date filter is active
+      if (type === 'audit') {
+        const hasExplicitDate = Boolean(dateStart || dateEnd || filters.some(f => f.field === 'Date Range'));
+        if (!hasExplicitDate) {
+          const itemTime = new Date(item.timestamp).getTime();
+          if (itemTime < thirtyDaysAgo) return false;
+        }
+      }
 
       // 2. Advanced Filters
       const evalFilter = (filter: FilterCondition): boolean => {
         if (filter.field === 'Date Range') {
           const itemTime = new Date(getTimestampField(item, type)).getTime();
-          const now = new Date();
+          const baseDate = new Date(type === 'audit' ? auditReferenceTime : Date.now());
+          const now = new Date(baseDate);
           now.setHours(0, 0, 0, 0); // Start of today
 
           return filter.values.some(range => {
@@ -366,7 +430,19 @@ export default function LogsManagement({ type }: LogsManagementProps) {
           if (filter.field === 'Method') fieldValue = item.method;
           if (filter.field === 'Status') fieldValue = String(item.status);
         } else if (type === 'email') {
-          if (filter.field === 'Status') fieldValue = item.status;
+          if (filter.field === 'Delivery Status' || filter.field === 'Status') {
+            return filter.values.includes(item.status);
+          }
+          if (filter.field === 'Template ID') {
+            const tId = item.templateId || getTemplateId(item.templateName);
+            return filter.values.includes(tId);
+          }
+          if (filter.field === 'Template') {
+            return filter.values.some((v: string) => (item.templateName || '').toLowerCase().includes(v.toLowerCase()));
+          }
+          if (filter.field === 'Triggered By') {
+            return filter.values.some((v: string) => (item.triggeredBy || '').toLowerCase().includes(v.toLowerCase()));
+          }
         }
 
         return !fieldValue || filter.values.includes(fieldValue);
@@ -392,7 +468,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
 
       return true;
     });
-  }, [config.data, searchQuery, filters, type, dateStart, dateEnd]);
+  }, [config.data, searchQuery, filters, type, dateStart, dateEnd, thirtyDaysAgo, auditReferenceTime]);
 
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a: any, b: any) => {
@@ -514,6 +590,9 @@ export default function LogsManagement({ type }: LogsManagementProps) {
           if (col.key === 'loginTime' || col.key === 'timestamp' || col.key === 'requestTime' || col.key === 'sentAt') {
             val = formatDateTime(val);
           }
+          if (col.key === 'templateId') {
+            val = (item as any).templateId || getTemplateId((item as any).templateName);
+          }
           return `"${String(val || '').replace(/"/g, '""')}"`;
         }).join(',')
       );
@@ -593,7 +672,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
           title={config.title}
           subtitle={config.subtitle}
           breadcrumbs={[
-            { label: 'Logs', href: '#' },
+            { label: 'System Logging', href: '#' },
             { label: config.title, current: true },
           ]}
         >
@@ -624,11 +703,11 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             />
           </div>
 
-          {type === 'login' && (
+          {(type === 'login' || type === 'audit') && (
             <div className="relative" ref={dateFilterRef}>
               <button
                 onClick={() => setShowDateFilter(p => !p)}
-                title="Filter by login date/time"
+                title={type === 'audit' ? 'Filter audit logs by date range' : 'Filter by login date/time'}
                 className={`h-10 px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   dateStart
                     ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300 dark:border-primary-600'
@@ -636,7 +715,9 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                 }`}
               >
                 <CalendarDays className="w-3.5 h-3.5" />
-                {dateStart ? (dateLabel || formatDateRange(dateStart, dateEnd)) : 'Login Date/Time'}
+                {dateStart 
+                  ? (dateLabel || formatDateRange(dateStart, dateEnd)) 
+                  : (type === 'audit' ? 'Date Range (Last 30 Days)' : 'Login Date/Time')}
                 {dateStart && (
                   <span
                     role="button"
@@ -695,6 +776,30 @@ export default function LogsManagement({ type }: LogsManagementProps) {
             ]}
           />
         )}
+        {/* Audit Log 30-Day Default Notice */}
+        {type === 'audit' && !dateStart && !dateEnd && !filters.some(f => f.field === 'Date Range') && (
+          <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <span>Displaying audit logs from the <strong>last 30 days</strong> ({filteredData.length} records paginated). Use the <strong>Date Range</strong> filter to find historical logs beyond 30 days.</span>
+            </div>
+          </div>
+        )}
+        {type === 'audit' && (dateStart || dateEnd) && (
+          <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/50 flex items-center justify-between text-xs text-primary-800 dark:text-primary-300">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <span>Showing audit logs filtered by custom date range: <strong>{dateLabel || formatDateRange(dateStart, dateEnd)}</strong> ({filteredData.length} records retrieved).</span>
+            </div>
+            <button 
+              onClick={() => { setDateStart(''); setDateEnd(''); setDateLabel(''); }}
+              className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-semibold ml-2"
+            >
+              Reset to Last 30 Days
+            </button>
+          </div>
+        )}
+
         {/* TIMELINE VIEW */}
         {viewMode === 'timeline' && (
           <div className="space-y-6">
@@ -980,6 +1085,13 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                                 <div className="text-xs text-neutral-500 dark:text-neutral-500">{(log as EmailLog).recipientEmail}</div>
                               </td>
                             )}
+                            {visibleColumns.templateId && (
+                              <td className="px-6 py-4 text-sm font-mono">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+                                  {(log as EmailLog).templateId || getTemplateId((log as EmailLog).templateName)}
+                                </span>
+                              </td>
+                            )}
                             {visibleColumns.templateName && <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">{(log as EmailLog).templateName}</td>}
                             {visibleColumns.subject && <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[200px]">{(log as EmailLog).subject}</td>}
                             {visibleColumns.sentAt && (
@@ -1059,7 +1171,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                     <FormInput value={`${formatDateTime(getTimestampField(selectedLog, type))} (${getRelativeTime(getTimestampField(selectedLog, type))})`} readOnly />
                   </FormField>
                   <FormField>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{type === 'email' ? 'Delivery Status' : 'Status'}</FormLabel>
                     <div className="h-10 flex items-center">
                       {getStatusBadge(selectedLog.status)}
                     </div>
@@ -1268,6 +1380,10 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                     <FormField>
                       <FormLabel>Recipient</FormLabel>
                       <FormInput value={`${selectedLog.recipientName} (${selectedLog.recipientEmail})`} readOnly />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Template ID</FormLabel>
+                      <FormInput value={selectedLog.templateId || getTemplateId(selectedLog.templateName)} readOnly className="font-mono font-medium" />
                     </FormField>
                     <FormField>
                       <FormLabel>Template Used</FormLabel>

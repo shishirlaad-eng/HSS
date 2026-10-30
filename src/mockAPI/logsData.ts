@@ -52,8 +52,29 @@ export interface APILog {
   headers: Record<string, string>;
 }
 
+
+export const EMAIL_TEMPLATE_MAP: Record<string, string> = {
+  'Welcome Email': 'TPL-001',
+  'Password Reset': 'TPL-002',
+  'Karyakram Invitation': 'TPL-003',
+  'Monthly Account Statement': 'TPL-004',
+  'OTP Verification': 'TPL-005',
+  'Member Registration Confirmation': 'TPL-006',
+  'Parental Consent Request': 'TPL-007',
+  'Shakha Reminder': 'TPL-008',
+  'Announcement Notification': 'TPL-009',
+  'Member Status Updated': 'TPL-010',
+  'Guardian Consent Confirmation': 'TPL-011',
+  'Attendance Confirmation': 'TPL-012',
+};
+
+export function getTemplateId(templateName: string): string {
+  return EMAIL_TEMPLATE_MAP[templateName] || 'TPL-001';
+}
+
 export interface EmailLog {
   id: string;
+  templateId?: string;
   recipientName: string;
   recipientEmail: string;
   templateName: string;
@@ -976,6 +997,86 @@ export const mockAuditLogs: AuditLog[] = [
       changedFields: ['status'],
     },
   },
+  {
+    id: 'AUD-036',
+    user: 'Kishore Joshi',
+    module: 'Shakha',
+    actionType: 'Create',
+    recordName: 'Slough Milan Shakha',
+    recordId: 'SHK-029',
+    description: 'Created new Shakha unit Slough Milan Shakha under South East Vibhag.',
+    timestamp: '2026-04-15T14:20:00Z',
+    ipAddress: '86.14.92.110',
+    details: {
+      before: {},
+      after: { shakhaName: 'Slough Milan Shakha', vibhag: 'South East', frequency: 'Weekly' },
+      changedFields: ['shakhaName', 'vibhag', 'frequency'],
+    },
+  },
+  {
+    id: 'AUD-037',
+    user: 'John Doe',
+    module: 'Settings',
+    actionType: 'Update',
+    recordName: 'SMTP Configuration',
+    recordId: 'SET-SMTP-01',
+    description: 'Updated outbound SMTP mail server settings and authentication credentials.',
+    timestamp: '2026-04-02T11:10:00Z',
+    ipAddress: '82.132.201.14',
+    details: {
+      before: { port: 465, host: 'mail.legacy-smtp.co.uk' },
+      after: { port: 587, host: 'smtp.sendgrid.net' },
+      changedFields: ['port', 'host'],
+    },
+  },
+  {
+    id: 'AUD-038',
+    user: 'Sarah Smith',
+    module: 'Role Management',
+    actionType: 'Update',
+    recordName: 'National Coordinator',
+    recordId: 'ROLE-008',
+    description: 'Updated permissions for National Coordinator role, adding export privileges.',
+    timestamp: '2026-03-20T09:45:00Z',
+    ipAddress: '151.224.12.98',
+    details: {
+      before: { permissions: ['view', 'create', 'update'] },
+      after: { permissions: ['view', 'create', 'update', 'export'] },
+      changedFields: ['permissions'],
+    },
+  },
+  {
+    id: 'AUD-039',
+    user: 'Michael Kumar',
+    module: 'Members',
+    actionType: 'Delete',
+    recordName: 'Duplicate Member Records',
+    recordId: 'MBR-BULK-DEL-03',
+    description: 'Removed 14 duplicate archived records following system deduplication pass.',
+    timestamp: '2026-03-05T16:30:00Z',
+    ipAddress: '92.40.181.54',
+    details: {
+      before: { count: 14, status: 'archived_duplicate' },
+      after: { count: 0 },
+      changedFields: ['count'],
+    },
+  },
+  {
+    id: 'AUD-040',
+    user: 'Priya Patel',
+    module: 'Masters',
+    actionType: 'Create',
+    recordName: 'North West Vibhag',
+    recordId: 'VBH-007',
+    description: 'Added North West Vibhag to regional master configuration.',
+    timestamp: '2026-02-18T12:00:00Z',
+    ipAddress: '81.107.44.78',
+    details: {
+      before: {},
+      after: { code: 'NW-VIBHAG', name: 'North West Vibhag', region: 'North' },
+      changedFields: ['code', 'name', 'region'],
+    },
+  },
 ];
 
 // ── API Logs ──────────────────────────────────────────────────
@@ -1250,6 +1351,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-001',
     recipientName: 'Arjun Sharma',
     recipientEmail: 'arjun.sharma@gmail.com',
+    templateId: 'TPL-006',
     templateName: 'Member Registration Confirmation',
     subject: 'Welcome — Your HSS UK membership registration is confirmed',
     sentAt: '2026-05-30T08:46:00Z',
@@ -1261,6 +1363,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-002',
     recipientName: 'Sarah Smith',
     recipientEmail: 'sarah.smith@hss.org.uk',
+    templateId: 'TPL-005',
     templateName: 'OTP Verification',
     subject: 'HSS UK Admin — Your one-time password (OTP)',
     sentAt: '2026-05-30T09:11:00Z',
@@ -1272,6 +1375,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-003',
     recipientName: 'Raj Sharma (Guardian)',
     recipientEmail: 'raj.sharma.guardian@gmail.com',
+    templateId: 'TPL-007',
     templateName: 'Parental Consent Request',
     subject: 'Action Required — Parental consent needed for Deepak Sharma\'s HSS membership',
     sentAt: '2026-05-29T10:02:00Z',
@@ -1283,6 +1387,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-004',
     recipientName: 'Nisha Kapoor',
     recipientEmail: 'nisha.kapoor@gmail.com',
+    templateId: 'TPL-003',
     templateName: 'Karyakram Invitation',
     subject: 'You\'re invited — HSS Annual General Meeting 2026',
     sentAt: '2026-05-29T11:05:00Z',
@@ -1294,6 +1399,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-005',
     recipientName: 'Unknown Recipient',
     recipientEmail: 'invalid.email@@hss.org',
+    templateId: 'TPL-002',
     templateName: 'Password Reset',
     subject: 'Reset your HSS UK Admin password',
     sentAt: '2026-05-29T14:32:00Z',
@@ -1306,6 +1412,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-006',
     recipientName: 'Vikram Singh',
     recipientEmail: 'vikram.singh@gmail.com',
+    templateId: 'TPL-001',
     templateName: 'Welcome Email',
     subject: 'Welcome to Hindu Swayamsevak Sangh UK 🙏',
     sentAt: '2026-05-28T09:02:00Z',
@@ -1317,6 +1424,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-007',
     recipientName: 'Manchester Central Members (15)',
     recipientEmail: 'group:manchester-central@hss.org.uk',
+    templateId: 'TPL-008',
     templateName: 'Shakha Reminder',
     subject: 'Reminder — Manchester Shakha Sewa Shakha tomorrow at 19:00',
     sentAt: '2026-05-27T10:00:00Z',
@@ -1328,6 +1436,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-008',
     recipientName: 'Anita Desai',
     recipientEmail: 'anita.desai.old@yahoo.co.uk',
+    templateId: 'TPL-012',
     templateName: 'Attendance Confirmation',
     subject: 'Attendance recorded — Leeds Shakha, 23 May 2026',
     sentAt: '2026-05-26T11:08:00Z',
@@ -1340,6 +1449,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-009',
     recipientName: 'All Active Members (206)',
     recipientEmail: 'group:all-active@hss.org.uk',
+    templateId: 'TPL-009',
     templateName: 'Announcement Notification',
     subject: 'HSS Announcement — Annual Camp 2026 registrations now open!',
     sentAt: '2026-05-25T11:35:00Z',
@@ -1351,6 +1461,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-010',
     recipientName: 'Sonia Shah',
     recipientEmail: 'sonia.shah@gmail.com',
+    templateId: 'TPL-010',
     templateName: 'Member Status Updated',
     subject: 'Your HSS UK membership is now Active',
     sentAt: '2026-05-25T10:20:00Z',
@@ -1362,6 +1473,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-011',
     recipientName: 'Meera Iyer (Guardian notification)',
     recipientEmail: 'iyer.family@gmail.com',
+    templateId: 'TPL-011',
     templateName: 'Guardian Consent Confirmation',
     subject: 'Parental consent confirmed — Meera Iyer\'s HSS membership',
     sentAt: '2026-05-24T10:05:00Z',
@@ -1373,6 +1485,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-012',
     recipientName: 'Suresh Pillai',
     recipientEmail: 'suresh.pillai@hotmail.com',
+    templateId: 'TPL-003',
     templateName: 'Karyakram Invitation',
     subject: 'You\'re invited — Cultural Evening, Edinburgh, 11 Jun 2026',
     sentAt: '2026-05-23T09:05:00Z',
@@ -1384,6 +1497,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-013',
     recipientName: 'John Doe',
     recipientEmail: 'john.doe@hss.org.uk',
+    templateId: 'TPL-002',
     templateName: 'Password Reset',
     subject: 'Reset your HSS UK Admin password',
     sentAt: '2026-05-22T08:02:00Z',
@@ -1395,6 +1509,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-014',
     recipientName: 'Amit Rao',
     recipientEmail: 'amit.rao.hss@outlook.com',
+    templateId: 'TPL-005',
     templateName: 'OTP Verification',
     subject: 'HSS UK — Your one-time password (OTP)',
     sentAt: '2026-05-21T09:02:00Z',
@@ -1407,6 +1522,7 @@ export const mockEmailLogs: EmailLog[] = [
     id: 'EML-015',
     recipientName: 'Leeds Shakha Members (14)',
     recipientEmail: 'group:leeds-north@hss.org.uk',
+    templateId: 'TPL-008',
     templateName: 'Shakha Reminder',
     subject: 'Reminder — Leeds Shakha Fortnightly Milan this Saturday at 14:00',
     sentAt: '2026-05-21T10:00:00Z',

@@ -340,8 +340,8 @@ export const availableModules: ModulePermission[] = [
   // ── 11. Audit Logging ────────────────────────────────────────
   {
     id: "audit-logs",
-    name: "Audit Logging",
-    category: "Audit Logging",
+    name: "System Logging",
+    category: "System Logging",
     actions: [
       { id: "login_view", name: "View Login Logs", code: "audit_login_view" },
       { id: "audit_view", name: "View Audit Logs",  code: "audit_audit_view" },
@@ -360,7 +360,7 @@ export const mockRoles: Role[] = [
     id: "1",
     name: "Super Admin",
     code: "super_admin",
-    description: "Full system access. Only role with Settings, RBAC, Masters CRUD, and Audit Logging.",
+    description: "Full system access. Only role with Settings, RBAC, Masters CRUD, and System Logging.",
     status: "active",
     userCount: 2,
     lastUpdated: "2025-01-10T10:00:00Z",
