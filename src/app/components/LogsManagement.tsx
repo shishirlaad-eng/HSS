@@ -72,13 +72,22 @@ export type LogModuleType = 'login' | 'audit' | 'api' | 'email';
 const formatDateTime = (dateStr: string | null | undefined) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
-  let hours = date.getHours();
+  const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const strTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-  return `${sharedFormatDate(date)}, ${strTime}`;
+  return `${sharedFormatDate(date)}, ${hours}:${minutes}`;
+};
+
+const formatFieldName = (key: string) => {
+  const result = key.replace(/([A-Z])/g, ' $1').trim();
+  return result.charAt(0).toUpperCase() + result.slice(1);
+};
+
+const formatVal = (v: any) => {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (Array.isArray(v)) return v.length ? v.join(', ') : 'Empty list';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
 };
 
 const getRelativeTime = (dateStr: string | null | undefined) => {
@@ -144,6 +153,15 @@ export default function LogsManagement({ type }: LogsManagementProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
   const [showSummary, setShowSummary] = useState(true);
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResendEmail = (log: EmailLog) => {
+    setIsResending(true);
+    setTimeout(() => {
+      setIsResending(false);
+      toast.success(`Email re-sent successfully to ${log.recipientEmail}`);
+    }, 600);
+  };
 
   // Sorting state
   const [sortField, setSortField] = useState<string>('timestamp');
@@ -170,7 +188,7 @@ export default function LogsManagement({ type }: LogsManagementProps) {
           icon: UserIcon,
           data: mockLoginLogs,
           columns: [
-            { key: 'userName', label: 'User Name' },
+            { key: 'userName', label: 'Name' },
             { key: 'email', label: 'Email' },
             { key: 'role', label: 'Role' },
             { key: 'loginTime', label: 'Login Time' },
@@ -863,9 +881,11 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                         </div>
                       </th>
                     ))}
-                    <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
-                      Actions
-                    </th>
+                    {type === 'api' && (
+                      <th className="sticky top-0 z-10 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 text-right border-b border-neutral-200 dark:border-neutral-800 tracking-normal">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -895,7 +915,6 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                             {visibleColumns.loginTime && (
                               <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                                 <div>{formatDateTime((log as LoginLog).loginTime)}</div>
-                                <div className="text-xs text-neutral-400">({getRelativeTime((log as LoginLog).loginTime)})</div>
                               </td>
                             )}
                             {visibleColumns.status && <td className="px-6 py-4">{getStatusBadge((log as LoginLog).status)}</td>}
@@ -927,7 +946,6 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                             {visibleColumns.timestamp && (
                               <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                                 <div>{formatDateTime((log as AuditLog).timestamp)}</div>
-                                <div className="text-xs text-neutral-400">({getRelativeTime((log as AuditLog).timestamp)})</div>
                               </td>
                             )}
                             {visibleColumns.ipAddress && <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-mono">{(log as AuditLog).ipAddress}</td>}
@@ -967,7 +985,6 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                             {visibleColumns.sentAt && (
                               <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                                 <div>{formatDateTime((log as EmailLog).sentAt)}</div>
-                                <div className="text-xs text-neutral-400">({getRelativeTime((log as EmailLog).sentAt)})</div>
                               </td>
                             )}
                             {visibleColumns.status && <td className="px-6 py-4">{getStatusBadge((log as EmailLog).status)}</td>}
@@ -975,21 +992,23 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                           </>
                         )}
 
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                            <IconButton 
-                              icon={Eye} 
-                              onClick={() => handleViewDetails(log)} 
-                              title="View Details"
-                              borderless
-                            />
-                          </div>
-                        </td>
+                        {type === 'api' && (
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                              <IconButton 
+                                icon={Eye} 
+                                onClick={() => handleViewDetails(log)} 
+                                title="View Details"
+                                borderless
+                              />
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 2} className="px-6 py-20 text-center">
+                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length + (!isSuperAdmin ? 1 : 0) + (type === "api" ? 1 : 0)} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                             <Search className="w-6 h-6 text-neutral-400" />
@@ -1099,35 +1118,100 @@ export default function LogsManagement({ type }: LogsManagementProps) {
               )}
 
               {type === 'audit' && (
-                <FormSection title="Modification History">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
-                    <FormField>
-                      <FormLabel>Performed By</FormLabel>
-                      <FormInput value={selectedLog.user} readOnly />
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Module</FormLabel>
-                      <FormInput value={selectedLog.module} readOnly />
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Action</FormLabel>
-                      <FormInput value={selectedLog.actionType} readOnly />
-                    </FormField>
-                    <FormField>
-                      <FormLabel>Record</FormLabel>
-                      <FormInput value={selectedLog.recordName} readOnly />
-                    </FormField>
-                  </div>
-                  
-                  {selectedLog.details && (
-                    <div className="space-y-4">
+                <>
+                  <FormSection title="Modification History">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
                       <FormField>
-                        <FormLabel>Change Description</FormLabel>
-                        <FormTextArea value={selectedLog.description} readOnly rows={2} />
+                        <FormLabel>Performed By</FormLabel>
+                        <FormInput value={selectedLog.user} readOnly />
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Module</FormLabel>
+                        <FormInput value={selectedLog.module} readOnly />
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Action</FormLabel>
+                        <FormInput value={selectedLog.actionType} readOnly />
+                      </FormField>
+                      <FormField>
+                        <FormLabel>Record</FormLabel>
+                        <FormInput value={selectedLog.recordName} readOnly />
                       </FormField>
                     </div>
+                    
+                    <FormField>
+                      <FormLabel>Change Description</FormLabel>
+                      <FormTextArea value={selectedLog.description} readOnly rows={2} />
+                    </FormField>
+                  </FormSection>
+
+                  {/* Before & After Values Breakdown */}
+                  {selectedLog.details && (
+                    <FormSection title="Change Details (Before & After Values)">
+                      {(() => {
+                        const before = selectedLog.details.before || {};
+                        const after = selectedLog.details.after || {};
+                        const changedFields: string[] = selectedLog.details.changedFields && selectedLog.details.changedFields.length > 0
+                          ? selectedLog.details.changedFields
+                          : Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
+
+                        if (changedFields.length === 0) {
+                          return (
+                            <p className="text-xs text-neutral-500 italic">No field-level diff available for this action.</p>
+                          );
+                        }
+
+                        return (
+                          <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-700 dark:text-neutral-300">
+                                <tr>
+                                  <th className="px-4 py-2.5 w-1/4">Field</th>
+                                  <th className="px-4 py-2.5 w-3/8 text-rose-700 dark:text-rose-400">Before Value</th>
+                                  <th className="px-4 py-2.5 w-3/8 text-emerald-700 dark:text-emerald-400">After Value</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 bg-white dark:bg-neutral-950">
+                                {changedFields.map(field => {
+                                  const hasBefore = field in before && before[field] !== undefined;
+                                  const hasAfter = field in after && after[field] !== undefined;
+                                  const bVal = before[field];
+                                  const aVal = after[field];
+
+                                  return (
+                                    <tr key={field} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30">
+                                      <td className="px-4 py-3 font-medium text-neutral-900 dark:text-white align-top">
+                                        {formatFieldName(field)}
+                                      </td>
+                                      <td className="px-4 py-3 align-top">
+                                        {hasBefore ? (
+                                          <div className="p-2 rounded bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 font-mono text-xs break-all">
+                                            {formatVal(bVal)}
+                                          </div>
+                                        ) : (
+                                          <span className="text-neutral-400 italic text-xs">— (None)</span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3 align-top">
+                                        {hasAfter ? (
+                                          <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 font-mono text-xs font-semibold break-all">
+                                            {formatVal(aVal)}
+                                          </div>
+                                        ) : (
+                                          <span className="text-neutral-400 italic text-xs">Removed</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
+                    </FormSection>
                   )}
-                </FormSection>
+                </>
               )}
 
               {type === 'api' && (
@@ -1227,6 +1311,25 @@ export default function LogsManagement({ type }: LogsManagementProps) {
                       </FormField>
                     </div>
                   )}
+
+                  {/* Support Management: Email Re-send Option */}
+                  <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-neutral-50/50 dark:bg-neutral-900/50 p-4 rounded-lg">
+                    <div>
+                      <p className="text-xs font-semibold text-neutral-900 dark:text-white">Support Management: Re-send Email</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        Trigger an immediate email re-send to {selectedLog.recipientEmail} if the member did not receive it or delivery failed.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isResending}
+                      onClick={() => handleResendEmail(selectedLog)}
+                      className="flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg shadow-sm transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      {isResending ? 'Resending...' : 'Resend Email'}
+                    </button>
+                  </div>
                 </FormSection>
               )}
             </div>

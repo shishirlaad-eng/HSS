@@ -21,29 +21,38 @@ import {
   Banknote,
   CreditCard,
   Download,
+  HandCoins,
   PoundSterling,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
 import { PageHeader, PrimaryButton } from './hb/listing';
-import { MASTERS_CASCADE } from '../../mockAPI/membersData';
 import { formatDate } from '../../utils/formatDate';
-import {
-  mockDonations,
-  type IncomeStream,
-} from '../../mockAPI/donationsData';
+import { mockDonations } from '../../mockAPI/donationsData';
+import { mockSessions } from '../../mockAPI/attendanceData';
+import { mockGuruPujaReportEntries } from '../../mockAPI/guruPujaReportData';
+import { AgeGroup } from '../../mockAPI/membersData';
 
-const STREAM_COLORS: Record<IncomeStream, string> = {
-  'online-donation': '#3b82f6',
-  'cash-income': '#22c55e',
-  'standing-order': '#f59e0b',
+export type DakshinaStream = 'one-off' | 'cash-cheque' | 'other';
+
+const STREAM_COLORS: Record<DakshinaStream, string> = {
+  'one-off': '#3b82f6',
+  'cash-cheque': '#22c55e',
+  'other': '#8b5cf6',
 };
 
-const STREAM_LABELS: Record<IncomeStream, string> = {
-  'online-donation': 'Online Donations',
-  'cash-income': 'Cash Income',
-  'standing-order': 'Regular Standing Order Payments',
+const STREAM_LABELS: Record<DakshinaStream, string> = {
+  'one-off': 'MyHSS One-Off Dakshina',
+  'cash-cheque': 'Guru Puja Cash & Cheque Dakshina',
+  'other': 'Other Dakshina',
 };
+
+const AGE_GROUPS: AgeGroup[] = ['shishu', 'bal', 'kishor', 'tarun', 'yuva', 'jyestha'];
+
+function getEntryDakshina(entry?: { amounts: Record<string, { cash: number; cheque: number }> }) {
+  if (!entry?.amounts) return 0;
+  return AGE_GROUPS.reduce((sum, g) => sum + (entry.amounts[g]?.cash ?? 0) + (entry.amounts[g]?.cheque ?? 0), 0);
+}
 
 function fmt(n: number) {
   return Number.isFinite(n) ? n.toLocaleString() : '0';
@@ -53,12 +62,15 @@ function money(n: number) {
   return `GBP ${fmt(Math.round(n))}`;
 }
 
-function monthKey(date: string) {
+function monthKey(date?: string) {
+  if (!date) return '';
   const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function monthLabel(key: string) {
+  if (!key || !key.includes('-')) return key;
   const [year, month] = key.split('-');
   return new Date(Number(year), Number(month) - 1).toLocaleDateString('en-GB', {
     month: 'short',
@@ -156,90 +168,146 @@ export default function DonationsPaymentsReport() {
     });
   }, [scope, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
 
+  // Scoped Guru Puja sessions for Cash & Cheque Dakshina
+  const scopedSessions = useMemo(() => {
+    return filterByScope(mockSessions, scope).filter(s => {
+      if (s.utsav !== 'Guru Purnima') return false;
+      if (filterRegion && s.region !== filterRegion) return false;
+      if (filterTown && s.town !== filterTown) return false;
+      if (filterCentre && s.activityCentre !== filterCentre) return false;
+      if (!inDateRange(s.date, dateStart, dateEnd)) return false;
+      return true;
+    });
+  }, [scope, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
+
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
+
+  // Stream 1: MyHSS One-Off Dakshina
   const onlineDonations = receivedDonations
     .filter(d => d.incomeStream === 'online-donation')
     .reduce((sum, d) => sum + d.amount, 0);
-  const cashIncome = receivedDonations
-    .filter(d => d.incomeStream === 'cash-income')
-    .reduce((sum, d) => sum + d.amount, 0);
-  const standingOrderPayments = receivedDonations
-    .filter(d => d.incomeStream === 'standing-order')
-    .reduce((sum, d) => sum + d.amount, 0);
-  const totalIncome = onlineDonations + cashIncome + standingOrderPayments;
+
+  // Stream 2: Total Cash & Cheque Dakshina from Guru Puja report
+  const cashChequeDakshina = useMemo(() => {
+    return scopedSessions.reduce((total, session) => {
+      const entry = mockGuruPujaReportEntries.find(e => e.sessionId === session.id);
+      return total + getEntryDakshina(entry);
+    }, 0);
+  }, [scopedSessions]);
+
+  // Stream 3: Other Dakshina (uploaded from Shakha Dakshina module - for now blank/0)
+  const otherDakshina = 0;
+
+  // Total Dakshina (excluding recurring / standing orders)
+  const totalDakshina = onlineDonations + cashChequeDakshina + otherDakshina;
 
   const streamData = useMemo(() => [
-    { key: 'online-donation' as IncomeStream, name: STREAM_LABELS['online-donation'], value: onlineDonations },
-    { key: 'cash-income' as IncomeStream, name: STREAM_LABELS['cash-income'], value: cashIncome },
-    { key: 'standing-order' as IncomeStream, name: STREAM_LABELS['standing-order'], value: standingOrderPayments },
-  ].filter(item => item.value > 0), [onlineDonations, cashIncome, standingOrderPayments]);
+    { key: 'one-off' as DakshinaStream, name: STREAM_LABELS['one-off'], value: onlineDonations },
+    { key: 'cash-cheque' as DakshinaStream, name: STREAM_LABELS['cash-cheque'], value: cashChequeDakshina },
+    { key: 'other' as DakshinaStream, name: STREAM_LABELS['other'], value: otherDakshina },
+  ], [onlineDonations, cashChequeDakshina, otherDakshina]);
 
   const regionData = useMemo(() => {
     const map: Record<string, {
       online: number;
-      cash: number;
-      standingOrder: number;
+      cashCheque: number;
+      other: number;
     }> = {};
-    regionOptions.forEach(region => {
-      map[region] = { online: 0, cash: 0, standingOrder: 0 };
+    (regionOptions || []).forEach(region => {
+      map[region] = { online: 0, cashCheque: 0, other: 0 };
     });
     receivedDonations.forEach(d => {
-      if (!map[d.region]) map[d.region] = { online: 0, cash: 0, standingOrder: 0 };
+      if (!map[d.region]) map[d.region] = { online: 0, cashCheque: 0, other: 0 };
       if (d.incomeStream === 'online-donation') map[d.region].online += d.amount;
-      if (d.incomeStream === 'cash-income') map[d.region].cash += d.amount;
-      if (d.incomeStream === 'standing-order') map[d.region].standingOrder += d.amount;
+    });
+    scopedSessions.forEach(s => {
+      if (!map[s.region]) map[s.region] = { online: 0, cashCheque: 0, other: 0 };
+      const entry = mockGuruPujaReportEntries.find(e => e.sessionId === s.id);
+      map[s.region].cashCheque += getEntryDakshina(entry);
     });
     return Object.entries(map).map(([region, values]) => ({
       region: shortName(region, 22),
       fullRegion: region,
       ...values,
-      totalIncome: values.online + values.cash + values.standingOrder,
+      totalDakshina: values.online + values.cashCheque + values.other,
     }));
-  }, [receivedDonations, regionOptions]);
+  }, [receivedDonations, scopedSessions, regionOptions]);
 
   const monthlyTrend = useMemo(() => {
-    const keys = receivedDonations.map(d => monthKey(d.date)).sort();
-    if (!keys.length) return [];
+    const donationMonths = receivedDonations
+      .filter(d => d.incomeStream === 'online-donation')
+      .map(d => monthKey(d.date))
+      .filter(Boolean);
+    const sessionMonths = scopedSessions
+      .map(s => monthKey(s.date))
+      .filter(Boolean);
+    const allMonths = Array.from(new Set([...donationMonths, ...sessionMonths])).sort();
 
-    const [startYear, startMonth] = keys[0].split('-').map(Number);
-    const [endYear, endMonth] = keys[keys.length - 1].split('-').map(Number);
-    const map: Record<string, { online: number; cash: number; standingOrder: number; income: number }> = {};
-    for (let cursor = new Date(startYear, startMonth - 1, 1); cursor <= new Date(endYear, endMonth - 1, 1); cursor.setMonth(cursor.getMonth() + 1)) {
-      map[monthKey(cursor.toISOString())] = { online: 0, cash: 0, standingOrder: 0, income: 0 };
+    if (!allMonths.length) return [];
+
+    const [startYear, startMonth] = allMonths[0].split('-').map(Number);
+    const [endYear, endMonth] = allMonths[allMonths.length - 1].split('-').map(Number);
+    const map: Record<string, { online: number; cashCheque: number; other: number; dakshina: number }> = {};
+
+    let curYear = startYear;
+    let curMonth = startMonth;
+    while (curYear < endYear || (curYear === endYear && curMonth <= endMonth)) {
+      const k = `${curYear}-${String(curMonth).padStart(2, '0')}`;
+      map[k] = { online: 0, cashCheque: 0, other: 0, dakshina: 0 };
+      curMonth++;
+      if (curMonth > 12) {
+        curMonth = 1;
+        curYear++;
+      }
     }
+
     receivedDonations.forEach(d => {
-      const key = monthKey(d.date);
-      if (d.incomeStream === 'online-donation') map[key].online += d.amount;
-      if (d.incomeStream === 'cash-income') map[key].cash += d.amount;
-      if (d.incomeStream === 'standing-order') map[key].standingOrder += d.amount;
-      map[key].income += d.amount;
+      if (d.incomeStream === 'online-donation') {
+        const key = monthKey(d.date);
+        if (key && map[key]) {
+          map[key].online += d.amount;
+          map[key].dakshina += d.amount;
+        }
+      }
     });
+
+    scopedSessions.forEach(s => {
+      const key = monthKey(s.date);
+      if (key && map[key]) {
+        const entry = mockGuruPujaReportEntries.find(e => e.sessionId === s.id);
+        const amt = getEntryDakshina(entry);
+        map[key].cashCheque += amt;
+        map[key].dakshina += amt;
+      }
+    });
+
     return Object.entries(map).map(([key, values]) => ({ month: monthLabel(key), ...values }));
-  }, [receivedDonations]);
+  }, [receivedDonations, scopedSessions]);
 
   const handleExport = () => {
     const rows: string[][] = [
       ['Nidhi Report - HSS'],
       [`Generated: ${formatDate(new Date())}`],
       [],
-      ['SUMMARY KPIs'],
-      ['Total Income', money(totalIncome)],
-      ['Total Online Donations', money(onlineDonations)],
-      ['Total Cash Income', money(cashIncome)],
+      ['SUMMARY KPIS'],
+      ['Total Dakshina', money(totalDakshina)],
+      ['MyHSS One-Off Dakshina', money(onlineDonations)],
+      ['Total Cash & Cheque Dakshina', money(cashChequeDakshina)],
+      ['Other Dakshina', otherDakshina > 0 ? money(otherDakshina) : 'GBP 0'],
       [],
       ['VIBHAG BREAKDOWN'],
-      ['Vibhag', 'Online Donations', 'Cash Income', 'Standing Order Payments', 'Total Income'],
+      ['Vibhag', 'MyHSS One-Off Dakshina', 'Total Cash & Cheque Dakshina', 'Other Dakshina', 'Total Dakshina'],
       ...regionData.map(r => [
         r.fullRegion,
         money(r.online),
-        money(r.cash),
-        money(r.standingOrder),
-        money(r.totalIncome),
+        money(r.cashCheque),
+        money(r.other),
+        money(r.totalDakshina),
       ]),
       [],
       ['MONTHLY TREND'],
-      ['Month', 'Online Donations', 'Cash Income', 'Standing Order Payments', 'Total Income'],
-      ...monthlyTrend.map(r => [r.month, money(r.online), money(r.cash), money(r.standingOrder), money(r.income)]),
+      ['Month', 'MyHSS One-Off Dakshina', 'Total Cash & Cheque Dakshina', 'Other Dakshina', 'Total Dakshina'],
+      ...monthlyTrend.map(r => [r.month, money(r.online), money(r.cashCheque), money(r.other), money(r.dakshina)]),
     ];
     const csv = rows.map(r => r.map(c => `"${c.replaceAll('"', '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -256,7 +324,7 @@ export default function DonationsPaymentsReport() {
       <div className="max-w-[100%] mx-auto">
         <PageHeader
           title="Nidhi Report"
-          subtitle="Income stream and donation status reporting for Shakha finances"
+          subtitle="Dakshina report detailing MyHSS one-off dakshina, Guru Puja Cash & Cheque Daksina and Other Dakshina"
           breadcrumbs={[
             { label: 'Reports' },
             { label: 'Nidhi Report', current: true },
@@ -269,23 +337,23 @@ export default function DonationsPaymentsReport() {
           <SlidersHorizontal className="w-4 h-4 text-neutral-400 flex-shrink-0" />
           <select disabled={regionDisabled} value={filterRegion} onChange={e => { setFilterRegion(e.target.value); setFilterTown(''); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[150px]">
             <option value="">All Vibhags</option>
-            {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
+            {(regionOptions || []).map(region => <option key={region} value={region}>{region}</option>)}
           </select>
           <select disabled={townDisabled} value={filterTown} onChange={e => { setFilterTown(e.target.value); setFilterCentre(''); }} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[130px]">
             <option value="">All Nagars</option>
-            {townOptions.map(town => <option key={town} value={town}>{town}</option>)}
+            {(townOptions || []).map(town => <option key={town} value={town}>{town}</option>)}
           </select>
           <select disabled={centreDisabled} value={filterCentre} onChange={e => setFilterCentre(e.target.value)} className="disabled:opacity-50 disabled:cursor-not-allowed h-9 pl-3 pr-7 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none min-w-[160px]">
             <option value="">All Shakhas</option>
-            {centreOptions.map(centre => <option key={centre} value={centre}>{centre}</option>)}
+            {(centreOptions || []).map(centre => <option key={centre} value={centre}>{centre}</option>)}
           </select>
           <ReportDateFilter
             start={dateStart}
             end={dateEnd}
             label={dateLabel}
             onChange={(s, e, l) => { setDateStart(s); setDateEnd(e); setDateLabel(l); }}
-            title="Donation Date Range"
-            emptyLabel="Donation Date"
+            title="Dakshina Date Range"
+            emptyLabel="Dakshina Date"
           />
           {hasFilter && (
             <button onClick={clearFilters} className="flex items-center gap-1.5 h-9 px-3 text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
@@ -295,21 +363,56 @@ export default function DonationsPaymentsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4">
-          <KpiCard label="Total Income" value={money(totalIncome)} icon={PoundSterling} color="bg-blue-500" sub="Online donations + cash income + standing orders" />
+          <KpiCard
+            label="Total Dakshina"
+            value={money(totalDakshina)}
+            icon={PoundSterling}
+            color="bg-primary-600"
+            sub="MyHSS one-off dakshina + Guru Puja cash & cheque dakshina + other dakshina"
+          />
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <KpiCard label="Total Online Donations" value={money(onlineDonations)} icon={CreditCard} color="bg-blue-500" />
-          <KpiCard label="Total Cash Income" value={money(cashIncome)} icon={Banknote} color="bg-success-500" />
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <KpiCard
+            label="MyHSS One-Off Dakshina"
+            value={money(onlineDonations)}
+            icon={CreditCard}
+            color="bg-blue-500"
+            sub="Online donations via MyHSS"
+          />
+          <KpiCard
+            label="Total Cash & Cheque Dakshina"
+            value={money(cashChequeDakshina)}
+            icon={Banknote}
+            color="bg-emerald-500"
+            sub="Guru Puja cash & cheque dakshina"
+          />
+          <KpiCard
+            label="Other Dakshina"
+            value={otherDakshina > 0 ? money(otherDakshina) : '—'}
+            icon={HandCoins}
+            color="bg-purple-500"
+            sub="Uploaded from Shakha Dakshina module"
+          />
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-6">
-          <ChartCard title="Income Stream Split" subtitle="Online donations, cash income and regular standing order payments">
+          <ChartCard title="Dakshina Split" subtitle="MyHSS one-off, Guru Puja cash & cheque, and other dakshina">
             <div className="flex items-center gap-6">
               <ResponsiveContainer width={180} height={180}>
                 <PieChart>
-                  <Pie data={streamData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {streamData.map(d => <Cell key={d.key} fill={STREAM_COLORS[d.key]} />)}
+                  <Pie
+                    data={streamData.filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {streamData.filter(d => d.value > 0).map(d => (
+                      <Cell key={d.key} fill={STREAM_COLORS[d.key]} />
+                    ))}
                   </Pie>
                   <Tooltip content={<ChartTooltip />} />
                 </PieChart>
@@ -321,7 +424,9 @@ export default function DonationsPaymentsReport() {
                       <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: STREAM_COLORS[d.key] }} />
                       <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{d.name}</span>
                     </div>
-                    <span className="text-xs font-semibold text-neutral-900 dark:text-white">{money(d.value)}</span>
+                    <span className="text-xs font-semibold text-neutral-900 dark:text-white">
+                      {d.value > 0 ? money(d.value) : '—'}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -330,7 +435,7 @@ export default function DonationsPaymentsReport() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Financials by Vibhag" subtitle="Income streams by Vibhag">
+          <ChartCard title="Dakshina by Vibhag" subtitle="Dakshina streams by Vibhag">
             <ResponsiveContainer width="100%" height={Math.max(260, regionData.length * 42 + 60)}>
               <BarChart data={regionData} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} horizontal={false} />
@@ -338,14 +443,14 @@ export default function DonationsPaymentsReport() {
                 <YAxis type="category" dataKey="region" tick={{ fontSize: 10, fill: '#6b7280' }} width={130} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="online" name="Online Donations" fill={STREAM_COLORS['online-donation']} radius={[0, 4, 4, 0]} barSize={18} />
-                <Bar dataKey="cash" name="Cash Income" fill={STREAM_COLORS['cash-income']} radius={[0, 4, 4, 0]} barSize={18} />
-                <Bar dataKey="standingOrder" name="Standing Orders" fill={STREAM_COLORS['standing-order']} radius={[0, 4, 4, 0]} barSize={18} />
+                <Bar dataKey="online" name="MyHSS One-Off Dakshina" fill={STREAM_COLORS['one-off']} radius={[0, 4, 4, 0]} barSize={16} />
+                <Bar dataKey="cashCheque" name="Cash & Cheque Dakshina" fill={STREAM_COLORS['cash-cheque']} radius={[0, 4, 4, 0]} barSize={16} />
+                <Bar dataKey="other" name="Other Dakshina" fill={STREAM_COLORS['other']} radius={[0, 4, 4, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Monthly Financial Trend" subtitle="Income streams over time">
+          <ChartCard title="Monthly Dakshina Trend" subtitle="Dakshina streams over time">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={monthlyTrend} margin={{ top: 4, right: 16, left: -10, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -353,9 +458,9 @@ export default function DonationsPaymentsReport() {
                 <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="online" name="Online Donations" stroke={STREAM_COLORS['online-donation']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['online-donation'], strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="cash" name="Cash Income" stroke={STREAM_COLORS['cash-income']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['cash-income'], strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="standingOrder" name="Standing Orders" stroke={STREAM_COLORS['standing-order']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['standing-order'], strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="online" name="MyHSS One-Off Dakshina" stroke={STREAM_COLORS['one-off']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['one-off'], strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="cashCheque" name="Cash & Cheque Dakshina" stroke={STREAM_COLORS['cash-cheque']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['cash-cheque'], strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="other" name="Other Dakshina" stroke={STREAM_COLORS['other']} strokeWidth={2.5} dot={{ r: 3, fill: STREAM_COLORS['other'], strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
