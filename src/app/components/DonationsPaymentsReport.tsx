@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import ReportDateFilter, { inDateRange } from './ReportDateFilter';
 import { filterByScope } from '../../mockAPI/roleScope';
 import { useReportLocationFilters } from './useReportLocationFilters';
@@ -32,6 +32,7 @@ import { mockDonations } from '../../mockAPI/donationsData';
 import { mockSessions } from '../../mockAPI/attendanceData';
 import { mockGuruPujaReportEntries } from '../../mockAPI/guruPujaReportData';
 import { AgeGroup } from '../../mockAPI/membersData';
+import { getOtherDakshinaRecords, OtherDakshinaRecord } from '../../mockAPI/otherDakshinaData';
 
 export type DakshinaStream = 'one-off' | 'cash-cheque' | 'other';
 
@@ -149,6 +150,17 @@ export default function DonationsPaymentsReport() {
   const [dateEnd, setDateEnd] = useState('');
   const [dateLabel, setDateLabel] = useState('');
 
+  // Other Dakshina records (stored in shared persistent store from Shakha Dakshina module)
+  const [otherRecords, setOtherRecords] = useState<OtherDakshinaRecord[]>(() => getOtherDakshinaRecords());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setOtherRecords(getOtherDakshinaRecords());
+    };
+    window.addEventListener('hss_other_dakshina_updated', handleUpdate);
+    return () => window.removeEventListener('hss_other_dakshina_updated', handleUpdate);
+  }, []);
+
   const hasFilter = !!((filterRegion && !regionLocked) || (filterTown && !townLocked) || (filterCentre && !centreLocked) || dateStart);
 
   const clearFilters = () => {
@@ -180,6 +192,21 @@ export default function DonationsPaymentsReport() {
     });
   }, [scope, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
 
+  // Scoped Other Dakshina records (from Shakha Dakshina module)
+  const scopedOther = useMemo(() => {
+    const withLocation = otherRecords.map(d => ({
+      ...d,
+      activityCentre: d.shakha,
+    }));
+    return filterByScope(withLocation, scope).filter(d => {
+      if (filterRegion && d.region !== filterRegion) return false;
+      if (filterTown && d.town !== filterTown) return false;
+      if (filterCentre && d.shakha !== filterCentre) return false;
+      if (!inDateRange(d.date, dateStart, dateEnd)) return false;
+      return true;
+    });
+  }, [otherRecords, scope, filterRegion, filterTown, filterCentre, dateStart, dateEnd]);
+
   const receivedDonations = filteredDonations.filter(d => d.status === 'received');
 
   // Stream 1: MyHSS One-Off Dakshina
@@ -195,8 +222,10 @@ export default function DonationsPaymentsReport() {
     }, 0);
   }, [scopedSessions]);
 
-  // Stream 3: Other Dakshina (uploaded from Shakha Dakshina module - for now blank/0)
-  const otherDakshina = 0;
+  // Stream 3: Other Dakshina (uploaded from Shakha Dakshina module)
+  const otherDakshina = useMemo(() => {
+    return scopedOther.reduce((sum, d) => sum + d.amount, 0);
+  }, [scopedOther]);
 
   // Total Dakshina (excluding recurring / standing orders)
   const totalDakshina = onlineDonations + cashChequeDakshina + otherDakshina;
@@ -225,13 +254,19 @@ export default function DonationsPaymentsReport() {
       const entry = mockGuruPujaReportEntries.find(e => e.sessionId === s.id);
       map[s.region].cashCheque += getEntryDakshina(entry);
     });
+    scopedOther.forEach(d => {
+      if (d.region) {
+        if (!map[d.region]) map[d.region] = { online: 0, cashCheque: 0, other: 0 };
+        map[d.region].other += d.amount;
+      }
+    });
     return Object.entries(map).map(([region, values]) => ({
       region: shortName(region, 22),
       fullRegion: region,
       ...values,
       totalDakshina: values.online + values.cashCheque + values.other,
     }));
-  }, [receivedDonations, scopedSessions, regionOptions]);
+  }, [receivedDonations, scopedSessions, scopedOther, regionOptions]);
 
   const monthlyTrend = useMemo(() => {
     const donationMonths = receivedDonations
@@ -241,7 +276,10 @@ export default function DonationsPaymentsReport() {
     const sessionMonths = scopedSessions
       .map(s => monthKey(s.date))
       .filter(Boolean);
-    const allMonths = Array.from(new Set([...donationMonths, ...sessionMonths])).sort();
+    const otherMonths = scopedOther
+      .map(d => monthKey(d.date))
+      .filter(Boolean);
+    const allMonths = Array.from(new Set([...donationMonths, ...sessionMonths, ...otherMonths])).sort();
 
     if (!allMonths.length) return [];
 
@@ -281,8 +319,16 @@ export default function DonationsPaymentsReport() {
       }
     });
 
+    scopedOther.forEach(d => {
+      const key = monthKey(d.date);
+      if (key && map[key]) {
+        map[key].other += d.amount;
+        map[key].dakshina += d.amount;
+      }
+    });
+
     return Object.entries(map).map(([key, values]) => ({ month: monthLabel(key), ...values }));
-  }, [receivedDonations, scopedSessions]);
+  }, [receivedDonations, scopedSessions, scopedOther]);
 
   const handleExport = () => {
     const rows: string[][] = [
@@ -293,7 +339,7 @@ export default function DonationsPaymentsReport() {
       ['Total Dakshina', money(totalDakshina)],
       ['MyHSS One-Off Dakshina', money(onlineDonations)],
       ['Total Cash & Cheque Dakshina', money(cashChequeDakshina)],
-      ['Other Dakshina', otherDakshina > 0 ? money(otherDakshina) : 'GBP 0'],
+      ['Other Dakshina', money(otherDakshina)],
       [],
       ['VIBHAG BREAKDOWN'],
       ['Vibhag', 'MyHSS One-Off Dakshina', 'Total Cash & Cheque Dakshina', 'Other Dakshina', 'Total Dakshina'],
@@ -389,7 +435,7 @@ export default function DonationsPaymentsReport() {
           />
           <KpiCard
             label="Other Dakshina"
-            value={otherDakshina > 0 ? money(otherDakshina) : '—'}
+            value={money(otherDakshina)}
             icon={HandCoins}
             color="bg-purple-500"
             sub="Uploaded from Shakha Dakshina module"

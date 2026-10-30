@@ -1,4 +1,5 @@
 import { AgeGroup } from './membersData';
+export * from './otherDakshinaData';
 
 export type DonationStatus = 'received' | 'pledged' | 'failed' | 'refunded';
 export type DonationChannel = 'online' | 'bank-transfer' | 'cash' | 'cheque';
