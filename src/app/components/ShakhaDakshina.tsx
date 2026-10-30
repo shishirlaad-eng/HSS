@@ -164,10 +164,10 @@ export default function ShakhaDakshina() {
       rows = [
         ['Shakha Dakshina - Other Dakshina', `Generated: ${formatDate(new Date())}`],
         [],
-        ['Reference', 'Shakha ID', 'Shakha', 'Date', 'Amount'],
+        ['Shakha ID', 'Reference', 'Shakha', 'Date', 'Amount'],
         ...filteredOther.map(d => [
-          d.reference,
           d.shakhaId,
+          d.reference,
           d.shakha,
           formatDate(d.date),
           money(d.amount),
@@ -193,14 +193,16 @@ export default function ShakhaDakshina() {
           subtitle="One-off, recurring and other Dakshina given by members and attributed to Shakhas within your scope"
         >
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowUploadModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-sm"
-            >
-              <Upload className="w-4 h-4" />
-              Upload CSV
-            </button>
+            {tab === 'other' && (
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-sm"
+              >
+                <Upload className="w-4 h-4" />
+                Upload CSV
+              </button>
+            )}
             <PrimaryButton icon={Download} onClick={handleExport}>Export CSV</PrimaryButton>
           </div>
         </PageHeader>
@@ -244,7 +246,7 @@ export default function ShakhaDakshina() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder={tab === 'other' ? "Search by reference, Shakha ID or Shakha…" : "Search by member name, ID or Shakha…"}
+            placeholder={tab === 'other' ? "Search by Shakha ID, reference or Shakha…" : "Search by member name, ID or Shakha…"}
             className="h-9 px-3 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[240px]"
           />
           {centreOptions.length > 1 && (
@@ -372,6 +374,7 @@ export default function ShakhaDakshina() {
               <table className="w-full text-left border-collapse min-w-max">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                    <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Shakha ID</th>
                     <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Reference</th>
                     <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Shakha</th>
                     <th className="px-5 py-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Date</th>
@@ -381,6 +384,7 @@ export default function ShakhaDakshina() {
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {filteredOther.length > 0 ? filteredOther.map(d => (
                     <tr key={d.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
+                      <td className="px-5 py-3.5 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap font-mono">{d.shakhaId}</td>
                       <td className="px-5 py-3.5 text-sm font-medium text-neutral-900 dark:text-white whitespace-nowrap font-mono">{d.reference}</td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{d.shakha}</td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">{formatDate(d.date)}</td>
@@ -388,7 +392,7 @@ export default function ShakhaDakshina() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={4} className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                      <td colSpan={5} className="px-5 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
                         <p>No other Dakshina records found.</p>
                         <button
                           type="button"
